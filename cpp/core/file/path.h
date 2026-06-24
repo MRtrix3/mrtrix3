@@ -16,8 +16,8 @@
 
 #pragma once
 
+#include <cstdlib>
 #include <filesystem>
-#include <stdlib.h>
 #include <string>
 #include <string_view>
 #include <vector>

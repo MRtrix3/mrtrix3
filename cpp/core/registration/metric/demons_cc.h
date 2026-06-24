@@ -34,13 +34,9 @@ public:
            const Im2MaskType im2_mask)
       : global_cost(global_energy),
         global_voxel_count(global_voxel_count),
-        thread_cost(0.0),
-        thread_voxel_count(0),
+
         mutex(new std::mutex),
-        normaliser(0.0),
-        robustness_parameter(1.e-12),
-        intensity_difference_threshold(0.001),
-        denominator_threshold(1e-9),
+
         im1_gradient(im1_meansubtracted, true),
         im2_gradient(im2_meansubtracted, true),
         im1_mask(im1_mask),
@@ -51,7 +47,7 @@ public:
   }
 
   ~DemonsCC() {
-    std::lock_guard<std::mutex> lock(*mutex);
+    const std::lock_guard<std::mutex> lock(*mutex);
     global_cost += thread_cost;
     global_voxel_count += thread_voxel_count;
   }
@@ -98,12 +94,12 @@ public:
       }
     }
 
-    default_type sfm = A.value();
-    default_type smm = B.value();
-    default_type sff = C.value();
-    default_type asq = sfm * sfm;
+    const default_type sfm = A.value();
+    const default_type smm = B.value();
+    const default_type sff = C.value();
+    const default_type asq = sfm * sfm;
 
-    default_type denom = smm * sff;
+    const default_type denom = smm * sff;
     if (std::isnan(sfm) || std::isnan(denom) || MR::abs(denom) < denominator_threshold) {
       // if (std::abs (asq) > robustness_parameter)
       //   thread_voxel_count++; // TODO to count or not to count?
@@ -112,17 +108,17 @@ public:
       return;
     }
 
-    default_type lcc = asq / denom;
+    const default_type lcc = asq / denom;
     thread_cost -= lcc;
     thread_voxel_count++;
 
     assign_pos_of(im1_meansubtracted, 0, 3).to(im1_gradient, im2_gradient);
 
-    default_type i1 = im1_meansubtracted.value();
-    default_type i2 = im2_meansubtracted.value();
+    const default_type i1 = im1_meansubtracted.value();
+    const default_type i2 = im2_meansubtracted.value();
 
     // Avants eq. 6 and 7
-    Eigen::Matrix<typename Im1ImageType::value_type, 3, 1> grad =
+    const Eigen::Matrix<typename Im1ImageType::value_type, 3, 1> grad =
         2.0 * sfm / (sff * smm) *
         ((i2 - sfm / smm * i1) * im1_gradient.value() - (i1 - sfm / sff * i2) * im2_gradient.value());
     // TODO: add det(jacobian(Phi)))
@@ -134,13 +130,13 @@ public:
 protected:
   default_type &global_cost;
   size_t &global_voxel_count;
-  default_type thread_cost;
-  size_t thread_voxel_count;
+  default_type thread_cost{0.0};
+  size_t thread_voxel_count{0};
   std::shared_ptr<std::mutex> mutex;
-  default_type normaliser;
-  const default_type robustness_parameter;
-  const default_type intensity_difference_threshold;
-  const default_type denominator_threshold;
+  default_type normaliser{0.0};
+  const default_type robustness_parameter{1.e-12};
+  const default_type intensity_difference_threshold{0.001};
+  const default_type denominator_threshold{1e-9};
 
   Adapter::Gradient3D<Im1ImageType> im1_gradient;
   Adapter::Gradient3D<Im2ImageType> im2_gradient;

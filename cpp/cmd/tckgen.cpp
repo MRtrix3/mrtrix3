@@ -248,7 +248,7 @@ void run() {
 
   Properties properties;
 
-  const algorithm_t algorithm = get_option_choice<algorithm_t>("algorithm", default_algorithm);
+  const algorithm_t algorithm = get_option_choice("algorithm", default_algorithm);
 
   ACT::load_act_properties(properties);
 

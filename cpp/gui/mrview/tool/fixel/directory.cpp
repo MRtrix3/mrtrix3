@@ -114,7 +114,7 @@ void Directory::lazy_load_fixel_value_file(std::string_view key) const {
 
     for (size_t f = 0; f < nfixels; ++f) {
       data_image.index(0) = offset + f;
-      float value = data_image.value();
+      const float value = data_image.value();
       fixel_values[std::string(key)].add_value(value);
     }
   }

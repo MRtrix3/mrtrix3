@@ -35,36 +35,36 @@ int ROI_Item::number_of_undos = MR::File::Config::get_int("NumberOfUndos", 16);
 int ROI_Item::current_preset_colour = 0;
 int ROI_Item::new_roi_counter = 0;
 
-ROI_Item::ROI_Item(MR::Header &&src) : Volume(std::move(src)), saved(true), current_undo(-1) {
+ROI_Item::ROI_Item(MR::Header &&src) : Volume(std::move(src)) {
   type = gl::UNSIGNED_BYTE;
   format = gl::RED_INTEGER;
   internal_format = gl::R8UI;
   set_allowed_features(false, true, false);
   set_interpolate(false);
   set_use_transparency(true);
-  value_min = 0.0f;
-  value_max = 1.0f;
-  set_windowing(0.0f, 1.0f);
+  value_min = 0.0F;
+  value_max = 1.0F;
+  set_windowing(0.0F, 1.0F);
   min_max_set();
   // CONF option: MRViewRoiAlpha
   // CONF default: 0.5
   // CONF The default alpha of a ROI overlay.
-  alpha = MR::File::Config::get_float("MRViewRoiAlpha", 0.5f);
+  alpha = MR::File::Config::get_float("MRViewRoiAlpha", 0.5F);
   colour = preset_colours[current_preset_colour++];
   if (current_preset_colour >= 6)
     current_preset_colour = 0;
-  transparent_intensity = 0.4f;
-  opaque_intensity = 0.6f;
+  transparent_intensity = 0.4F;
+  opaque_intensity = 0.6F;
   colourmap = ColourMap::index("Colour");
-  float spacing = std::min({header().spacing(0), header().spacing(1), header().spacing(2)});
+  const float spacing = std::min({header().spacing(0), header().spacing(1), header().spacing(2)});
   brush_size = min_brush_size = spacing;
-  max_brush_size = 100.0f * min_brush_size;
+  max_brush_size = 100.0F * min_brush_size;
 
   std::stringstream name;
   name << "ROI" << std::setfill('0') << std::setw(5) << new_roi_counter++ << ".mif";
   filepath = name.str();
 
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
   bind();
   allocate();
@@ -72,7 +72,7 @@ ROI_Item::ROI_Item(MR::Header &&src) : Volume(std::move(src)), saved(true), curr
 }
 
 void ROI_Item::zero() {
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
   bind();
   std::vector<GLubyte> data(header().size(0) * header().size(1));
@@ -82,7 +82,7 @@ void ROI_Item::zero() {
 }
 
 void ROI_Item::load() {
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
   bind();
   auto image = header().get_image<bool>();
@@ -91,7 +91,7 @@ void ROI_Item::load() {
   for (auto outer = MR::Loop(2)(image); outer; ++outer) {
     auto p = data.begin();
     for (auto inner = MR::Loop(0, 2)(image); inner; ++inner)
-      *(p++) = image.value();
+      *(p++) = static_cast<unsigned char>(image.value());
     upload_data({{0, 0, image.index(2)}}, {{image.size(0), image.size(1), 1}}, reinterpret_cast<void *>(&data[0]));
     ++progress;
   }

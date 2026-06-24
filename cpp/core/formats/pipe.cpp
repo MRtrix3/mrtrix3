@@ -53,7 +53,7 @@ bool Pipe::check(Header &H, size_t num_axes) const {
   if (!is_dash(H.path().string()))
     return false;
 
-  if (isatty(STDOUT_FILENO))
+  if (isatty(STDOUT_FILENO) != 0)
     throw Exception("cannot create output piped image: "                                //
                     "no command connected at other end of pipe to receive that image"); //
 

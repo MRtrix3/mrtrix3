@@ -42,7 +42,7 @@ public:
         std_rv(0.0, 0.0),
         min(Inf, Inf),
         max(-Inf, -Inf),
-        count(0),
+
         is_complex(is_complex),
         ignore_zero(ignorezero) {}
 
@@ -61,12 +61,11 @@ public:
         if (fields.size() == 1 && fields.front() == field_t::COUNT) {
           std::cout << "0\n";
           return;
-        } else {
-          throw Exception("Cannot output statistic of interest; no values read (empty mask?)");
         }
+        throw Exception("Cannot output statistic of interest; no values read (empty mask?)");
       }
-      for (size_t n = 0; n < fields.size(); ++n) {
-        switch (fields[n]) {
+      for (size_t i = 0; i != fields.size(); ++i) {
+        switch (fields[i]) {
         case field_t::MEAN:
           std::cout << str(mean);
           break;
@@ -80,7 +79,7 @@ public:
           std::cout << (count > 1 ? str(std_rv) : "N/A");
           break;
         case field_t::IQR:
-          std::cout << (!values.empty() ? str(Math::quantile(values, 0.75) - Math::quantile(values, 0.25)) : "N/A");
+          std::cout << (values.empty() ? "N/A" : str(Math::quantile(values, 0.75) - Math::quantile(values, 0.25)));
           break;
         case field_t::MIN:
           std::cout << str(min);
@@ -91,8 +90,10 @@ public:
         case field_t::COUNT:
           std::cout << count;
           break;
+        default:
+          throw Exception("stats type not supported: " + Enum::lowercase_name(fields[i]));
         }
-        if (n < fields.size() - 1)
+        if (i < fields.size() - 1)
           std::cout << " ";
       }
       std::cout << "\n";
@@ -107,7 +108,7 @@ public:
         s += "0 ";
       s += "]";
 
-      int width = is_complex ? 20 : 10;
+      const int width = is_complex ? 20 : 10;
       std::cout << std::setw(12) << std::right << s << " ";
 
       std::cout << std::setw(width) << std::right << (count ? str(mean) : "N/A");
@@ -127,7 +128,7 @@ public:
 
 private:
   complex_type mean, delta, delta2, m2, std, std_rv, min, max;
-  size_t count;
+  size_t count{0};
   const bool is_complex, ignore_zero;
   std::vector<float> values;
 };

@@ -69,13 +69,13 @@ public:
       : directions(directions),
         target_num_shuffles(target_num_shuffles),
         preserve(preserve),
-        num_shuffles(0),
+
         progress("optimising directions for eddy-currents", target_num_shuffles),
         best_signs(directions.rows(), 1),
         best_eddy(std::numeric_limits<value_type>::max()) {}
 
   bool update(value_type eddy, const std::vector<int> &signs) {
-    std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     if (eddy < best_eddy) {
       best_eddy = eddy;
       best_signs = signs;
@@ -87,7 +87,7 @@ public:
     return num_shuffles < target_num_shuffles;
   }
 
-  value_type eddy(size_t i, size_t j, const std::vector<int> &signs) const {
+  [[nodiscard]] value_type eddy(size_t i, size_t j, const std::vector<int> &signs) const {
     vector3_type a = {directions(i, 0), directions(i, 1), directions(i, 2)};
     vector3_type b = {directions(j, 0), directions(j, 1), directions(j, 2)};
     if (signs[i] < 0)
@@ -97,15 +97,15 @@ public:
     return 1.0 / (a - b).norm();
   }
 
-  std::vector<int> get_init_signs() const { return std::vector<int>(directions.rows(), 1); }
-  const std::vector<int> &get_best_signs() const { return best_signs; }
-  size_t get_preserve() const { return preserve; }
+  [[nodiscard]] std::vector<int> get_init_signs() const { return std::vector<int>(directions.rows(), 1); }
+  [[nodiscard]] const std::vector<int> &get_best_signs() const { return best_signs; }
+  [[nodiscard]] size_t get_preserve() const { return preserve; }
 
 protected:
   const Eigen::MatrixXd &directions;
   const size_t target_num_shuffles;
   const size_t preserve;
-  size_t num_shuffles;
+  size_t num_shuffles{0};
   ProgressBar progress;
   std::vector<int> best_signs;
   value_type best_eddy;
@@ -149,8 +149,8 @@ void run() {
   DWI::Directions::validate(directions, argument[0], false);
   directions = Math::Sphere::as_cartesian(directions);
 
-  const size_t num_shuffles = get_option_value<size_t>("number", default_permutations);
-  const size_t preserve = get_option_value<size_t>("preserve", 0);
+  const size_t num_shuffles = get_option_value("number", default_permutations);
+  const size_t preserve = get_option_value("preserve", size_t(0));
 
   std::vector<int> signs;
   {

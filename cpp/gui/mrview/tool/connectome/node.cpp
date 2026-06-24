@@ -29,21 +29,21 @@ Node::Node(const Eigen::Vector3f &com, const size_t vol, const size_t pixheight,
       volume(vol),
       mask(image),
       name(image.name()),
-      size(1.0f),
-      colour{0.5f, 0.5f, 0.5f},
-      alpha(1.0f),
+      size(1.0F),
+      colour{0.5F, 0.5F, 0.5F},
+      alpha(1.0F),
       visible(true),
       pixmap(pixheight, pixheight) {
   pixmap.fill(QColor(128, 128, 128));
 }
 
 Node::Node()
-    : centre_of_mass(), volume(0), size(0.0f), colour{0.0f, 0.0f, 0.0f}, alpha(0.0f), visible(false), pixmap(12, 12) {
+    : centre_of_mass(), volume(0), size(0.0F), colour{0.0F, 0.0F, 0.0F}, alpha(0.0F), visible(false), pixmap(12, 12) {
   pixmap.fill(QColor(0, 0, 0));
 }
 
 Node::Mesh::Mesh(MR::Surface::Mesh &in) : count(3 * in.num_triangles()) {
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
 
   std::vector<float> vertices;
@@ -92,7 +92,7 @@ Node::Mesh::Mesh(MR::Surface::Mesh &in) : count(3 * in.num_triangles()) {
   GL::assert_context_is_current();
 }
 
-Node::Mesh::Mesh(Mesh &&that)
+Node::Mesh::Mesh(Mesh &&that) noexcept
     : count(that.count),
       vertex_buffer(std::move(that.vertex_buffer)),
       normal_buffer(std::move(that.normal_buffer)),
@@ -102,14 +102,14 @@ Node::Mesh::Mesh(Mesh &&that)
 }
 
 Node::Mesh::~Mesh() {
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   vertex_buffer.clear();
   normal_buffer.clear();
   vertex_array_object.clear();
   index_buffer.clear();
 }
 
-Node::Mesh &Node::Mesh::operator=(Node::Mesh &&that) {
+Node::Mesh &Node::Mesh::operator=(Node::Mesh &&that) noexcept {
   count = that.count;
   that.count = 0;
   vertex_buffer = std::move(that.vertex_buffer);

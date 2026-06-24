@@ -39,7 +39,7 @@ public:
 
   ~Tractogram();
 
-  Window &window() const { return *Window::main; }
+  [[nodiscard]] Window &window() const { return *Window::main; }
 
   void render(const Projection &transform);
 
@@ -60,11 +60,11 @@ public:
   void set_color_type(const TrackColourType);
   void set_threshold_type(const TrackThresholdType);
   void set_geometry_type(const TrackGeometryType);
-  TrackColourType get_color_type() const { return color_type; }
-  TrackThresholdType get_threshold_type() const { return threshold_type; }
-  TrackGeometryType get_geometry_type() const { return geometry_type; }
+  [[nodiscard]] TrackColourType get_color_type() const { return color_type; }
+  [[nodiscard]] TrackThresholdType get_threshold_type() const { return threshold_type; }
+  [[nodiscard]] TrackGeometryType get_geometry_type() const { return geometry_type; }
 
-  float get_threshold_rate() const {
+  [[nodiscard]] float get_threshold_rate() const {
     switch (threshold_type) {
     case TrackThresholdType::None:
       return NaNF;
@@ -76,40 +76,35 @@ public:
     assert(0);
     return NaNF;
   }
-  float get_threshold_min() const { return threshold_min; }
-  float get_threshold_max() const { return threshold_max; }
+  [[nodiscard]] float get_threshold_min() const { return threshold_min; }
+  [[nodiscard]] float get_threshold_max() const { return threshold_max; }
 
   static TrackGeometryType default_tract_geom;
-  static constexpr float default_line_thickness = 2e-3f;
-  static constexpr float default_point_size = 4e-3f;
+  static constexpr float default_line_thickness = 2e-3F;
+  static constexpr float default_point_size = 4e-3F;
 
   bool scalarfile_by_direction;
-  bool show_colour_bar;
+  bool show_colour_bar{true};
   bool should_update_stride;
   float original_fov;
-  float line_thickness;
+  float line_thickness{0.F};
   std::filesystem::path intensity_scalar_path;
   std::filesystem::path threshold_scalar_path;
 
   class Shader : public Displayable::Shader {
   public:
-    Shader()
-        : do_crop_to_slab(false),
-          use_lighting(false),
-          color_type(TrackColourType::Direction),
-          threshold_type(TrackThresholdType::None),
-          geometry_type(Tractogram::default_tract_geom) {}
+    Shader() = default;
     std::string vertex_shader_source(const Displayable &) override;
     std::string fragment_shader_source(const Displayable &) override;
     std::string geometry_shader_source(const Displayable &) override;
-    virtual bool need_update(const Displayable &) const override;
+    [[nodiscard]] virtual bool need_update(const Displayable &) const override;
     virtual void update(const Displayable &) override;
 
   protected:
-    bool do_crop_to_slab, use_lighting;
-    TrackColourType color_type;
-    TrackThresholdType threshold_type;
-    TrackGeometryType geometry_type;
+    bool do_crop_to_slab{false}, use_lighting{false};
+    TrackColourType color_type{TrackColourType::Direction};
+    TrackThresholdType threshold_type{TrackThresholdType::None};
+    TrackGeometryType geometry_type{Tractogram::default_tract_geom};
 
   } track_shader;
 
@@ -122,8 +117,8 @@ private:
 
   const std::filesystem::path filepath;
 
-  TrackColourType color_type;
-  TrackThresholdType threshold_type;
+  TrackColourType color_type{TrackColourType::Direction};
+  TrackThresholdType threshold_type{TrackThresholdType::None};
   TrackGeometryType geometry_type;
 
   // Instead of tracking the file path, pre-calculate the
@@ -148,8 +143,8 @@ private:
   std::vector<GLuint> element_buffers;
   std::vector<GLsizei> element_counts;
 
-  GLint sample_stride;
-  bool vao_dirty;
+  GLint sample_stride{0};
+  bool vao_dirty{true};
 
   // Extra members now required since different scalar files
   //   may be used for streamline colouring and thresholding

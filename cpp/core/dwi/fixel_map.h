@@ -61,9 +61,9 @@ public:
   virtual bool operator()(const FMLS::FOD_lobes &in);
 
   // Functions can copy-construct their own voxel accessor from this and retain const-ness:
-  const VoxelAccessor &accessor() const { return _accessor; }
+  [[nodiscard]] const VoxelAccessor &accessor() const { return _accessor; }
 
-  const ::MR::Header &header() const { return _header; }
+  [[nodiscard]] const ::MR::Header &header() const { return _header; }
 
 protected:
   std::vector<Fixel> fixels;
@@ -89,14 +89,14 @@ public:
 
   ~MapVoxel() = default;
 
-  size_t first_index() const { return first_fixel_index; }
-  size_t num_fixels() const { return count; }
-  bool empty() const { return !count; }
+  [[nodiscard]] size_t first_index() const { return first_fixel_index; }
+  [[nodiscard]] size_t num_fixels() const { return count; }
+  [[nodiscard]] bool empty() const { return count == 0U; }
 
   // Direction must have been assigned to a histogram bin first
-  size_t dir2fixel(const size_t dir) const {
+  [[nodiscard]] size_t dir2fixel(const size_t dir) const {
     assert(lookup_table);
-    const size_t offset = static_cast<size_t>(lookup_table[dir]);
+    const auto offset = static_cast<size_t>(lookup_table[dir]);
     return ((offset == count) ? 0 : (first_fixel_index + offset));
   }
 

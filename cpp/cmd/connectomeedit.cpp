@@ -48,7 +48,7 @@ void usage() {
 void run() {
   MR::Connectome::matrix_type connectome = File::Matrix::load_matrix(argument[0]);
   MR::Connectome::check(connectome);
-  const Operation op = MR::Enum::from_name<Operation>(argument[1]);
+  const auto op = MR::Enum::from_name<Operation>(argument[1]);
 
   INFO("Applying \'" + MR::Enum::lowercase_name(op) + "\' transformation to the input connectome.");
 

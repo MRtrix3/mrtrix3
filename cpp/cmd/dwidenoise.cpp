@@ -19,8 +19,8 @@
 #include <Eigen/Eigenvalues>
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <filesystem>
-#include <stddef.h>
 #include <sys/types.h>
 
 #include "command.h"
@@ -205,11 +205,11 @@ public:
     ssize_t cutoff_p = 0;
     for (ssize_t p = 0; p < r; ++p) // p+1 is the number of noise components
     {                               // (as opposed to the paper where p is defined as the number of signal components)
-      double lam = std::max(s[p], 0.0) / q;
+      const double lam = std::max(s[p], 0.0) / q;
       clam += lam;
-      double gam = static_cast<double>(p + 1) / static_cast<double>(exp1 ? q : q - (r - p - 1));
-      double sigsq1 = clam / static_cast<double>(p + 1);
-      double sigsq2 = (lam - lam_r) / (4.0 * std::sqrt(gam));
+      const double gam = static_cast<double>(p + 1) / static_cast<double>(exp1 ? q : q - (r - p - 1));
+      const double sigsq1 = clam / static_cast<double>(p + 1);
+      const double sigsq2 = (lam - lam_r) / (4.0 * std::sqrt(gam));
       // sigsq2 > sigsq1 if signal else noise
       if (sigsq2 < sigsq1) {
         sigma2 = sigsq1;
@@ -280,7 +280,7 @@ private:
     dwi.index(2) = pos[2];
   }
 
-  inline size_t wrapindex(int r, int axis, int max) const {
+  [[nodiscard]] inline size_t wrapindex(int r, int axis, int max) const {
     // patch handling at image edges
     int rr = pos[axis] + r;
     if (rr < 0)
@@ -334,7 +334,7 @@ void run() {
     if (extent.size() != 3)
       throw Exception("-extent must be either a scalar or a list of length 3");
     for (int i = 0; i < 3; i++) {
-      if (!(extent[i] & 1))
+      if ((extent[i] & 1) == 0U)
         throw Exception("-extent must be a (list of) odd numbers");
       if (extent[i] > dwi.size(i))
         throw Exception("-extent must not exceed the image dimensions");
@@ -349,8 +349,7 @@ void run() {
   }
   INFO("selected patch size: " + str(extent[0]) + " x " + str(extent[1]) + " x " + str(extent[2]) + ".");
 
-  // default: Exp2 (unbiased estimator)
-  const Estimator estimator = get_option_choice<Estimator>("estimator", Estimator::EXP2);
+  const auto estimator = get_option_choice<Estimator>("estimator", Estimator::EXP2);
   const bool exp1 = estimator == Estimator::EXP1;
 
   if (std::min<uint32_t>(dwi.size(3), extent[0] * extent[1] * extent[2]) < 15) {
@@ -377,7 +376,7 @@ void run() {
     rank = Image<uint16_t>::create(opt[0][0], header);
   }
 
-  const DType precision = get_option_choice<DType>("datatype", DType::FLOAT32); // default: single precision
+  const auto precision = get_option_choice<DType>("datatype", DType::FLOAT32);
   int prec = static_cast<int>(precision);
   if (dwi.datatype().is_complex())
     prec += 2; // support complex input data

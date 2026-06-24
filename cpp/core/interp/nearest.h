@@ -97,7 +97,7 @@ public:
 
   //! Read an interpolated image value from the current position.
   /*! See file interp/base.h for details. */
-  FORCE_INLINE value_type value() const {
+  [[nodiscard]] FORCE_INLINE value_type value() const {
     if (out_of_bounds)
       return out_of_bounds_value;
     return ImageType::value();

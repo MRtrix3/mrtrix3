@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "adapter/gaussian1D.h"
 #include "algo/copy.h"
 #include "algo/threaded_copy.h"
@@ -43,17 +45,14 @@ namespace MR::Filter {
 class Smooth : public Base {
 
 public:
-  template <class HeaderType>
-  Smooth(const HeaderType &in)
-      : Base(in), extent(3, 0), stdev(3, 0.0), stride_order(Stride::order(in)), zero_boundary(false) {
+  template <class HeaderType> Smooth(const HeaderType &in) : Base(in), stride_order(Stride::order(in)) {
     for (int i = 0; i < 3; i++)
       stdev[i] = in.spacing(i);
     datatype() = DataType::Float32;
   }
 
   template <class HeaderType>
-  Smooth(const HeaderType &in, const std::vector<default_type> &stdev_in)
-      : Base(in), extent(3, 0), stdev(3, 0.0), stride_order(Stride::order(in)) {
+  Smooth(const HeaderType &in, const std::vector<default_type> &stdev_in) : Base(in), stride_order(Stride::order(in)) {
     set_stdev(stdev_in);
     datatype() = DataType::Float32;
   }
@@ -64,10 +63,8 @@ public:
   void set_extent(const std::vector<uint32_t> &new_extent) {
     if (new_extent.size() != 1 && new_extent.size() != 3)
       throw Exception("Please supply a single kernel extent value, or three values (one for each spatial dimension)");
-    for (size_t i = 0; i < new_extent.size(); ++i) {
-      if (!(new_extent[i] & uint32_t(1)))
-        throw Exception("expected odd number for extent");
-    }
+    if (std::any_of(new_extent.begin(), new_extent.end(), [](uint32_t i) { return (i & uint32_t(1)) == 0U; }))
+      throw Exception("expected odd number for extent");
     if (new_extent.size() == 1)
       for (size_t i = 0; i < 3; i++)
         extent[i] = new_extent[0];
@@ -109,10 +106,10 @@ public:
     std::unique_ptr<ProgressBar> progress;
     if (!message.empty()) {
       size_t axes_to_smooth = 0;
-      for (std::vector<default_type>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
-        if (*i)
+      for (double i : stdev)
+        if (i != 0.0)
           ++axes_to_smooth;
-      progress.reset(new ProgressBar(message, axes_to_smooth + 1));
+      progress = std::make_unique<ProgressBar>(message, axes_to_smooth + 1);
     }
 
     for (size_t dim = 0; dim < 3; dim++) {
@@ -134,10 +131,10 @@ public:
     std::unique_ptr<ProgressBar> progress;
     if (!message.empty()) {
       size_t axes_to_smooth = 0;
-      for (std::vector<default_type>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
-        if (*i)
+      for (double i : stdev)
+        if (i != 0.0)
           ++axes_to_smooth;
-      progress.reset(new ProgressBar(message, axes_to_smooth + 1));
+      progress = std::make_unique<ProgressBar>(message, axes_to_smooth + 1);
     }
 
     for (size_t dim = 0; dim < 3; dim++) {
@@ -159,10 +156,10 @@ public:
   }
 
 protected:
-  std::vector<uint32_t> extent;
-  std::vector<default_type> stdev;
+  std::vector<uint32_t> extent{0, 0, 0};
+  std::vector<default_type> stdev{0.0, 0.0, 0.0};
   const std::vector<size_t> stride_order;
-  bool zero_boundary;
+  bool zero_boundary{false};
 
   template <class ImageType> class SmoothFunctor1D {
   public:
@@ -177,7 +174,7 @@ protected:
           spacing(image.spacing(axis_in)),
           buffer_size(image.size(axis_in)) {
       buffer.resize(buffer_size);
-      if (!extent)
+      if (extent == 0U)
         radius = std::ceil(2 * stdev / spacing);
       else if (extent == 1)
         radius = 0;
@@ -197,8 +194,8 @@ protected:
         kernel[c] = exp(-((c - radius) * (c - radius) * spacing * spacing) / (2 * stdev * stdev));
         norm_factor += kernel[c];
       }
-      for (ssize_t c = 0; c < kernel.size(); c++) {
-        kernel[c] /= norm_factor;
+      for (double &c : kernel) {
+        c /= norm_factor;
       }
     }
 
@@ -206,7 +203,7 @@ protected:
     // the inner loop axis has to be the dimension the smoothing is applied to and
     // the loop has to start with image.index (smooth_axis) == 0
     void operator()(ImageType &image) {
-      if (!kernel.size())
+      if (kernel.size() == 0)
         return;
 
       const ssize_t pos = image.index(axis);
@@ -230,7 +227,7 @@ protected:
       const ssize_t to = (pos + radius) >= image.size(axis) ? image.size(axis) - 1 : pos + radius;
 
       ssize_t c = (pos < radius) ? radius - pos : 0;
-      ssize_t kernel_size = to - from + 1;
+      const ssize_t kernel_size = to - from + 1;
 
       value_type result = kernel.segment(c, kernel_size).dot(buffer.segment(from, kernel_size));
 
@@ -238,7 +235,7 @@ protected:
         result = 0.0;
         value_type av_weights = 0.0;
         for (ssize_t k = from; k <= to; ++k, ++c) {
-          value_type neighbour_value = buffer(k);
+          const value_type neighbour_value = buffer(k);
           if (std::isfinite(neighbour_value)) {
             av_weights += kernel[c];
             result += neighbour_value * kernel[c];

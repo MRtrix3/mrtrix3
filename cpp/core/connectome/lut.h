@@ -51,10 +51,10 @@ public:
   void set_colour(const RGB &rgb) { colour = rgb; }
   void set_alpha(const uint8_t a) { alpha = a; }
 
-  std::string get_name() const { return name; }
-  std::string get_short_name() const { return !short_name.empty() ? short_name : name; }
-  const RGB &get_colour() const { return colour; }
-  uint8_t get_alpha() const { return alpha; }
+  [[nodiscard]] std::string get_name() const { return name; }
+  [[nodiscard]] std::string get_short_name() const { return !short_name.empty() ? short_name : name; }
+  [[nodiscard]] const RGB &get_colour() const { return colour; }
+  [[nodiscard]] uint8_t get_alpha() const { return alpha; }
 
 private:
   std::string name, short_name;
@@ -70,7 +70,7 @@ public:
   LUT() : exclusive(true) {}
   LUT(const std::filesystem::path &);
   void load(const std::filesystem::path &);
-  bool is_exclusive() const { return exclusive; }
+  [[nodiscard]] bool is_exclusive() const { return exclusive; }
 
 private:
   bool exclusive;

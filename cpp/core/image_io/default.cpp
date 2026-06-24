@@ -17,6 +17,7 @@
 #include <cerrno>
 #include <cstddef>
 #include <limits>
+#include <memory>
 
 #include "app.h"
 #include "exception.h"
@@ -64,8 +65,8 @@ void Default::unload(const Header &header) {
       }
     }
   } else {
-    for (size_t n = 0; n < addresses.size(); ++n)
-      addresses[n].release();
+    for (auto &address : addresses)
+      address.release();
     mmaps.clear();
   }
 }
@@ -74,7 +75,7 @@ void Default::map_files(const Header &header) {
   mmaps.resize(files.size());
   addresses.resize(mmaps.size());
   for (size_t n = 0; n < files.size(); n++) {
-    mmaps[n].reset(new File::MMap(files[n], writable, !is_new, bytes_per_segment));
+    mmaps[n] = std::make_shared<File::MMap>(files[n], writable, !is_new, bytes_per_segment);
     addresses[n].reset(mmaps[n]->address());
   }
 }

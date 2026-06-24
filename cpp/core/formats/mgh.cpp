@@ -39,7 +39,7 @@ std::unique_ptr<ImageIO::Base> MGH::read(Header &H) const {
   in.close();
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(H.path(), File::MGH::data_offset));
+  io_handler->files.emplace_back(H.path(), File::MGH::data_offset);
 
   return io_handler;
 }
@@ -58,7 +58,7 @@ std::unique_ptr<ImageIO::Base> MGH::create(Header &H) const {
   File::MGH::write_other(H, out);
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(hpath, File::MGH::data_offset));
+  io_handler->files.emplace_back(hpath, File::MGH::data_offset);
 
   return io_handler;
 }

@@ -42,21 +42,17 @@ public:
 
   class Shader : public Displayable::Shader {
   public:
-    Shader()
-        : do_crop_to_slice(false),
-          bidirectional(false),
-          color_type(FixelColourType::Direction),
-          scale_type(FixelScaleType::Value) {}
-    std::string vertex_shader_source(const Displayable &) override;
-    std::string geometry_shader_source(const Displayable &) override;
-    std::string fragment_shader_source(const Displayable &) override;
-    virtual bool need_update(const Displayable &) const override;
+    Shader() = default;
+    [[nodiscard]] std::string vertex_shader_source(const Displayable &) override;
+    [[nodiscard]] std::string geometry_shader_source(const Displayable &) override;
+    [[nodiscard]] std::string fragment_shader_source(const Displayable &) override;
+    [[nodiscard]] virtual bool need_update(const Displayable &) const override;
     virtual void update(const Displayable &) override;
 
   protected:
-    bool do_crop_to_slice, bidirectional;
-    FixelColourType color_type;
-    FixelScaleType scale_type;
+    bool do_crop_to_slice{false}, bidirectional{false};
+    FixelColourType color_type{FixelColourType::Direction};
+    FixelScaleType scale_type{FixelScaleType::Value};
   } fixel_shader;
 
   void render(const Projection &projection);
@@ -78,13 +74,13 @@ public:
 
   void set_line_length_multiplier(float value) { user_line_length_multiplier = value; }
 
-  float get_line_length_multiplier() const { return user_line_length_multiplier; }
+  [[nodiscard]] float get_line_length_multiplier() const { return user_line_length_multiplier; }
 
   void set_line_thickness(float value) { line_thickness = value; }
 
-  float get_line_thickenss() const { return line_thickness; }
+  [[nodiscard]] float get_line_thickenss() const { return line_thickness; }
 
-  size_t get_scale_type_index() const { return scale_type_index; }
+  [[nodiscard]] size_t get_scale_type_index() const { return scale_type_index; }
 
   void set_scale_type_index(size_t index) {
     if (index != scale_type_index) {
@@ -94,7 +90,7 @@ public:
     }
   }
 
-  size_t get_threshold_type_index() const { return threshold_type_index; }
+  [[nodiscard]] size_t get_threshold_type_index() const { return threshold_type_index; }
 
   void set_threshold_type_index(size_t index) {
     if (index != threshold_type_index) {
@@ -108,7 +104,7 @@ public:
     }
   }
 
-  size_t get_colour_type_index() const { return colour_type_index; }
+  [[nodiscard]] size_t get_colour_type_index() const { return colour_type_index; }
 
   void set_colour_type_index(size_t index) {
     auto &fixel_val = current_fixel_colour_state();
@@ -131,15 +127,15 @@ public:
     set_windowing(new_fixel_val.current_min, new_fixel_val.current_max);
   }
 
-  FixelColourType get_colour_type() const { return colour_type; }
+  [[nodiscard]] FixelColourType get_colour_type() const { return colour_type; }
 
-  float get_threshold_lower() const {
-    FixelValue &fixel_thresh = current_fixel_threshold_state();
+  [[nodiscard]] float get_threshold_lower() const {
+    const FixelValue &fixel_thresh = current_fixel_threshold_state();
     FixelValue &fixel_val = current_fixel_colour_state();
     return fixel_thresh.get_relative_threshold_lower(fixel_val);
   }
 
-  float get_unscaled_threshold_lower() const { return current_fixel_threshold_state().lessthan; }
+  [[nodiscard]] float get_unscaled_threshold_lower() const { return current_fixel_threshold_state().lessthan; }
 
   void set_threshold_lower(float value) {
     FixelValue &fixel_threshold = current_fixel_threshold_state();
@@ -148,13 +144,13 @@ public:
       lessthan = get_threshold_lower();
   }
 
-  float get_threshold_upper() const {
-    FixelValue &fixel_thresh = current_fixel_threshold_state();
+  [[nodiscard]] float get_threshold_upper() const {
+    const FixelValue &fixel_thresh = current_fixel_threshold_state();
     FixelValue &fixel_val = current_fixel_colour_state();
     return fixel_thresh.get_relative_threshold_upper(fixel_val);
   }
 
-  float get_unscaled_threshold_upper() const { return current_fixel_threshold_state().greaterthan; }
+  [[nodiscard]] float get_unscaled_threshold_upper() const { return current_fixel_threshold_state().greaterthan; }
 
   void set_threshold_upper(float value) {
     FixelValue &fixel_threshold = current_fixel_threshold_state();
@@ -163,15 +159,15 @@ public:
       greaterthan = get_threshold_upper();
   }
 
-  float get_unscaled_threshold_rate() const {
-    FixelValue &fixel_threshold = current_fixel_threshold_state();
+  [[nodiscard]] float get_unscaled_threshold_rate() const {
+    const FixelValue &fixel_threshold = current_fixel_threshold_state();
     return 1e-3 * (fixel_threshold.value_max - fixel_threshold.value_min);
   }
 
   void load_colourby_combobox_options(ComboBoxWithErrorMsg &combo_box) const {
     combo_box.clear();
-    for (size_t i = 0, N = colour_types.size(); i < N; ++i)
-      combo_box.addItem(qstr(colour_types[i]));
+    for (const auto &colour_type : colour_types)
+      combo_box.addItem(qstr(colour_type));
     combo_box.setCurrentIndex(colour_type_index);
   }
 
@@ -189,7 +185,7 @@ public:
     combo_box.setCurrentIndex(threshold_type_index);
   }
 
-  bool has_values() const { return !fixel_values.empty(); }
+  [[nodiscard]] bool has_values() const { return !fixel_values.empty(); }
 
 protected:
   struct IntPointHasher {
@@ -205,15 +201,21 @@ protected:
   virtual void request_update_interp_image_buffer(const Projection &) = 0;
   void update_interp_image_buffer(const Projection &, const MR::Header &, const MR::Transform &);
 
-  inline FixelValue &current_fixel_value_state() const { return get_fixel_value(value_types[scale_type_index]); }
+  [[nodiscard]] inline FixelValue &current_fixel_value_state() const {
+    return get_fixel_value(value_types[scale_type_index]);
+  }
 
-  inline FixelValue &current_fixel_threshold_state() const {
+  [[nodiscard]] inline FixelValue &current_fixel_threshold_state() const {
     return get_fixel_value(threshold_types[threshold_type_index]);
   }
 
-  inline FixelValue &current_fixel_colour_state() const { return get_fixel_value(colour_types[colour_type_index]); }
+  [[nodiscard]] inline FixelValue &current_fixel_colour_state() const {
+    return get_fixel_value(colour_types[colour_type_index]);
+  }
 
-  virtual FixelValue &get_fixel_value(std::string_view key) const { return fixel_values[std::string(key)]; }
+  [[nodiscard]] virtual FixelValue &get_fixel_value(std::string_view key) const {
+    return fixel_values[std::string(key)];
+  }
 
   MR::Header header;
   std::vector<std::string> colour_types;
@@ -240,11 +242,11 @@ protected:
   // To support off-axis rendering, we maintain dict mapping voxels to buffer_pos indices
   std::unordered_map<std::array<int, 3>, std::vector<GLint>, IntPointHasher> voxel_to_indices_map;
 
-  FixelColourType colour_type;
-  FixelScaleType scale_type;
-  size_t colour_type_index;
-  size_t scale_type_index;
-  size_t threshold_type_index;
+  FixelColourType colour_type{FixelColourType::Direction};
+  FixelScaleType scale_type{FixelScaleType::Unity};
+  size_t colour_type_index{0};
+  size_t scale_type_index{0};
+  size_t threshold_type_index{0};
 
   bool colour_buffer_dirty;
   bool value_buffer_dirty;
@@ -273,9 +275,9 @@ private:
   // Index buffer for rendering slabs
   std::vector<uint32_t> element_indices;
 
-  float voxel_size_length_multipler;
-  float user_line_length_multiplier;
-  float line_thickness;
+  float voxel_size_length_multipler{1.F};
+  float user_line_length_multiplier{1.F};
+  float line_thickness{0.0015F};
 };
 
 // Wrapper to generically store fixel data

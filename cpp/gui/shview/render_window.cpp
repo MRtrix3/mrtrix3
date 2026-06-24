@@ -27,48 +27,48 @@
 
 namespace MR::GUI::DWI {
 
-Window::Window(bool is_response_coefs) : lighting_dialog(nullptr), current(0), is_response(is_response_coefs) {
+Window::Window(bool is_response_coefs) : is_response(is_response_coefs) {
   GUI::Dialog::init();
 
   setWindowIcon(QPixmap(":/mrtrix.png"));
   setMinimumSize(300, 300);
 
-  QAction *open_action = new QAction("&Open", this);
+  auto *open_action = new QAction("&Open", this);
   open_action->setShortcut(tr("Ctrl+O"));
   open_action->setStatusTip(tr("Open surface plot file"));
   connect(open_action, SIGNAL(triggered()), this, SLOT(open_slot()));
 
-  QAction *close_action = new QAction("&Close", this);
+  auto *close_action = new QAction("&Close", this);
   close_action->setShortcut(tr("Ctrl+W"));
   close_action->setStatusTip(tr("Close current surface plot file"));
   connect(close_action, SIGNAL(triggered()), this, SLOT(close_slot()));
 
-  QAction *previous_action = new QAction("&Previous", this);
+  auto *previous_action = new QAction("&Previous", this);
   previous_action->setShortcut(tr("Left"));
   previous_action->setStatusTip(tr("Use values from previous row of SH coefficients matrix"));
   connect(previous_action, SIGNAL(triggered()), this, SLOT(previous_slot()));
 
-  QAction *next_action = new QAction("&Next", this);
+  auto *next_action = new QAction("&Next", this);
   next_action->setShortcut(tr("Right"));
   next_action->setStatusTip(tr("Use values from next row of SH coefficients matrix"));
   connect(next_action, SIGNAL(triggered()), this, SLOT(next_slot()));
 
-  QAction *previous_10_action = new QAction("Previous (fast)", this);
+  auto *previous_10_action = new QAction("Previous (fast)", this);
   previous_10_action->setShortcut(tr("Shift+Left"));
   previous_10_action->setStatusTip(tr("Decrease current row of SH matrix by 10"));
   connect(previous_10_action, SIGNAL(triggered()), this, SLOT(previous_10_slot()));
 
-  QAction *next_10_action = new QAction("Next (fast)", this);
+  auto *next_10_action = new QAction("Next (fast)", this);
   next_10_action->setShortcut(tr("Shift+Right"));
   next_10_action->setStatusTip(tr("Increase current row of SH matrix by 10"));
   connect(next_10_action, SIGNAL(triggered()), this, SLOT(next_10_slot()));
 
-  QAction *screenshot_action = new QAction("Grab &Screenshot", this);
+  auto *screenshot_action = new QAction("Grab &Screenshot", this);
   screenshot_action->setShortcut(tr("S"));
   screenshot_action->setStatusTip(tr("Take a screenshot of the current window contents"));
   connect(screenshot_action, SIGNAL(triggered()), this, SLOT(screenshot_slot()));
 
-  QAction *quit_action = new QAction("&Quit", this);
+  auto *quit_action = new QAction("&Quit", this);
   quit_action->setShortcut(tr("Ctrl+Q"));
   quit_action->setStatusTip(tr("Quit the application"));
   connect(quit_action, SIGNAL(triggered()), qApp, SLOT(quit()));
@@ -88,21 +88,21 @@ Window::Window(bool is_response_coefs) : lighting_dialog(nullptr), current(0), i
   file_menu->addSeparator();
   file_menu->addAction(quit_action);
 
-  QAction *use_lighting_action = new QAction("&Lighting", this);
+  auto *use_lighting_action = new QAction("&Lighting", this);
   use_lighting_action->setCheckable(true);
   use_lighting_action->setChecked(true);
   use_lighting_action->setShortcut(tr("L"));
   use_lighting_action->setStatusTip(tr("Render using lighting"));
   connect(use_lighting_action, SIGNAL(triggered(bool)), this, SLOT(use_lighting_slot(bool)));
 
-  QAction *show_axes_action = new QAction("Show &axes", this);
+  auto *show_axes_action = new QAction("Show &axes", this);
   show_axes_action->setCheckable(true);
   show_axes_action->setChecked(true);
   show_axes_action->setShortcut(tr("A"));
   show_axes_action->setStatusTip(tr("Show coordinate axes"));
   connect(show_axes_action, SIGNAL(triggered(bool)), this, SLOT(show_axes_slot(bool)));
 
-  QAction *hide_negative_lobes_action = new QAction("&Hide negative lobes", this);
+  auto *hide_negative_lobes_action = new QAction("&Hide negative lobes", this);
   hide_negative_lobes_action->setCheckable(true);
   hide_negative_lobes_action->setChecked(true);
   hide_negative_lobes_action->setShortcut(tr("H"));
@@ -124,24 +124,24 @@ Window::Window(bool is_response_coefs) : lighting_dialog(nullptr), current(0), i
       tr("Assume each row of values consists only of\nthe m=0 (axially symmetric) even SH coefficients"));
   connect(response_action, SIGNAL(triggered(bool)), this, SLOT(response_slot(bool)));
 
-  QAction *reset_scale_action = new QAction("Reset &scaling", this);
+  auto *reset_scale_action = new QAction("Reset &scaling", this);
   reset_scale_action->setCheckable(false);
   reset_scale_action->setShortcut(tr("Esc"));
   reset_scale_action->setStatusTip(tr("reset intensity scaling based on ODF currently displayed"));
   connect(reset_scale_action, SIGNAL(triggered()), this, SLOT(reset_scale_slot()));
 
-  QAction *reset_view_action = new QAction("&Reset View", this);
+  auto *reset_view_action = new QAction("&Reset View", this);
   reset_view_action->setCheckable(false);
   reset_view_action->setShortcut(tr("R"));
   reset_view_action->setStatusTip(tr("reset viewing direction and focus position"));
   connect(reset_view_action, SIGNAL(triggered()), this, SLOT(reset_view_slot()));
 
-  QAction *manual_colour_action = new QAction("&Manual colour", this);
+  auto *manual_colour_action = new QAction("&Manual colour", this);
   manual_colour_action->setShortcut(tr("M"));
   manual_colour_action->setStatusTip(tr("Modify fixed colour"));
   connect(manual_colour_action, SIGNAL(triggered(bool)), this, SLOT(manual_colour_slot()));
 
-  QAction *advanced_lighting_action = new QAction("A&dvanced Lighting", this);
+  auto *advanced_lighting_action = new QAction("A&dvanced Lighting", this);
   advanced_lighting_action->setShortcut(tr("D"));
   advanced_lighting_action->setStatusTip(tr("Modify advanced lighting settings"));
   connect(advanced_lighting_action, SIGNAL(triggered()), this, SLOT(advanced_lighting_slot()));
@@ -161,12 +161,12 @@ Window::Window(bool is_response_coefs) : lighting_dialog(nullptr), current(0), i
   settings_menu->addAction(manual_colour_action);
   settings_menu->addAction(advanced_lighting_action);
 
-  QAction *lmax_inc_action = new QAction("&Increase", this);
+  auto *lmax_inc_action = new QAction("&Increase", this);
   lmax_inc_action->setShortcut(tr("PgUp"));
   lmax_inc_action->setStatusTip(tr("Increase harmonic order"));
   connect(lmax_inc_action, SIGNAL(triggered()), this, SLOT(lmax_inc_slot()));
 
-  QAction *lmax_dec_action = new QAction("&Decrease", this);
+  auto *lmax_dec_action = new QAction("&Decrease", this);
   lmax_dec_action->setShortcut(tr("PgDown"));
   lmax_dec_action->setStatusTip(tr("Decrease harmonic order"));
   connect(lmax_dec_action, SIGNAL(triggered()), this, SLOT(lmax_dec_slot()));
@@ -177,9 +177,9 @@ Window::Window(bool is_response_coefs) : lighting_dialog(nullptr), current(0), i
 
   lmax_group = new QActionGroup(this);
   for (int n = 0; n <= 8; n++) {
-    int num = 2 * n;
-    QString label = QString::number(num);
-    QAction *lmax_action = new QAction(label, this);
+    const int num = 2 * n;
+    const QString label = QString::number(num);
+    auto *lmax_action = new QAction(label, this);
     lmax_action->setCheckable(true);
     lmax_action->setData(num);
     lmax_group->addAction(lmax_action);
@@ -190,8 +190,8 @@ Window::Window(bool is_response_coefs) : lighting_dialog(nullptr), current(0), i
 
   lod_group = new QActionGroup(this);
   for (int n = 1; n < 8; n++) {
-    QString label = QString::number(n);
-    QAction *lod_action = new QAction(label, this);
+    const QString label = QString::number(n);
+    auto *lod_action = new QAction(label, this);
     lod_action->setShortcut(label);
     lod_action->setCheckable(true);
     lod_action->setData(n);
@@ -203,9 +203,9 @@ Window::Window(bool is_response_coefs) : lighting_dialog(nullptr), current(0), i
 
   screenshot_OS_group = new QActionGroup(this);
   for (int n = 0; n < 4; n++) {
-    int num = n + 1;
-    QString label = QString::number(num);
-    QAction *screenshot_OS_action = new QAction(label, this);
+    const int num = n + 1;
+    const QString label = QString::number(num);
+    auto *screenshot_OS_action = new QAction(label, this);
     screenshot_OS_action->setCheckable(true);
     screenshot_OS_action->setData(num);
     screenshot_OS_group->addAction(screenshot_OS_action);
@@ -228,13 +228,13 @@ Window::Window(bool is_response_coefs) : lighting_dialog(nullptr), current(0), i
 
 Window::~Window() {
   render_frame->makeCurrent();
-  QList<QAction *> lmax = lmax_group->actions();
+  QList<QAction *> const lmax = lmax_group->actions();
   for (QAction *action : lmax)
     delete action;
-  QList<QAction *> lods = lod_group->actions();
+  QList<QAction *> const lods = lod_group->actions();
   for (QAction *action : lods)
     delete action;
-  QList<QAction *> screens = screenshot_OS_group->actions();
+  QList<QAction *> const screens = screenshot_OS_group->actions();
   for (QAction *action : screens)
     delete action;
 }
@@ -273,7 +273,7 @@ void Window::lod_slot() { render_frame->set_LOD(lod_group->checkedAction()->data
 
 void Window::lmax_inc_slot() {
   QList<QAction *> actions = lmax_group->actions();
-  int index = actions.indexOf(lmax_group->checkedAction());
+  const int index = actions.indexOf(lmax_group->checkedAction());
   if (index < 8) {
     actions[index + 1]->setChecked(true);
     lmax_slot();
@@ -282,7 +282,7 @@ void Window::lmax_inc_slot() {
 
 void Window::lmax_dec_slot() {
   QList<QAction *> actions = lmax_group->actions();
-  int index = actions.indexOf(lmax_group->checkedAction());
+  const int index = actions.indexOf(lmax_group->checkedAction());
   if (index > 0) {
     actions[index - 1]->setChecked(true);
     lmax_slot();
@@ -317,7 +317,7 @@ void Window::set_values(int row) {
   Eigen::Matrix<float, Eigen::Dynamic, 1> val;
   std::string title;
 
-  if (values.rows()) {
+  if (values.rows() != 0) {
     current = row;
     if (current < 0)
       current = 0;
@@ -362,9 +362,9 @@ void Window::manual_colour_slot() {
 }
 
 void Window::advanced_lighting_slot() {
-  if (!lighting_dialog) {
+  if (lighting_dialog == nullptr) {
     auto settings = new LightingSettings(this, *render_frame->lighting);
-    QVBoxLayout *main_layout = new QVBoxLayout;
+    auto *main_layout = new QVBoxLayout;
     main_layout->addWidget(settings);
 
     lighting_dialog = new QDialog();
@@ -372,7 +372,7 @@ void Window::advanced_lighting_slot() {
     lighting_dialog->setModal(false);
     lighting_dialog->setLayout(main_layout);
 
-    QPushButton *close_button = new QPushButton(style()->standardIcon(QStyle::SP_DialogCloseButton), tr("&Close"));
+    auto *close_button = new QPushButton(style()->standardIcon(QStyle::SP_DialogCloseButton), tr("&Close"));
     connect(close_button, SIGNAL(clicked()), lighting_dialog, SLOT(close()));
     main_layout->addWidget(close_button);
   }

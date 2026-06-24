@@ -35,13 +35,9 @@ public:
            const std::vector<MultiContrastSetting> *contrast_settings = nullptr)
       : global_cost(global_energy),
         global_voxel_count(global_voxel_count),
-        thread_cost(0.0),
-        thread_voxel_count(0),
+
         mutex(new std::mutex),
-        normaliser(0.0),
-        robustness_parameter(1.e-12), // MP: used to be -1.e12
-        intensity_difference_threshold(0.001),
-        denominator_threshold(1e-9),
+
         im1_gradient(im1_image, true),
         im2_gradient(im2_image, true),
         im1_mask(im1_mask),
@@ -56,7 +52,7 @@ public:
     speed.resize(nvols);
     speed_squared.resize(nvols);
 
-    if (contrast_settings and contrast_settings->size() > 1) {
+    if ((contrast_settings != nullptr) && (contrast_settings->size() > 1)) {
       for (const auto &mc : *contrast_settings)
         weight.segment(mc.start, mc.nvols).fill(mc.weight);
     } else
@@ -65,7 +61,7 @@ public:
   }
 
   ~Demons4D() {
-    std::lock_guard<std::mutex> lock(*mutex);
+    const std::lock_guard<std::mutex> lock(*mutex);
     global_cost += thread_cost;
     global_voxel_count += thread_voxel_count;
   }
@@ -130,7 +126,7 @@ public:
       im2_gradient.index(3) = vol;
       grad = (im2_gradient.value() + im1_gradient.value()).array() / 2.0;
 
-      default_type denominator = speed_squared[vol] / normaliser + grad.squaredNorm();
+      const default_type denominator = speed_squared[vol] / normaliser + grad.squaredNorm();
       if (denominator < denominator_threshold)
         continue;
       total_update += (weight[vol] * speed[vol] / denominator) * grad;
@@ -144,13 +140,13 @@ public:
 protected:
   default_type &global_cost;
   size_t &global_voxel_count;
-  default_type thread_cost;
-  size_t thread_voxel_count;
+  default_type thread_cost{0.0};
+  size_t thread_voxel_count{0};
   std::shared_ptr<std::mutex> mutex;
-  default_type normaliser;
-  const default_type robustness_parameter;
-  const default_type intensity_difference_threshold;
-  const default_type denominator_threshold;
+  default_type normaliser{0.0};
+  const default_type robustness_parameter{1.e-12};
+  const default_type intensity_difference_threshold{0.001};
+  const default_type denominator_threshold{1e-9};
 
   Adapter::Gradient3D<Im1ImageType> im1_gradient;
   Adapter::Gradient3D<Im2ImageType> im2_gradient;

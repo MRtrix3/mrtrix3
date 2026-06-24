@@ -74,7 +74,8 @@ void match_linear(Image<float> &input,
                   Image<bool> &mask_input,
                   Image<bool> &mask_target,
                   const bool estimate_intercept) {
-  std::vector<float> input_data, target_data;
+  std::vector<float> input_data;
+  std::vector<float> target_data;
   const std::filesystem::path output_path{argument[3]};
   {
     ProgressBar progress("Loading & sorting image data", 4);
@@ -116,7 +117,7 @@ void match_linear(Image<float> &input,
     input_matrix(input_index, 0) = input_data[input_index];
     const default_type output_position = (target_data.size() - 1) * (static_cast<default_type>(input_index) /
                                                                      static_cast<default_type>(input_data.size() - 1));
-    const size_t target_index_lower = static_cast<size_t>(std::floor(output_position));
+    const auto target_index_lower = static_cast<size_t>(std::floor(output_position));
     const default_type mu = output_position - static_cast<default_type>(target_index_lower);
     output_vector[input_index] =
         ((1.0 - mu) * target_data[target_index_lower]) + (mu * target_data[target_index_lower + 1]);
@@ -124,7 +125,7 @@ void match_linear(Image<float> &input,
   input_matrix(input_data.size() - 1, 0) = input_data.back();
   output_vector[input_data.size() - 1] = target_data.back();
   if (estimate_intercept)
-    input_matrix.col(1).fill(1.0f);
+    input_matrix.col(1).fill(1.0F);
 
   auto parameters =
       (input_matrix.transpose() * input_matrix).llt().solve(input_matrix.transpose() * output_vector).eval();
@@ -164,16 +165,16 @@ void match_nonlinear(
   Algo::Histogram::calibrate(calib_input, input, mask_input);
   INFO("Input histogram ranges from " + str(calib_input.get_min()) + " to " + str(calib_input.get_max()) + "; using " +
        str(calib_input.get_num_bins()) + " bins");
-  Algo::Histogram::Data hist_input = Algo::Histogram::generate(calib_input, input, mask_input);
+  const Algo::Histogram::Data hist_input = Algo::Histogram::generate(calib_input, input, mask_input);
 
   Algo::Histogram::Calibrator calib_target(nbins, true);
   Algo::Histogram::calibrate(calib_target, target, mask_target);
   INFO("Target histogram ranges from " + str(calib_target.get_min()) + " to " + str(calib_target.get_max()) +
        "; using " + str(calib_target.get_num_bins()) + " bins");
-  Algo::Histogram::Data hist_target = Algo::Histogram::generate(calib_target, target, mask_target);
+  const Algo::Histogram::Data hist_target = Algo::Histogram::generate(calib_target, target, mask_target);
 
   // Non-linear intensity mapping determined within this class
-  Algo::Histogram::Matcher matcher(hist_input, hist_target);
+  const Algo::Histogram::Matcher matcher(hist_input, hist_target);
 
   Header H(input);
   H.datatype() = DataType::Float32;
@@ -192,7 +193,8 @@ void run() {
   auto input = Image<float>::open(argument[1]);
   auto target = Image<float>::open(argument[2]);
 
-  Image<bool> mask_input, mask_target;
+  Image<bool> mask_input;
+  Image<bool> mask_target;
   auto opt = get_options("mask_input");
   if (!opt.empty()) {
     const std::filesystem::path mask_input_path{opt[0][0]};

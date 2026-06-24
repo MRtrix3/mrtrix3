@@ -28,13 +28,14 @@ std::vector<default_type> parse_floats(std::string_view spec) {
   std::vector<default_type> V;
   if (spec.empty())
     throw Exception("floating-point sequence specifier is empty");
-  std::string::size_type start = 0, end;
+  std::string::size_type start = 0;
+  std::string::size_type end;
   std::array<default_type, 3> range_spec{NaN, NaN, NaN};
   int i = 0;
   try {
     do {
       end = spec.find_first_of(",:", start);
-      std::string sub(spec.substr(start, end - start));
+      const std::string sub(spec.substr(start, end - start));
       range_spec[i] = (sub.empty() || sub == "nan") ? NaN : to<default_type>(sub);
       const char last_char = end < spec.size() ? spec[end] : '\0';
       if (last_char == ':') {
@@ -42,17 +43,17 @@ std::vector<default_type> parse_floats(std::string_view spec) {
         if (i > 2)
           throw Exception("invalid number range in number sequence \"" + spec + "\"");
       } else {
-        if (i) {
+        if (i != 0) {
           if (i != 2)
             throw Exception("For floating-point ranges, must specify three numbers (start:step:end)");
           const default_type first = range_spec[0];
           const default_type inc = range_spec[1];
           const default_type last = range_spec[2];
-          if (!inc || (inc * (last - first) < 0.0) || !std::isfinite(first) || !std::isfinite(inc) ||
+          if ((inc == 0.0) || (inc * (last - first) < 0.0) || !std::isfinite(first) || !std::isfinite(inc) ||
               !std::isfinite(last))
             throw Exception("Floating-point range does not form a finite set");
           default_type value = first;
-          for (size_t mult = 0; (inc > 0.0f ? value < last - 0.5f * inc : value > last + 0.5f * inc); ++mult)
+          for (size_t mult = 0; (inc > 0.0F ? value < last - 0.5F * inc : value > last + 0.5F * inc); ++mult)
             V.push_back((value = first + (mult * inc)));
         } else {
           V.push_back(range_spec[0]);
@@ -72,20 +73,21 @@ split(std::string_view string, std::string_view delimiters, bool ignore_empty_fi
   std::vector<std::string> V;
   if (string.empty())
     return V;
-  std::string::size_type start = 0, end;
+  std::string::size_type start = 0;
+  std::string::size_type end;
   try {
     if (ignore_empty_fields)
       start = string.find_first_not_of(delimiters);
     do {
       end = string.find_first_of(delimiters, start);
-      V.emplace_back(std::string(string.substr(start, end - start)));
+      V.emplace_back(string.substr(start, end - start));
       if (end >= string.size())
         break;
       start = ignore_empty_fields ? string.find_first_not_of(delimiters, end + 1) : end + 1;
       if (start > string.size())
         break;
       if (num.has_value() && V.size() + 1 >= *num) {
-        V.emplace_back(std::string(string.substr(start)));
+        V.emplace_back(string.substr(start));
         break;
       }
     } while (true);
@@ -128,10 +130,7 @@ inline bool _match(std::string_view first, std::string_view second) {
 } // namespace
 
 bool match(std::string_view pattern, std::string_view text, bool ignore_case) {
-  if (ignore_case)
-    return _match(lowercase(pattern), lowercase(text));
-  else
-    return _match(pattern, text);
+  return ignore_case ? _match(lowercase(pattern), lowercase(text)) : _match(pattern, text);
 }
 
 std::istream &getline(std::istream &stream, std::string &string) {
@@ -147,10 +146,9 @@ std::string &add_line(std::string &original, std::string_view new_line) {
 }
 
 std::string shorten(std::string_view text, size_t longest, size_t prefix) {
-  if (text.size() > longest)
-    return (std::string(text.substr(0, prefix)) + "..." + text.substr(text.size() - longest + prefix + 3));
-  else
+  if (text.size() <= longest)
     return std::string(text);
+  return (std::string(text.substr(0, prefix)) + "..." + text.substr(text.size() - longest + prefix + 3));
 }
 
 std::string lowercase(std::string_view string) {
@@ -213,7 +211,7 @@ size_t dash_bytes(std::string_view arg) {
     return 1;
   if (arg.size() < 3)
     return 0;
-  std::basic_string_view<unsigned char> uarg(reinterpret_cast<const unsigned char *>(arg.data()), arg.size());
+  const std::basic_string_view<unsigned char> uarg(reinterpret_cast<const unsigned char *>(arg.data()), arg.size());
   if (uarg[0] == 0xE2 && uarg[1] == 0x80 && (uarg[2] >= 0x90 && uarg[2] <= 0x95))
     return 3;
   if (uarg[0] == 0xEF) {
@@ -247,17 +245,17 @@ std::string join(const std::vector<std::string> &V, std::string_view delimiter) 
   if (V.empty())
     return ret;
   ret = V[0];
-  for (std::vector<std::string>::const_iterator i = V.begin() + 1; i != V.end(); ++i)
+  for (auto i = V.cbegin() + 1; i != V.cend(); ++i)
     ret += delimiter + *i;
   return ret;
 }
 
 std::string join(const char *const *null_terminated_array, std::string_view delimiter) { // check_syntax off
   std::string ret;
-  if (!null_terminated_array)
+  if (null_terminated_array == nullptr)
     return ret;
   ret = null_terminated_array[0];
-  for (const char *const *p = null_terminated_array + 1; *p; ++p) // check_syntax off
+  for (const char *const *p = null_terminated_array + 1; *p != nullptr; ++p) // check_syntax off
     ret += delimiter + *p;
   return ret;
 }

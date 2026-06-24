@@ -27,10 +27,7 @@ Tck2nodes_end_voxels::select_node(const Tractography::Streamline<> &tck, Image<n
   const Eigen::Vector3d v_float(transform->scanner2voxel * p);
   for (size_t axis = 0; axis != 3; ++axis)
     v.index(axis) = std::round(v_float[axis]);
-  if (is_out_of_bounds(v))
-    return 0;
-  else
-    return v.value();
+  return is_out_of_bounds(v) ? 0 : v.value();
 }
 
 void Tck2nodes_radial::initialise_search() {
@@ -42,16 +39,15 @@ void Tck2nodes_radial::initialise_search() {
     for (offset[1] = -max_axis_offset; offset[1] <= +max_axis_offset; ++offset[1]) {
       for (offset[0] = -max_axis_offset; offset[0] <= +max_axis_offset; ++offset[0]) {
         const default_type dist =
-            std::sqrt(Math::pow2(offset[2] * nodes.spacing(2)) + Math::pow2(offset[1] * nodes.spacing(1)) +
-                      Math::pow2(offset[0] * nodes.spacing(0)));
+            std::hypot(offset[2] * nodes.spacing(2), offset[1] * nodes.spacing(1), offset[0] * nodes.spacing(0));
         if (dist < (max_dist + max_add_dist))
           radial_search_map.insert(std::make_pair(dist, offset));
       }
     }
   }
   radial_search.reserve(radial_search_map.size());
-  for (auto i = radial_search_map.begin(); i != radial_search_map.end(); ++i)
-    radial_search.push_back(i->second);
+  for (const auto &i : radial_search_map)
+    radial_search.push_back(i.second);
 }
 
 node_t Tck2nodes_radial::select_node(const Tractography::Streamline<> &tck, Image<node_t> &v, const bool end) const {
@@ -62,10 +58,9 @@ node_t Tck2nodes_radial::select_node(const Tractography::Streamline<> &tck, Imag
   const Eigen::Vector3d v_float = transform->scanner2voxel * p;
   const voxel_type centre(v_float.array().round().cast<voxel_type::Scalar>());
 
-  for (std::vector<voxel_type>::const_iterator offset = radial_search.begin(); offset != radial_search.end();
-       ++offset) {
+  for (const auto &offset : radial_search) {
 
-    const voxel_type this_voxel(centre + *offset);
+    const voxel_type this_voxel(centre + offset);
     const Eigen::Vector3d p_voxel(transform->voxel2scanner * this_voxel.matrix().cast<default_type>());
     const default_type dist((p - p_voxel).norm());
 
@@ -76,7 +71,7 @@ node_t Tck2nodes_radial::select_node(const Tractography::Streamline<> &tck, Imag
       assign_pos_of(this_voxel).to(v);
       if (!is_out_of_bounds(v)) {
         const node_t this_node = v.value();
-        if (this_node) {
+        if (this_node != 0U) {
           node = this_node;
           min_dist = dist;
         }
@@ -99,7 +94,7 @@ node_t Tck2nodes_revsearch::select_node(const Tractography::Streamline<> &tck, I
     assign_pos_of(voxel).to(v);
     if (!is_out_of_bounds(v)) {
       const node_t this_node = v.value();
-      if (this_node)
+      if (this_node != 0U)
         return this_node;
     }
     dist += (tck[index] - tck[index + step]).norm();
@@ -153,7 +148,7 @@ Tck2nodes_forwardsearch::select_node(const Tractography::Streamline<> &tck, Imag
     if (is_out_of_bounds(v))
       continue;
     const node_t value = v.value();
-    if (value)
+    if (value != 0U)
       return value;
 
     // Check voxel neighbours
@@ -196,19 +191,19 @@ Tck2nodes_forwardsearch::get_cf(const Eigen::Vector3d &p, const Eigen::Vector3d 
 
 void Tck2nodes_all_voxels::select_nodes(const Streamline<> &tck, Image<node_t> &v, std::vector<node_t> &out) const {
   std::set<node_t> result;
-  for (Streamline<>::const_iterator p = tck.begin(); p != tck.end(); ++p) {
-    const Eigen::Vector3d v_float = transform->scanner2voxel * p->cast<default_type>();
+  for (const auto &p : tck) {
+    const Eigen::Vector3d v_float = transform->scanner2voxel * p.cast<default_type>();
     const voxel_type voxel(v_float.array().round().cast<voxel_type::Scalar>());
     assign_pos_of(voxel).to(v);
     if (!is_out_of_bounds(v)) {
       const node_t this_node = v.value();
-      if (this_node)
+      if (this_node != 0U)
         result.insert(this_node);
     }
   }
   out.clear();
-  for (std::set<node_t>::const_iterator n = result.begin(); n != result.end(); ++n)
-    out.push_back(*n);
+  for (unsigned int n : result)
+    out.push_back(n);
 }
 
 } // namespace MR::DWI::Tractography::Connectome

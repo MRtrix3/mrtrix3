@@ -97,8 +97,8 @@ void run() {
   Connectome::debug_validate_label_image(in);
 
   // Load the lookup tables
-  LUT lut_in{input_lut_path};
-  LUT lut_out{output_lut_path};
+  const LUT lut_in{input_lut_path};
+  const LUT lut_out{output_lut_path};
 
   // Build the mapping from input to output indices
   const auto mapping = get_lut_mapping(lut_in, lut_out);
@@ -131,7 +131,7 @@ void run() {
   bool duplicates = false;
   for (const auto &i : lut_out) {
     if (i.second.get_name() == SPINE_NODE_NAME) {
-      if (!spine_index)
+      if (spine_index == 0U)
         spine_index = i.first;
       else
         duplicates = true;
@@ -144,7 +144,7 @@ void run() {
 
     if (duplicates)
       throw Exception("Cannot add spine node: \"" + SPINE_NODE_NAME + "\" appears multiple times in output LUT");
-    if (!spine_index)
+    if (spine_index == 0U)
       throw Exception("Cannot add spine node: \"" + SPINE_NODE_NAME + "\" not present in output LUT");
 
     auto in_spine = Image<bool>::open(opt[0][0]);
@@ -161,7 +161,7 @@ void run() {
            "interpolation;");
       WARN("recommend using the parcellation image as the basis for this mask so that interpolation is not required");
 
-      Transform transform(out);
+      const Transform transform(out);
       Interp::Nearest<decltype(in_spine)> nearest(in_spine);
       for (auto l = Loop(out)(out); l; ++l) {
         Eigen::Vector3d p(out.index(0), out.index(1), out.index(2));
@@ -171,7 +171,7 @@ void run() {
       }
     }
 
-  } else if (spine_index) {
+  } else if (spine_index != 0U) {
     WARN("Config file includes \"" + SPINE_NODE_NAME +
          "\" node, but user has not provided the segmentation using -spine option");
   }

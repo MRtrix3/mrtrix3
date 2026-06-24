@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/mapping/mapper.h"
 
+#include <memory>
+
 #include "file/matrix.h"
 
 namespace MR::DWI::Tractography::Mapping {
@@ -79,7 +81,7 @@ void TrackMapperTWI::set_factor(const Streamline<> &tck, SetVoxelExtras &out) co
           ++count;
         }
       }
-      out.factor = (count ? (out.factor / static_cast<default_type>(count)) : 0.0);
+      out.factor = ((count != 0U) ? (out.factor / static_cast<default_type>(count)) : 0.0);
       break;
 
     case tck_stat_t::MAX:
@@ -102,12 +104,12 @@ void TrackMapperTWI::set_factor(const Streamline<> &tck, SetVoxelExtras &out) co
     case tck_stat_t::MEAN_NONZERO:
       out.factor = 0.0;
       for (const auto &i : factors) {
-        if (std::isfinite(i) && i) {
+        if (std::isfinite(i) && (i != 0.0)) {
           out.factor += i;
           ++count;
         }
       }
-      out.factor = (count ? (out.factor / static_cast<default_type>(count)) : 0.0);
+      out.factor = ((count != 0U) ? (out.factor / static_cast<default_type>(count)) : 0.0);
       break;
 
     case tck_stat_t::GAUSSIAN:
@@ -169,7 +171,7 @@ void TrackMapperTWI::add_scalar_image(const std::filesystem::path &path) {
     throw Exception("Cannot add more than one associated image to TWI");
   if (contrast != contrast_t::SCALAR_MAP && contrast != contrast_t::SCALAR_MAP_COUNT)
     throw Exception("Cannot add a scalar image to TWI unless the contrast depends on it");
-  image_plugin.reset(new TWIScalarImagePlugin(path, track_statistic));
+  image_plugin = std::make_unique<TWIScalarImagePlugin>(path, track_statistic);
 }
 
 void TrackMapperTWI::set_backtrack() {
@@ -178,7 +180,7 @@ void TrackMapperTWI::set_backtrack() {
   const TWIImagePluginBase *const base = image_plugin.get();
   if (typeid(*base) != typeid(TWIScalarImagePlugin))
     throw Exception("Backtracking is only applicable to scalar image TWI plugins");
-  TWIScalarImagePlugin *const ptr = dynamic_cast<TWIScalarImagePlugin *>(image_plugin.get());
+  auto *const ptr = dynamic_cast<TWIScalarImagePlugin *>(image_plugin.get());
   ptr->set_backtrack();
 }
 
@@ -187,7 +189,7 @@ void TrackMapperTWI::add_fod_image(const std::filesystem::path &path) {
     throw Exception("Cannot add more than one associated image to TWI");
   if (contrast != contrast_t::FOD_AMP)
     throw Exception("Cannot add an FOD image to TWI unless the FOD_AMP contrast is used");
-  image_plugin.reset(new TWIFODImagePlugin(path, track_statistic));
+  image_plugin = std::make_unique<TWIFODImagePlugin>(path, track_statistic);
 }
 
 void TrackMapperTWI::add_twdfc_static_image(Image<float> &image) {
@@ -197,7 +199,7 @@ void TrackMapperTWI::add_twdfc_static_image(Image<float> &image) {
     throw Exception("For fMRI correlation mapping, mapper must be set to SCALAR_MAP contrast");
   if (track_statistic != tck_stat_t::ENDS_CORR)
     throw Exception("For fMRI correlation mapping, only the endpoint correlation track-wise statistic is valid");
-  image_plugin.reset(new TWDFCStaticImagePlugin(image));
+  image_plugin = std::make_unique<TWDFCStaticImagePlugin>(image);
 }
 
 void TrackMapperTWI::add_twdfc_dynamic_image(Image<float> &image,
@@ -210,7 +212,7 @@ void TrackMapperTWI::add_twdfc_dynamic_image(Image<float> &image,
   if (track_statistic != tck_stat_t::ENDS_CORR)
     throw Exception(
         "For sliding time-window fMRI mapping, only the endpoint correlation track-wise statistic is valid");
-  image_plugin.reset(new TWDFCDynamicImagePlugin(image, kernel, timepoint));
+  image_plugin = std::make_unique<TWDFCDynamicImagePlugin>(image, kernel, timepoint);
 }
 
 void TrackMapperTWI::add_vector_data(const std::filesystem::path &path) {
@@ -218,7 +220,7 @@ void TrackMapperTWI::add_vector_data(const std::filesystem::path &path) {
     throw Exception("Cannot add both an associated image and a vector data file to TWI");
   if (contrast != contrast_t::VECTOR_FILE)
     throw Exception("Cannot add a vector data file to TWI unless the VECTOR_FILE contrast is used");
-  vector_data.reset(new Eigen::VectorXf(File::Matrix::load_vector<float>(path)));
+  vector_data = std::make_shared<Eigen::VectorXf>(File::Matrix::load_vector<float>(path));
 }
 
 void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
@@ -257,8 +259,8 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
     if (this_tangent.allFinite())
       tangents.push_back(this_tangent);
     else
-      tangents.push_back(Streamline<>::tangent_type::Zero());
-    if (i)
+      tangents.emplace_back(Streamline<>::tangent_type::Zero());
+    if (i != 0U)
       step_sizes.push_back((tck[i] - tck[i - 1]).norm());
   }
 
@@ -273,14 +275,15 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
         tangents[i] = tangents[j];
       } else if (i == tangents.size() - 1) {
         size_t k;
-        for (k = i - 1; k && !tangents[k].isZero(); --k)
+        for (k = i - 1; (k != 0U) && !tangents[k].isZero(); --k)
           ;
         tangents[i] = tangents[k];
       } else {
-        size_t j, k;
+        size_t j;
+        size_t k;
         for (j = 1; (j < tck.size() - 1) && !tangents[j].isZero(); ++j)
           ;
-        for (k = i - 1; k && !tangents[k].isZero(); --k)
+        for (k = i - 1; (k != 0U) && !tangents[k].isZero(); --k)
           ;
         tangents[i] = (tangents[j] + tangents[k]).normalized();
       }
@@ -323,7 +326,8 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
 
   for (size_t i = 0; i != tck.size(); ++i) {
 
-    default_type tangent_dot_product, length;
+    default_type tangent_dot_product;
+    default_type length;
     if (i == 0) {
       tangent_dot_product = smoothed_tangents[1].dot(smoothed_tangents[0]);
       length = spline_distances(0, 1);
@@ -335,7 +339,7 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
       length = spline_distances(i + 1, i - 1);
     }
 
-    if (tangent_dot_product >= 1.0f)
+    if (tangent_dot_product >= 1.0F)
       factors.push_back(0.0);
     else
       factors.push_back(std::acos(tangent_dot_product) / length);

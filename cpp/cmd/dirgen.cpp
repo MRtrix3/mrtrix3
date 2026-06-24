@@ -106,7 +106,6 @@ public:
       : progress(progress),                         //
         ndirs(ndirs),                               //
         bipolar(get_options("unipolar").empty()),   //
-        power(0),                                   //
         directions(3 * ndirs) {}                    //
 
 // Non-optimised compilation can't handle recursive inline functions
@@ -117,7 +116,7 @@ public:
 
   using value_type = double;
 
-  size_t size() const { return 3 * ndirs; }
+  [[nodiscard]] size_t size() const { return 3 * ndirs; }
 
   // set x to original directions provided in constructor.
   // The idea is to save the directions from one run to initialise next run
@@ -199,7 +198,7 @@ public:
           DEBUG("start " + str(this_start) + ": [ " + str(iter) + " ] (pow = " + str(power) +
                 ") E = " + str(optim.value(), 8) + ", grad = " + str(optim.gradient_norm(), 8));
 
-          std::lock_guard<std::mutex> lock(mutex);
+          const std::lock_guard<std::mutex> lock(mutex);
           ++progress;
         }
 
@@ -207,7 +206,7 @@ public:
         E = optim.value();
       }
 
-      std::lock_guard<std::mutex> lock(mutex);
+      const std::lock_guard<std::mutex> lock(mutex);
       if (E < best_E) {
         best_E = E;
         best_directions = directions;
@@ -226,7 +225,7 @@ protected:
   ProgressBar &progress;
   size_t ndirs;
   bool bipolar;
-  int power;
+  int power{0};
   Eigen::VectorXd directions;
   double E;
 
@@ -249,8 +248,8 @@ void run() {
   Energy::niter = get_option_value("niter", default_number_iterations);
 
   auto opt = get_options("fixed");
-  for (size_t i = 0; i != opt.size(); ++i) {
-    auto value = parse_floats(opt[i][0]);
+  for (const auto &i : opt) {
+    auto value = parse_floats(i[0]);
     switch (value.size()) {
     case 2: {
       Eigen::Vector3d xyz;

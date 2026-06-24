@@ -15,6 +15,9 @@
  */
 
 #include "file/dicom/patient.h"
+
+#include <memory>
+
 #include "file/dicom/series.h"
 #include "file/dicom/study.h"
 
@@ -53,7 +56,7 @@ std::shared_ptr<Study> Patient::find(std::string_view study_name,
     }
   }
 
-  push_back(std::shared_ptr<Study>(new Study(this, study_name, study_ID, study_UID, study_date, study_time)));
+  push_back(std::make_shared<Study>(this, study_name, study_ID, study_UID, study_date, study_time));
   return back();
 }
 
@@ -61,8 +64,8 @@ std::ostream &operator<<(std::ostream &stream, const Patient &item) {
   stream << MR::printf(
       "  %-30s %-16s %10s\n", item.name.c_str(), format_ID(item.ID).c_str(), format_date(item.DOB).c_str());
 
-  for (size_t n = 0; n < item.size(); n++)
-    stream << *item[n];
+  for (const auto &n : item)
+    stream << *n;
 
   return stream;
 }

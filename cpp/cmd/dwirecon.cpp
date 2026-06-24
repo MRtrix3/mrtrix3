@@ -256,7 +256,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
              std::fabs(pe_second[3] - pe_first[3]) < Metadata::PhaseEncoding::trt_tolerance)) { //
           peindex2paired[pe_first_index] = pe_second_index;
           peindex2paired[pe_second_index] = pe_first_index;
-          pe_pairs.push_back(std::make_pair(pe_first_index, pe_second_index));
+          pe_pairs.emplace_back(pe_first_index, pe_second_index);
           break;
         }
       }
@@ -303,7 +303,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
             const size_t second_volume = shell.get_volumes()[second_index];
             if (pe_indices[second_volume] != pe_second_index)
               continue;
-            volume_pairs.push_back(std::make_pair(first_volume, second_volume));
+            volume_pairs.emplace_back(first_volume, second_volume);
             used[first_index] = true;
             used[second_index] = true;
             break;
@@ -361,7 +361,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
             throw Exception(std::string("Ambiguity in establishing reversed phase encoding volume pairs") + //
                             " for shell b=" + str(static_cast<ssize_t>(std::round(shell.get_mean()))));     //
           }
-          volume_pairs.push_back(std::make_pair(shell.get_volumes()[col], shell.get_volumes()[row]));
+          volume_pairs.emplace_back(shell.get_volumes()[col], shell.get_volumes()[row]);
           min_closest_dp = std::min(min_closest_dp, this_closest_dp);
           assigned[row] = true;
           assigned[col] = true;
@@ -423,8 +423,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
         issue_unmatched_shells_warning = true;
       if (peindex2paired[pe_indices[from_file(row, 0)]] != pe_indices[from_file(row, 1)])
         issue_non_reversed_phase_encoding_warning = true;
-      volume_pairs.push_back(
-          std::make_pair(static_cast<size_t>(from_file(row, 0)), static_cast<size_t>(from_file(row, 1))));
+      volume_pairs.emplace_back(static_cast<size_t>(from_file(row, 0)), static_cast<size_t>(from_file(row, 1)));
     }
     if (issue_unmatched_shells_warning) {
       WARN("User-specified volume pairings merging volumes from different shells");
@@ -531,7 +530,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
       first_volume.index(3) = volume_pairs[out_volume].first;
       second_volume.index(3) = volume_pairs[out_volume].second;
       for (auto l = Loop(dwi_out, 0, 3)(dwi_out, first_volume, second_volume); l; ++l)
-        dwi_out.value() = 0.5f * (first_volume.value() + second_volume.value());
+        dwi_out.value() = 0.5F * (first_volume.value() + second_volume.value());
       ++progress;
     }
   }
@@ -821,8 +820,8 @@ void run_combine_predicted(Image<float> &dwi_in,
           }
           if (weights_image.valid()) {
             assign_pos_of(dwi_out, 0, 3).to(weights_image);
-            for (size_t target_index = 0; target_index != target_volumes.size(); ++target_index) {
-              weights_image.index(3) = target_volumes[target_index];
+            for (unsigned long target_volume : target_volumes) {
+              weights_image.index(3) = target_volume;
               weights_image.value() = empirical_weight;
             }
           }
@@ -896,8 +895,8 @@ void run_combine_predicted(Image<float> &dwi_in,
           }
           if (weights_image.valid()) {
             assign_pos_of(dwi_out, 0, 3).to(weights_image);
-            for (size_t target_index = 0; target_index != target_volumes.size(); ++target_index) {
-              weights_image.index(3) = target_volumes[target_index];
+            for (unsigned long target_volume : target_volumes) {
+              weights_image.index(3) = target_volume;
               weights_image.value() = empirical_weight;
             }
           }

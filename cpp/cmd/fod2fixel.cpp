@@ -16,6 +16,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <utility>
 
 #include "command.h"
 #include "dwi/directions/set.h"
@@ -108,7 +109,7 @@ class Segmented_FOD_receiver {
 
 public:
   Segmented_FOD_receiver(const Header &header, const index_type maxnum = 0, bool dir_from_peak = false)
-      : H(header), fixel_count(0), max_per_voxel(maxnum), dir_from_peak(dir_from_peak) {}
+      : H(header), max_per_voxel(maxnum), dir_from_peak(dir_from_peak) {}
 
   void commit();
 
@@ -129,13 +130,13 @@ private:
     float max_peak_amp;
     float skew;
     Primitive_FOD_lobe(Eigen::Vector3f dir, float integral, float max_peak_amp, float skew)
-        : dir(dir), integral(integral), max_peak_amp(max_peak_amp), skew(skew) {}
+        : dir(std::move(dir)), integral(integral), max_peak_amp(max_peak_amp), skew(skew) {}
   };
 
   class Primitive_FOD_lobes : public std::vector<Primitive_FOD_lobe> {
   public:
     Primitive_FOD_lobes(const FOD_lobes &in, const index_type maxcount, bool dir_from_peak) : vox(in.vox) {
-      const index_type N = maxcount ? std::min(static_cast<index_type>(in.size()), maxcount) : in.size();
+      const index_type N = (maxcount != 0U) ? std::min(static_cast<index_type>(in.size()), maxcount) : in.size();
       for (index_type i = 0; i != N; ++i) {
         const FOD_lobe &lobe(in[i]);
         this->emplace_back(dir_from_peak ? lobe.get_peak_dir(0).cast<float>() : lobe.get_mean_dir().cast<float>(),
@@ -150,7 +151,7 @@ private:
   Header H;
   std::filesystem::path fixel_directory_path, index_path, dir_path, afd_path, peak_amp_path, disp_path, skew_path;
   std::vector<Primitive_FOD_lobes> lobes;
-  index_type fixel_count;
+  index_type fixel_count{0};
   index_type max_per_voxel;
   bool dir_from_peak;
 };
@@ -223,7 +224,7 @@ void Segmented_FOD_receiver::commit() {
 
   size_t offset(0);
   for (const auto &vox_fixels : lobes) {
-    size_t n_vox_fixels = vox_fixels.size();
+    const size_t n_vox_fixels = vox_fixels.size();
 
     assign_pos_of(vox_fixels.vox).to(*index_image);
 

@@ -79,8 +79,7 @@ void usage() {
 
 class Modifier {
 public:
-  Modifier(Image<float> &input_image, Image<float> &output_image)
-      : v_in(input_image), v_out(output_image), excess_volume_count(0), inadequate_volume_count(0) {}
+  Modifier(Image<float> &input_image, Image<float> &output_image) : v_in(input_image), v_out(output_image) {}
 
   void set_cgm_input(const std::filesystem::path &path) { load(path, 0); }
   void set_sgm_input(const std::filesystem::path &path) { load(path, 1); }
@@ -116,8 +115,8 @@ private:
   Image<float> v_in, v_out;
   std::array<Image<float>, 5> buffers;
   Image<bool> none;
-  size_t excess_volume_count;
-  size_t inadequate_volume_count;
+  size_t excess_volume_count{0};
+  size_t inadequate_volume_count{0};
 
   void load(const std::filesystem::path &path, const size_t index) {
     assert(index < 5);

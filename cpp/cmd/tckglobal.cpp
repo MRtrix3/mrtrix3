@@ -240,11 +240,11 @@ void run() {
 
   Properties properties;
   properties.resp_WM = File::Matrix::load_matrix<float>(argument[1]);
-  double wmscale2 = (properties.resp_WM(0, 0) * properties.resp_WM(0, 0)) / M_4PI;
+  const double wmscale2 = (properties.resp_WM(0, 0) * properties.resp_WM(0, 0)) / M_4PI;
 
   Eigen::VectorXf riso;
   auto opt = get_options("riso");
-  for (auto popt : opt) {
+  for (const auto &popt : opt) {
     riso = File::Matrix::load_vector<float>(popt[0]);
     properties.resp_ISO.push_back(riso);
   }
@@ -275,8 +275,8 @@ void run() {
 
   opt = get_options("balance");
   if (!opt.empty()) {
-    double lam = opt[0][0];
-    double b = 1.0 / (1.0 + exp(-lam));
+    const double lam = opt[0][0];
+    const double b = 1.0 / (1.0 + exp(-lam));
     properties.lam_ext = 2 * b;
     properties.lam_int = 2 * (1 - b);
   }
@@ -295,7 +295,7 @@ void run() {
     }
   }
 
-  const uint64_t niter = get_option_value<uint64_t>("niter", default_niter);
+  const auto niter = get_option_value<uint64_t>("niter", default_niter);
   const double t0 = get_option_value("t0", default_t0);
   const double t1 = get_option_value("t1", default_t1);
 
@@ -319,10 +319,10 @@ void run() {
 
   ParticleGrid pgrid(header_in);
 
-  ExternalEnergyComputer *Eext = new ExternalEnergyComputer(stats, header_in, properties);
-  InternalEnergyComputer *Eint = new InternalEnergyComputer(stats, pgrid);
+  auto *Eext = new ExternalEnergyComputer(stats, header_in, properties);
+  auto *Eint = new InternalEnergyComputer(stats, pgrid);
   Eint->setConnPot(cpot);
-  EnergySumComputer *Esum = new EnergySumComputer(
+  auto *Esum = new EnergySumComputer(
       stats, Eint, properties.lam_int, Eext, properties.lam_ext / (wmscale2 * properties.weight * properties.weight));
 
   // All EnergyComputers are recursively destroyed upon destruction of mhs, except for the shared data.
@@ -341,14 +341,14 @@ void run() {
   // Save the tracks (output)
   INFO("Saving tracks to file");
   MR::DWI::Tractography::Properties ftfileprops;
-  ftfileprops.comments.push_back("global tractography");
-  ftfileprops.comments.push_back("");
+  ftfileprops.comments.emplace_back("global tractography");
+  ftfileprops.comments.emplace_back("");
   ftfileprops.comments.push_back("segment length = " + std::to_string((long double)Particle::L));
   ftfileprops.comments.push_back("segment weight = " + std::to_string((long double)properties.weight));
-  ftfileprops.comments.push_back("");
+  ftfileprops.comments.emplace_back("");
   ftfileprops.comments.push_back("connection potential = " + std::to_string((long double)cpot));
   ftfileprops.comments.push_back("particle potential = " + std::to_string((long double)mu));
-  ftfileprops.comments.push_back("");
+  ftfileprops.comments.emplace_back("");
   ftfileprops.comments.push_back("no. iterations = " + std::to_string((long long int)niter));
   ftfileprops.comments.push_back("T0 = " + std::to_string((long double)t0));
   ftfileprops.comments.push_back("T1 = " + std::to_string((long double)t1));

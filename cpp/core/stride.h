@@ -79,8 +79,8 @@ private:
 class Wrapper {
 public:
   Wrapper(List &strides) : S(strides) {}
-  size_t ndim() const { return S.size(); }
-  const ssize_t &stride(size_t axis) const { return S[axis]; }
+  [[nodiscard]] size_t ndim() const { return S.size(); }
+  [[nodiscard]] const ssize_t &stride(size_t axis) const { return S[axis]; }
   ssize_t &stride(size_t axis) { return S[axis]; }
 
 private:
@@ -90,7 +90,7 @@ private:
 template <class HeaderType> class InfoWrapper : public Wrapper {
 public:
   InfoWrapper(List &strides, const HeaderType &header) : Wrapper(strides), D(header) { assert(ndim() == D.ndim()); }
-  ssize_t size(size_t axis) const { return D.size(axis); }
+  [[nodiscard]] ssize_t size(size_t axis) const { return D.size(axis); }
 
 private:
   const HeaderType &D;
@@ -132,7 +132,7 @@ order(const HeaderType &header, size_t from_axis = 0, size_t to_axis = std::nume
   std::vector<size_t> ret(to_axis - from_axis);
   for (size_t i = 0; i < ret.size(); ++i)
     ret[i] = from_axis + i;
-  Compare<HeaderType> compare(header);
+  const Compare<HeaderType> compare(header);
   std::sort(ret.begin(), ret.end(), compare);
   return ret;
 }
@@ -270,7 +270,7 @@ template <class HeaderType> size_t offset(const HeaderType &header) {
  * to the first voxel value (i.e. at voxel [ 0 0 0 ... ]), assuming the
  * strides in \a strides and HeaderType dimensions of \a header. */
 template <class HeaderType> size_t offset(List &strides, const HeaderType &header) {
-  InfoWrapper<HeaderType> wrapper(strides, header);
+  const InfoWrapper<HeaderType> wrapper(strides, header);
   return offset(wrapper);
 }
 
@@ -297,7 +297,8 @@ template <class HeaderType> size_t offset(List &strides, const HeaderType &heade
  * - \c current: [ -1 2 -3 4 ], \c desired: [ 1 2 3 0 ] => [ -1 2 -3 4 ]
  *   */
 template <class HeaderType> List get_nearest_match(const HeaderType &current, const List &desired) {
-  List in(get_symbolic(current)), out(desired);
+  List in(get_symbolic(current));
+  List out(desired);
   out.resize(in.size(), 0);
 
   std::vector<ssize_t> dims(current.ndim());

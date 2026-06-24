@@ -63,9 +63,7 @@ public:
   Stats(const double T0, const double T1, const uint64_t maxiter)
       : Text(T1),
         Tint(T0),
-        EextTot(0.0),
-        EintTot(0.0),
-        n_iter(0),
+
         n_max(maxiter),
         progress("running MH sampler", n_max / iter_bigstep) {
     for (int k = 0; k != 5; k++)
@@ -82,53 +80,53 @@ public:
     out.open(path, std::ofstream::out);
   }
 
-  bool next() {
-    std::lock_guard<std::mutex> lock(mutex);
+  [[nodiscard]] bool next() {
+    const std::lock_guard<std::mutex> lock(mutex);
     ++n_iter;
     if (n_iter % iter_bigstep == 0) {
       if ((n_iter >= fraction_burnin * n_max) && (n_iter < n_max - fraction_phaseout * n_max))
         Tint *= alpha;
       progress++;
-      out << *this << std::endl;
+      out << *this << '\n';
     }
     return (n_iter < n_max);
   }
 
   // getters and setters ----------------------------------------------
 
-  double getText() const { return Text; }
+  [[nodiscard]] double getText() const { return Text; }
 
-  double getTint() const {
-    std::lock_guard<std::mutex> lock(mutex);
+  [[nodiscard]] double getTint() const {
+    const std::lock_guard<std::mutex> lock(mutex);
     return Tint;
   }
 
   void setTint(double temp) {
-    std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     Tint = temp;
   }
 
-  double getEextTotal() const {
-    std::lock_guard<std::mutex> lock(mutex);
+  [[nodiscard]] double getEextTotal() const {
+    const std::lock_guard<std::mutex> lock(mutex);
     return EextTot;
   }
 
-  double getEintTotal() const {
-    std::lock_guard<std::mutex> lock(mutex);
+  [[nodiscard]] double getEintTotal() const {
+    const std::lock_guard<std::mutex> lock(mutex);
     return EintTot;
   }
 
   void incEextTotal(double d) {
-    std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     EextTot += d;
   }
 
   void incEintTotal(double d) {
-    std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     EintTot += d;
   }
 
-  unsigned int getN(const char p) const {
+  [[nodiscard]] unsigned int getN(const char p) const {
     switch (p) {
     case 'b':
       return n_gen[0];
@@ -145,7 +143,7 @@ public:
     }
   }
 
-  unsigned int getNa(const char p) const {
+  [[nodiscard]] unsigned int getNa(const char p) const {
     switch (p) {
     case 'b':
       return n_acc[0];
@@ -163,7 +161,7 @@ public:
   }
 
   void incN(const char p, unsigned int i = 1) {
-    std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     switch (p) {
     case 'b':
       n_gen[0] += i;
@@ -186,7 +184,7 @@ public:
   }
 
   void incNa(const char p, unsigned int i = 1) {
-    std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     switch (p) {
     case 'b':
       n_acc[0] += i;
@@ -209,7 +207,7 @@ public:
     }
   }
 
-  double getAcceptanceRate(const char p) const {
+  [[nodiscard]] double getAcceptanceRate(const char p) const {
     switch (p) {
     case 'b':
       return static_cast<double>(n_acc[0]) / static_cast<double>(n_gen[0]);
@@ -231,12 +229,12 @@ public:
 protected:
   mutable std::mutex mutex;
   double Text, Tint;
-  double EextTot, EintTot;
+  double EextTot{0.0}, EintTot{0.0};
   double alpha;
 
   std::array<unsigned long, 5> n_gen;
   std::array<unsigned long, 5> n_acc;
-  unsigned long n_iter;
+  unsigned long n_iter{0};
   const uint64_t n_max;
 
   ProgressBar progress;

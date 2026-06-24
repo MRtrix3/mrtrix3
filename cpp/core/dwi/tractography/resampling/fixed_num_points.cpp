@@ -45,7 +45,7 @@ bool FixedNumPoints::operator()(const Streamline<> &in, Streamline<> &out) const
   temp.insert(temp.begin(), temp[0] + (temp[0] - temp[1]));
   temp.push_back(temp[s] + (temp[s] - temp[s - 1]));
 
-  value_type cumulative_length = value_type(0);
+  value_type cumulative_length = 0.0F;
   size_t input_index = 0;
   for (size_t output_index = 0; output_index != num_points; ++output_index) {
     const value_type target_length = length * output_index / static_cast<value_type>(num_points - 1);
@@ -55,7 +55,7 @@ bool FixedNumPoints::operator()(const Streamline<> &in, Streamline<> &out) const
       out.push_back(temp[s]);
       break;
     }
-    const value_type mu = steps[input_index] ? (target_length - cumulative_length) / steps[input_index] : 0.5;
+    const value_type mu = (steps[input_index] != 0.0F) ? (target_length - cumulative_length) / steps[input_index] : 0.5;
     interp.set(mu);
     out.push_back(interp.value(temp[input_index], temp[input_index + 1], temp[input_index + 2], temp[input_index + 3]));
     assert(out.back().allFinite());

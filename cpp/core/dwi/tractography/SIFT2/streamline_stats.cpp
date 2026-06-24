@@ -19,22 +19,10 @@
 namespace MR::DWI::Tractography::SIFT2 {
 
 StreamlineStats::StreamlineStats()
-    : min(std::numeric_limits<double>::infinity()),
-      max(-std::numeric_limits<double>::infinity()),
-      mean(0.0),
-      mean_abs(0.0),
-      var(0.0),
-      count(0),
-      nonzero(0) {}
+    : min(std::numeric_limits<double>::infinity()), max(-std::numeric_limits<double>::infinity()) {}
 
 StreamlineStats::StreamlineStats(const StreamlineStats &that)
-    : min(std::numeric_limits<double>::infinity()),
-      max(-std::numeric_limits<double>::infinity()),
-      mean(0.0),
-      mean_abs(0.0),
-      var(0.0),
-      count(0),
-      nonzero(0) {}
+    : min(std::numeric_limits<double>::infinity()), max(-std::numeric_limits<double>::infinity()) {}
 
 StreamlineStats &StreamlineStats::operator+=(const double i) {
   min = std::min(min, i);
@@ -43,7 +31,7 @@ StreamlineStats &StreamlineStats::operator+=(const double i) {
   mean_abs += std::fabs(i);
   var += Math::pow2(i);
   ++count;
-  if (i)
+  if (i != 0.0)
     ++nonzero;
   return *this;
 }

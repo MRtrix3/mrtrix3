@@ -19,11 +19,7 @@
 namespace MR::DWI::Tractography::Connectome {
 
 bool Selector::operator()(const node_t node) const {
-  for (std::vector<node_t>::const_iterator i = list.begin(); i != list.end(); ++i) {
-    if (*i == node)
-      return true;
-  }
-  return false;
+  return std::find(list.cbegin(), list.cend(), node) != list.cend();
 }
 
 bool Selector::operator()(const NodePair &nodes) const {
@@ -31,24 +27,22 @@ bool Selector::operator()(const NodePair &nodes) const {
     return false;
   if (exact_match && list.size() == 2)
     return ((nodes.first == list[0] && nodes.second == list[1]) || (nodes.first == list[1] && nodes.second == list[0]));
-  bool found_first = false, found_second = false;
-  for (std::vector<node_t>::const_iterator i = list.begin(); i != list.end(); ++i) {
-    if (*i == nodes.first)
+  bool found_first = false;
+  bool found_second = false;
+  for (unsigned int i : list) {
+    if (i == nodes.first)
       found_first = true;
-    if (*i == nodes.second)
+    if (i == nodes.second)
       found_second = true;
   }
-  if (exact_match)
-    return (found_first && found_second);
-  else
-    return (found_first || found_second);
+  return exact_match ? (found_first && found_second) : (found_first || found_second);
 }
 
 bool Selector::operator()(const std::vector<node_t> &nodes) const {
   Eigen::Array<bool, Eigen::Dynamic, 1> found(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(list.size()));
-  for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
+  for (unsigned int node : nodes) {
     for (size_t i = 0; i != list.size(); ++i)
-      if (*n == list[i])
+      if (node == list[i])
         found[i] = true;
   }
   return exact_match ? found.all() : found.any();
@@ -61,7 +55,7 @@ WriterExemplars::WriterExemplars(const Tractography::Properties &properties,
                                  const std::vector<Eigen::Vector3d> &COMs)
     : step_size(properties.get_stepsize()) {
   if (!std::isfinite(step_size))
-    step_size = 1.0f;
+    step_size = 1.0F;
 
   // Determine how many points to use in the initial representation of each exemplar
   size_t length = 0;
@@ -77,11 +71,11 @@ WriterExemplars::WriterExemplars(const Tractography::Properties &properties,
       const node_t one = nodes[i];
       for (size_t j = i; j != nodes.size(); ++j) {
         const node_t two = nodes[j];
-        selectors.push_back(Selector(one, two));
-        exemplars.push_back(Exemplar(index++,
-                                     length,
-                                     std::make_pair(one, two),
-                                     std::make_pair(COMs[one].cast<float>(), COMs[two].cast<float>())));
+        selectors.emplace_back(one, two);
+        exemplars.emplace_back(index++,
+                               length,
+                               std::make_pair(one, two),
+                               std::make_pair(COMs[one].cast<float>(), COMs[two].cast<float>()));
       }
     }
   } else {
@@ -91,11 +85,11 @@ WriterExemplars::WriterExemplars(const Tractography::Properties &properties,
       for (node_t two = one; two != COMs.size(); ++two) {
         if (std::find(nodes.begin(), nodes.end(), one) != nodes.end() ||
             std::find(nodes.begin(), nodes.end(), two) != nodes.end()) {
-          selectors.push_back(Selector(one, two));
-          exemplars.push_back(Exemplar(index++,
-                                       length,
-                                       std::make_pair(one, two),
-                                       std::make_pair(COMs[one].cast<float>(), COMs[two].cast<float>())));
+          selectors.emplace_back(one, two);
+          exemplars.emplace_back(index++,
+                                 length,
+                                 std::make_pair(one, two),
+                                 std::make_pair(COMs[one].cast<float>(), COMs[two].cast<float>()));
         }
       }
     }
@@ -121,8 +115,8 @@ bool WriterExemplars::operator()(const Tractography::Connectome::Streamline_node
 // TODO Multi-thread
 void WriterExemplars::finalize() {
   ProgressBar progress("finalizing exemplars", exemplars.size());
-  for (std::vector<Exemplar>::iterator i = exemplars.begin(); i != exemplars.end(); ++i) {
-    i->finalize(step_size);
+  for (auto &exemplar : exemplars) {
+    exemplar.finalize(step_size);
     ++progress;
   }
 }
@@ -175,12 +169,12 @@ void WriterExemplars::write(const std::filesystem::path &path,
   Tractography::Properties properties;
   properties["step_size"] = str(step_size);
   Tractography::Writer<float> writer(path, properties);
-  for (std::vector<Exemplar>::const_iterator i = exemplars.begin(); i != exemplars.end(); ++i)
-    writer(i->get());
+  for (const auto &exemplar : exemplars)
+    writer(exemplar.get());
   if (weights_path.has_value()) {
     File::OFStream output(weights_path.value());
-    for (std::vector<Exemplar>::const_iterator i = exemplars.begin(); i != exemplars.end(); ++i)
-      output << str(i->get_weight()) << "\n";
+    for (const auto &exemplar : exemplars)
+      output << str(exemplar.get_weight()) << "\n";
   }
 }
 
@@ -193,7 +187,7 @@ WriterExtraction::WriterExtraction(const Tractography::Properties &p,
 void WriterExtraction::add(const node_t node,
                            const std::filesystem::path &path,
                            const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
-  selectors.emplace_back(Selector(node, keep_self));
+  selectors.emplace_back(node, keep_self);
   writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
   if (weights_path.has_value())
     writers.back()->set_weights_path(weights_path.value());
@@ -204,7 +198,7 @@ void WriterExtraction::add(const node_t node_one,
                            const std::filesystem::path &path,
                            const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
   if (keep_self || (node_one != node_two)) {
-    selectors.emplace_back(Selector(node_one, node_two));
+    selectors.emplace_back(node_one, node_two);
     writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
     if (weights_path.has_value())
       writers.back()->set_weights_path(weights_path.value());
@@ -214,7 +208,7 @@ void WriterExtraction::add(const node_t node_one,
 void WriterExtraction::add(const std::vector<node_t> &list,
                            const std::filesystem::path &path,
                            const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
-  selectors.emplace_back(Selector(list, exclusive, keep_self));
+  selectors.emplace_back(list, exclusive, keep_self);
   writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
   if (weights_path.has_value())
     writers.back()->set_weights_path(weights_path.value());
@@ -229,11 +223,12 @@ bool WriterExtraction::operator()(const Connectome::Streamline_nodepair &in) con
   if (exclusive) {
     // Make sure that both nodes are within the list of nodes of interest;
     //   if not, don't bother passing to any of the selectors
-    bool first_in_list = false, second_in_list = false;
-    for (std::vector<node_t>::const_iterator i = node_list.begin(); i != node_list.end(); ++i) {
-      if (*i == in.get_nodes().first)
+    bool first_in_list = false;
+    bool second_in_list = false;
+    for (unsigned int i : node_list) {
+      if (i == in.get_nodes().first)
         first_in_list = true;
-      if (*i == in.get_nodes().second)
+      if (i == in.get_nodes().second)
         second_in_list = true;
     }
     if (!first_in_list || !second_in_list) {
@@ -256,9 +251,9 @@ bool WriterExtraction::operator()(const Connectome::Streamline_nodelist &in) con
     // Make sure _all_ nodes are within the list of nodes of interest;
     //   if not, don't pass to any of the selectors
     Eigen::Array<bool, Eigen::Dynamic, 1> in_list(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(in.get_nodes().size()));
-    for (std::vector<node_t>::const_iterator i = node_list.begin(); i != node_list.end(); ++i) {
+    for (unsigned int i : node_list) {
       for (size_t n = 0; n != in.get_nodes().size(); ++n)
-        if (*i == in.get_nodes()[n])
+        if (i == in.get_nodes()[n])
           in_list[n] = true;
     }
     if (!in_list.all()) {

@@ -56,13 +56,13 @@ public:
        std::optional<int64_t> mapped_size = std::nullopt);
   ~MMap();
 
-  std::filesystem::path path() const { return Entry::path; }
-  int64_t size() const { return msize; }
-  std::byte *address() { return first; }
-  const std::byte *address() const { return first; }
+  [[nodiscard]] std::filesystem::path path() const { return Entry::path; }
+  [[nodiscard]] int64_t size() const { return msize; }
+  std::byte *const address() { return first; }
+  [[nodiscard]] const std::byte *const address() const { return first; }
 
-  bool is_read_write() const { return readwrite; }
-  bool changed() const;
+  [[nodiscard]] bool is_read_write() const { return readwrite; }
+  [[nodiscard]] bool changed() const;
 
   friend std::ostream &operator<<(std::ostream &stream, const MMap &m) {
     stream << "File::MMap { " << m.path().string() << " [" << m.fd << "], size: " << m.size() << ", mapped "
@@ -72,19 +72,17 @@ public:
   }
 
 protected:
-  int fd;
-  std::byte *addr;  /**< The address in memory where the file has been mapped. */
-  std::byte *first; /**< The address in memory to the start of the region of interest. */
-  int64_t msize;    /**< The size of the mapped portion of the file. */
-  time_t mtime;     /**< The modification time of the file at the last check. */
-  bool readwrite;
+  int fd{0};
+  std::byte *addr{nullptr};  /**< The address in memory where the file has been mapped. */
+  std::byte *first{nullptr}; /**< The address in memory to the start of the region of interest. */
+  int64_t msize{0};          /**< The size of the mapped portion of the file. */
+  time_t mtime{0};           /**< The modification time of the file at the last check. */
+  bool readwrite{false};
 
   void map();
 
 private:
-  MMap(const MMap &mmap) : Entry(mmap), fd(0), addr(nullptr), first(nullptr), msize(0), mtime(0), readwrite(false) {
-    assert(0);
-  }
+  MMap(const MMap &mmap) : Entry(mmap) { assert(0); }
 };
 
 } // namespace MR::File

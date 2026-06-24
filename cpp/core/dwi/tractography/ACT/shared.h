@@ -33,27 +33,25 @@ public:
   ACT_Shared_additions(const std::filesystem::path &path, Properties &property_set)
       : voxel(Image<float>::open(path)),
         voxel_mask(make_implicit_mask(
-            voxel, {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite})),
-        bt(false),
-        trunc(sgm_trunc_t::DEFAULT) {
+            voxel, {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite})) {
     debug_validate_5TT_image(voxel);
     property_set.set(bt, "backtrack");
     if (property_set.find("crop_at_gmwmi") != property_set.end())
-      gmwmi_finder.reset(new GMWMI_finder(voxel));
+      gmwmi_finder = std::make_unique<GMWMI_finder>(voxel);
     auto sgm_trunc_property = property_set.find("sgm_truncation");
     if (sgm_trunc_property != property_set.end())
       trunc = Enum::from_name<sgm_trunc_t>(sgm_trunc_property->second);
   }
 
-  bool backtrack() const { return bt; }
+  [[nodiscard]] bool backtrack() const { return bt; }
 
-  bool crop_at_gmwmi() const { return bool(gmwmi_finder); }
+  [[nodiscard]] bool crop_at_gmwmi() const { return bool(gmwmi_finder); }
   void crop_at_gmwmi(std::vector<Eigen::Vector3f> &tck) const {
     assert(gmwmi_finder);
     tck.back() = gmwmi_finder->find_interface(tck, true);
   }
 
-  sgm_trunc_t sgm_trunc() const { return trunc; }
+  [[nodiscard]] sgm_trunc_t sgm_trunc() const { return trunc; }
   void set_default_sgm_trunc(const sgm_trunc_t default_value) {
     if (trunc == sgm_trunc_t::DEFAULT)
       trunc = default_value;
@@ -63,8 +61,8 @@ public:
 private:
   Image<float> voxel;
   Image<bool> voxel_mask;
-  bool bt;
-  sgm_trunc_t trunc;
+  bool bt{false};
+  sgm_trunc_t trunc{sgm_trunc_t::DEFAULT};
 
   std::unique_ptr<GMWMI_finder> gmwmi_finder;
 

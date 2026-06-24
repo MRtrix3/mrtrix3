@@ -28,13 +28,13 @@ public:
   Downsampler(const size_t downsample_ratio) : ratio(downsample_ratio) {}
 
   bool operator()(const Streamline<> &, Streamline<> &) const override;
-  bool valid() const override { return (ratio >= 1); }
+  [[nodiscard]] bool valid() const override { return (ratio >= 1); }
 
   // This version guarantees that the seed point is retained, and
   //   updates the index of the seed point appropriately
   bool operator()(Tracking::GeneratedTrack &) const;
 
-  size_t get_ratio() const { return ratio; }
+  [[nodiscard]] size_t get_ratio() const { return ratio; }
   void set_ratio(const size_t i) { ratio = i; }
 
 private:

@@ -48,11 +48,7 @@ public:
           lmax(Math::SH::LforN(source.size(3))),
           num_samples(Defaults::ifod2_nsamples),
           max_trials(Defaults::max_trials_per_step),
-          sin_max_angle_ho(NaNF),
-          mean_samples(0.0),
-          mean_truncations(0.0),
-          max_max_truncation(0.0),
-          num_proc(0) {
+          sin_max_angle_ho(NaNF) {
       try {
         Math::SH::check(source);
       } catch (Exception &e) {
@@ -110,7 +106,7 @@ public:
       mean_samples /= static_cast<double>(num_proc);
       mean_truncations /= static_cast<double>(num_proc);
       INFO("mean number of samples per step = " + str(mean_samples));
-      if (mean_truncations) {
+      if (mean_truncations != 0.0) {
         INFO("mean number of steps between rejection sampling truncations = " + str(1.0 / mean_truncations));
         INFO("maximum truncation error = " + str(max_max_truncation));
       } else {
@@ -133,17 +129,14 @@ public:
     Math::SH::PrecomputedAL<float> precomputer;
 
   private:
-    mutable double mean_samples, mean_truncations, max_max_truncation;
-    mutable int num_proc;
+    mutable double mean_samples{0.0}, mean_truncations{0.0}, max_max_truncation{0.0};
+    mutable int num_proc{0};
   };
 
   iFOD2(const Shared &shared)
       : MethodBase(shared),
         S(shared),
-        mean_sample_num(0),
-        num_sample_runs(0),
-        num_truncations(0),
-        max_truncation(0.0),
+
         calib_positions(S.num_samples),
         calib_tangents(S.num_samples),
         source(S.source, S.source_mask),
@@ -157,10 +150,6 @@ public:
       : MethodBase(that.S),
         S(that.S),
         calibrate_ratio(that.calibrate_ratio),
-        mean_sample_num(0),
-        num_sample_runs(0),
-        num_truncations(0),
-        max_truncation(0.0),
         calibrate_list(that.calibrate_list),
         calib_positions(S.num_samples),
         calib_tangents(S.num_samples),
@@ -170,7 +159,7 @@ public:
         sample_idx(S.num_samples) {}
 
   ~iFOD2() {
-    if (num_sample_runs)
+    if (num_sample_runs != 0U)
       S.update_stats(calibrate_list.size() +
                          (static_cast<double>(mean_sample_num) / static_cast<double>(num_sample_runs)),
                      static_cast<double>(num_truncations) / static_cast<double>(num_sample_runs),
@@ -216,15 +205,16 @@ public:
       return std::nullopt;
     }
 
-    Eigen::Vector3f next_pos, next_dir;
+    Eigen::Vector3f next_pos;
+    Eigen::Vector3f next_dir;
 
     float max_val = 0.0;
-    for (size_t i = 0; i < calibrate_list.size(); ++i) {
-      get_path(calib_positions, calib_tangents, rotate_direction(dir, calibrate_list[i]));
-      float val = path_prob(calib_positions, calib_tangents);
+    for (const auto &i : calibrate_list) {
+      get_path(calib_positions, calib_tangents, rotate_direction(dir, i));
+      const float val = path_prob(calib_positions, calib_tangents);
       if (std::isnan(val))
         return term_t::EXIT_IMAGE;
-      else if (val > max_val)
+      if (val > max_val)
         max_val = val;
     }
 
@@ -236,7 +226,7 @@ public:
     num_sample_runs++;
 
     for (size_t n = 0; n < S.max_trials; n++) {
-      float val = rand_path_prob();
+      const float val = rand_path_prob();
 
       if (val > max_val) {
         DEBUG("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str(max_val) + ")");
@@ -276,7 +266,7 @@ public:
     size_t sample_idx_at_full_length = (length_to_revert_from - tck.get_seed_index()) % S.num_samples;
     // Unfortunately can't distinguish between sample_idx = 0 and sample_idx = S.num_samples
     // However the former would result in zero truncation with revert_step = 1...
-    if (!sample_idx_at_full_length)
+    if (sample_idx_at_full_length == 0U)
       sample_idx_at_full_length = S.num_samples;
     const size_t points_to_remove = sample_idx_at_full_length + ((revert_step - 1) * S.num_samples);
     if (tck.get_seed_index() + points_to_remove >= tck.size()) {
@@ -317,8 +307,8 @@ private:
   const Shared &S;
 
   float calibrate_ratio, half_log_prob0, last_half_log_probN, half_log_prob0_seed;
-  size_t mean_sample_num, num_sample_runs, num_truncations;
-  float max_truncation;
+  size_t mean_sample_num{0}, num_sample_runs{0}, num_truncations{0};
+  float max_truncation{0.0};
   std::vector<Eigen::Vector3f> calibrate_list;
   std::vector<Eigen::Vector3f> calib_positions;
   std::vector<Eigen::Vector3f> calib_tangents;
@@ -333,7 +323,7 @@ protected:
   size_t sample_idx;
 
 private:
-  FORCE_INLINE float FOD(const Eigen::Vector3f &direction) const {
+  [[nodiscard]] FORCE_INLINE float FOD(const Eigen::Vector3f &direction) const {
     return (S.precomputer ? S.precomputer.value(values, direction) : Math::SH::value(values, direction, S.lmax));
   }
 
@@ -384,18 +374,18 @@ protected:
                 const Eigen::Vector3f &end_dir) const {
     float cos_theta = end_dir.dot(dir);
     cos_theta = std::min(cos_theta, 1.0F);
-    float theta = std::acos(cos_theta);
+    const float theta = std::acos(cos_theta);
 
-    if (theta) {
+    if (theta != 0.0F) {
 
       Eigen::Vector3f curv = end_dir - cos_theta * dir;
       curv.normalize();
-      float R = S.step_size / theta;
+      const float R = S.step_size / theta;
 
       for (size_t i = 0; i < S.num_samples - 1; ++i) {
-        float a = (theta * (i + 1)) / S.num_samples;
-        float cos_a = std::cos(a);
-        float sin_a = std::sin(a);
+        const float a = (theta * (i + 1)) / S.num_samples;
+        const float cos_a = std::cos(a);
+        const float sin_a = std::sin(a);
         positions[i] = pos + R * (sin_a * dir + (1.0F - cos_a) * curv);
         tangents[i] = cos_a * dir + sin_a * curv;
       }
@@ -405,7 +395,7 @@ protected:
     } else { // straight on:
 
       for (size_t i = 0; i < S.num_samples; ++i) {
-        float f = (i + 1) * (S.step_size / S.num_samples);
+        const float f = (i + 1) * (S.step_size / S.num_samples);
         positions[i] = pos + f * dir;
         tangents[i] = dir;
       }

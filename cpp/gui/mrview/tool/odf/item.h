@@ -40,7 +40,7 @@ public:
            const bool hide_negative,
            const bool color_by_direction);
 
-  bool valid() const;
+  [[nodiscard]] bool valid() const;
 
   MRView::Image image;
   odf_type_t odf_type;
@@ -60,15 +60,15 @@ public:
     void set_none();
     void set_from_file(const std::filesystem::path &path);
 
-    Eigen::VectorXf get_shell_data(const Eigen::VectorXf &values) const;
+    [[nodiscard]] Eigen::VectorXf get_shell_data(const Eigen::VectorXf &values) const;
 
-    size_t num_DW_shells() const;
+    [[nodiscard]] size_t num_DW_shells() const;
 
-    dir_t dir_type;
+    dir_t dir_type{dir_t::NONE};
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> header_dirs;
     Eigen::Matrix<double, Eigen::Dynamic, 4> grad;
     std::unique_ptr<MR::DWI::Shells> shells;
-    size_t shell_index;
+    size_t shell_index{0};
     std::unique_ptr<MR::DWI::Directions::Set> dirs;
   };
   std::unique_ptr<DixelPlugin> dixel;

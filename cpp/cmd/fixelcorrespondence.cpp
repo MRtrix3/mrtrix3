@@ -99,9 +99,9 @@ void run() {
        i;
        ++i) {
     template_index.index(3) = 0;
-    index_type nfixels_template = template_index.value();
+    const index_type nfixels_template = template_index.value();
     template_index.index(3) = 1;
-    index_type template_offset = template_index.value();
+    const index_type template_offset = template_index.value();
 
     for (index_type t = 0; t < nfixels_template; ++t) {
 
@@ -109,9 +109,9 @@ void run() {
       int index_of_closest_fixel = -1;
 
       subject_index.index(3) = 0;
-      index_type nfixels_subject = subject_index.value();
+      const index_type nfixels_subject = subject_index.value();
       subject_index.index(3) = 1;
-      index_type subject_offset = subject_index.value();
+      const index_type subject_offset = subject_index.value();
 
       template_directions.index(0) = template_offset + t;
       for (index_type s = 0; s < nfixels_subject; ++s) {
@@ -121,7 +121,7 @@ void run() {
         templatedir.normalize();
         Eigen::Vector3f subjectdir = subject_directions.row(1);
         subjectdir.normalize();
-        float dp = std::fabs(templatedir.dot(subjectdir));
+        const float dp = std::fabs(templatedir.dot(subjectdir));
         if (dp > largest_dp) {
           largest_dp = dp;
           index_of_closest_fixel = s;

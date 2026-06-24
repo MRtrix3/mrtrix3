@@ -153,7 +153,7 @@ void usage() {
 
 void run() {
   const std::filesystem::path input_path{argument[0]};
-  const FilterType filter_index = MR::Enum::from_name<FilterType>(argument[1]);
+  const auto filter_index = MR::Enum::from_name<FilterType>(argument[1]);
   const std::string filter_name = MR::Enum::lowercase_name(filter_index);
   const std::filesystem::path output_path{argument[2]};
 
@@ -220,7 +220,8 @@ void run() {
     auto output = Image<cdouble>::create(output_path, header);
     double scale = 1.0;
 
-    Image<cdouble> in(input), out;
+    Image<cdouble> in(input);
+    Image<cdouble> out;
     for (size_t n = 0; n < axes.size(); ++n) {
       scale *= in.size(axes[n]);
       if (n >= (axes.size() - 1) && !magnitude) {
@@ -258,9 +259,8 @@ void run() {
     auto opt = get_options("stdev");
     if (!opt.empty()) {
       stdev = parse_floats(opt[0][0]);
-      for (size_t i = 0; i < stdev.size(); ++i)
-        if (stdev[i] < 0.0)
-          throw Exception("the Gaussian stdev values cannot be negative");
+      if (std::any_of(stdev.begin(), stdev.end(), [](double i) { return i < 0.0; }))
+        throw Exception("the Gaussian stdev values cannot be negative");
       if (stdev.size() != 1 && stdev.size() != 3)
         throw Exception("unexpected number of elements specified in Gaussian stdev");
     } else {
@@ -308,9 +308,9 @@ void run() {
     if (!opt.empty()) {
       if (stdev_supplied)
         throw Exception("the stdev and FWHM options are mutually exclusive.");
-      std::vector<default_type> stdevs = parse_floats((opt[0][0]));
-      for (size_t d = 0; d < stdevs.size(); ++d)
-        stdevs[d] = stdevs[d] / 2.3548; // convert FWHM to stdev
+      std::vector<default_type> stdevs = opt[0][0].as_sequence_float();
+      for (double &stdev : stdevs)
+        stdev /= 2.3548; // convert FWHM to stdev
       filter.set_stdev(stdevs);
     }
     opt = get_options("extent");
@@ -359,8 +359,8 @@ void run() {
     Stride::set_from_command_line(filter);
 
     filter.set_voxels_to_bridge(get_option_value("bridge", 4));
-    float zlower = get_option_value("zlower", 2.5);
-    float zupper = get_option_value("zupper", 2.5);
+    const float zlower = get_option_value("zlower", 2.5);
+    const float zupper = get_option_value("zupper", 2.5);
     filter.set_zlim(zlower, zupper);
 
     auto output = Image<float>::create(output_path, filter);

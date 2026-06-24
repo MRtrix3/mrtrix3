@@ -35,7 +35,7 @@ public:
   uint16_t group, element;
   std::byte *end;
 
-  bool is(uint16_t Group, uint16_t Element) const {
+  [[nodiscard]] bool is(uint16_t Group, uint16_t Element) const {
     if (group != Group)
       return false;
     return element == Element;
@@ -44,7 +44,7 @@ public:
 
 class Date {
 public:
-  Date(std::string_view entry) : year(0), month(0), day(0) {
+  Date(std::string_view entry) {
     if (entry.size() >= 8) {
       year = to<uint32_t>(entry.substr(0, 4));
       month = to<uint32_t>(entry.substr(4, 2));
@@ -53,7 +53,7 @@ public:
     if (year < 1000 || month > 12 || day > 31)
       throw Exception("Error converting string \"" + entry + "\" to date");
   }
-  uint32_t year, month, day;
+  uint32_t year{0}, month{0}, day{0};
   friend std::ostream &operator<<(std::ostream &stream, const Date &item);
 };
 
@@ -79,17 +79,17 @@ public:
     second = std::floor(i);
     fraction = i - second;
   }
-  Time() : hour(0), minute(0), second(0), fraction(0.0) {}
+  Time() = default;
   operator default_type() const { return (hour * 3600.0 + minute * 60 + second + fraction); }
   Time operator-(const Time &t) const { return Time(static_cast<default_type>(*this) - static_cast<default_type>(t)); }
-  uint32_t hour, minute, second;
-  default_type fraction;
+  uint32_t hour{0}, minute{0}, second{0};
+  default_type fraction{0.0};
   friend std::ostream &operator<<(std::ostream &stream, const Time &item);
 };
 
 class Element {
 public:
-  typedef enum Type : uint8_t { INVALID, INT, UINT, FLOAT, DATE, TIME, DATETIME, STRING, SEQ, OTHER } Type;
+  enum class Type : uint8_t { INVALID, INT, UINT, FLOAT, DATE, TIME, DATETIME, STRING, SEQ, OTHER };
   static const std::unordered_map<Type, std::string> type_as_str;
 
   uint16_t group, element, VR;
@@ -101,20 +101,20 @@ public:
   void set(const std::filesystem::path &filepath, bool force_read = false, bool read_write = false);
   bool read();
 
-  bool is(uint16_t Group, uint16_t Element) const {
+  [[nodiscard]] bool is(uint16_t Group, uint16_t Element) const {
     if (group != Group)
       return false;
     return element == Element;
   }
 
-  std::string tag_name() const {
+  [[nodiscard]] std::string tag_name() const {
     if (dict.empty())
       init_dict();
-    const char *s = dict[tag()]; // check_syntax off
-    return (s == nullptr ? "" : s);
+    auto it = dict.find(tag());
+    return it == dict.end() ? std::string() : std::string(it->second);
   }
 
-  uint32_t tag() const {
+  [[nodiscard]] uint32_t tag() const {
     const union {
       uint16_t s[2]; // check_syntax off
       uint32_t i;
@@ -129,43 +129,43 @@ public:
   }
 
   size_t offset(std::byte *address) const { return address - fmap->address(); }
-  bool is_big_endian() const { return is_BE; }
-  bool is_new_sequence() const {
+  [[nodiscard]] bool is_big_endian() const { return is_BE; }
+  [[nodiscard]] bool is_new_sequence() const {
     return VR == VR_SQ || (group == group_data && element == element_data && size == undefined_length);
   }
 
-  bool ignore_when_parsing() const;
-  bool is_in_series_ref_sequence() const;
+  [[nodiscard]] bool ignore_when_parsing() const;
+  [[nodiscard]] bool is_in_series_ref_sequence() const;
 
-  Type type() const;
-  std::vector<int32_t> get_int() const;
-  std::vector<uint32_t> get_uint() const;
-  std::vector<default_type> get_float() const;
-  Date get_date() const;
-  Time get_time() const;
-  std::pair<Date, Time> get_datetime() const;
-  std::vector<std::string> get_string() const;
+  [[nodiscard]] Type type() const;
+  [[nodiscard]] std::vector<int32_t> get_int() const;
+  [[nodiscard]] std::vector<uint32_t> get_uint() const;
+  [[nodiscard]] std::vector<default_type> get_float() const;
+  [[nodiscard]] Date get_date() const;
+  [[nodiscard]] Time get_time() const;
+  [[nodiscard]] std::pair<Date, Time> get_datetime() const;
+  [[nodiscard]] std::vector<std::string> get_string() const;
 
-  int32_t get_int(size_t idx, int32_t default_value = 0) const {
+  [[nodiscard]] int32_t get_int(size_t idx, int32_t default_value = 0) const {
     auto v(get_int());
     return check_get(idx, v.size()) ? v[idx] : default_value;
   }
-  uint32_t get_uint(size_t idx, uint32_t default_value = 0) const {
+  [[nodiscard]] uint32_t get_uint(size_t idx, uint32_t default_value = 0) const {
     auto v(get_uint());
     return check_get(idx, v.size()) ? v[idx] : default_value;
   }
-  double get_float(size_t idx, double default_value = 0.0) const {
+  [[nodiscard]] double get_float(size_t idx, double default_value = 0.0) const {
     auto v(get_float());
     return check_get(idx, v.size()) ? v[idx] : default_value;
   }
-  std::string get_string(size_t idx, std::string default_value = std::string()) const {
+  [[nodiscard]] std::string get_string(size_t idx, std::string_view default_value = "") const {
     auto v(get_string());
-    return check_get(idx, v.size()) ? v[idx] : default_value;
+    return check_get(idx, v.size()) ? v[idx] : std::string(default_value);
   }
 
-  std::string as_string() const;
+  [[nodiscard]] std::string as_string() const;
 
-  size_t level() const { return parents.size(); }
+  [[nodiscard]] size_t level() const { return parents.size(); }
 
   friend std::ostream &operator<<(std::ostream &stream, const Element &item);
   static std::string print_header() {
@@ -201,7 +201,7 @@ protected:
   static std::unordered_map<uint32_t, const char *> dict;
   static void init_dict();
 
-  bool check_get(size_t idx, size_t size) const {
+  [[nodiscard]] bool check_get(size_t idx, size_t size) const {
     if (idx >= size) {
       error_in_get(idx);
       return false;

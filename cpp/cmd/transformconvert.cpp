@@ -73,7 +73,7 @@ transform_type get_flirt_transform(const Header &header) {
   if (ondisk_transform.matrix().topLeftCorner<3, 3>().determinant() < 0.0)
     return ondisk_transform;
   transform_type coord_switch(transform_type::Identity());
-  coord_switch(0, 0) = -1.0f;
+  coord_switch(0, 0) = -1.0F;
   coord_switch(0, 3) =
       (header.size(header.realignment().permutation(0)) - 1) * header.spacing(header.realignment().permutation(0));
   return ondisk_transform * coord_switch;
@@ -182,7 +182,7 @@ void parse_itk_trafo(const std::filesystem::path &itk_path,
 void run() {
   const std::filesystem::path output_path{argument.back()};
   const size_t num_inputs = argument.size() - 2;
-  const Operation op = MR::Enum::from_name<Operation>(argument[num_inputs]);
+  const auto op = MR::Enum::from_name<Operation>(argument[num_inputs]);
 
   switch (op) {
   case Operation::FLIRT_IMPORT: {
@@ -198,8 +198,8 @@ void run() {
     if (transform.matrix().topLeftCorner<3, 3>().determinant() < 0.0)
       INFO("Transformation matrix determinant is negative.");
 
-    transform_type src_flirt_to_scanner = get_flirt_transform(src_header);
-    transform_type dest_flirt_to_scanner = get_flirt_transform(dest_header);
+    const transform_type src_flirt_to_scanner = get_flirt_transform(src_header);
+    const transform_type dest_flirt_to_scanner = get_flirt_transform(dest_header);
 
     transform_type forward_transform = dest_flirt_to_scanner * transform * src_flirt_to_scanner.inverse();
     if (((forward_transform.matrix().array() != forward_transform.matrix().array())).any())

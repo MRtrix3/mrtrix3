@@ -47,8 +47,7 @@ public:
         mask(m),
         lock(std::make_shared<SpatialLock<float>>(
             std::max(5.0F * Particle::L, static_cast<float>(2.0F * pGrid.spacing())))),
-        sigpos(Particle::L / 8.),
-        sigdir(0.2) {
+        sigpos(Particle::L / 8.) {
     DEBUG("Initialise Metropolis Hastings sampler.");
   }
 
@@ -94,7 +93,7 @@ protected:
   std::shared_ptr<SpatialLock<float>> lock;
   Math::RNG::Uniform<float> rng_uniform;
   Math::RNG::Normal<float> rng_normal;
-  float sigpos, sigdir;
+  float sigpos, sigdir{0.2};
 
   Point_t getRandPosInMask();
 
@@ -107,12 +106,12 @@ protected:
   bool moveOptimal(const Particle *par, Point_t &pos, Point_t &dir) const;
 
   inline double calcShiftProb(const Particle *par, const Point_t &pos, const Point_t &dir) const {
-    Point_t Dpos = par->getPosition() - pos;
-    Point_t Ddir = par->getDirection() - dir;
+    const Point_t Dpos = par->getPosition() - pos;
+    const Point_t Ddir = par->getDirection() - dir;
     return gaussian_pdf(Dpos, sigpos) * gaussian_pdf(Ddir, sigdir);
   }
 
-  inline double gaussian_pdf(const Point_t &x, double sigma) const {
+  [[nodiscard]] inline double gaussian_pdf(const Point_t &x, double sigma) const {
     return std::exp(-x.squaredNorm() / (2 * sigma)) / std::sqrt(2 * Math::pi * sigma * sigma);
   }
 };

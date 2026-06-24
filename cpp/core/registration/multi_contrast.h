@@ -34,7 +34,7 @@
 namespace MR::Registration {
 
 FORCE_INLINE void check_image_output(const std::filesystem::path &image_path, const Header &reference) {
-  std::vector<std::string> V;
+  const std::vector<std::string> V;
   if (image_path.empty())
     throw Exception("image output path is empty");
   if (std::filesystem::exists(image_path) && !App::overwrite_files)
@@ -44,18 +44,18 @@ FORCE_INLINE void check_image_output(const std::filesystem::path &image_path, co
   Header H = reference;
   File::NameParser parser;
   parser.parse(image_path.string());
-  std::vector<int> Pdim(parser.ndim());
+  const std::vector<int> Pdim(parser.ndim());
 
   H.path() = image_path;
 
   const Formats::Base **format_handler = Formats::handlers;
-  for (; *format_handler; format_handler++)
+  for (; *format_handler != nullptr; format_handler++)
     if ((*format_handler)->check(H, H.ndim() - Pdim.size()))
       break;
 
-  if (!*format_handler) {
+  if (*format_handler == nullptr) {
     const std::string basename = image_path.filename().string();
-    const size_t extension_index = basename.find_last_of(".");
+    const size_t extension_index = basename.find_last_of('.');
     throw Exception("unknown format for image \"" + image_path.string() + "\"" + //
                     (extension_index == std::string::npos
                          ? "(no file extension specified)"

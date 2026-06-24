@@ -25,7 +25,7 @@ TrackIndexRangeWriter::TrackIndexRangeWriter(const track_t batch_size,
                                              std::string_view message)
     : size(batch_size),
       end(num_tracks),
-      start(0),
+
       progress(message.empty() ? nullptr
                                : new ProgressBar(message,
                                                  static_cast<size_t>(std::ceil(static_cast<default_type>(end) /

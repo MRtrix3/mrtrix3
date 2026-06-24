@@ -47,23 +47,7 @@ extern const App::OptionGroup nonlinear_options;
 class NonLinear {
 
 public:
-  NonLinear()
-      : is_initialised(false),
-        max_iter(1, 50),
-        scale_factor(3),
-        update_smoothing(2.0),
-        disp_smoothing(1.0),
-        gradient_step(0.5),
-        do_reorientation(false),
-        fod_lmax(3),
-        use_cc(false) {
-    scale_factor[0] = 0.25;
-    scale_factor[1] = 0.5;
-    scale_factor[2] = 1.0;
-    fod_lmax[0] = 0;
-    fod_lmax[1] = 2;
-    fod_lmax[2] = 4;
-  }
+  NonLinear() = default;
 
   template <class TransformType, class ImageType>
   void run(TransformType linear_trasform,
@@ -87,7 +71,7 @@ public:
       im2_to_mid_linear = linear_transform.get_transform_half_inverse();
 
       INFO("Estimating halfway space");
-      std::vector<Eigen::Transform<double, 3, Eigen::Projective>> init_transforms;
+      const std::vector<Eigen::Transform<double, 3, Eigen::Projective>> init_transforms;
       // define transfomations that will be applied to the image header when the common space is calculated
       midway_image_header = compute_minimum_average_header(
           im1_image, im2_image, linear_transform.get_transform_half_inverse(), linear_transform.get_transform_half());
@@ -105,8 +89,7 @@ public:
 
     if (do_reorientation and (fod_lmax.size() != scale_factor.size()))
       throw Exception("the lmax needs to be defined for each multi-resolution level (scale factor)");
-    else
-      fod_lmax.resize(scale_factor.size(), 0);
+    fod_lmax.resize(scale_factor.size(), 0);
 
     for (size_t level = 0; level < scale_factor.size(); level++) {
       if (is_initialised) {
@@ -134,11 +117,11 @@ public:
       Header midway_image_header_resized = resize_filter;
       midway_image_header_resized.ndim() = 3;
 
-      default_type update_smoothing_mm =
+      const default_type update_smoothing_mm =
           update_smoothing * ((midway_image_header_resized.spacing(0) + midway_image_header_resized.spacing(1) +
                                midway_image_header_resized.spacing(2)) /
                               3.0);
-      default_type disp_smoothing_mm =
+      const default_type disp_smoothing_mm =
           disp_smoothing * ((midway_image_header_resized.spacing(0) + midway_image_header_resized.spacing(1) +
                              midway_image_header_resized.spacing(2)) /
                             3.0);
@@ -149,7 +132,7 @@ public:
         for (auto &mc : stage_contrasts)
           mc.lower_lmax(fod_lmax[level]);
       } else {
-        MultiContrastSetting mc(im1_image.ndim() < 4 ? 1 : im1_image.size(3), do_reorientation, fod_lmax[level]);
+        const MultiContrastSetting mc(im1_image.ndim() < 4 ? 1 : im1_image.size(3), do_reorientation, fod_lmax[level]);
         stage_contrasts.push_back(mc);
       }
 
@@ -173,7 +156,11 @@ public:
       auto im1_warped = Image<default_type>::scratch(warped_header);
       auto im2_warped = Image<default_type>::scratch(warped_header);
 
-      Image<default_type> im_cca, im_ccc, im_ccb, im_cc1, im_cc2;
+      Image<default_type> im_cca;
+      Image<default_type> im_ccc;
+      Image<default_type> im_ccb;
+      Image<default_type> im_cc1;
+      Image<default_type> im_cc2;
       if (use_cc) {
         DEBUG("Initialising CC images");
         im_cca = Image<default_type>::scratch(warped_header);
@@ -203,7 +190,7 @@ public:
         } else {
           DEBUG("Upsampling fields");
           {
-            LogLevelLatch level(0);
+            const LogLevelLatch level(0);
             im1_to_mid = reslice(*im1_to_mid, field_header);
             im2_to_mid = reslice(*im2_to_mid, field_header);
             mid_to_im1 = reslice(*mid_to_im1, field_header);
@@ -213,7 +200,7 @@ public:
       }
 
       ssize_t iteration = 1;
-      default_type grad_step_altered =
+      const default_type grad_step_altered =
           gradient_step * (field_header.spacing(0) + field_header.spacing(1) + field_header.spacing(2)) / 3.0;
       default_type cost = std::numeric_limits<default_type>::max();
       bool converged = false;
@@ -251,7 +238,7 @@ public:
 
         DEBUG("warping input images");
         {
-          LogLevelLatch level(0);
+          const LogLevelLatch level(0);
           Filter::warp<Interp::Linear>(im1_smoothed, im1_warped, im1_deform_field, 0.0);
           Filter::warp<Interp::Linear>(im2_smoothed, im2_warped, im2_deform_field, 0.0);
         }
@@ -266,13 +253,13 @@ public:
         Im1MaskType im1_mask_warped;
         if (im1_mask.valid()) {
           im1_mask_warped = Im1MaskType::scratch(midway_image_header_resized);
-          LogLevelLatch level(0);
+          const LogLevelLatch level(0);
           Filter::warp<Interp::Linear>(im1_mask, im1_mask_warped, im1_deform_field, 0.0);
         }
         Im1MaskType im2_mask_warped;
         if (im2_mask.valid()) {
           im2_mask_warped = Im1MaskType::scratch(midway_image_header_resized);
-          LogLevelLatch level(0);
+          const LogLevelLatch level(0);
           Filter::warp<Interp::Linear>(im2_mask, im2_mask_warped, im2_deform_field, 0.0);
         }
 
@@ -333,7 +320,7 @@ public:
 
           DEBUG("inverting displacement field");
           {
-            LogLevelLatch level(0);
+            const LogLevelLatch level(0);
             Warp::invert_displacement(*im1_to_mid, *mid_to_im1);
             Warp::invert_displacement(*im2_to_mid, *mid_to_im2);
           }
@@ -416,15 +403,13 @@ public:
   void set_max_iter(const std::vector<uint32_t> &maxiter) { max_iter = maxiter; }
 
   void set_scale_factor(const std::vector<default_type> &scalefactor) {
-    for (size_t level = 0; level < scalefactor.size(); ++level) {
-      if (scalefactor[level] <= 0 || scalefactor[level] > 1)
-        throw Exception(
-            "the non-linear registration scale factor for each multi-resolution level must be between 0 and 1");
-    }
+    if (std::any_of(scalefactor.begin(), scalefactor.end(), [](double level) { return level <= 0.0 || level > 1.0; }))
+      throw Exception("the non-linear registration scale factor for each multi-resolution level" //
+                      " must be between 0 and 1");                                               //
     scale_factor = scalefactor;
   }
 
-  std::vector<default_type> get_scale_factor() const { return scale_factor; }
+  [[nodiscard]] std::vector<default_type> get_scale_factor() const { return scale_factor; }
 
   void set_init_grad_step(const default_type step) { gradient_step = step; }
 
@@ -438,9 +423,8 @@ public:
   void set_disp_smoothing(const default_type voxel_fwhm) { disp_smoothing = voxel_fwhm; }
 
   void set_lmax(const std::vector<uint32_t> &lmax) {
-    for (size_t i = 0; i < lmax.size(); ++i)
-      if (lmax[i] % 2)
-        throw Exception("the input nonlinear lmax must be even");
+    if (std::any_of(lmax.begin(), lmax.end(), [](uint32_t l) { return ((l % 2) != 0U); }))
+      throw Exception("the input nonlinear lmax must be even");
     fod_lmax = lmax;
   }
 
@@ -457,11 +441,11 @@ public:
 
   std::shared_ptr<Image<default_type>> get_mid_to_im2() { return mid_to_im2; }
 
-  transform_type get_im1_to_mid_linear() const { return im1_to_mid_linear; }
+  [[nodiscard]] transform_type get_im1_to_mid_linear() const { return im1_to_mid_linear; }
 
-  transform_type get_im2_to_mid_linear() const { return im2_to_mid_linear; }
+  [[nodiscard]] transform_type get_im2_to_mid_linear() const { return im2_to_mid_linear; }
 
-  Header get_output_warps_header() const {
+  [[nodiscard]] Header get_output_warps_header() const {
     Header output_header(*im1_to_mid);
     output_header.ndim() = 5;
     output_header.size(3) = 3;
@@ -531,16 +515,16 @@ protected:
     return false;
   }
 
-  bool is_initialised;
-  std::vector<uint32_t> max_iter;
-  std::vector<default_type> scale_factor;
-  default_type update_smoothing;
-  default_type disp_smoothing;
-  default_type gradient_step;
+  bool is_initialised{false};
+  std::vector<uint32_t> max_iter{1, 50};
+  std::vector<default_type> scale_factor{{0.25, 0.50, 1.00}};
+  default_type update_smoothing{2.0};
+  default_type disp_smoothing{1.0};
+  default_type gradient_step{0.5};
   Eigen::MatrixXd aPSF_directions;
-  bool do_reorientation;
-  std::vector<uint32_t> fod_lmax;
-  bool use_cc;
+  bool do_reorientation{false};
+  std::vector<uint32_t> fod_lmax{{0, 2, 4}};
+  bool use_cc{false};
   std::optional<std::filesystem::path> diagnostics_image_dir;
 
   std::vector<size_t> cc_extent;

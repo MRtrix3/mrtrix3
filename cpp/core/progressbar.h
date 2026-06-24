@@ -91,8 +91,8 @@ public:
   FORCE_INLINE bool text_has_been_modified() const { return _text_has_been_modified; }
   FORCE_INLINE std::string_view text() const { return _text; }
   FORCE_INLINE std::string_view ellipsis() const { return _ellipsis; }
-  FORCE_INLINE const char *const text_cstr() const { return _text.c_str(); }         // check_syntax off
-  FORCE_INLINE const char *const ellipsis_cstr() const { return _ellipsis.c_str(); } // check_syntax off
+  const FORCE_INLINE char *const text_cstr() const { return _text.c_str(); }         // check_syntax off
+  const FORCE_INLINE char *const ellipsis_cstr() const { return _ellipsis.c_str(); } // check_syntax off
 
   //! set the maximum target value of the ProgressBar
   /*! This function should only be called if the ProgressBar has been
@@ -175,7 +175,7 @@ private:
 inline void ProgressBar::set_max(size_t target) {
   if (!show)
     return;
-  if (target) {
+  if (target != 0U) {
     _multiplier = 0.01 * target;
   } else {
     _multiplier = 0.0;
@@ -233,7 +233,7 @@ FORCE_INLINE void ProgressBar::operator++() {
     return;
   const std::unique_lock<std::mutex> lock(mutex);
   if (_multiplier == 0.0F) {
-    double time = timer.elapsed();
+    const double time = timer.elapsed();
     if (time >= next_time) {
       _value = time / busy_interval;
       do {

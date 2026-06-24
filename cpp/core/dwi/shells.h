@@ -42,16 +42,16 @@ public:
   Shell() : mean(0.0), stdev(0.0), min(0.0), max(0.0) {}
   Shell(const Eigen::MatrixXd &grad, const std::vector<size_t> &indices);
 
-  const std::vector<size_t> &get_volumes() const { return volumes; }
-  size_t count() const { return volumes.size(); }
-  size_t size() const { return volumes.size(); }
+  [[nodiscard]] const std::vector<size_t> &get_volumes() const { return volumes; }
+  [[nodiscard]] size_t count() const { return volumes.size(); }
+  [[nodiscard]] size_t size() const { return volumes.size(); }
 
-  default_type get_mean() const { return mean; }
-  default_type get_stdev() const { return stdev; }
-  default_type get_min() const { return min; }
-  default_type get_max() const { return max; }
+  [[nodiscard]] default_type get_mean() const { return mean; }
+  [[nodiscard]] default_type get_stdev() const { return stdev; }
+  [[nodiscard]] default_type get_min() const { return min; }
+  [[nodiscard]] default_type get_max() const { return max; }
 
-  bool is_bzero() const { return (mean < MR::DWI::bzero_threshold()); }
+  [[nodiscard]] bool is_bzero() const { return (mean < MR::DWI::bzero_threshold()); }
 
   bool operator<(const Shell &rhs) const { return (mean < rhs.mean); }
 
@@ -71,25 +71,25 @@ public:
   Shells(const Eigen::MatrixXd &grad);
 
   const Shell &operator[](const size_t i) const { return shells[i]; }
-  const Shell &smallest() const { return shells.front(); }
-  const Shell &largest() const { return shells.back(); }
-  size_t count() const { return shells.size(); }
-  size_t size() const { return shells.size(); }
-  size_t volumecount() const {
+  [[nodiscard]] const Shell &smallest() const { return shells.front(); }
+  [[nodiscard]] const Shell &largest() const { return shells.back(); }
+  [[nodiscard]] size_t count() const { return shells.size(); }
+  [[nodiscard]] size_t size() const { return shells.size(); }
+  [[nodiscard]] size_t volumecount() const {
     size_t count = 0;
     for (const auto &it : shells)
       count += it.count();
     return count;
   }
 
-  std::vector<size_t> get_counts() const {
+  [[nodiscard]] std::vector<size_t> get_counts() const {
     std::vector<size_t> c(count());
     for (size_t n = 0; n < count(); ++n)
       c[n] = shells[n].count();
     return c;
   }
 
-  std::vector<size_t> get_bvalues() const {
+  [[nodiscard]] std::vector<size_t> get_bvalues() const {
     std::vector<size_t> b(count());
     for (size_t n = 0; n < count(); ++n)
       b[n] = shells[n].get_mean();
@@ -100,17 +100,17 @@ public:
 
   Shells &reject_small_shells(const size_t min_volumes = default_shellclustering_mindirections);
 
-  bool is_single_shell() const {
+  [[nodiscard]] bool is_single_shell() const {
     // only if exactly 1 non-bzero shell
     return ((count() == 1 && !has_bzero()) || (count() == 2 && has_bzero()));
   }
 
-  bool has_bzero() const { return smallest().is_bzero(); }
+  [[nodiscard]] bool has_bzero() const { return smallest().is_bzero(); }
 
   friend std::ostream &operator<<(std::ostream &stream, const Shells &S) {
-    stream << "Total of " << S.count() << " DWI shells:" << std::endl;
+    stream << "Total of " << S.count() << " DWI shells:" << '\n';
     for (const auto &it : S.shells)
-      stream << it << std::endl;
+      stream << it << '\n';
     return stream;
   }
 

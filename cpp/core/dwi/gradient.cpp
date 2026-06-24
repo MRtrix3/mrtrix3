@@ -118,7 +118,8 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header,
                                  const std::filesystem::path &bvecs_path,
                                  const std::filesystem::path &bvals_path) {
   assert(header.realignment().orig_transform().matrix().allFinite());
-  Eigen::MatrixXd bvals, bvecs;
+  Eigen::MatrixXd bvals;
+  Eigen::MatrixXd bvecs;
   try {
     bvals = File::Matrix::load_matrix<>(bvals_path);
     bvecs = File::Matrix::load_matrix<>(bvecs_path);
@@ -165,8 +166,8 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header,
   grad.col(3) = bvals.row(0);
 
   // Substitute NaNs with b=0 volumes
-  ssize_t nans_present_bvecs = false;
-  ssize_t nans_present_bvals = false;
+  bool nans_present_bvecs = false;
+  bool nans_present_bvals = false;
   ssize_t nan_linecount = 0;
   for (ssize_t n = 0; n != grad.rows(); ++n) {
     bool zero_row = false;
@@ -228,7 +229,7 @@ void save_bvecs_bvals(const Header &header,
   if (adjusted_transform.linear().determinant() > 0.0)
     bvecs.row(0) = -bvecs.row(0);
 
-  if (bval_zeroed_count) {
+  if (bval_zeroed_count != 0U) {
     WARN("For image \"" + header.name() + "\","                                       //
          + str(bval_zeroed_count) + " volumes had zero gradient direction vector,"    //
          + " but 0.0 < b-value <= BZeroThreshold;"                                    //
@@ -282,7 +283,7 @@ Eigen::MatrixXd get_DW_scheme(const Header &header, BValueScalingBehaviour bvalu
     // also make sure that directions of [0, 0, 0] don't affect subsequent calculations
     bool warnambiguous = false;
     for (ssize_t row = 0; row != grad.rows(); ++row) {
-      if (squared_norms[row])
+      if (squared_norms[row] != 0.0)
         grad.row(row).template head<3>().array() /= std::sqrt(squared_norms[row]);
       else
         warnambiguous = warnambiguous || (grad.row(row)[3] > bzero_threshold());
@@ -345,7 +346,7 @@ void export_grad_commandline(const Header &header) {
   auto check = [](const Header &h) -> const Header & {
     if (h.keyval().find("dw_scheme") == h.keyval().end())
       throw Exception("no gradient information found within image \"" + h.path().string() + "\"");
-    return h;
+    return h; // NOLINT(bugprone-return-const-ref-from-parameter)
   };
 
   auto opt = get_options("export_grad_mrtrix");

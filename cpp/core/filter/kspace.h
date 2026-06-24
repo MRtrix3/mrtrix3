@@ -74,7 +74,7 @@ public:
       }
     }
 
-    if (outer_axes.size()) {
+    if (!outer_axes.empty()) {
       Adapter::Replicate<Image<double>> replicating_window(window, in);
       for (auto l = Loop(in)(kspace, replicating_window); l; ++l)
         kspace.value() *= static_cast<double>(replicating_window.value());
@@ -245,9 +245,9 @@ protected:
     Header H(header);
     H.datatype() = DataType::Float64;
     H.datatype().set_byte_order_native();
-    std::vector<size_t>::const_iterator it = inner_axes.begin();
+    auto it = inner_axes.cbegin();
     for (size_t axis = 0; axis != header.ndim(); ++axis) {
-      if (it != inner_axes.end() && *it == axis)
+      if (it != inner_axes.cend() && *it == axis)
         ++it;
       else
         H.size(axis) = 1;

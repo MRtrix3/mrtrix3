@@ -41,13 +41,12 @@ public:
         // CONF default: true
         // CONF Define default interplation setting for image and image overlay.
         interpolation(File::Config::get_bool("ImageInterpolation", true) ? gl::LINEAR : gl::NEAREST),
-        _current_texture(&_texture),
-        texture_mode_changed(true) {}
+        _current_texture(&_texture) {}
 
   virtual ~Volume();
 
   void set_interpolate(bool linear) { interpolation = linear ? gl::LINEAR : gl::NEAREST; }
-  bool interpolate() const { return interpolation == gl::LINEAR; }
+  [[nodiscard]] bool interpolate() const { return interpolation == gl::LINEAR; }
 
   void set_colourmap(size_t index) {
     if (ColourMap::maps[index].special || ColourMap::maps[colourmap].special)
@@ -66,7 +65,7 @@ public:
   }
 
   void bind() {
-    if (!texture()) { // allocate:
+    if (texture() == 0U) { // allocate:
       texture().gen(gl::TEXTURE_3D);
       texture().bind();
     } else
@@ -74,18 +73,20 @@ public:
     texture().set_interp(interpolation);
   }
 
-  Eigen::Transform<float, 3, Eigen::AffineCompact> image2scanner() const { return _header.transform().cast<float>(); }
+  [[nodiscard]] Eigen::Transform<float, 3, Eigen::AffineCompact> image2scanner() const {
+    return _header.transform().cast<float>();
+  }
 
-  Eigen::Transform<float, 3, Eigen::AffineCompact> scanner2image() const {
+  [[nodiscard]] Eigen::Transform<float, 3, Eigen::AffineCompact> scanner2image() const {
     return _header.transform().inverse().cast<float>();
   }
 
-  Eigen::Transform<float, 3, Eigen::AffineCompact> voxel2scanner() const {
+  [[nodiscard]] Eigen::Transform<float, 3, Eigen::AffineCompact> voxel2scanner() const {
     auto T = _header.transform();
     return T.scale(Eigen::Vector3d(_header.spacing(0), _header.spacing(1), _header.spacing(2))).cast<float>();
   }
 
-  Eigen::Transform<float, 3, Eigen::AffineCompact> scanner2voxel() const {
+  [[nodiscard]] Eigen::Transform<float, 3, Eigen::AffineCompact> scanner2voxel() const {
     auto T = _header.transform().inverse();
     return T.prescale(Eigen::Vector3d(1.0 / _header.spacing(0), 1.0 / _header.spacing(1), 1.0 / _header.spacing(2)))
         .cast<float>();
@@ -93,16 +94,16 @@ public:
 
   void allocate();
 
-  float focus_rate() const {
+  [[nodiscard]] float focus_rate() const {
     return 1.0e-3F * (std::pow(_header.size(0) * _header.spacing(0) * _header.size(1) * _header.spacing(1) *
                                    _header.size(2) * _header.spacing(2),
                                1.0F / 3.0F));
   }
 
-  float scale_factor() const { return _scale_factor; }
-  const GL::Texture &texture() const { return *_current_texture; }
+  [[nodiscard]] float scale_factor() const { return _scale_factor; }
+  [[nodiscard]] const GL::Texture &texture() const { return *_current_texture; }
   GL::Texture &texture() { return *_current_texture; }
-  const MR::Header &header() const { return _header; }
+  [[nodiscard]] const MR::Header &header() const { return _header; }
   MR::Header &header() { return _header; }
 
   void min_max_set() {
@@ -124,7 +125,7 @@ protected:
   GL::VertexArrayObject vertex_array_object;
   GLenum type, format, internal_format;
   float _scale_factor;
-  bool texture_mode_changed;
+  bool texture_mode_changed{true};
 
   std::array<Eigen::Vector3f, 4> pos;
   std::array<Eigen::Vector3f, 4> tex;
@@ -154,7 +155,7 @@ protected:
   }
 
   void draw_vertices() {
-    if (!vertex_buffer || !vertex_array_object) {
+    if ((vertex_buffer == 0U) || (vertex_array_object == 0U)) {
       assert(!vertex_buffer);
       assert(!vertex_array_object);
 

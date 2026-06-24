@@ -173,8 +173,8 @@ class ThreeVector : public FormatBase<3> {
 public:
   ThreeVector(const Eigen::Matrix<default_type, 3, 1> &in) : FormatBase(in), threevector(in) {}
   Eigen::Matrix<default_type, 3, 1> operator()() const override { return threevector; }
-  Eigen::Matrix<default_type, 3, 1> normalized() const { return threevector.normalized(); }
-  default_type radius() const { return threevector.norm(); }
+  [[nodiscard]] Eigen::Matrix<default_type, 3, 1> normalized() const { return threevector.normalized(); }
+  [[nodiscard]] default_type radius() const { return threevector.norm(); }
   Eigen::Vector3d threevector;
   friend std::ostream &operator<<(std::ostream &stream, const ThreeVector &in) {
     stream << "ThreeVector(" << in.threevector.transpose() << ")";
@@ -402,15 +402,15 @@ public:
   using ImageType = Image<float>;
   using BaseType = Adapter::Base<FixelImage<FixelType>, ImageType>;
   using BaseType::parent;
-  FixelImage(Image<float> &that) : BaseType(that), fixel_index(0) {}
+  FixelImage(Image<float> &that) : BaseType(that) {}
   void reset() {
     parent().reset();
     fixel_index = 0;
   }
-  ssize_t size(size_t axis) const {
+  [[nodiscard]] ssize_t size(size_t axis) const {
     return axis == 3 ? (parent().size(3) / FixelType::num_elements()) : parent().size(axis);
   }
-  ssize_t get_index(size_t axis) const { return (axis == 3) ? fixel_index : parent().get_index(axis); }
+  [[nodiscard]] ssize_t get_index(size_t axis) const { return (axis == 3) ? fixel_index : parent().get_index(axis); }
   void move_index(size_t axis, ssize_t increment) {
     if (axis != 3) {
       parent().move_index(axis, increment);
@@ -441,7 +441,7 @@ public:
   }
 
 private:
-  ssize_t fixel_index;
+  ssize_t fixel_index{0};
 };
 
 template <reference_t in_reference, class InFixelType, reference_t out_reference, class OutFixelType>
@@ -557,7 +557,7 @@ void run() {
   if (H_in.ndim() != 4)
     throw Exception("Input image must be 4D");
 
-  const format_t in_format(get_option_choice<format_t>("in_format", format_t::CARTESIAN));
+  const format_t in_format(get_option_choice("in_format", format_t::CARTESIAN));
   if (in_format == format_t::CARTESIAN || in_format == format_t::UNITCARTESIAN)
     Peaks::validate_header(H_in);
 
@@ -566,14 +566,14 @@ void run() {
   if (num_fixels * in_volumes_per_fixel != H_in.size(3))
     throw Exception("Number of volumes in input image (" + str(H_in.size(3)) + ")" +              //
                     " incompatible with " + str(volumes_per_fixel) + " volumes per orientation"); //
-  const reference_t in_reference(get_option_choice<reference_t>("in_reference", reference_t::XYZ));
+  const reference_t in_reference(get_option_choice("in_reference", reference_t::XYZ));
 
-  const format_t out_format(get_option_choice<format_t>("out_format", format_t::CARTESIAN));
+  const format_t out_format(get_option_choice("out_format", format_t::CARTESIAN));
   if ((in_format == format_t::SPHERICAL || in_format == format_t::CARTESIAN) &&
       (out_format == format_t::UNITSPHERICAL || out_format == format_t::UNITCARTESIAN)) {
     WARN("Output image will not include amplitudes that may be present in input image due to chosen format");
   }
-  const reference_t out_reference(get_option_choice<reference_t>("out_reference", reference_t::XYZ));
+  const reference_t out_reference(get_option_choice("out_reference", reference_t::XYZ));
 
   Header H_out(H_in);
   H_out.path() = argument[1];

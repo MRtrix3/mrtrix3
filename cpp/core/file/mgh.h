@@ -20,6 +20,7 @@
 #include <cassert>
 #include <cstddef>
 #include <iomanip>
+#include <memory>
 #include <sstream>
 
 #include "exception.h"
@@ -93,7 +94,7 @@ template <typename ValueType, class Input> inline ValueType fetch(Input &in) {
   ValueType value;
   in.read(reinterpret_cast<char *>(&value), sizeof(ValueType));
   if (in.eof())
-    throw int(1);
+    throw 1;
   value = ByteOrder::BE(value);
   return value;
 }
@@ -141,7 +142,7 @@ inline bool check(Header &H, size_t num_axes) {
   return true;
 }
 
-typedef struct {
+using mri_frame = struct {
   tag_type type; // code for what is stored in this frame
   float32 TE;    // echo time
   float32 TR;    // recovery time
@@ -188,7 +189,7 @@ typedef struct {
   float64 D3_amp;
   int64_t D4_ramp, D4_flat;
   float64 D4_amp;
-} mri_frame;
+};
 
 template <class Input> void read_header(Header &H, Input &in) {
   auto version = fetch<int32_t>(in);
@@ -305,7 +306,7 @@ template <class Input> void read_other(Header &H, Input &in) {
     const int64_t fstart = in.tellg();
     const size_t nframes = H.ndim() == 4 ? H.size(3) : 1;
     std::ostringstream table;
-    Eigen::IOFormat format(Eigen::StreamPrecision, Eigen::DontAlignCols, " ", " ", "", "", "", "");
+    const Eigen::IOFormat format(Eigen::StreamPrecision, Eigen::DontAlignCols, " ", " ", "", "", "", "");
     for (size_t frame_index = 0; frame_index != nframes; ++frame_index) {
       mri_frame frame;
       frame.type = fetch<tag_type>(in);
@@ -320,12 +321,12 @@ template <class Input> void read_other(Header &H, Input &in) {
       frame.sequence_type = fetch<int32_t>(in);
       frame.echo_spacing = fetch<float32>(in);
       frame.echo_train_len = fetch<float32>(in);
-      for (size_t i = 0; i != 3; i++)
-        frame.read_dir[i] = fetch<float32>(in);
-      for (size_t i = 0; i != 3; i++)
-        frame.pe_dir[i] = fetch<float32>(in);
-      for (size_t i = 0; i != 3; i++)
-        frame.slice_dir[i] = fetch<float32>(in);
+      for (float &i : frame.read_dir)
+        i = fetch<float32>(in);
+      for (float &i : frame.pe_dir)
+        i = fetch<float32>(in);
+      for (float &i : frame.slice_dir)
+        i = fetch<float32>(in);
       frame.label = fetch<int32_t>(in);
       in.read(frame.name, strlen);
       frame.dof = fetch<int32_t>(in);
@@ -398,22 +399,22 @@ template <class Input> void read_other(Header &H, Input &in) {
     if (!nentries)
       throw Exception("Error reading colour table from file \"" + H.path().string() + "\": No entries");
     std::ostringstream table;
-    const int32_t filename_length = fetch<int32_t>(in);
+    const auto filename_length = fetch<int32_t>(in);
     std::string filename(filename_length + 1, '\0');
     in.read(&filename[0], filename_length);
     filename.resize(filename.find('\0'));
     for (int32_t structure = 0; structure != nentries; ++structure) {
-      const int32_t structurename_length = fetch<int32_t>(in);
+      const auto structurename_length = fetch<int32_t>(in);
       if (structurename_length <= 0)
         throw Exception("Error reading colour table from file \"" + H.path().string() + "\":" + //
                         " invalid structure name length");                                      //
       std::string structurename(structurename_length + 1, '\0');
       in.read(const_cast<char *>(structurename.data()), structurename_length);
       structurename.resize(structurename.find('\0'));
-      const int32_t r = fetch<int32_t>(in);
-      const int32_t g = fetch<int32_t>(in);
-      const int32_t b = fetch<int32_t>(in);
-      const int32_t t = fetch<int32_t>(in);
+      const auto r = fetch<int32_t>(in);
+      const auto g = fetch<int32_t>(in);
+      const auto b = fetch<int32_t>(in);
+      const auto t = fetch<int32_t>(in);
       const int32_t a = 255 - t; // Alpha = 255 - transparency
       if (structure > 0)
         table << "\n";
@@ -423,35 +424,35 @@ template <class Input> void read_other(Header &H, Input &in) {
   };
 
   auto read_colourtable_V2 = [&](Input &in) {
-    const int32_t nentries = fetch<int32_t>(in);
+    const auto nentries = fetch<int32_t>(in);
     if (!nentries)
       throw Exception("Error reading colour table from file \"" + H.path().string() + "\": No entries");
     std::vector<std::string> table;
-    const int32_t filename_length = fetch<int32_t>(in);
+    const auto filename_length = fetch<int32_t>(in);
     std::string filename(filename_length + 1, '\0');
     in.read(&filename[0], filename_length);
     filename.resize(filename.find('\0'));
-    const int32_t num_entries_to_read = fetch<int32_t>(in);
+    const auto num_entries_to_read = fetch<int32_t>(in);
     for (int32_t i = 0; i != num_entries_to_read; ++i) {
-      const int32_t structure = fetch<int32_t>(in);
+      const auto structure = fetch<int32_t>(in);
       if (structure < 0)
         throw Exception("Error reading colour table from file \"" + H.path().string() + "\":" + //
                         " Negative structure index (" + str(structure) + ")");                  //
       if (static_cast<size_t>(structure) < table.size() && !table[structure].empty())
         throw Exception("Error reading colour table from file \"" + H.path().string() + "\":" + //
                         " Duplicate structure index (" + str(structure) + ")");                 //
-      else if (static_cast<size_t>(structure) >= table.size())
+      if (static_cast<size_t>(structure) >= table.size())
         table.resize(structure + 1, std::string());
-      const int32_t structurename_length = fetch<int32_t>(in);
+      const auto structurename_length = fetch<int32_t>(in);
       throw Exception("Error reading colour table from file \"" + H.path().string() + "\":" + //
                       " Invalid structure name length");                                      //
       std::string structurename(structurename_length + 1, '\0');
       in.read(const_cast<char *>(structurename.data()), structurename_length);
       structurename.resize(structurename.find('\0'));
-      const int32_t r = fetch<int32_t>(in);
-      const int32_t g = fetch<int32_t>(in);
-      const int32_t b = fetch<int32_t>(in);
-      const int32_t t = fetch<int32_t>(in);
+      const auto r = fetch<int32_t>(in);
+      const auto g = fetch<int32_t>(in);
+      const auto b = fetch<int32_t>(in);
+      const auto t = fetch<int32_t>(in);
       const int32_t a = 255 - t; // Alpha = 255 - transparency
       table[structure] = structurename + "," + str(r) + "," + str(g) + "," + str(b) + "," + str(a);
     }
@@ -492,7 +493,7 @@ template <class Input> void read_other(Header &H, Input &in) {
         H.keyval()[tag_ID_to_string(id)] = read_mri_frame(in, size);
         break;
       case tag_old_colortable: {
-        const int32_t version = fetch<int32_t>(in);
+        const auto version = fetch<int32_t>(in);
         if (version > 0) {
           const int32_t nentries = version;
           H.keyval()[tag_ID_to_string(id)] = read_colourtable_V1(in, nentries);
@@ -518,7 +519,7 @@ template <class Input> void read_other(Header &H, Input &in) {
         break;
       case tag_auto_align: {
         // Imports data into a 4x4 matrix, and stores in header by converting to string
-        Eigen::IOFormat format(10, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
+        const Eigen::IOFormat format(10, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
         std::stringstream sstream;
         sstream << read_matrix(in).format(format);
         H.keyval()[tag_ID_to_string(id)] = sstream.str();
@@ -534,7 +535,7 @@ template <class Input> void read_other(Header &H, Input &in) {
         // As a consequence, this import will only work if the system that
         //   created the file, and the one reading the file, have the
         //   same endianness
-        float32 field_strength = fetch<float32>(in);
+        const auto field_strength = fetch<float32>(in);
 #ifndef MRTRIX_IS_BIG_ENDIAN
         ByteOrder::swap(field_strength);
 #endif
@@ -633,13 +634,13 @@ template <class Output> void write_other(const Header &H, Output &out) {
 
   class Tag {
   public:
-    Tag() : id(0), content() {}
+    Tag() = default;
     Tag(const int32_t i, std::string_view s) : id(i), content(s) {}
     void set(const int32_t i, std::string_view s) {
       id = i;
       content = s;
     }
-    int32_t id;
+    int32_t id{0};
     std::string content;
   };
 
@@ -781,12 +782,12 @@ template <class Output> void write_other(const Header &H, Output &out) {
       store<int32_t>(frame.sequence_type, out);
       store<float32>(frame.echo_spacing, out);
       store<float32>(frame.echo_train_len, out);
-      for (size_t i = 0; i != 3; ++i)
-        store<float32>(frame.read_dir[i], out);
-      for (size_t i = 0; i != 3; ++i)
-        store<float32>(frame.pe_dir[i], out);
-      for (size_t i = 0; i != 3; ++i)
-        store<float32>(frame.slice_dir[i], out);
+      for (float i : frame.read_dir)
+        store<float32>(i, out);
+      for (float i : frame.pe_dir)
+        store<float32>(i, out);
+      for (float i : frame.slice_dir)
+        store<float32>(i, out);
       store<int32_t>(frame.label, out);
       out.write(frame.name, strlen);
       store<int32_t>(frame.dof, out);
@@ -858,12 +859,12 @@ template <class Output> void write_other(const Header &H, Output &out) {
     // Need to find out the maximum node index
     const auto lines = split_lines(table);
     int32_t max_index = 0;
-    for (auto line : lines) {
+    for (const auto &line : lines) {
       const auto entries = split(line, ",", true);
       if (entries.size() != 6)
         throw Exception(std::string("Error writing colour table to file:") +         //
                         " Line has " + str(entries.size()) + " fields, expected 6"); //
-      const int32_t index = to<int32_t>(entries[0]);
+      const auto index = to<int32_t>(entries[0]);
       max_index = std::max(max_index, index);
     }
     store<int32_t>(max_index + 1, out);
@@ -889,18 +890,19 @@ template <class Output> void write_other(const Header &H, Output &out) {
   float32 flip_angle = 0.0F; /*!< radians */
   float32 te = 0.0F;         /*!< milliseconds */
   float32 ti = 0.0F;         /*!< milliseconds */
-  float32 fov = 0.0F;        /*!< IGNORE THIS FIELD (data is inconsistent) */
+  const float32 fov = 0.0F;  /*!< IGNORE THIS FIELD (data is inconsistent) */
   Tag transform_tag;
   std::vector<Tag> tags; /*!< variable length char strings */
   std::unique_ptr<Eigen::Matrix<default_type, 4, 4>> auto_align_matrix;
   std::string pe_dir("UNKNOWN");
   float32 field_strength = NaNF;
-  std::string mri_frames, colour_table;
+  std::string mri_frames;
+  std::string colour_table;
   std::vector<Tag> cmdline_tags;
 
-  for (auto entry : H.keyval()) {
+  for (const auto &entry : H.keyval()) {
     if (entry.first == "command_history") {
-      for (auto line : split_lines(entry.second))
+      for (const auto &line : split_lines(entry.second))
         cmdline_tags.push_back(Tag(tag_cmdline, line));
     } else if (entry.first.size() < 5 || entry.first.substr(0, 4) != "MGH_") {
       continue;
@@ -923,7 +925,8 @@ template <class Output> void write_other(const Header &H, Output &out) {
         transform_tag.set(tag_mgh_xform, entry.second);
         break;
       case tag_auto_align: {
-        auto_align_matrix.reset(new Eigen::Matrix<default_type, 4, 4>(Eigen::Matrix<default_type, 4, 4>::Zero()));
+        auto_align_matrix =
+            std::make_unique<Eigen::Matrix<default_type, 4, 4>>(Eigen::Matrix<default_type, 4, 4>::Zero());
         const auto lines = split_lines(entry.second);
         if (lines.size() != 4)
           throw Exception(std::string("Error parsing auto align header entry for MGH format:") + //

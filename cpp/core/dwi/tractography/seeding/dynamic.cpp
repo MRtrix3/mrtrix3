@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/seeding/dynamic.h"
 
+#include <memory>
+
 #include "app.h"
 #include "dwi/fmls.h"
 #include "dwi/tractography/rng.h"
@@ -65,7 +67,7 @@ Dynamic::Dynamic(const std::filesystem::path &in,
       transform(fod_data) {
   auto opt = App::get_options("act");
   if (!opt.empty())
-    act.reset(new Dynamic_ACT_additions(opt[0][0]));
+    act = std::make_unique<Dynamic_ACT_additions>(opt[0][0]);
 
   perform_FOD_segmentation(fod_data);
 
@@ -183,7 +185,7 @@ bool Dynamic::get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d) {
   std::uniform_int_distribution<size_t> uniform_int(0, fixels.size() - 2);
   std::uniform_real_distribution<float> uniform_float(0.0F, 1.0F);
 
-  while (1) {
+  while (true) {
 
     ++this_attempts;
     const size_t fixel_index = 1 + uniform_int(rng());
@@ -194,7 +196,7 @@ bool Dynamic::get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d) {
       // Derive the new seed probability
       // TODO Functionalise this?
       const float ratio = fixel.get_ratio(mu());
-      const bool force_seed = !fixel.get_TD();
+      const bool force_seed = fixel.get_TD() == 0.0;
       const size_t current_trackcount = track_count.load(std::memory_order_relaxed);
       const float cumulative_prob = fixel.get_cumulative_prob(current_trackcount);
       seed_prob = cumulative_prob;
@@ -263,7 +265,7 @@ bool Dynamic::operator()(const FMLS::FOD_lobes &in) {
     return false;
   VoxelAccessor v(accessor());
   assign_pos_of(in.vox).to(v);
-  if (v.value()) {
+  if (v.value() != nullptr) {
     for (DWI::Fixel_map<Fixel>::Iterator i = begin(v); i; ++i)
       i().set_voxel(in.vox);
   }

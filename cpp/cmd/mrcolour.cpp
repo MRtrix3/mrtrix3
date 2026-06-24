@@ -75,7 +75,7 @@ void run() {
   Header H_in = Header::open(argument[0]);
   // Resolve the selected colour map by name rather than by integer index,
   //   so the ColourMap::Choice enumeration need not be kept in lock-step with the maps table.
-  const ColourMap::Entry colourmap =
+  const ColourMap::Entry &colourmap =
       ColourMap::maps[ColourMap::index(MR::Enum::name(MR::Enum::from_name<ColourMap::Choice>(argument[1])))];
   Eigen::Vector3d fixed_colour(Eigen::Vector3d::Constant(NaN));
   if (colourmap.is_colour) {
@@ -108,7 +108,8 @@ void run() {
   float lower = colourmap.is_rgb ? 0.0 : get_option_value("lower", NaNF);
   float upper = get_option_value("upper", NaNF);
   if (!std::isfinite(lower) || !std::isfinite(upper)) {
-    float image_min = NaNF, image_max = NaNF;
+    float image_min = NaNF;
+    float image_max = NaNF;
     min_max(in, image_min, image_max);
     if (colourmap.is_rgb) { // RGB
       image_max = std::max(MR::abs(image_min), MR::abs(image_max));
@@ -125,9 +126,9 @@ void run() {
       upper = image_max;
     }
   }
-  const float multiplier = 1.0f / (upper - lower);
+  const float multiplier = 1.0F / (upper - lower);
 
-  auto scale = [&](const float value) { return std::max(0.0f, std::min(1.0f, multiplier * (value - lower))); };
+  auto scale = [&](const float value) { return std::max(0.0F, std::min(1.0F, multiplier * (value - lower))); };
 
   Header H_out(H_in);
   H_out.ndim() = 4;
@@ -140,7 +141,7 @@ void run() {
   if (colourmap.is_colour) {
     assert(fixed_colour.allFinite());
     for (auto l_outer = Loop("Applying fixed RGB colour to greyscale image", H_in)(in, out); l_outer; ++l_outer) {
-      const float amplitude = std::max(0.0f, std::min(1.0f, scale(in.value())));
+      const float amplitude = std::max(0.0F, std::min(1.0F, scale(in.value())));
       for (auto l_inner = Loop(3)(out); l_inner; ++l_inner)
         out.value() = amplitude * fixed_colour[out.index(3)];
     }

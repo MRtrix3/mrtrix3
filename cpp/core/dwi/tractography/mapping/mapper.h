@@ -17,6 +17,7 @@
 #pragma once
 
 #include <filesystem>
+#include <memory>
 
 #include "image.h"
 #include "thread_queue.h"
@@ -62,7 +63,7 @@ public:
   TrackMapperBase(const TrackMapperBase &) = default;
   TrackMapperBase(TrackMapperBase &&) = default;
 
-  virtual ~TrackMapperBase() {}
+  virtual ~TrackMapperBase() = default;
 
   void set_upsample_ratio(const size_t i) { upsampler.set_ratio(i); }
   void set_map_zero(const bool i) { map_zero = i; }
@@ -79,12 +80,12 @@ public:
 
   void create_dixel_plugin(const DWI::Directions::FastLookupSet &dirs) {
     assert(!dixel_plugin && !tod_plugin);
-    dixel_plugin.reset(new DixelMappingPlugin(dirs));
+    dixel_plugin = std::make_shared<DixelMappingPlugin>(dirs);
   }
 
   void create_tod_plugin(const size_t N) {
     assert(!dixel_plugin && !tod_plugin);
-    tod_plugin.reset(new TODMappingPlugin(N));
+    tod_plugin = std::make_shared<TODMappingPlugin>(N);
   }
 
   template <class Cont> bool operator()(const Streamline<> &in, Cont &out) const {
@@ -343,7 +344,7 @@ private:
   // Overload virtual function
   virtual bool preprocess(const Streamline<> &tck, SetVoxelExtras &out) const {
     set_factor(tck, out);
-    return out.factor;
+    return out.factor != 0.0;
   }
 };
 

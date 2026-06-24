@@ -15,8 +15,10 @@
  */
 
 #include "opengl/font.h"
+
 #include "debug.h"
 #include "math/math.h"
+#include "opengl/gl_core_3_3.h"
 
 namespace MR::GUI::GL {
 
@@ -94,10 +96,10 @@ void Font::initGL(bool with_shadow) {
         for (int col = 0; col < current_font_width; ++col) {
           const int tex_idx = 2 * (current_x + col + row * tex_width);
           const int pix_idx = 4 * (col + row * max_font_width);
-          float val = 0.0f;
+          float val = 0.0F;
           for (int x = -1; x <= 1; ++x)
             if (col + x >= 0 && col + x < current_font_width)
-              val += std::exp(-x * x / 2.0f) * pix_data[pix_idx + 4 * x];
+              val += std::exp(-x * x / 2.0F) * pix_data[pix_idx + 4 * x];
           tex_data[tex_idx] = val;
         }
       }
@@ -107,11 +109,11 @@ void Font::initGL(bool with_shadow) {
         for (int col = 0; col < current_font_width; ++col) {
           const int tex_idx = 2 * (current_x + col + row * tex_width);
           const int pix_idx = 4 * (col + row * max_font_width);
-          float val = 0.0f;
+          float val = 0.0F;
           for (int x = -1; x <= 1; ++x)
             if (row + x >= 0 && row + x < font_height)
               val += std::exp(-x * x / 2.0) * tex_data[tex_idx + 2 * tex_width * x];
-          tex_data[tex_idx + 1] = pix_data[pix_idx] ? 1.0f : 0.005f * val;
+          tex_data[tex_idx + 1] = (pix_data[pix_idx] == 0U) ? (0.005F * val) : 1.0F;
         }
       }
     }
@@ -121,7 +123,7 @@ void Font::initGL(bool with_shadow) {
       for (int col = 0; col < current_font_width; ++col) {
         const int tex_idx = 2 * (current_x + col + row * tex_width);
         const int pix_idx = 4 * (col + row * max_font_width);
-        tex_data[tex_idx] = pix_data[pix_idx] / 255.0f;
+        tex_data[tex_idx] = pix_data[pix_idx] / 255.0F;
         if (!with_shadow)
           tex_data[tex_idx + 1] = tex_data[tex_idx];
       }
@@ -162,8 +164,8 @@ void Font::initGL(bool with_shadow) {
   gl::EnableVertexAttribArray(1);
   gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
-  GL::Shader::Vertex vertex_shader(vertex_shader_source.c_str());
-  GL::Shader::Fragment fragment_shader(fragment_shader_source.c_str());
+  const GL::Shader::Vertex vertex_shader(vertex_shader_source.c_str());
+  const GL::Shader::Fragment fragment_shader(fragment_shader_source.c_str());
 
   program.attach(vertex_shader);
   program.attach(fragment_shader);
@@ -189,7 +191,7 @@ void Font::render(std::string_view text, int x, int y) const {
   for (size_t n = 0; n < text.size(); ++n) {
     starts[n] = 4 * n;
     counts[n] = 4;
-    const size_t c = static_cast<size_t>(static_cast<unsigned char>(text[n]));
+    const auto c = static_cast<size_t>(static_cast<unsigned char>(text[n]));
     GLfloat *pos = &screen_pos[8 * n];
     pos[0] = x;
     pos[1] = y;

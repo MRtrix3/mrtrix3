@@ -67,7 +67,7 @@ public:
       properties["method"] = "FACT";
     }
 
-    ~Shared() {}
+    ~Shared() = default;
 
     size_t num_vec;
     float dot_threshold;
@@ -77,7 +77,7 @@ public:
 
   FACT(const FACT &that) : MethodBase(that.S), S(that.S), source(S.source, S.source_mask) {}
 
-  ~FACT() {}
+  ~FACT() = default;
 
   bool init() override {
     if (!get_data(source))
@@ -116,13 +116,15 @@ protected:
   float select_fixel(Eigen::Vector3f &d) const {
 
     int idx = -1;
-    float max_abs_dot = 0.0, max_dot = 0.0, max_norm = 0.0;
+    float max_abs_dot = 0.0;
+    float max_dot = 0.0;
+    float max_norm = 0.0;
 
     for (size_t n = 0; n < S.num_vec; ++n) {
-      Eigen::Vector3f v(values[3 * n], values[3 * n + 1], values[3 * n + 2]);
-      float norm = v.norm();
-      float dot = v.dot(d) / norm;
-      float abs_dot = std::fabs(dot);
+      const Eigen::Vector3f v(values[3 * n], values[3 * n + 1], values[3 * n + 2]);
+      const float norm = v.norm();
+      const float dot = v.dot(d) / norm;
+      const float abs_dot = std::fabs(dot);
       if (abs_dot < S.dot_threshold)
         continue;
       if (max_abs_dot < abs_dot) {

@@ -40,13 +40,16 @@ void usage() {
 using value_type = float;
 
 void run() {
-  DWI::Tractography::Properties properties1, properties2;
+  DWI::Tractography::Properties properties1;
+  DWI::Tractography::Properties properties2;
   DWI::Tractography::ScalarReader<value_type> reader1(argument[0], properties1);
   DWI::Tractography::ScalarReader<value_type> reader2(argument[1], properties2);
   DWI::Tractography::validate_tsf_properties(properties1, properties2, "scalar file pair");
 
   DWI::Tractography::ScalarWriter<value_type> writer(argument[2], properties1);
-  DWI::Tractography::TrackScalar<value_type> tck_scalar1, tck_scalar2, tck_scalar_output;
+  DWI::Tractography::TrackScalar<value_type> tck_scalar1;
+  DWI::Tractography::TrackScalar<value_type> tck_scalar2;
+  DWI::Tractography::TrackScalar<value_type> tck_scalar_output;
   while (reader1(tck_scalar1)) {
     if (!reader2(tck_scalar2)) {
       WARN("No more track scalars left in input file \"" + argument[1].as_text() + "\"" + //

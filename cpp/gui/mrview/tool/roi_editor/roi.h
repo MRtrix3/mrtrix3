@@ -83,7 +83,7 @@ protected:
   QSlider *opacity_slider;
   AdjustButton *brush_size_button;
   int current_axis, current_slice;
-  bool in_insert_mode, insert_mode_value;
+  bool in_insert_mode{false}, insert_mode_value;
   Eigen::Vector3f current_origin, prev_pos;
   float current_slice_loc;
 
@@ -98,7 +98,7 @@ protected:
   void load(std::vector<std::unique_ptr<MR::Header>> &list);
   void save(ROI_Item *);
 
-  int normal2axis(const Eigen::Vector3f &, const ROI_Item &) const;
+  [[nodiscard]] int normal2axis(const Eigen::Vector3f &, const ROI_Item &) const;
 
   void dropEvent(QDropEvent *event) override;
 };

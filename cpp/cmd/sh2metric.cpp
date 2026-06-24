@@ -166,13 +166,13 @@ void run_entropy() {
           concat_amps(SH_images.size() * dirs.size()),
           shared(new Shared(SH_images, dirs, norm_mode)) {
       for (const auto &i : SH_images)
-        images.emplace_back(Image<float>(i));
+        images.emplace_back(i);
     }
 
     Processor(const Processor &that)
         : out(that.out), SH_coefs(that.SH_coefs.size()), concat_amps(that.concat_amps.size()), shared(that.shared) {
       for (const auto &i : that.images)
-        images.emplace_back(Image<float>(i));
+        images.emplace_back(i);
     }
 
     bool operator()(Iterator &pos) {
@@ -231,8 +231,8 @@ void run_entropy() {
         assert(transform_it != transforms.end());
         return (transform_it->second * SH_coefs).eval();
       }
-      size_t get_num_dirs() const { return num_dirs; }
-      default_type normalise(const default_type in) const { return normalisation(in); }
+      [[nodiscard]] size_t get_num_dirs() const { return num_dirs; }
+      [[nodiscard]] default_type normalise(const default_type in) const { return normalisation(in); }
 
     private:
       const size_t num_dirs;
@@ -240,10 +240,7 @@ void run_entropy() {
 
       class Normalisation {
       public:
-        Normalisation()
-            : mode(entropy_normalisation::NONE),
-              lower(std::numeric_limits<default_type>::quiet_NaN()),
-              upper(std::numeric_limits<default_type>::quiet_NaN()) {}
+        Normalisation() = default;
         void initialise(const entropy_normalisation normalise_mode,
                         const size_t num_images,
                         const transform_type &transform) {
@@ -269,9 +266,9 @@ void run_entropy() {
         }
 
       private:
-        entropy_normalisation mode;
-        default_type lower;
-        default_type upper;
+        entropy_normalisation mode{entropy_normalisation::NONE};
+        default_type lower{std::numeric_limits<default_type>::quiet_NaN()};
+        default_type upper{std::numeric_limits<default_type>::quiet_NaN()};
       } normalisation;
     };
     std::shared_ptr<Shared> shared;

@@ -26,10 +26,10 @@ class Connectome;
 
 class ShaderBase : public GL::Shader::Program {
 public:
-  ShaderBase() : GL::Shader::Program() {}
-  virtual ~ShaderBase() {}
+  ShaderBase() = default;
+  virtual ~ShaderBase() = default;
 
-  virtual bool need_update(const Connectome &) const = 0;
+  [[nodiscard]] virtual bool need_update(const Connectome &) const = 0;
   virtual void update(const Connectome &) = 0;
 
   void start(const Connectome &parent) {
@@ -53,8 +53,8 @@ private:
 class NodeShader : public ShaderBase {
 public:
   NodeShader() : ShaderBase() {}
-  ~NodeShader() {}
-  bool need_update(const Connectome &) const override;
+  ~NodeShader() = default;
+  [[nodiscard]] bool need_update(const Connectome &) const override;
   void update(const Connectome &) override;
 
 private:
@@ -67,8 +67,8 @@ private:
 class EdgeShader : public ShaderBase {
 public:
   EdgeShader() : ShaderBase() {}
-  ~EdgeShader() {}
-  bool need_update(const Connectome &) const override;
+  ~EdgeShader() = default;
+  [[nodiscard]] bool need_update(const Connectome &) const override;
   void update(const Connectome &) override;
 
 private:

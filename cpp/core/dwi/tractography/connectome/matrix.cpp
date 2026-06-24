@@ -21,6 +21,7 @@
 #include "enum.h"
 #include "file/matrix.h"
 #include "file/path.h"
+#include "mrtrix.h"
 
 namespace MR::DWI::Tractography::Connectome {
 
@@ -73,18 +74,16 @@ template <typename T> bool Matrix<T>::operator()(const Mapped_track_nodelist &in
   assert(assignments_single.empty());
   assert(assignments_pairs.empty());
   std::vector<node_t> list(in.get_nodes());
-  for (std::vector<node_t>::const_iterator i = list.begin(); i != list.end(); ++i) {
-    assert(*i < data.rows());
-  }
+  assert(*std::max_element(list.begin(), list.end()) < data.rows());
   if (is_vector()) {
     if (list.empty()) {
       apply_data(0, in.get_factor(), in.get_weight());
       inc_count(0, in.get_weight());
       list.push_back(0);
     } else {
-      for (std::vector<node_t>::const_iterator n = list.begin(); n != list.end(); ++n) {
-        apply_data(*n, in.get_factor(), in.get_weight());
-        inc_count(*n, in.get_weight());
+      for (node_t n : list) {
+        apply_data(n, in.get_factor(), in.get_weight());
+        inc_count(n, in.get_weight());
       }
     }
   } else { // Matrix output
@@ -173,17 +172,12 @@ template <typename T> void Matrix<T>::write_assignments(const std::filesystem::p
     throw Exception("Cannot write streamline assignments to file as they were not stored during processing");
   File::OFStream stream(path);
   stream << "# " << App::command_history_string << "\n";
-  for (auto i = assignments_single.begin(); i != assignments_single.end(); ++i)
-    stream << str(*i) << "\n";
-  for (auto i = assignments_pairs.begin(); i != assignments_pairs.end(); ++i)
-    stream << str(i->first) << " " << str(i->second) << "\n";
-  for (auto i = assignments_lists.begin(); i != assignments_lists.end(); ++i) {
-    assert(i->size());
-    stream << str((*i)[0]);
-    for (size_t j = 1; j != i->size(); ++j)
-      stream << " " << str((*i)[j]);
-    stream << "\n";
-  }
+  for (node_t i : assignments_single)
+    stream << str(i) << "\n";
+  for (const auto &assignments_pair : assignments_pairs)
+    stream << str(assignments_pair.first) << " " << str(assignments_pair.second) << "\n";
+  for (const auto &assignments_list : assignments_lists)
+    stream << join(assignments_list, " ") << "\n";
 }
 
 template <typename T>
@@ -209,10 +203,10 @@ void Matrix<T>::save(const std::filesystem::path &path,
   assert(mat2vec);
 
   File::OFStream out(path);
-  Eigen::IOFormat fmt(
+  const Eigen::IOFormat fmt(
       Eigen::FullPrecision, Eigen::DontAlignCols, std::string(1, File::Matrix::delimiter(path)), "\n", "", "", "", "");
   for (node_t row = 0; row != mat2vec->mat_size(); ++row) {
-    if (!row && !keep_unassigned)
+    if ((row == 0U) && !keep_unassigned)
       continue;
     vector_type temp(vector_type::Zero(mat2vec->mat_size()));
     for (node_t col = 0; col != mat2vec->mat_size(); ++col) {

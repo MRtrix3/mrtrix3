@@ -28,30 +28,28 @@ namespace MR::GUI::MRView {
 size_t ColourBars::max_n_rows = File::Config::get_int("MRViewMaxNumColourBarRows", 3);
 
 ColourBars::ColourBars()
-    : current_colourmap_index(0),
-      current_colourmap_inverted(false),
-      // CONF option: MRViewColourBarWidth
-      // CONF default: 20
-      // CONF The width of the colourbar in MRView, in pixels.
-      width(MR::File::Config::get_float("MRViewColourBarWidth", 20.0f)),
+    // CONF option: MRViewColourBarWidth
+    // CONF default: 20
+    // CONF The width of the colourbar in MRView, in pixels.
+    : width(MR::File::Config::get_float("MRViewColourBarWidth", 20.0F)),
       // CONF option: MRViewColourBarHeight
       // CONF default: 100
       // CONF The height of the colourbar in MRView, in pixels.
-      height(MR::File::Config::get_float("MRViewColourBarHeight", 100.0f)),
+      height(MR::File::Config::get_float("MRViewColourBarHeight", 100.0F)),
       // CONF option: MRViewColourBarInset
       // CONF default: 20
       // CONF How far away from the edge of the main window to place the
       // CONF colourbar in MRView, in pixels.
-      inset(MR::File::Config::get_float("MRViewColourBarInset", 20.0f)),
+      inset(MR::File::Config::get_float("MRViewColourBarInset", 20.0F)),
       // CONF option: MRViewColourBarTextOffset
       // CONF default: 10
       // CONF How far away from the colourbar to place the associated text,
       // CONF in pixels.
-      text_offset(MR::File::Config::get_float("MRViewColourBarTextOffset", 10.0f)),
+      text_offset(MR::File::Config::get_float("MRViewColourBarTextOffset", 10.0F)),
       // CONF option: MRViewColourBarHorizontalPadding
       // CONF default: 100
       // CONF The width in pixels between horizontally adjacent colour bars.
-      colourbar_padding(MR::File::Config::get_float("MRViewColourBarHorizontalPadding", 100.0f)) {
+      colourbar_padding(MR::File::Config::get_float("MRViewColourBarHorizontalPadding", 100.0F)) {
   end();
 }
 
@@ -70,25 +68,25 @@ void ColourBars::setup(size_t index, bool inverted) {
   source += "data.z;\n"
             "}\n";
 
-  GL::Shader::Vertex vertex_shader(source);
+  const GL::Shader::Vertex vertex_shader(source);
 
-  std::string shader = "in float amplitude;\n"
-                       "out vec3 color;\n"
-                       "uniform vec3 colourmap_colour;\n"
-                       "void main () {\n"
-                       "  " +
-                       std::string(ColourMap::maps[index].glsl_mapping) + "}\n";
+  const std::string shader = "in float amplitude;\n"
+                             "out vec3 color;\n"
+                             "uniform vec3 colourmap_colour;\n"
+                             "void main () {\n"
+                             "  " +
+                             std::string(ColourMap::maps[index].glsl_mapping) + "}\n";
 
-  GL::Shader::Fragment fragment_shader(shader);
+  const GL::Shader::Fragment fragment_shader(shader);
 
   program.attach(vertex_shader);
   program.attach(fragment_shader);
   program.link();
 
-  GL::Shader::Fragment frame_fragment_shader("out vec3 color;\n"
-                                             "void main () {\n"
-                                             "  color = vec3(1.0, 1.0, 0.0);\n"
-                                             "}\n");
+  const GL::Shader::Fragment frame_fragment_shader("out vec3 color;\n"
+                                                   "void main () {\n"
+                                                   "  color = vec3(1.0, 1.0, 0.0);\n"
+                                                   "}\n");
 
   frame_program.attach(vertex_shader);
   frame_program.attach(frame_fragment_shader);
@@ -105,7 +103,7 @@ void ColourBars::render(const Displayable &object, bool inverted) {
          object.scaling_max(),
          object.scaling_min(),
          object.display_range,
-         Eigen::Array3f{object.colour[0] / 255.0f, object.colour[1] / 255.0f, object.colour[2] / 255.0f});
+         Eigen::Array3f{object.colour[0] / 255.0F, object.colour[1] / 255.0F, object.colour[2] / 255.0F});
 }
 
 void ColourBars::render(size_t colourmap,
@@ -115,15 +113,16 @@ void ColourBars::render(size_t colourmap,
                         float global_min_value,
                         float global_range,
                         Eigen::Array3f colour) {
-  if (!current_position)
+  if (current_position == 0U)
     return;
   if (ColourMap::maps[colourmap].special)
     return;
 
-  if (!program || !frame_program || colourmap != current_colourmap_index || current_colourmap_inverted != inverted)
+  if ((program == 0U) || (frame_program == 0U) || colourmap != current_colourmap_index ||
+      current_colourmap_inverted != inverted)
     setup(colourmap, inverted);
 
-  if (!VB || !VAO) {
+  if ((VB == 0U) || (VAO == 0U)) {
     VB.gen();
     VAO.gen();
 
@@ -150,28 +149,29 @@ void ColourBars::render(size_t colourmap,
   const float scaled_width = width / static_cast<float>(max_bars_per_row);
   const float scaled_height = height / static_cast<float>(ncols);
 
-  std::array<GLfloat, 12> data = {0.0f,
-                                  0.0f,
+  std::array<GLfloat, 12> data = {0.0F,
+                                  0.0F,
                                   min_frac,
-                                  0.0f,
+                                  0.0F,
                                   scaled_height,
                                   max_frac,
                                   scaled_width,
                                   scaled_height,
                                   max_frac,
                                   scaled_width,
-                                  0.0f,
+                                  0.0F,
                                   min_frac};
-  float x_offset = 0.0f, y_offset = 0.0f;
+  float x_offset = 0.0F;
+  float y_offset = 0.0F;
   int halign = -1;
 
-  if (current_position & Position::Right) {
+  if ((current_position & Position::Right) != 0) {
     x_offset = current_projection->width() -
                (max_bars_per_row - column_index) * (scaled_width + inset + colourbar_padding) + colourbar_padding;
     halign = 1;
-  } else if (current_position & Position::Left)
+  } else if ((current_position & Position::Left) != 0)
     x_offset = column_index * (scaled_width + inset + colourbar_padding) + inset;
-  if (current_position & Position::Top)
+  if ((current_position & Position::Top) != 0)
     y_offset = current_projection->height() - (row_index + 1) * (scaled_height + inset * 2) + inset;
   else
     y_offset = row_index * (scaled_height + inset * 2) + inset;
@@ -193,21 +193,21 @@ void ColourBars::render(size_t colourmap,
   gl::Disable(gl::DEPTH_TEST);
 
   program.start();
-  gl::Uniform1f(gl::GetUniformLocation(program, "scale_x"), 2.0f / current_projection->width());
-  gl::Uniform1f(gl::GetUniformLocation(program, "scale_y"), 2.0f / current_projection->height());
+  gl::Uniform1f(gl::GetUniformLocation(program, "scale_x"), 2.0F / current_projection->width());
+  gl::Uniform1f(gl::GetUniformLocation(program, "scale_y"), 2.0F / current_projection->height());
   if (ColourMap::maps[colourmap].is_colour)
     gl::Uniform3fv(gl::GetUniformLocation(program, "colourmap_colour"), 1, &colour[0]);
   gl::DrawArrays(gl::TRIANGLE_FAN, 0, 4);
   program.stop();
 
   frame_program.start();
-  gl::Uniform1f(gl::GetUniformLocation(frame_program, "scale_x"), 2.0f / current_projection->width());
-  gl::Uniform1f(gl::GetUniformLocation(frame_program, "scale_y"), 2.0f / current_projection->height());
+  gl::Uniform1f(gl::GetUniformLocation(frame_program, "scale_x"), 2.0F / current_projection->width());
+  gl::Uniform1f(gl::GetUniformLocation(frame_program, "scale_y"), 2.0F / current_projection->height());
   gl::DrawArrays(gl::LINE_LOOP, 0, 4);
   frame_program.stop();
 
   current_projection->setup_render_text();
-  int x = halign > 0 ? data[0] - text_offset : data[6] + text_offset;
+  const int x = halign > 0 ? data[0] - text_offset : data[6] + text_offset;
   current_projection->render_text_align(x, data[1], str(local_min_value), halign, 0);
   current_projection->render_text_align(x, data[4], str(local_max_value), halign, 0);
   current_projection->done_render_text();

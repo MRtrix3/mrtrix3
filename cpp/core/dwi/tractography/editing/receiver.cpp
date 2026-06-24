@@ -24,7 +24,7 @@ bool Receiver::operator()(const Streamline<> &in) {
             (crop ? printf(", %8" PRIu64 " segments", segments) : ""));
   };
 
-  if (number && (count == number))
+  if ((number != 0U) && (count == number))
     return false;
 
   ++total_count;
@@ -37,7 +37,7 @@ bool Receiver::operator()(const Streamline<> &in) {
 
   if (in[0].allFinite()) {
 
-    if (skip) {
+    if (skip != 0U) {
       --skip;
       progress.update(display_func);
       return true;
@@ -66,7 +66,7 @@ bool Receiver::operator()(const Streamline<> &in) {
 
   ++count;
   progress.update(display_func);
-  return (!(number && (count == number)));
+  return (!((number != 0U) && (count == number)));
 }
 
 } // namespace MR::DWI::Tractography::Editing

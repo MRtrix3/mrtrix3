@@ -197,12 +197,8 @@ bool Receiver::operator()(const Mapping::SetVoxel &in) {
 
 void Receiver::scale_by_count(Image<uint32_t> &counts) {
   assert(dimensions_match(buffer, counts, 0, 3));
-  for (auto l = Loop(buffer)(buffer, counts); l; ++l) {
-    if (counts.value())
-      buffer.value() /= static_cast<float>(counts.value());
-    else
-      buffer.value() = 0.0f;
-  }
+  for (auto l = Loop(buffer)(buffer, counts); l; ++l)
+    buffer.value() = counts.value() == 0U ? 0.0F : buffer.value() / static_cast<float>(counts.value());
 }
 
 void Receiver::write(Image<float> &out) {
@@ -240,9 +236,9 @@ void run() {
       throw Exception("Do not specify both -static and -dynamic options");
 
     // Generate the window filter
-    const WindowShape window_shape = MR::Enum::from_name<WindowShape>(opt[0][0]);
+    const auto window_shape = MR::Enum::from_name<WindowShape>(opt[0][0]);
     const ssize_t window_width = opt[0][1];
-    if (!(window_width % 2))
+    if ((window_width % 2) == 0)
       throw Exception("Width of sliding time window must be an odd integer");
 
     window.resize(window_width);
@@ -278,7 +274,7 @@ void run() {
     case WindowShape::LANCZOS:
       for (ssize_t i = 0; i != window_width; ++i) {
         const default_type v = 2.0 * Math::pi * std::fabs(i - centre) / static_cast<default_type>(window_width - 1);
-        window[i] = v ? std::max(0.0, (std::sin(v) / v)) : 1.0;
+        window[i] = (v != 0.0) ? std::max(0.0, (std::sin(v) / v)) : 1.0;
       }
       break;
 
@@ -294,7 +290,7 @@ void run() {
   {
     // Just get the properties for now; will re-instantiate the reader multiple times later
     // TODO Constructor for properties using the file path?
-    Tractography::Reader<float> tck_file(input_tracks_path, properties);
+    const Tractography::Reader<float> tck_file(input_tracks_path, properties);
   }
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t>(properties["count"]);
 
@@ -354,7 +350,7 @@ void run() {
     }
   }
 
-  const vox_stat_t stat_vox = get_option_choice<vox_stat_t>("stat_vox", vox_stat_t::MEAN);
+  const auto stat_vox = get_option_choice<vox_stat_t>("stat_vox", vox_stat_t::MEAN);
 
   Header H_3D(header);
   H_3D.ndim() = 3;
@@ -396,7 +392,7 @@ void run() {
     for (ssize_t timepoint = 0; timepoint != header.size(3); ++timepoint) {
 
       {
-        LogLevelLatch latch(0);
+        const LogLevelLatch latch(0);
         Tractography::Reader<float> tck_file(input_tracks_path, properties);
         Mapping::TrackLoader loader(tck_file);
         Mapping::TrackMapperTWI mapper(H_3D, contrast_t::SCALAR_MAP, tck_stat_t::ENDS_CORR);

@@ -123,7 +123,7 @@ void run() {
 
   auto input_image = Image<value_type>::open(input_image_path);
 
-  const FilterType filter_index = MR::Enum::from_name<FilterType>(argument[1]);
+  const auto filter_index = MR::Enum::from_name<FilterType>(argument[1]);
 
   switch (filter_index) {
   case FilterType::CLEAN: {

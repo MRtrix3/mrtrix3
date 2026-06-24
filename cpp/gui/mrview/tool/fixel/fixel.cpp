@@ -37,34 +37,34 @@ public:
 
   void add_items(const std::vector<std::filesystem::path> &paths, Fixel &fixel_tool) {
 
-    size_t old_size = items.size();
-    for (size_t i = 0, N = paths.size(); i < N; ++i) {
+    const size_t old_size = items.size();
+    for (const auto &path : paths) {
       BaseFixel *fixel_image(nullptr);
       try {
-        MR::Fixel::debug_validate_directory(paths[i]);
-        fixel_image = new Directory(paths[i], fixel_tool);
+        MR::Fixel::debug_validate_directory(path);
+        fixel_image = new Directory(path, fixel_tool);
       } catch (MR::Fixel::InvalidDirectoryException &error) {
-        error.push_back("Couldn't open \"" + paths[i].string() + "\" as a Directory fixel dataset");
+        error.push_back("Couldn't open \"" + path.string() + "\" as a Directory fixel dataset");
         try {
-          fixel_image = new Directory(paths[i], fixel_tool);
+          fixel_image = new Directory(path, fixel_tool);
         } catch (MR::Fixel::InvalidDirectoryException &error) {
-          error.push_back("Couldn't open \"" + paths[i].string() + "\" as a Directory fixel dataset");
+          error.push_back("Couldn't open \"" + path.string() + "\" as a Directory fixel dataset");
           try {
-            fixel_image = new Image4D(paths[i], fixel_tool);
+            fixel_image = new Image4D(path, fixel_tool);
           } catch (InvalidImageException &e) {
             error.push_back(e);
-            error.push_back("Couldn't open \"" + paths[i].string() + "\" as a 4D vector image");
+            error.push_back("Couldn't open \"" + path.string() + "\" as a 4D vector image");
             throw error;
           }
           if (MR::App::log_level >= 3)
-            MR::Peaks::debug_validate_image(MR::Image<float>::open(paths[i]));
+            MR::Peaks::debug_validate_image(MR::Image<float>::open(path));
         } catch (InvalidImageException &e) {
           error.push_back(e);
-          error.push_back("Couldn't open \"" + paths[i].string() + "\" as a 4D vector image");
+          error.push_back("Couldn't open \"" + path.string() + "\" as a 4D vector image");
           throw error;
         }
       } catch (Exception &e) {
-        e.push_back("Error loading \"" + paths[i].string() + "\" as a fixel dataset");
+        e.push_back("Error loading \"" + path.string() + "\" as a fixel dataset");
         e.display();
         continue;
       }
@@ -78,14 +78,14 @@ public:
   BaseFixel *get_fixel_image(QModelIndex &index) { return dynamic_cast<BaseFixel *>(items[index.row()].get()); }
 };
 
-Fixel::Fixel(Dock *parent) : Base(parent), not_3D(true), line_opacity(1.0) {
+Fixel::Fixel(Dock *parent) : Base(parent) {
 
-  VBoxLayout *main_box = new VBoxLayout(this);
-  HBoxLayout *layout = new HBoxLayout;
+  auto *main_box = new VBoxLayout(this);
+  auto *layout = new HBoxLayout;
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(0);
 
-  QPushButton *button = new QPushButton(this);
+  auto *button = new QPushButton(this);
   button->setToolTip(tr("Open fixel image"));
   button->setIcon(QIcon(":/open.svg"));
   connect(button, SIGNAL(clicked()), this, SLOT(fixel_open_slot()));
@@ -128,7 +128,7 @@ Fixel::Fixel(Dock *parent) : Base(parent), not_3D(true), line_opacity(1.0) {
 
   main_box->addWidget(fixel_list_view, 1);
 
-  HBoxLayout *hlayout = new HBoxLayout;
+  auto *hlayout = new HBoxLayout;
   hlayout->setContentsMargins(0, 0, 0, 0);
   hlayout->setSpacing(0);
   main_box->addLayout(hlayout);
@@ -169,7 +169,7 @@ Fixel::Fixel(Dock *parent) : Base(parent), not_3D(true), line_opacity(1.0) {
   hlayout->addWidget(threshold_combobox, 0);
   connect(threshold_combobox, SIGNAL(activated(int)), this, SLOT(threshold_type_slot(int)));
 
-  QGroupBox *threshold_box = new QGroupBox("Thresholds");
+  auto *threshold_box = new QGroupBox("Thresholds");
   main_box->addWidget(threshold_box);
   hlayout = new HBoxLayout;
   threshold_box->setLayout(hlayout);
@@ -209,7 +209,7 @@ Fixel::Fixel(Dock *parent) : Base(parent), not_3D(true), line_opacity(1.0) {
   connect(length_multiplier, SIGNAL(valueChanged()), this, SLOT(length_multiplier_slot()));
   hlayout->addWidget(length_multiplier);
 
-  GridLayout *default_opt_grid = new GridLayout;
+  auto *default_opt_grid = new GridLayout;
   line_thickness_slider = new QSlider(Qt::Horizontal);
   line_thickness_slider->setRange(10, 1000);
   line_thickness_slider->setSliderPosition(200);
@@ -219,7 +219,7 @@ Fixel::Fixel(Dock *parent) : Base(parent), not_3D(true), line_opacity(1.0) {
 
   opacity_slider = new QSlider(Qt::Horizontal);
   opacity_slider->setRange(1, 1000);
-  opacity_slider->setSliderPosition(int(1000));
+  opacity_slider->setSliderPosition(1000);
   connect(opacity_slider, SIGNAL(valueChanged(int)), this, SLOT(opacity_slot(int)));
   default_opt_grid->addWidget(new QLabel("opacity"), 1, 0);
   default_opt_grid->addWidget(opacity_slider, 1, 1);
@@ -285,8 +285,8 @@ size_t Fixel::visible_number_colourbars() {
 
   if (!hide_all_button->isChecked()) {
     for (size_t i = 0, N = fixel_list_model->rowCount(); i < N; ++i) {
-      BaseFixel *fixel = dynamic_cast<BaseFixel *>(fixel_list_model->items[i].get());
-      if (fixel && fixel->show && !ColourMap::maps[fixel->colourmap].special)
+      auto *fixel = dynamic_cast<BaseFixel *>(fixel_list_model->items[i].get());
+      if ((fixel != nullptr) && fixel->show && !ColourMap::maps[fixel->colourmap].special)
         total_visible += 1;
     }
   }
@@ -296,9 +296,9 @@ size_t Fixel::visible_number_colourbars() {
 
 void Fixel::render_fixel_colourbar(const Tool::BaseFixel &fixel) {
   GL::assert_context_is_current();
-  float min_value = fixel.use_discard_lower() ? fixel.scaling_min_thresholded() : fixel.scaling_min();
+  const float min_value = fixel.use_discard_lower() ? fixel.scaling_min_thresholded() : fixel.scaling_min();
 
-  float max_value = fixel.use_discard_upper() ? fixel.scaling_max_thresholded() : fixel.scaling_max();
+  const float max_value = fixel.use_discard_upper() ? fixel.scaling_max_thresholded() : fixel.scaling_max();
 
   window().colourbar_renderer.render(
       fixel.colourmap,
@@ -307,7 +307,7 @@ void Fixel::render_fixel_colourbar(const Tool::BaseFixel &fixel) {
       max_value,
       fixel.scaling_min(),
       fixel.display_range,
-      Eigen::Array3f{fixel.colour[0] / 255.0f, fixel.colour[1] / 255.0f, fixel.colour[2] / 255.0f});
+      Eigen::Array3f{fixel.colour[0] / 255.0F, fixel.colour[1] / 255.0F, fixel.colour[2] / 255.0F});
   GL::assert_context_is_current();
 }
 
@@ -321,14 +321,14 @@ void Fixel::fixel_open_slot() {
 void Fixel::add_images(const std::vector<std::filesystem::path> &list) {
   if (list.empty())
     return;
-  size_t previous_size = fixel_list_model->rowCount();
+  const size_t previous_size = fixel_list_model->rowCount();
   fixel_list_model->add_items(list, *this);
 
   // Some of the images may be invalid, so it could be the case that no images were added
-  size_t new_size = fixel_list_model->rowCount();
+  const size_t new_size = fixel_list_model->rowCount();
   if (previous_size < new_size) {
-    QModelIndex first = fixel_list_model->index(previous_size, 0, QModelIndex());
-    QModelIndex last = fixel_list_model->index(new_size - 1, 0, QModelIndex());
+    const QModelIndex first = fixel_list_model->index(previous_size, 0, QModelIndex());
+    const QModelIndex last = fixel_list_model->index(new_size - 1, 0, QModelIndex());
     fixel_list_view->selectionModel()->select(QItemSelection(first, last), QItemSelectionModel::Select);
     update_gui_controls();
   }
@@ -342,7 +342,7 @@ void Fixel::dropEvent(QDropEvent *event) {
   const QMimeData *mimeData = event->mimeData();
   if (mimeData->hasUrls()) {
     std::vector<std::filesystem::path> list;
-    QList<QUrl> urlList = mimeData->urls();
+    const QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < max_files; ++i) {
       list.push_back(QtHelpers::url_to_fspath(urlList.at(i)));
     }
@@ -389,27 +389,27 @@ void Fixel::update_gui_controls() {
 
 void Fixel::update_gui_colour_controls(bool reload_colour_types) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  size_t n_images(indices.size());
+  const size_t n_images(indices.size());
 
   colour_combobox->setEnabled(n_images == 1);
-  colourmap_button->setEnabled(n_images);
+  colourmap_button->setEnabled(n_images != 0U);
 
-  max_value->setEnabled(n_images);
-  min_value->setEnabled(n_images);
+  max_value->setEnabled(n_images != 0U);
+  min_value->setEnabled(n_images != 0U);
 
-  if (!n_images) {
+  if (n_images == 0U) {
     max_value->setValue(NaNF);
     min_value->setValue(NaNF);
     length_multiplier->setValue(NaNF);
     return;
   }
 
-  if (!n_images)
+  if (n_images == 0U)
     return;
 
   int colourmap_index = -2;
   for (size_t i = 0; i < n_images; ++i) {
-    BaseFixel *fixel = dynamic_cast<BaseFixel *>(fixel_list_model->get_fixel_image(indices[i]));
+    BaseFixel *fixel = fixel_list_model->get_fixel_image(indices[i]);
     if (colourmap_index != int(fixel->colourmap)) {
       if (colourmap_index == -2)
         colourmap_index = fixel->colourmap;
@@ -421,7 +421,7 @@ void Fixel::update_gui_colour_controls(bool reload_colour_types) {
   // Not all colourmaps are added to this list; therefore need to find out
   // how many menu elements were actually created by ColourMap::create_menu()
   static size_t colourmap_count = 0;
-  if (!colourmap_count) {
+  if (colourmap_count == 0U) {
     for (const auto &map : ColourMap::maps) {
       if (!map.special)
         ++colourmap_count;
@@ -435,7 +435,7 @@ void Fixel::update_gui_colour_controls(bool reload_colour_types) {
     colourmap_button->colourmap_actions[colourmap_index]->setChecked(true);
   }
 
-  BaseFixel *first_fixel = dynamic_cast<BaseFixel *>(fixel_list_model->get_fixel_image(indices[0]));
+  BaseFixel *first_fixel = fixel_list_model->get_fixel_image(indices[0]);
 
   if (n_images == 1 && reload_colour_types)
     first_fixel->load_colourby_combobox_options(*colour_combobox);
@@ -458,47 +458,47 @@ void Fixel::update_gui_colour_controls(bool reload_colour_types) {
 
 void Fixel::update_gui_scaling_controls(bool reload_scaling_types) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  size_t n_images(indices.size());
+  const size_t n_images(indices.size());
 
-  length_multiplier->setEnabled(n_images);
+  length_multiplier->setEnabled(n_images != 0U);
   length_combobox->setEnabled(n_images == 1);
 
-  if (!n_images) {
+  if (n_images == 0U) {
     length_multiplier->setValue(NaNF);
     return;
   }
 
-  BaseFixel *first_fixel = dynamic_cast<BaseFixel *>(fixel_list_model->get_fixel_image(indices[0]));
+  BaseFixel *first_fixel = fixel_list_model->get_fixel_image(indices[0]);
 
   if (n_images == 1 && reload_scaling_types)
     first_fixel->load_scaleby_combobox_options(*length_combobox);
 
   length_multiplier->setValue(first_fixel->get_line_length_multiplier());
-  line_thickness_slider->setValue(static_cast<int>(first_fixel->get_line_thickenss() * 1.0e5f));
+  line_thickness_slider->setValue(static_cast<int>(first_fixel->get_line_thickenss() * 1.0e5F));
 
   length_combobox->setCurrentIndex(first_fixel->get_scale_type_index());
 }
 
 void Fixel::update_gui_threshold_controls(bool reload_threshold_types) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  size_t n_images(indices.size());
+  const size_t n_images(indices.size());
 
-  threshold_lower->setEnabled(n_images);
-  threshold_upper->setEnabled(n_images);
-  threshold_upper_box->setEnabled(n_images);
-  threshold_lower_box->setEnabled(n_images);
+  threshold_lower->setEnabled(n_images != 0U);
+  threshold_upper->setEnabled(n_images != 0U);
+  threshold_upper_box->setEnabled(n_images != 0U);
+  threshold_lower_box->setEnabled(n_images != 0U);
 
   threshold_combobox->setEnabled(n_images == 1);
 
-  if (!n_images) {
+  if (n_images == 0U) {
     threshold_lower->setValue(NaNF);
     threshold_upper->setValue(NaNF);
     return;
   }
 
-  BaseFixel *first_fixel = dynamic_cast<BaseFixel *>(fixel_list_model->get_fixel_image(indices[0]));
+  BaseFixel *first_fixel = fixel_list_model->get_fixel_image(indices[0]);
 
-  bool has_val = first_fixel->has_values();
+  const bool has_val = first_fixel->has_values();
 
   if (n_images == 1 && reload_threshold_types && has_val)
     first_fixel->load_threshold_combobox_options(*threshold_combobox);
@@ -535,17 +535,17 @@ void Fixel::update_gui_threshold_controls(bool reload_threshold_types) {
 
 void Fixel::update_gui_tracking_controls() {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  size_t n_images(indices.size());
+  const size_t n_images(indices.size());
 
-  if (!n_images) {
+  if (n_images == 0U) {
     track_main_volume->setEnabled(false);
     return;
   }
 
   size_t num_checked = 0;
   for (size_t i = 0; i < n_images; ++i) {
-    Image4D *fixel = dynamic_cast<Image4D *>(fixel_list_model->get_fixel_image(indices[i]));
-    if (!fixel) {
+    auto *fixel = dynamic_cast<Image4D *>(fixel_list_model->get_fixel_image(indices[i]));
+    if (fixel == nullptr) {
       track_main_volume->setEnabled(false);
       return;
     }
@@ -558,34 +558,34 @@ void Fixel::update_gui_tracking_controls() {
   }
 
   track_main_volume->setEnabled(true);
-  track_main_volume->setCheckState(num_checked ? (num_checked == n_images ? Qt::Checked : Qt::PartiallyChecked)
-                                               : Qt::Unchecked);
+  track_main_volume->setCheckState((num_checked != 0U) ? (num_checked == n_images ? Qt::Checked : Qt::PartiallyChecked)
+                                                       : Qt::Unchecked);
 }
 
 void Fixel::opacity_slot(int opacity) {
-  line_opacity = Math::pow2(static_cast<float>(opacity)) / 1.0e6f;
+  line_opacity = Math::pow2(static_cast<float>(opacity)) / 1.0e6F;
   window().updateGL();
 }
 
 void Fixel::line_thickness_slot(int thickness) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i)
-    fixel_list_model->get_fixel_image(indices[i])->set_line_thickness(static_cast<float>(thickness) / 1.0e5f);
+  for (auto index : indices)
+    fixel_list_model->get_fixel_image(index)->set_line_thickness(static_cast<float>(thickness) / 1.0e5F);
   window().updateGL();
 }
 
 void Fixel::length_multiplier_slot() {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i)
-    fixel_list_model->get_fixel_image(indices[i])->set_line_length_multiplier(length_multiplier->value());
+  for (auto index : indices)
+    fixel_list_model->get_fixel_image(index)->set_line_length_multiplier(length_multiplier->value());
   window().updateGL();
 }
 
 void Fixel::length_type_slot(int selection) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
 
-  for (int i = 0; i < indices.size(); ++i) {
-    const auto fixel = fixel_list_model->get_fixel_image(indices[i]);
+  for (auto index : indices) {
+    const auto fixel = fixel_list_model->get_fixel_image(index);
     fixel->set_scale_type_index(selection);
     update_gui_scaling_controls(false);
     break;
@@ -597,8 +597,8 @@ void Fixel::length_type_slot(int selection) {
 void Fixel::threshold_type_slot(int selection) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
 
-  for (int i = 0; i < indices.size(); ++i) {
-    const auto fixel = fixel_list_model->get_fixel_image(indices[i]);
+  for (auto index : indices) {
+    const auto fixel = fixel_list_model->get_fixel_image(index);
     fixel->set_threshold_type_index(selection);
     update_gui_threshold_controls(false);
     break;
@@ -613,15 +613,15 @@ void Fixel::on_checkbox_slot(bool) { window().updateGL(); }
 
 void Fixel::toggle_show_colour_bar(bool visible, const ColourMapButton &) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i)
-    fixel_list_model->get_fixel_image(indices[i])->show_colour_bar = visible;
+  for (auto index : indices)
+    fixel_list_model->get_fixel_image(index)->show_colour_bar = visible;
   window().updateGL();
 }
 
-void Fixel::selected_colourmap(size_t index, const ColourMapButton &) {
+void Fixel::selected_colourmap(size_t cmap_index, const ColourMapButton &) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i) {
-    fixel_list_model->get_fixel_image(indices[i])->colourmap = index;
+  for (auto overlay_index : indices) {
+    fixel_list_model->get_fixel_image(overlay_index)->colourmap = cmap_index;
   }
   window().updateGL();
 }
@@ -629,9 +629,9 @@ void Fixel::selected_colourmap(size_t index, const ColourMapButton &) {
 void Fixel::selected_custom_colour(const QColor &colour, const ColourMapButton &) {
   if (colour.isValid()) {
     QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-    std::array<GLubyte, 3> c_colour{{GLubyte(colour.red()), GLubyte(colour.green()), GLubyte(colour.blue())}};
-    for (int i = 0; i < indices.size(); ++i) {
-      fixel_list_model->get_fixel_image(indices[i])->set_colour(c_colour);
+    const std::array<GLubyte, 3> c_colour{{GLubyte(colour.red()), GLubyte(colour.green()), GLubyte(colour.blue())}};
+    for (auto index : indices) {
+      fixel_list_model->get_fixel_image(index)->set_colour(c_colour);
     }
     window().updateGL();
   }
@@ -639,16 +639,16 @@ void Fixel::selected_custom_colour(const QColor &colour, const ColourMapButton &
 
 void Fixel::reset_colourmap(const ColourMapButton &) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i)
-    fixel_list_model->get_fixel_image(indices[i])->reset_windowing();
+  for (auto index : indices)
+    fixel_list_model->get_fixel_image(index)->reset_windowing();
   update_gui_controls();
   window().updateGL();
 }
 
 void Fixel::toggle_invert_colourmap(bool inverted, const ColourMapButton &) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i)
-    fixel_list_model->get_fixel_image(indices[i])->set_invert_scale(inverted);
+  for (auto index : indices)
+    fixel_list_model->get_fixel_image(index)->set_invert_scale(inverted);
   window().updateGL();
 }
 
@@ -656,8 +656,8 @@ void Fixel::colour_changed_slot(int selection) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
 
   colourmap_option_group->setEnabled(selection == 0);
-  for (int i = 0; i < indices.size(); ++i) {
-    fixel_list_model->get_fixel_image(indices[i])->set_colour_type_index(selection);
+  for (auto index : indices) {
+    fixel_list_model->get_fixel_image(index)->set_colour_type_index(selection);
     update_gui_colour_controls(false);
     break;
   }
@@ -667,10 +667,10 @@ void Fixel::colour_changed_slot(int selection) {
 
 void Fixel::on_set_tracking_slot(bool is_checked) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i) {
-    Image4D *fixel = dynamic_cast<Image4D *>(fixel_list_model->get_fixel_image(indices[i]));
+  for (auto index : indices) {
+    auto *fixel = dynamic_cast<Image4D *>(fixel_list_model->get_fixel_image(index));
     assert(fixel != nullptr);
-    if (fixel)
+    if (fixel != nullptr)
       fixel->tracking = is_checked;
   }
   window().updateGL();
@@ -678,8 +678,8 @@ void Fixel::on_set_tracking_slot(bool is_checked) {
 
 void Fixel::on_set_scaling_slot() {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i)
-    fixel_list_model->get_fixel_image(indices[i])->set_windowing(min_value->value(), max_value->value());
+  for (auto index : indices)
+    fixel_list_model->get_fixel_image(index)->set_windowing(min_value->value(), max_value->value());
   window().updateGL();
 }
 
@@ -688,8 +688,8 @@ void Fixel::threshold_lower_changed(int) {
     return;
   threshold_lower->setEnabled(threshold_lower_box->isChecked());
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i) {
-    auto &fixel_image = *fixel_list_model->get_fixel_image(indices[i]);
+  for (auto index : indices) {
+    auto &fixel_image = *fixel_list_model->get_fixel_image(index);
     fixel_image.set_use_discard_lower(threshold_lower_box->isChecked() && fixel_image.has_values());
   }
   window().updateGL();
@@ -700,8 +700,8 @@ void Fixel::threshold_upper_changed(int) {
     return;
   threshold_upper->setEnabled(threshold_upper_box->isChecked());
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i) {
-    auto &fixel_image = *fixel_list_model->get_fixel_image(indices[i]);
+  for (auto index : indices) {
+    auto &fixel_image = *fixel_list_model->get_fixel_image(index);
     fixel_image.set_use_discard_upper(threshold_upper_box->isChecked() && fixel_image.has_values());
   }
   window().updateGL();
@@ -712,8 +712,8 @@ void Fixel::threshold_lower_value_changed() {
     return;
   if (threshold_lower_box->isChecked()) {
     QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-    for (int i = 0; i < indices.size(); ++i) {
-      auto &fixel_image = *fixel_list_model->get_fixel_image(indices[i]);
+    for (auto index : indices) {
+      auto &fixel_image = *fixel_list_model->get_fixel_image(index);
       if (fixel_image.has_values()) {
         fixel_image.set_threshold_lower(threshold_lower->value());
         fixel_image.set_use_discard_lower(threshold_lower_box->isChecked());
@@ -728,8 +728,8 @@ void Fixel::threshold_upper_value_changed() {
     return;
   if (threshold_upper_box->isChecked()) {
     QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-    for (int i = 0; i < indices.size(); ++i) {
-      auto &fixel_image = *fixel_list_model->get_fixel_image(indices[i]);
+    for (auto index : indices) {
+      auto &fixel_image = *fixel_list_model->get_fixel_image(index);
       if (fixel_image.has_values()) {
         fixel_image.set_threshold_upper(threshold_upper->value());
         fixel_image.set_use_discard_upper(threshold_upper_box->isChecked());
@@ -752,7 +752,7 @@ void Fixel::add_commandline_options(MR::App::OptionList &options) {
 
 bool Fixel::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("fixel.load")) {
-    std::vector<std::filesystem::path> list(1, opt[0]);
+    const std::vector<std::filesystem::path> list(1, opt[0]);
     try {
       fixel_list_model->add_items(list, *this);
     } catch (Exception &E) {

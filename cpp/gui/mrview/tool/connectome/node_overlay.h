@@ -35,7 +35,7 @@ public:
   MR::Image<float> data;
 
 private:
-  bool need_update;
+  bool need_update{true};
 
 public:
   class Shader : public Displayable::Shader {

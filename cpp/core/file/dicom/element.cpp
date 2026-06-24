@@ -16,8 +16,9 @@
 
 #include "file/dicom/element.h"
 
+#include <cstring>
 #include <iomanip>
-#include <string.h>
+#include <memory>
 
 #include "debug.h"
 #include "file/path.h"
@@ -38,15 +39,15 @@ std::ostream &operator<<(std::ostream &stream, const Time &item) {
   return stream;
 }
 
-const std::unordered_map<Element::Type, std::string> Element::type_as_str{{INVALID, "invalid"},
-                                                                          {INT, "integer"},
-                                                                          {UINT, "unsigned integer"},
-                                                                          {FLOAT, "floating-point"},
-                                                                          {DATE, "date"},
-                                                                          {TIME, "time"},
-                                                                          {STRING, "string"},
-                                                                          {SEQ, "sequence"},
-                                                                          {OTHER, "other"}};
+const std::unordered_map<Element::Type, std::string> Element::type_as_str{{Type::INVALID, "invalid"},
+                                                                          {Type::INT, "integer"},
+                                                                          {Type::UINT, "unsigned integer"},
+                                                                          {Type::FLOAT, "floating-point"},
+                                                                          {Type::DATE, "date"},
+                                                                          {Type::TIME, "time"},
+                                                                          {Type::STRING, "string"},
+                                                                          {Type::SEQ, "sequence"},
+                                                                          {Type::OTHER, "other"}};
 
 void Element::set(const std::filesystem::path &filepath, bool force_read, bool read_write) {
   group = element = VR = 0;
@@ -56,7 +57,7 @@ void Element::set(const std::filesystem::path &filepath, bool force_read, bool r
   transfer_syntax_supported = true;
   parents.clear();
 
-  fmap.reset(new File::MMap(filepath, read_write));
+  fmap = std::make_unique<File::MMap>(filepath, read_write);
 
   if (fmap->size() < 256)
     throw Exception("\"" + fmap->path().string() + "\" is too small to be a valid DICOM file");
@@ -147,14 +148,14 @@ bool Element::read() {
     // try figuring out VR from dictionary if vendors haven't bothered
     // filling it in...
     if (VR == VR_UN) {
-      std::string name = tag_name();
+      const std::string name = tag_name();
       if (!name.empty())
         VR = get_VR_from_tag_name(name);
     }
   } else {
 
     // implicit encoding:
-    std::string name = tag_name();
+    const std::string name = tag_name();
     if (name.empty()) {
       DEBUG(printf("WARNING: unknown DICOM tag (%04X %04X) "
                    "with implicit encoding in file \"",
@@ -178,7 +179,7 @@ bool Element::read() {
   } else if (next + size > fmap->address() + fmap->size())
     throw Exception("file \"" + fmap->path().string() + "\" is too small to contain DICOM elements specified");
   else {
-    if (size % 2)
+    if ((size % 2) != 0U)
       DEBUG("WARNING: odd length (" + str(size) + ")" +         //
             " used for DICOM tag " +                            //
             (!tag_name().empty() ? tag_name().substr(2) : "") + //
@@ -203,7 +204,7 @@ bool Element::read() {
   }
 
   if (is_new_sequence())
-    parents.push_back(Sequence(group, element, size == undefined_length ? nullptr : data + size));
+    parents.emplace_back(group, element, size == undefined_length ? nullptr : data + size);
 
   switch (group) {
   case group_byte_order:
@@ -242,13 +243,13 @@ bool Element::read() {
 bool Element::ignore_when_parsing() const {
   for (const auto &seq : parents) {
     // ignore anything within IconImageSequence:
-    if (seq.is(0x0088U, 0x0200U))
+    if (seq.is(0x0088, 0x0200))
       return true;
     // allow Philips PrivatePerFrameSq:
-    if (seq.is(0x2005U, 0x140FU))
+    if (seq.is(0x2005, 0x140F))
       continue;
     // ignore anything within sequences with unknown (private) group:
-    if (seq.group & 1U)
+    if ((seq.group & 1U) != 0U)
       return true;
   }
 
@@ -259,32 +260,32 @@ bool Element::is_in_series_ref_sequence() const {
   // required to group together series exported using
   // Siemens XA10A in Interoperability mode
   for (const auto &seq : parents)
-    if (seq.is(0x0008U, 0x1250U))
+    if (seq.is(0x0008, 0x1250))
       return true;
   return false;
 }
 
 Element::Type Element::type() const {
-  if (!VR)
-    return INVALID;
+  if (VR == 0U)
+    return Element::Type::INVALID;
   if (VR == VR_FD || VR == VR_FL)
-    return FLOAT;
+    return Element::Type::FLOAT;
   if (VR == VR_SL || VR == VR_SS)
-    return INT;
+    return Element::Type::INT;
   if (VR == VR_UL || VR == VR_US)
-    return UINT;
+    return Element::Type::UINT;
   if (VR == VR_SQ)
-    return SEQ;
+    return Element::Type::SEQ;
   if (VR == VR_DA)
-    return DATE;
+    return Element::Type::DATE;
   if (VR == VR_TM)
-    return TIME;
+    return Element::Type::TIME;
   if (VR == VR_DT)
-    return DATETIME;
+    return Element::Type::DATETIME;
   if (VR == VR_AE || VR == VR_AS || VR == VR_CS || VR == VR_DS || VR == VR_IS || VR == VR_LO || VR == VR_LT ||
       VR == VR_PN || VR == VR_SH || VR == VR_ST || VR == VR_UI || VR == VR_UT || VR == VR_AT)
-    return STRING;
-  return OTHER;
+    return Element::Type::STRING;
+  return Element::Type::OTHER;
 }
 
 std::vector<int32_t> Element::get_int() const {
@@ -343,17 +344,17 @@ std::vector<default_type> Element::get_float() const {
 }
 
 Date Element::get_date() const {
-  assert(type() == DATE);
+  assert(type() == Element::Type::DATE);
   return Date(std::string(reinterpret_cast<const char *>(data), size));
 }
 
 Time Element::get_time() const {
-  assert(type() == TIME);
+  assert(type() == Element::Type::TIME);
   return Time(std::string(reinterpret_cast<const char *>(data), size));
 }
 
 std::pair<Date, Time> Element::get_datetime() const {
-  assert(type() == DATETIME);
+  assert(type() == Element::Type::DATETIME);
   if (size < 14)
     throw Exception("malformed DateTime entry");
   return {Date(std::string(reinterpret_cast<const char *>(data), 8)),
@@ -374,25 +375,25 @@ std::string Element::as_string() const {
   std::ostringstream out;
   try {
     switch (type()) {
-    case Element::INT:
+    case Element::Type::INT:
       for (const auto &x : get_int())
         out << x << " ";
       return out.str();
-    case Element::UINT:
+    case Element::Type::UINT:
       for (const auto &x : get_uint())
         out << x << " ";
       return out.str();
-    case Element::FLOAT:
+    case Element::Type::FLOAT:
       for (const auto &x : get_float())
         out << x << " ";
       return out.str();
-    case Element::DATE:
+    case Element::Type::DATE:
       return str(get_date());
-    case Element::TIME:
+    case Element::Type::TIME:
       return str(get_time());
-    case Element::DATETIME:
+    case Element::Type::DATETIME:
       return str(get_datetime().first) + " " + str(get_datetime().second);
-    case Element::STRING:
+    case Element::Type::STRING:
       if (group == group_data && element == element_data) {
         return "(data)";
       } else {
@@ -400,7 +401,7 @@ std::string Element::as_string() const {
           out << x << " ";
         return out.str();
       }
-    case Element::SEQ:
+    case Element::Type::SEQ:
       return "";
     default:
       if (group != group_sequence || element != element_sequence_item)
@@ -458,7 +459,7 @@ std::ostream &operator<<(std::ostream &stream, const Element &item) {
                    item.offset(item.start));
 
   std::string tmp;
-  size_t indent = item.level() - (item.VR == VR_SQ ? 1 : 0);
+  const size_t indent = item.level() - (item.VR == VR_SQ ? 1 : 0);
   for (size_t i = 0; i < indent; i++)
     tmp += "  ";
   if (item.is_new_sequence())

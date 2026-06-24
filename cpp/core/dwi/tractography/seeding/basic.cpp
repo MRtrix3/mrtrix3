@@ -65,9 +65,7 @@ bool SeedMask::get_seed(Eigen::Vector3f &p) const {
 Random_per_voxel::Random_per_voxel(const std::filesystem::path &in, const size_t num_per_voxel)
     : Base(in.filename().string(), "random per voxel", attempts_per_seed.at(seed_attempt_t::FIXED)),
       mask(in),
-      num(num_per_voxel),
-      inc(0),
-      expired(false) {
+      num(num_per_voxel) {
   Base::count = get_count(mask) * num_per_voxel;
   mask.index(0) = 0;
   mask.index(1) = 0;
@@ -76,7 +74,7 @@ Random_per_voxel::Random_per_voxel(const std::filesystem::path &in, const size_t
 
 bool Random_per_voxel::get_seed(Eigen::Vector3f &p) const {
 
-  std::lock_guard<std::mutex> lock(mutex);
+  const std::lock_guard<std::mutex> lock(mutex);
 
   if (expired)
     return false;
@@ -114,14 +112,13 @@ Grid_per_voxel::Grid_per_voxel(const std::filesystem::path &in, const size_t os_
       os(os_factor),
       pos(os, os, os),
       offset(-0.5F + (1.0F / static_cast<float>(2 * os))),
-      step(1.0F / static_cast<float>(os)),
-      expired(false) {
+      step(1.0F / static_cast<float>(os)) {
   Base::count = get_count(mask) * Math::pow3(os_factor);
 }
 
 bool Grid_per_voxel::get_seed(Eigen::Vector3f &p) const {
 
-  std::lock_guard<std::mutex> lock(mutex);
+  const std::lock_guard<std::mutex> lock(mutex);
 
   if (expired)
     return false;
@@ -158,11 +155,11 @@ bool Grid_per_voxel::get_seed(Eigen::Vector3f &p) const {
 }
 
 Rejection_per_voxel::Rejection_per_voxel(const std::filesystem::path &in)
-    : Base(in.filename().string(), "rejection sampling", attempts_per_seed.at(seed_attempt_t::RANDOM)),
+    : Base(in.filename().string(), "rejection sampling", attempts_per_seed.at(seed_attempt_t::RANDOM))
 #ifdef REJECTION_SAMPLING_USE_INTERPOLATION
-      interp(in),
+          interp(in)
 #endif
-      max(0.0) {
+{
   auto vox = Image<float>::open(in);
   if (!(vox.ndim() == 3 || (vox.ndim() == 4 && vox.size(3) == 1)))
     throw Exception("Seed image must be a 3D image");
@@ -171,7 +168,7 @@ Rejection_per_voxel::Rejection_per_voxel(const std::filesystem::path &in)
 
   for (auto i = Loop(0, 3)(vox); i; ++i) {
     const float value = vox.value();
-    if (value) {
+    if (value != 0.0F) {
       if (value < 0.0)
         throw Exception("Cannot have negative values in an image used for rejection sampling!");
       max = std::max(max, value);
@@ -191,19 +188,19 @@ Rejection_per_voxel::Rejection_per_voxel(const std::filesystem::path &in)
     }
   }
 
-  if (!max)
+  if (max == 0.0F)
     throw Exception("Cannot use image " + in.string() + " for rejection sampling - image is empty");
 
-  if (bottom[0])
+  if (bottom[0] != 0)
     --bottom[0];
-  if (bottom[1])
+  if (bottom[1] != 0)
     --bottom[1];
-  if (bottom[2])
+  if (bottom[2] != 0)
     --bottom[2];
 
-  top[0] = std::min(static_cast<ssize_t>(vox.size(0)) - bottom[0], top[0] + 2 - bottom[0]);
-  top[1] = std::min(static_cast<ssize_t>(vox.size(1)) - bottom[1], top[1] + 2 - bottom[1]);
-  top[2] = std::min(static_cast<ssize_t>(vox.size(2)) - bottom[2], top[2] + 2 - bottom[2]);
+  top[0] = std::min(vox.size(0) - bottom[0], top[0] + 2 - bottom[0]);
+  top[1] = std::min(vox.size(1) - bottom[1], top[1] + 2 - bottom[1]);
+  top[2] = std::min(vox.size(2) - bottom[2], top[2] + 2 - bottom[2]);
 
   auto sub = Adapter::make<Adapter::Subset>(vox, bottom, top);
   Header header = sub;
@@ -244,9 +241,9 @@ bool Rejection_per_voxel::get_seed(Eigen::Vector3f &p) const {
     seed.index(2) = std::uniform_int_distribution<int>(0, image.size(2) - 1)(rng());
     selector = uniform(rng()) * max;
   } while (seed.value() < selector);
-  p = {seed.index(0) + uniform(rng()) - 0.5f,
-       seed.index(1) + uniform(rng()) - 0.5f,
-       seed.index(2) + uniform(rng()) - 0.5f};
+  p = {seed.index(0) + uniform(rng()) - 0.5F,
+       seed.index(1) + uniform(rng()) - 0.5F,
+       seed.index(2) + uniform(rng()) - 0.5F};
   p = voxel2scanner * p;
 #endif
   return true;
@@ -277,9 +274,7 @@ CoordinatesLoader::CoordinatesLoader(const std::filesystem::path &cds_path) //
 Count_per_coord::Count_per_coord(const std::filesystem::path &path, const size_t streamlines_per_coord)
     : Base(path.filename().string(), "fixed streamlines per coordinate", attempts_per_seed.at(seed_attempt_t::FIXED)),
       CoordinatesLoader(path),
-      current_coord(0),
-      num_at_coord(0),
-      expired(false),
+
       streamlines_per_coordinate(streamlines_per_coord) {
   if (have_weights())
     throw Exception("Seeding fixed # streamlines per coordinates"

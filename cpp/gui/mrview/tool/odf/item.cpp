@@ -16,6 +16,8 @@
 
 #include "mrview/tool/odf/item.h"
 
+#include <memory>
+
 #include "dwi/gradient.h"
 #include "header.h"
 #include "math/SH.h"
@@ -62,13 +64,13 @@ bool ODF_Item::valid() const {
   assert(dixel);
   if (!dixel->dirs)
     return false;
-  return dixel->dirs->size();
+  return dixel->dirs->size() != 0U;
 }
 
-ODF_Item::DixelPlugin::DixelPlugin(const MR::Header &H) : dir_type(dir_t::NONE), shell_index(0) {
+ODF_Item::DixelPlugin::DixelPlugin(const MR::Header &H) {
   try {
     grad = MR::DWI::get_DW_scheme(H);
-    shells.reset(new MR::DWI::Shells(grad));
+    shells = std::make_unique<MR::DWI::Shells>(grad);
     shell_index = shells->count() - 1;
   } catch (Exception &) { // NOLINT(bugprone-empty-catch)
   }
@@ -80,7 +82,7 @@ ODF_Item::DixelPlugin::DixelPlugin(const MR::Header &H) : dir_type(dir_t::NONE),
         throw Exception("malformed directions field in image \"" + H.path().string() + "\" - incorrect number of rows");
       for (size_t row = 0; row < lines.size(); ++row) {
         const auto values = parse_floats(lines[row]);
-        if (!header_dirs.rows()) {
+        if (header_dirs.rows() == 0) {
           if (values.size() != 2 && values.size() != 3)
             throw Exception("malformed directions field in image \"" + H.path().string() +
                             "\" - should have 2 or 3 columns");
@@ -116,7 +118,7 @@ void ODF_Item::DixelPlugin::set_shell(size_t index) {
 }
 
 void ODF_Item::DixelPlugin::set_header() {
-  if (!header_dirs.rows())
+  if (header_dirs.rows() == 0)
     throw Exception("No direction scheme defined in header");
   auto new_dirs = std::make_unique<MR::DWI::Directions::Set>(header_dirs);
   std::swap(dirs, new_dirs);

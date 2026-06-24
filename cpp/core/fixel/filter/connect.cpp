@@ -46,7 +46,7 @@ void Connect::operator()(Image<float> &input, Image<float> &output) const {
   //   duplication of memory requirements
 
   for (auto l = Loop(0)(output); l; ++l)
-    output.value() = 0.0f;
+    output.value() = 0.0F;
 
   Eigen::Array<bool, Eigen::Dynamic, 1> processed(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(input.size(0)));
   using IndexAndSize = std::pair<size_t, size_t>;
@@ -75,7 +75,7 @@ void Connect::operator()(Image<float> &input, Image<float> &output) const {
             } // Finish adding the other fixel in this connection to the list of fixels to expand the cluster
           }   // Finish looping over fixels connected to "index"
         }     // Finish waiting for the list of fixels to expand the cluster to has been exhausted
-        cluster_sizes.push_back(std::make_pair(cluster_index, cluster_size));
+        cluster_sizes.emplace_back(cluster_index, cluster_size);
       } // Finish testing to see if seed fixel is above the value threshold
     }   // Finish thesting whether the seed fixel has already been processed
   }     // Finish looping over all plausible cluster seed fixels

@@ -46,18 +46,18 @@ void run() {
 
   const bool actual_count = !get_options("count").empty();
 
-  for (size_t i = 0; i < argument.size(); ++i) {
-    const std::filesystem::path input_path{argument[i]};
+  for (const auto &i : argument) {
+    const std::filesystem::path input_path{i};
     Tractography::Properties properties;
     Tractography::Reader<float> file(input_path, properties);
 
     std::cout << "***********************************\n";
     std::cout << "  Tracks file: \"" << input_path.string() << "\"\n";
 
-    for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i) {
-      std::string S(i->first + ':');
+    for (const auto &property : properties) {
+      std::string S(property.first + ':');
       S.resize(22, ' ');
-      const auto lines = split_lines(i->second);
+      const auto lines = split_lines(property.second);
       std::cout << "    " << S << lines[0] << "\n";
       for (size_t i = 1; i != lines.size(); ++i)
         std::cout << "                          " << lines[i] << "\n";
@@ -65,14 +65,12 @@ void run() {
 
     if (!properties.comments.empty()) {
       std::cout << "    Comments:             ";
-      for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
-        std::cout << (i == properties.comments.begin() ? "" : "                       ") << *i << "\n";
+      for (auto i = properties.comments.cbegin(); i != properties.comments.cend(); ++i)
+        std::cout << (i == properties.comments.cbegin() ? "" : "                       ") << *i << "\n";
     }
 
-    for (std::multimap<std::string, std::string>::const_iterator i = properties.prior_rois.begin();
-         i != properties.prior_rois.end();
-         ++i)
-      std::cout << "    ROI:                  " << i->first << " " << i->second << "\n";
+    for (auto &prior_roi : properties.prior_rois)
+      std::cout << "    ROI:                  " << prior_roi.first << " " << prior_roi.second << "\n";
 
     if (actual_count) {
       Tractography::Streamline<float> tck;

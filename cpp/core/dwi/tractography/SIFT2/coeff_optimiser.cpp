@@ -44,9 +44,8 @@ CoefficientOptimiserBase::CoefficientOptimiserBase(TckFactor &tckfactor,
       sum_costs(sum_costs),
       local_stats_steps(),
       local_stats_coefficients(),
-      local_nonzero_count(0),
-      local_to_exclude(fixel_mask_type::Zero(fixels_to_exclude.size())),
-      local_sum_costs(0.0) {
+
+      local_to_exclude(fixel_mask_type::Zero(fixels_to_exclude.size())) {
 }
 
 CoefficientOptimiserBase::CoefficientOptimiserBase(const CoefficientOptimiserBase &that)
@@ -66,13 +65,11 @@ CoefficientOptimiserBase::CoefficientOptimiserBase(const CoefficientOptimiserBas
       sum_costs(that.sum_costs),
       local_stats_steps(),
       local_stats_coefficients(),
-      local_nonzero_count(0),
-      local_to_exclude(fixel_mask_type::Zero(that.fixels_to_exclude.size())),
-      local_sum_costs(0.0) {
+      local_to_exclude(fixel_mask_type::Zero(that.fixels_to_exclude.size())) {
 }
 
 CoefficientOptimiserBase::~CoefficientOptimiserBase() {
-  std::lock_guard<std::mutex> lock(master.mutex);
+  const std::lock_guard<std::mutex> lock(master.mutex);
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
   fprintf(
       stderr,
@@ -133,7 +130,7 @@ bool CoefficientOptimiserBase::operator()(const SIFT::TrackIndexRange &range) {
     // Update the stats
     local_stats_steps += dFs;
     local_stats_coefficients += new_coefficient;
-    if (master.contributions[track_index] && master.contributions[track_index]->dim() &&
+    if ((master.contributions[track_index] != nullptr) && (master.contributions[track_index]->dim() != 0U) &&
         new_coefficient > master.min_coeff)
       ++local_nonzero_count;
 
@@ -183,13 +180,14 @@ double CoefficientOptimiserBase::do_fixel_exclusion(const SIFT::track_t track_in
     }
   }
 
-  if (index_to_exclude)
+  if (index_to_exclude != 0U)
     local_to_exclude[index_to_exclude] = true;
   else
     return 0.0;
 
   // Task 2: Calculate a new coefficient for this streamline
-  double weighted_sum = 0.0, sum_weights = 0.0;
+  double weighted_sum = 0.0;
+  double sum_weights = 0.0;
 
   for (size_t j = 0; j != this_contribution.dim(); ++j) {
     const size_t fixel_index = this_contribution[j].get_fixel_index();
@@ -202,7 +200,7 @@ double CoefficientOptimiserBase::do_fixel_exclusion(const SIFT::track_t track_in
     }
   }
 
-  return (sum_weights ? (weighted_sum / sum_weights) : 0.0);
+  return ((sum_weights == 0.0) ? 0.0 : (weighted_sum / sum_weights));
 }
 
 CoefficientOptimiserGSS::CoefficientOptimiserGSS(TckFactor &tckfactor,
@@ -214,8 +212,7 @@ CoefficientOptimiserGSS::CoefficientOptimiserGSS(TckFactor &tckfactor,
     : CoefficientOptimiserBase(
           tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs) {}
 
-CoefficientOptimiserGSS::CoefficientOptimiserGSS(const CoefficientOptimiserGSS &that)
-    : CoefficientOptimiserBase(that) {}
+CoefficientOptimiserGSS::CoefficientOptimiserGSS(const CoefficientOptimiserGSS &that) = default;
 
 double CoefficientOptimiserGSS::get_coeff_change(const SIFT::track_t track_index) const {
   LineSearchFunctor line_search_functor(track_index, master);
@@ -268,7 +265,7 @@ double CoefficientOptimiserQLS::get_coeff_change(const SIFT::track_t track_index
                                       0.0,
                                       master.max_coeff_step,
                                       0.001 / (2.0 * master.max_coeff_step));
-    double cost = line_search_functor(dFs);
+    const double cost = line_search_functor(dFs);
     if (dFs > 0.99 * master.max_coeff_step && line_search_functor(master.max_coeff_step) < cost)
       dFs = master.max_coeff_step;
     else if (dFs < -0.99 * master.max_coeff_step && line_search_functor(-master.max_coeff_step) < cost)
@@ -296,6 +293,7 @@ CoefficientOptimiserIterative::CoefficientOptimiserIterative(TckFactor &tckfacto
 {
 }
 
+// NOLINTNEXTLINE(modernize-use-equals-default): conditional member-init list under SIFT2_COEFF_OPTIMISER_DEBUG
 CoefficientOptimiserIterative::CoefficientOptimiserIterative(const CoefficientOptimiserIterative &that)
     : CoefficientOptimiserBase(that)
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
@@ -314,7 +312,7 @@ CoefficientOptimiserIterative::~CoefficientOptimiserIterative() {
 
 double CoefficientOptimiserIterative::get_coeff_change(const SIFT::track_t track_index) const {
 
-  LineSearchFunctor line_search_functor(track_index, master);
+  const LineSearchFunctor line_search_functor(track_index, master);
 
   double dFs = 0.0;
   double change = 0.0;
@@ -324,7 +322,7 @@ double CoefficientOptimiserIterative::get_coeff_change(const SIFT::track_t track
     const LineSearchFunctor::Result result = line_search_functor.get(dFs);
 
     // Newton update
-    change = result.second_deriv ? (-result.first_deriv / result.second_deriv) : 0.0;
+    change = (result.second_deriv == 0.0) ? 0.0 : (-result.first_deriv / result.second_deriv);
     if (result.second_deriv < 0.0)
       change = -change;
 

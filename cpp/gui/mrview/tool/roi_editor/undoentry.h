@@ -32,11 +32,11 @@ struct ROI_UndoEntry {
 
   ROI_UndoEntry(ROI_Item &, int, int);
   ROI_UndoEntry(const ROI_UndoEntry &) = delete;
-  ROI_UndoEntry(ROI_UndoEntry &&);
+  ROI_UndoEntry(ROI_UndoEntry &&) noexcept;
   ~ROI_UndoEntry();
 
   ROI_UndoEntry &operator=(const ROI_UndoEntry &) = delete;
-  ROI_UndoEntry &operator=(ROI_UndoEntry &&);
+  ROI_UndoEntry &operator=(ROI_UndoEntry &&) noexcept;
 
   void draw_line(ROI_Item &, const Eigen::Vector3f &, const Eigen::Vector3f &, const bool);
   void draw_thick_line(ROI_Item &, const Eigen::Vector3f &, const Eigen::Vector3f &, const bool, const float);

@@ -40,22 +40,22 @@ public:
 
   template <class U> const Base &operator=(const U &V) { return parent_ = V; }
 
-  FORCE_INLINE ImageType &parent() { return parent_; }
-  FORCE_INLINE bool valid() const { return parent_.valid(); }
+  [[nodiscard]] FORCE_INLINE ImageType &parent() { return parent_; }
+  [[nodiscard]] FORCE_INLINE bool valid() const { return parent_.valid(); }
   FORCE_INLINE bool operator!() const { return !valid(); }
-  FORCE_INLINE const ImageType &parent() const { return parent_; }
-  FORCE_INLINE std::string name() const { return parent_.name(); }
-  FORCE_INLINE size_t ndim() const { return parent_.ndim(); }
-  FORCE_INLINE ssize_t size(size_t axis) const { return parent_.size(axis); }
-  FORCE_INLINE default_type spacing(size_t axis) const { return parent_.spacing(axis); }
-  FORCE_INLINE ssize_t stride(size_t axis) const { return parent_.stride(axis); }
-  FORCE_INLINE const transform_type &transform() const { return parent_.transform(); }
-  FORCE_INLINE const KeyValues &keyval() const { return parent_.keyval(); }
+  [[nodiscard]] FORCE_INLINE const ImageType &parent() const { return parent_; }
+  [[nodiscard]] FORCE_INLINE std::string name() const { return parent_.name(); }
+  [[nodiscard]] FORCE_INLINE size_t ndim() const { return parent_.ndim(); }
+  [[nodiscard]] FORCE_INLINE ssize_t size(size_t axis) const { return parent_.size(axis); }
+  [[nodiscard]] FORCE_INLINE default_type spacing(size_t axis) const { return parent_.spacing(axis); }
+  [[nodiscard]] FORCE_INLINE ssize_t stride(size_t axis) const { return parent_.stride(axis); }
+  [[nodiscard]] FORCE_INLINE const transform_type &transform() const { return parent_.transform(); }
+  [[nodiscard]] FORCE_INLINE const KeyValues &keyval() const { return parent_.keyval(); }
 
-  FORCE_INLINE ssize_t get_index(size_t axis) const { return parent_.index(axis); }
+  [[nodiscard]] FORCE_INLINE ssize_t get_index(size_t axis) const { return parent_.index(axis); }
   FORCE_INLINE void move_index(size_t axis, ssize_t increment) { parent_.index(axis) += increment; }
 
-  FORCE_INLINE value_type get_value() const { return parent_.value(); }
+  [[nodiscard]] FORCE_INLINE value_type get_value() const { return parent_.value(); }
   FORCE_INLINE void set_value(value_type val) { parent_.value() = val; }
 
   FORCE_INLINE void reset() { parent_.reset(); }

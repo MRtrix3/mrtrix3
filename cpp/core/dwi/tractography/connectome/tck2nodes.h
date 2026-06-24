@@ -37,7 +37,7 @@ public:
 
   Tck2nodes_base(const Tck2nodes_base &that) = default;
 
-  virtual ~Tck2nodes_base() {}
+  virtual ~Tck2nodes_base() = default;
 
   NodePair operator()(const Tractography::Streamline<> &tck) const {
     assert(pair);
@@ -54,7 +54,7 @@ public:
     return true;
   }
 
-  bool provides_pair() const { return pair; }
+  [[nodiscard]] bool provides_pair() const { return pair; }
 
 protected:
   const Image<node_t> nodes;
@@ -87,9 +87,9 @@ class Tck2nodes_end_voxels : public Tck2nodes_base {
 public:
   Tck2nodes_end_voxels(const Image<node_t> &nodes_data) : Tck2nodes_base(nodes_data, true) {}
 
-  Tck2nodes_end_voxels(const Tck2nodes_end_voxels &that) : Tck2nodes_base(that) {}
+  Tck2nodes_end_voxels(const Tck2nodes_end_voxels &that) = default;
 
-  ~Tck2nodes_end_voxels() {}
+  ~Tck2nodes_end_voxels() = default;
 
 private:
   node_t select_node(const Tractography::Streamline<float> &, Image<node_t> &, const bool) const override;
@@ -107,13 +107,9 @@ public:
     initialise_search();
   }
 
-  Tck2nodes_radial(const Tck2nodes_radial &that)
-      : Tck2nodes_base(that),
-        radial_search(that.radial_search),
-        max_dist(that.max_dist),
-        max_add_dist(that.max_add_dist) {}
+  Tck2nodes_radial(const Tck2nodes_radial &that) = default;
 
-  ~Tck2nodes_radial() {}
+  ~Tck2nodes_radial() = default;
 
 private:
   node_t select_node(const Tractography::Streamline<> &, Image<node_t> &, const bool) const override;
@@ -136,9 +132,9 @@ public:
   Tck2nodes_revsearch(const Image<node_t> &nodes_data, const default_type length)
       : Tck2nodes_base(nodes_data, true), max_dist(length) {}
 
-  Tck2nodes_revsearch(const Tck2nodes_revsearch &that) : Tck2nodes_base(that), max_dist(that.max_dist) {}
+  Tck2nodes_revsearch(const Tck2nodes_revsearch &that) = default;
 
-  ~Tck2nodes_revsearch() {}
+  ~Tck2nodes_revsearch() = default;
 
 private:
   node_t select_node(const Tractography::Streamline<> &, Image<node_t> &, const bool) const override;
@@ -154,10 +150,9 @@ public:
   Tck2nodes_forwardsearch(const Image<node_t> &nodes_data, const default_type length)
       : Tck2nodes_base(nodes_data, true), max_dist(length), angle_limit(Math::pi_4) {}
 
-  Tck2nodes_forwardsearch(const Tck2nodes_forwardsearch &that)
-      : Tck2nodes_base(that), max_dist(that.max_dist), angle_limit(that.angle_limit) {}
+  Tck2nodes_forwardsearch(const Tck2nodes_forwardsearch &that) = default;
 
-  ~Tck2nodes_forwardsearch() {}
+  ~Tck2nodes_forwardsearch() = default;
 
 private:
   node_t select_node(const Tractography::Streamline<> &, Image<node_t> &, const bool) const override;
@@ -165,7 +160,7 @@ private:
   const default_type max_dist;
   const default_type angle_limit;
 
-  default_type get_cf(const Eigen::Vector3d &, const Eigen::Vector3d &, const voxel_type &) const;
+  [[nodiscard]] default_type get_cf(const Eigen::Vector3d &, const Eigen::Vector3d &, const voxel_type &) const;
 };
 
 // Class that obtains a list of all nodes overlapped by the streamline
@@ -173,9 +168,9 @@ class Tck2nodes_all_voxels : public Tck2nodes_base {
 public:
   Tck2nodes_all_voxels(const Image<node_t> &nodes_data) : Tck2nodes_base(nodes_data, false) {}
 
-  Tck2nodes_all_voxels(const Tck2nodes_all_voxels &that) : Tck2nodes_base(that) {}
+  Tck2nodes_all_voxels(const Tck2nodes_all_voxels &that) = default;
 
-  ~Tck2nodes_all_voxels() {}
+  ~Tck2nodes_all_voxels() = default;
 
 private:
   void select_nodes(const Streamline<> &, Image<node_t> &, std::vector<node_t> &) const override;

@@ -73,12 +73,10 @@ public:
         local_search_directions(init.init_rotation.search.directions),
         image_scale_factor(init.init_rotation.search.scale),
         global_search(init.init_rotation.search.run_global),
-        translation_extent(init.init_rotation.search.translation_extent),
-        idx_angle(0),
-        idx_dir(0) {
+        translation_extent(init.init_rotation.search.translation_extent) {
     local_trafo.set_centre_without_transform_update(centre);
     local_trafo.set_translation(offset);
-    Eigen::Matrix<default_type, 3, 3> lin = input_trafo.get_transform().linear();
+    const Eigen::Matrix<default_type, 3, 3> lin = input_trafo.get_transform().linear();
     local_trafo.set_matrix_const_translation(lin);
     INFO("before search:");
     INFO(local_trafo.info());
@@ -128,8 +126,8 @@ public:
   }
 
   void run(bool debug = false) {
-    std::string what = global_search ? "global" : "local";
-    size_t iterations = global_search ? global_search_iterations : (rot_angles.size() * local_search_directions);
+    const std::string what = global_search ? "global" : "local";
+    const size_t iterations = global_search ? global_search_iterations : (rot_angles.size() * local_search_directions);
     ProgressBar progress("performing " + what + " search for best rotation", iterations);
     overlap_it.resize(iterations);
     cost_it.resize(iterations);
@@ -145,13 +143,14 @@ public:
     Eigen::Matrix<default_type, Eigen::Dynamic, 1> gradient(local_trafo.size());
     Eigen::VectorXd cost = Eigen::VectorXd::Zero(1, 1);
     transform_type T;
-    const Eigen::Translation<default_type, 3> Tc2(centre - 0.5 * offset), To(offset);
+    const Eigen::Translation<default_type, 3> Tc2(centre - 0.5 * offset);
+    const Eigen::Translation<default_type, 3> To(offset);
     transform_type R0;
     R0.translation().fill(0);
 
     Eigen::Vector3d extent(0, 0, 0);
     if (translation_extent != 0) {
-      ParamType parameters = get_parameters();
+      const ParamType parameters = get_parameters();
       extent << midway_image_header.spacing(0) * translation_extent * (midway_image_header.size(0) - 0.5),
           midway_image_header.spacing(1) * translation_extent * (midway_image_header.size(1) - 0.5),
           midway_image_header.spacing(2) * translation_extent * (midway_image_header.size(2) - 0.5);
@@ -176,7 +175,7 @@ public:
         local_trafo.set_transform<transform_type>(T);
       }
 
-      ParamType parameters = get_parameters();
+      const ParamType parameters = get_parameters();
       // parameters.make_diagnostics_image ("/tmp/debugme"+str(iteration)+".mif", true); // REMOVEME
       cost.fill(0);
       cnt = 0;
@@ -185,7 +184,7 @@ public:
       DEBUG("rotation search: iteration " + str(iteration) + " cost: " + str(cost) + " cnt: " + str(cnt));
       if (debug)
         std::cout << str(iteration) + " " + str(cost) + " " + str(cnt) << " " << T.matrix().row(0) << " "
-                  << T.matrix().row(1) << " " << T.matrix().row(2) << std::endl;
+                  << T.matrix().row(1) << " " << T.matrix().row(2) << '\n';
       // write_images ( "im1_" + str(iteration) + ".mif", "im2_" + str(iteration) + ".mif");
       if (cnt == 0) {
         if (iteration == 0)
@@ -204,7 +203,8 @@ public:
     {
       auto max_ = Eigen::MatrixXd::Constant(cost_it.rows(), 1, std::numeric_limits<default_type>::max());
       // default_type max_overlap = overlap_it.maxCoeff();
-      default_type mean_overlap = static_cast<default_type>(overlap_it.sum()) / static_cast<default_type>(iterations);
+      const default_type mean_overlap =
+          static_cast<default_type>(overlap_it.sum()) / static_cast<default_type>(iterations);
       // reject solutions with less than mean overlap by setting cost to max
       cost_it = (overlap_it.array() > mean_overlap).select(cost_it, max_);
       std::ptrdiff_t i;
@@ -287,7 +287,8 @@ private:
     az_in.col(0) = idx * golden_angle;
 
     // el(i) = acos (1-(1-cosd(max_cone_angle_deg))*i/(n_dir-1) )
-    default_type a = (1.0 - std::cos(Math::pi / 180.0 * max_cone_angle_deg)) / static_cast<default_type>(n_dir - 1);
+    const default_type a =
+        (1.0 - std::cos(Math::pi / 180.0 * max_cone_angle_deg)) / static_cast<default_type>(n_dir - 1);
     az_in.col(1).array() = -a * idx.array() + 1.0;
     for (size_t i = 0; i < n_dir; ++i)
       az_in(i, 1) = std::acos(az_in(i, 1));
@@ -333,7 +334,7 @@ private:
   default_type image_scale_factor;
   bool global_search;
   double translation_extent;
-  size_t idx_angle, idx_dir;
+  size_t idx_angle{0}, idx_dir{0};
   Registration::Transform::Rigid local_trafo;
   Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_in;
   Eigen::Matrix<default_type, Eigen::Dynamic, 3> xyz;

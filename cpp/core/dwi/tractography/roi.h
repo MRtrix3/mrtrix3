@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "app.h"
 #include "image.h"
 #include "interp/linear.h"
@@ -60,7 +62,7 @@ public:
       radius2 = Math::pow2(radius);
     } catch (Exception &e_assphere) {
       try {
-        mask.reset(new Mask(spec));
+        mask = std::make_shared<Mask>(spec);
       } catch (Exception &e_asimage) {
         Exception e("Unable to parse text \"" + spec + "\" as a ROI");
         e.push_back("If interpreted as sphere:");
@@ -74,17 +76,17 @@ public:
     }
   }
 
-  std::string shape() const { return (mask ? "image" : "sphere"); }
+  [[nodiscard]] std::string shape() const { return (mask ? "image" : "sphere"); }
 
-  std::string parameters() const {
+  [[nodiscard]] std::string parameters() const {
     return mask ? std::string(mask->name()) : (str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(radius));
   }
 
-  float min_featurelength() const {
+  [[nodiscard]] float min_featurelength() const {
     return mask ? std::min({mask->spacing(0), mask->spacing(1), mask->spacing(2)}) : radius;
   }
 
-  bool contains(const Eigen::Vector3f &p) const {
+  [[nodiscard]] bool contains(const Eigen::Vector3f &p) const {
     if (mask) {
       Eigen::Vector3f v = *(mask->scanner2voxel) * p;
       Mask temp(*mask); // Required for thread-safety
@@ -111,18 +113,18 @@ private:
 
 class ROISetBase {
 public:
-  ROISetBase() {}
+  ROISetBase() = default;
 
   void clear() { R.clear(); }
-  size_t size() const { return (R.size()); }
-  bool empty() const { return R.empty(); }
+  [[nodiscard]] size_t size() const { return (R.size()); }
+  [[nodiscard]] bool empty() const { return R.empty(); }
   const ROI &operator[](size_t i) const { return (R[i]); }
   void add(const ROI &roi) { R.push_back(roi); }
 
   friend inline std::ostream &operator<<(std::ostream &stream, const ROISetBase &R) {
     if (R.R.empty())
       return (stream);
-    std::vector<ROI>::const_iterator i = R.R.begin();
+    auto i = R.R.begin();
     stream << *i;
     ++i;
     for (; i != R.R.end(); ++i)
@@ -136,12 +138,9 @@ protected:
 
 class ROIUnorderedSet : public ROISetBase {
 public:
-  ROIUnorderedSet() {}
-  bool contains(const Eigen::Vector3f &p) const {
-    for (size_t n = 0; n < R.size(); ++n)
-      if (R[n].contains(p))
-        return (true);
-    return false;
+  ROIUnorderedSet() = default;
+  [[nodiscard]] bool contains(const Eigen::Vector3f &p) const {
+    return std::any_of(R.begin(), R.end(), [&p](const ROI &n) { return n.contains(p); });
   }
   void contains(const Eigen::Vector3f &p, Eigen::Array<bool, Eigen::Dynamic, 1> &retval) const {
     for (size_t n = 0; n < R.size(); ++n)
@@ -171,7 +170,7 @@ public:
         valid = false;
     }
 
-    bool all_entered() const { return (valid && (next_index == size)); }
+    [[nodiscard]] bool all_entered() const { return (valid && (next_index == size)); }
 
   private:
     const size_t size;
@@ -179,7 +178,7 @@ public:
     size_t next_index;
   };
 
-  ROIOrderedSet() {}
+  ROIOrderedSet() = default;
 
   void contains(const Eigen::Vector3f &p, LoopState &loop_state) const {
     // do nothing if the series of coordinates have already performed something illegal
@@ -205,12 +204,12 @@ public:
   IncludeROIVisitation(const IncludeROIVisitation &) = default;
   IncludeROIVisitation &operator=(const IncludeROIVisitation &) = delete;
 
-  bool empty() const { return unordered.empty() && ordered.empty(); }
+  [[nodiscard]] bool empty() const { return unordered.empty() && ordered.empty(); }
   void reset() {
     visited.setZero();
     state.reset();
   }
-  size_t size() const { return unordered.size() + ordered.size(); }
+  [[nodiscard]] size_t size() const { return unordered.size() + ordered.size(); }
 
   void operator()(const Eigen::Vector3f &p) {
     unordered.contains(p, visited);

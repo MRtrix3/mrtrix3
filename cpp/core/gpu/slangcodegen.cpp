@@ -59,7 +59,7 @@ std::string read_file(const std::filesystem::path &filePath, ReadFileMode mode =
   if (fileSize64 > static_cast<uintmax_t>(std::numeric_limits<std::streamsize>::max())) {
     throw std::runtime_error("File too large to read into memory: "s + filePath.string());
   }
-  const std::streamsize fileSize = static_cast<std::streamsize>(fileSize64);
+  const auto fileSize = static_cast<std::streamsize>(fileSize64);
   std::string result(static_cast<std::string::size_type>(fileSize), '\0');
   f.read(result.data(), fileSize);
 

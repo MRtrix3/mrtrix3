@@ -21,7 +21,7 @@
 namespace MR::GUI::MRView {
 
 Volume::~Volume() {
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   _texture.clear();
   vertex_buffer.clear();
   vertex_array_object.clear();
@@ -56,7 +56,7 @@ void Volume::allocate() {
     _scale_factor = static_cast<float>(std::numeric_limits<uint32_t>::max());
     break;
   default:
-    _scale_factor = 1.0f;
+    _scale_factor = 1.0F;
   }
 }
 

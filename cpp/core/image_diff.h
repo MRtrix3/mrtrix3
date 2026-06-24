@@ -97,7 +97,8 @@ inline void check_images_tolimage(ImageType1 &in1, ImageType2 &in2, ImageTypeTol
 template <class ImageType1, class ImageType2>
 inline void check_images_voxel(ImageType1 &in1, ImageType2 &in2, const double tol = 0.0) {
   auto func = [&tol](decltype(in1) &a, decltype(in2) &b) {
-    double maxa = 0.0, maxb = 0.0;
+    double maxa = 0.0;
+    double maxb = 0.0;
     for (auto l = Loop(3)(a, b); l; ++l) {
       maxa = std::max(maxa, MR::abs(static_cast<cdouble>(a.value())));
       maxb = std::max(maxb, MR::abs(static_cast<cdouble>(b.value())));

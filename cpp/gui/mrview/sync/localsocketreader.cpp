@@ -15,6 +15,9 @@
  */
 
 #include "mrview/sync/localsocketreader.h"
+
+#include <memory>
+
 #include "exception.h"
 
 namespace MR::GUI::MRView::Sync {
@@ -59,7 +62,7 @@ void LocalSocketReader::OnDataReceived() {
     // Read delivered data
     std::string read(sizeOfMessage, '\0');
     socket->read(&read[0], sizeOfMessage);
-    std::shared_ptr<QByteArray> readData = std::shared_ptr<QByteArray>(new QByteArray());
+    const std::shared_ptr<QByteArray> readData = std::make_shared<QByteArray>();
     readData->insert(0, &read[0], sizeOfMessage);
 
     // save message

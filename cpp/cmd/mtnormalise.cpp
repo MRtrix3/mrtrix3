@@ -158,9 +158,9 @@ struct PolyBasisFunction {
   const int n_basis_vecs;
 
   FORCE_INLINE Eigen::VectorXd operator()(const Eigen::Vector3d &pos) const {
-    double x = pos[0];
-    double y = pos[1];
-    double z = pos[2];
+    const double x = pos[0];
+    const double y = pos[1];
+    const double z = pos[2];
     Eigen::VectorXd basis(n_basis_vecs);
     basis(0) = 1.0;
     if (n_basis_vecs < 4)
@@ -216,7 +216,7 @@ IndexType index_mask_voxels(size_t &num_voxels) {
       index.value() = std::numeric_limits<uint32_t>::max();
   }
 
-  if (!num_voxels)
+  if (num_voxels == 0U)
     throw Exception("Mask contains no valid voxels.");
 
   INFO("mask image contains " + str(num_voxels) + " voxels");
@@ -233,8 +233,8 @@ Eigen::MatrixXd initialise_basis(IndexType &index, size_t num_voxels, int order)
       const uint32_t idx = index.value();
       if (idx != std::numeric_limits<uint32_t>::max()) {
         assert(idx < basis.rows());
-        Eigen::Vector3d vox(index.index(0), index.index(1), index.index(2));
-        Eigen::Vector3d pos = transform.voxel2scanner * vox;
+        const Eigen::Vector3d vox(index.index(0), index.index(1), index.index(2));
+        const Eigen::Vector3d pos = transform.voxel2scanner * vox;
         basis.row(idx) = basis_function(pos);
       }
     }
@@ -246,8 +246,8 @@ Eigen::MatrixXd initialise_basis(IndexType &index, size_t num_voxels, int order)
 
   INFO("initialising basis...");
 
-  PolyBasisFunction basis_function(order);
-  Transform transform(index);
+  const PolyBasisFunction basis_function(order);
+  const Transform transform(index);
   Eigen::MatrixXd basis(num_voxels, num_basis_vec_for_order(order));
 
   ThreadedLoop(index, 0, 3, 2).run(BasisInitialiser(transform, basis_function, basis), index);
@@ -290,7 +290,7 @@ size_t detect_outliers(double outlier_range,
                        const Eigen::VectorXd &field,
                        const Eigen::VectorXd &balance_factors,
                        Eigen::VectorXd &weights) {
-  Eigen::VectorXd summed_log = (data * balance_factors).cwiseQuotient(field).array().log();
+  const Eigen::VectorXd summed_log = (data * balance_factors).cwiseQuotient(field).array().log();
   Eigen::VectorXd summed_log_sorted = summed_log;
   const size_t lower_quartile_idx = std::round(field.size() * 0.25);
   const size_t upper_quartile_idx = std::round(field.size() * 0.75);
@@ -299,25 +299,25 @@ size_t detect_outliers(double outlier_range,
                    summed_log_sorted.data() + lower_quartile_idx,
                    summed_log_sorted.data() + summed_log_sorted.size(),
                    lessthan_NaN);
-  double lower_quartile = summed_log_sorted[lower_quartile_idx];
+  const double lower_quartile = summed_log_sorted[lower_quartile_idx];
 
   std::nth_element(summed_log_sorted.data(),
                    summed_log_sorted.data() + upper_quartile_idx,
                    summed_log_sorted.data() + summed_log_sorted.size(),
                    lessthan_NaN);
-  double upper_quartile = summed_log_sorted[upper_quartile_idx];
+  const double upper_quartile = summed_log_sorted[upper_quartile_idx];
 
   INFO("  outlier rejection quartiles: [ " + str(lower_quartile) + " " + str(upper_quartile) + " ]");
 
-  double lower_outlier_threshold = lower_quartile - outlier_range * (upper_quartile - lower_quartile);
-  double upper_outlier_threshold = upper_quartile + outlier_range * (upper_quartile - lower_quartile);
+  const double lower_outlier_threshold = lower_quartile - outlier_range * (upper_quartile - lower_quartile);
+  const double upper_outlier_threshold = upper_quartile + outlier_range * (upper_quartile - lower_quartile);
 
   struct SetWeight {
     size_t &changed;
     const double lower_outlier_threshold, upper_outlier_threshold;
 
     double operator()(double v, double w) const {
-      v = std::isfinite(v) && v >= lower_outlier_threshold && v <= upper_outlier_threshold;
+      v = static_cast<double>(std::isfinite(v) && v >= lower_outlier_threshold && v <= upper_outlier_threshold);
       if (v != w)
         ++changed;
       return v;
@@ -325,7 +325,7 @@ size_t detect_outliers(double outlier_range,
   };
 
   size_t changed = 0;
-  SetWeight set_weight = {changed, lower_outlier_threshold, upper_outlier_threshold};
+  const SetWeight set_weight = {changed, lower_outlier_threshold, upper_outlier_threshold};
   weights = summed_log.binaryExpr(weights, set_weight);
 
   return changed;
@@ -337,7 +337,7 @@ void compute_balance_factors(const Eigen::MatrixXd &data,
                              Eigen::VectorXd &balance_factors) {
   Eigen::MatrixXd scaled_data = data.transpose().array().rowwise() / field.transpose().array();
   for (ssize_t n = 0; n < scaled_data.cols(); ++n) {
-    if (!weights[n])
+    if (weights[n] == 0.0)
       scaled_data.col(n).array() = 0.0;
   }
   Eigen::MatrixXd HtH(data.cols(), data.cols());
@@ -368,7 +368,7 @@ void update_field(const double log_norm_value,
     }
     const double log_norm_value;
   };
-  LogWeight logweight = {log_norm_value};
+  const LogWeight logweight = {log_norm_value};
 
   Eigen::VectorXd logsum = data * balance_factors;
   logsum = logsum.binaryExpr(weights, logweight);
@@ -388,12 +388,12 @@ ImageType compute_full_field(int order, const Eigen::VectorXd &field_coeffs, con
   header.datatype() = DataType::Float32;
 
   auto out = ImageType::scratch(header, "full field");
-  Transform transform(out);
+  const Transform transform(out);
 
   struct FieldWriter {
     void operator()(ImageType &field) const {
-      Eigen::Vector3d vox(field.index(0), field.index(1), field.index(2));
-      Eigen::Vector3d pos = transform.voxel2scanner * vox;
+      const Eigen::Vector3d vox(field.index(0), field.index(1), field.index(2));
+      const Eigen::Vector3d pos = transform.voxel2scanner * vox;
       field.value() = std::exp(basis_function(pos).dot(field_coeffs));
     }
 
@@ -402,7 +402,7 @@ ImageType compute_full_field(int order, const Eigen::VectorXd &field_coeffs, con
     const Transform &transform;
   };
 
-  PolyBasisFunction basis_function(order);
+  const PolyBasisFunction basis_function(order);
 
   FieldWriter writer = {basis_function, field_coeffs, transform};
 
@@ -472,7 +472,7 @@ void run() {
     WARN("Only one contrast provided. If multi-tissue CSD was performed, provide all components to mtnormalise.");
 
   const int order = get_option_value<int>("order", default_polynormial_order);
-  const float reference_value = static_cast<float>(get_option_value("reference", default_reference_value));
+  const float reference_value = get_option_value("reference", static_cast<float>(default_reference_value));
   const float log_ref_value = std::log(reference_value);
 
   size_t max_iter = default_main_iterations;
@@ -483,7 +483,7 @@ void run() {
     if (num.empty() && num.size() > 2)
       throw Exception("unexpected number of entries provided to option \"-niter\"");
     for (auto n : num)
-      if (!n)
+      if (n == 0U)
         throw Exception("number of iterations must be nonzero");
 
     max_iter = num[0];
@@ -507,7 +507,7 @@ void run() {
     load_data(data, input_path, index);
   }
 
-  size_t num_non_finite = (!data.array().isFinite()).count();
+  const size_t num_non_finite = (!data.array().isFinite()).count();
   if (num_non_finite > 0) {
     WARN("Input data contain " + str(num_non_finite) + " non-finite voxel" + (num_non_finite > 1 ? "s" : ""));
     WARN("  Results may be affected if the data contain many non-finite values");
@@ -517,7 +517,7 @@ void run() {
   auto basis = initialise_basis(index, num_voxels, order);
 
   struct finite_and_positive {
-    double operator()(double v) const { return std::isfinite(v) && v > 0.0; }
+    double operator()(double v) const { return static_cast<double>(std::isfinite(v) && v > 0.0); }
   };
   Eigen::VectorXd weights = data.rowwise().sum().unaryExpr(finite_and_positive());
 
@@ -549,7 +549,7 @@ void run() {
 
         outliers_changed = detect_outliers(1.5, data, field, balance_factors, weights);
 
-      } while (outliers_changed && balance_iter++ < max_balance_iter);
+      } while ((outliers_changed != 0U) && balance_iter++ < max_balance_iter);
 
       update_field(log_ref_value, basis, data, balance_factors, weights, field_coeffs, field);
 
@@ -575,7 +575,7 @@ void run() {
     factors_output << balance_factors.transpose() << "\n";
   }
 
-  double lognorm_scale = std::exp((field.array().log() * weights.array()).sum() / weights.sum());
+  const double lognorm_scale = std::exp((field.array().log() * weights.array()).sum() / weights.sum());
 
   const bool output_balanced = !get_options("balanced").empty();
   for (size_t n = 0; n < n_tissue_types; ++n) {

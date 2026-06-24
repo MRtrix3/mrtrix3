@@ -153,7 +153,8 @@ void usage() {
 using value_type = double;
 
 void run() {
-  std::vector<Header> input1, input2;
+  std::vector<Header> input1;
+  std::vector<Header> input2;
   const size_t n_images = argument.size() / 2;
   { // parse arguments and load input headers
     if (n_images * 2 != argument.size()) {
@@ -184,7 +185,7 @@ void run() {
     check_3D_nonunity(input2[i]);
   }
 
-  const transformation_t registration_type = get_option_choice<transformation_t>("type", default_transformation_type);
+  const auto registration_type = get_option_choice<transformation_t>("type", default_transformation_type);
   bool do_rigid = false;
   bool do_affine = false;
   bool do_nonlinear = false;
@@ -225,12 +226,12 @@ void run() {
   // will be set to false if registration of all input SH images has lmax==0
   bool do_reorientation = !reorientation_forbidden;
 
-  Eigen::MatrixXd directions_cartesian;
+  std::optional<Eigen::MatrixXd> directions_cartesian;
   auto opt = get_options("directions");
   if (!opt.empty()) {
     const Eigen::MatrixXd directions = File::Matrix::load_matrix(opt[0][0]);
     DWI::Directions::validate(directions, opt[0][0], false);
-    directions_cartesian = Math::Sphere::as_cartesian(directions).transpose();
+    directions_cartesian.emplace(Math::Sphere::as_cartesian(directions).transpose());
   }
 
   // check header transformations for equality
@@ -279,9 +280,9 @@ void run() {
         CONSOLE("SH image input pair " + input1[i].path().string() + ", " + input2[i].path().string());
         mc_params[i].do_reorientation = true;
         mc_params[i].image_lmax = Math::SH::LforN(nvols1);
-        if (!directions_cartesian.cols())
-          directions_cartesian =
-              Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_60()).transpose();
+        if (!directions_cartesian.has_value())
+          directions_cartesian.emplace(
+              Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_60()).transpose());
       } else {
         CONSOLE("4D scalar input pair " + input1[i].path().string() + ", " + input2[i].path().string());
         mc_params[i].do_reorientation = false;
@@ -293,7 +294,7 @@ void run() {
     mc_params[i].image_nvols = input1[i].ndim() < 4 ? 1 : input1[i].size(3);
   }
 
-  ssize_t max_mc_image_lmax =
+  const ssize_t max_mc_image_lmax =
       std::max_element(mc_params.begin(),
                        mc_params.end(),
                        [](const Registration::MultiContrastSetting &x, const Registration::MultiContrastSetting &y) {
@@ -301,12 +302,12 @@ void run() {
                        })
           ->lmax;
 
-  do_reorientation = std::any_of(mc_params.begin(), mc_params.end(), [](Registration::MultiContrastSetting const &i) {
+  do_reorientation = std::any_of(mc_params.begin(), mc_params.end(), [](const Registration::MultiContrastSetting &i) {
     return i.do_reorientation;
   });
   if (do_reorientation)
     CONSOLE("performing FOD registration");
-  if (!do_reorientation and directions_cartesian.cols())
+  if (!do_reorientation && directions_cartesian.has_value())
     WARN("-directions option ignored since no FOD reorientation is being performed");
 
   INFO("maximum input lmax: " + str(max_mc_image_lmax));
@@ -389,7 +390,7 @@ void run() {
   if (!opt.empty()) {
     init_rigid_matrix_set = true;
     Eigen::Vector3d centre;
-    transform_type rigid_transform = File::Matrix::load_transform(opt[0][0], centre);
+    const transform_type rigid_transform = File::Matrix::load_transform(opt[0][0], centre);
     rigid.set_transform(rigid_transform);
     if (!std::isfinite(centre(0))) {
       rigid_registration.set_init_translation_type(Registration::Transform::Init::set_centre_mass);
@@ -433,8 +434,7 @@ void run() {
     rigid_registration.set_max_iter(parse_ints<uint32_t>(opt[0][0]));
   }
 
-  const Registration::LinearMetricType rigid_metric =
-      get_option_choice<Registration::LinearMetricType>("rigid_metric", Registration::Diff);
+  const auto rigid_metric = get_option_choice<Registration::LinearMetricType>("rigid_metric", Registration::Diff);
 
   if (rigid_metric == Registration::NCC)
     throw Exception("TODO: cross correlation metric not yet implemented");
@@ -455,10 +455,10 @@ void run() {
     if (max_mc_image_lmax == 0)
       throw Exception("-rigid_lmax option is not valid if no input image is FOD image");
     rigid_lmax = parse_ints<uint32_t>(opt[0][0]);
-    for (size_t i = 0; i < rigid_lmax.size(); ++i)
-      if (rigid_lmax[i] > max_mc_image_lmax) {
+    for (unsigned int &i : rigid_lmax)
+      if (i > max_mc_image_lmax) {
         WARN("the requested -rigid_lmax exceeds the lmax of the input images, setting it to " + str(max_mc_image_lmax));
-        rigid_lmax[i] = max_mc_image_lmax;
+        i = max_mc_image_lmax;
       }
     rigid_registration.set_lmax(rigid_lmax);
   }
@@ -497,7 +497,7 @@ void run() {
 
     init_affine_matrix_set = true;
     Eigen::Vector3d centre;
-    transform_type affine_transform = File::Matrix::load_transform(opt[0][0], centre);
+    const transform_type affine_transform = File::Matrix::load_transform(opt[0][0], centre);
     affine.set_transform(affine_transform);
     if (!std::isfinite(centre(0))) {
       affine_registration.set_init_translation_type(Registration::Transform::Init::set_centre_mass);
@@ -537,8 +537,7 @@ void run() {
     affine_registration.set_loop_density(parse_floats(opt[0][0]));
   }
 
-  const Registration::LinearMetricType affine_metric =
-      get_option_choice<Registration::LinearMetricType>("affine_metric", Registration::Diff);
+  const auto affine_metric = get_option_choice<Registration::LinearMetricType>("affine_metric", Registration::Diff);
 
   if (affine_metric == Registration::NCC)
     throw Exception("TODO cross correlation metric not yet implemented");
@@ -566,11 +565,11 @@ void run() {
     if (max_mc_image_lmax == 0)
       throw Exception("-affine_lmax option is not valid if no input image is FOD image");
     affine_lmax = parse_ints<uint32_t>(opt[0][0]);
-    for (size_t i = 0; i < affine_lmax.size(); ++i)
-      if (affine_lmax[i] > max_mc_image_lmax) {
+    for (unsigned int &i : affine_lmax)
+      if (i > max_mc_image_lmax) {
         WARN("the requested -affine_lmax exceeds the lmax of the input images, setting it to " +
              str(max_mc_image_lmax));
-        affine_lmax[i] = max_mc_image_lmax;
+        i = max_mc_image_lmax;
       }
     affine_registration.set_lmax(affine_lmax);
   }
@@ -585,14 +584,14 @@ void run() {
 
   // ****** LINEAR INITIALISATION AND STAGE OPTIONS *******
   if (!do_rigid and !do_affine) {
-    for (auto &s : Registration::adv_init_options) {
+    for (const auto &s : Registration::adv_init_options) {
       if (!get_options(s.id).empty()) {
         std::stringstream msg;
         msg << "cannot use option -" << s.id << " when no linear registration is requested";
         throw Exception(msg.str());
       }
     }
-    for (auto &s : Registration::lin_stage_options) {
+    for (const auto &s : Registration::lin_stage_options) {
       if (!get_options(s.id).empty()) {
         std::stringstream msg;
         msg << "cannot use option -" << s.id << " when no linear registration is requested";
@@ -679,7 +678,7 @@ void run() {
     if (!do_nonlinear)
       throw Exception("the non-linear multi-resolution scale factors were input"
                       " when no non-linear registration is requested");
-    std::vector<default_type> scale_factors = parse_floats(opt[0][0]);
+    const std::vector<default_type> scale_factors = parse_floats(opt[0][0]);
     if (nonlinear_init) {
       WARN("-nl_scale option ignored since only the full resolution"
            " will be performed when initialising with non-linear warp");
@@ -693,7 +692,7 @@ void run() {
     if (!do_nonlinear)
       throw Exception("the number of non-linear iterations have been input"
                       " when no non-linear registration is requested");
-    std::vector<uint32_t> iterations_per_level = parse_ints<uint32_t>(opt[0][0]);
+    const std::vector<uint32_t> iterations_per_level = parse_ints<uint32_t>(opt[0][0]);
     if (nonlinear_init && iterations_per_level.size() > 1)
       throw Exception("when initialising the non-linear registration"
                       " the max number of iterations can only be defined"
@@ -734,9 +733,8 @@ void run() {
       throw Exception("-nl_lmax option is not valid if no input image is FOD image");
     nl_lmax = parse_ints<uint32_t>(opt[0][0]);
     nl_registration.set_lmax(nl_lmax);
-    for (size_t i = 0; i < (nl_lmax).size(); ++i)
-      if ((nl_lmax)[i] > max_mc_image_lmax)
-        throw Exception("the requested -nl_lmax exceeds the lmax of the input images");
+    if (std::any_of(nl_lmax.begin(), nl_lmax.end(), [&max_mc_image_lmax](uint32_t i) { return i > max_mc_image_lmax; }))
+      throw Exception("the requested -nl_lmax exceeds the lmax of the input images");
   }
 
   opt = get_options("nl_diagnostics_dir");
@@ -817,7 +815,8 @@ void run() {
   // only load the volumes we actually need for the highest lmax requested
   // load multiple tissue types into the same 4D image
   // drop last axis if input is 4D with one volume for speed reasons
-  Image<value_type> images1, images2;
+  Image<value_type> images1;
+  Image<value_type> images2;
   INFO("preloading input1...");
   Registration::preload_data(input1, images1, mc_params);
   INFO("preloading input2...");
@@ -830,24 +829,24 @@ void run() {
 
     if (images2.ndim() == 4) {
       if (do_reorientation)
-        rigid_registration.set_directions(directions_cartesian);
+        rigid_registration.set_directions(directions_cartesian.value());
       // if (rigid_metric == Registration::NCC) // TODO
       if (rigid_metric == Registration::Diff) {
         if (rigid_estimator == Registration::None) {
           Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric;
           rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
         } else if (rigid_estimator == Registration::L1) {
-          Registration::Metric::L1 estimator;
+          const Registration::Metric::L1 estimator;
           Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::L1>
               metric(images1, images2, estimator);
           rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
         } else if (rigid_estimator == Registration::L2) {
-          Registration::Metric::L2 estimator;
+          const Registration::Metric::L2 estimator;
           Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::L2>
               metric(images1, images2, estimator);
           rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
         } else if (rigid_estimator == Registration::LP) {
-          Registration::Metric::LP estimator;
+          const Registration::Metric::LP estimator;
           Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::LP>
               metric(images1, images2, estimator);
           rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
@@ -858,7 +857,7 @@ void run() {
     } else { // 3D
       if (rigid_metric == Registration::NCC) {
         Registration::Metric::LocalCrossCorrelation metric;
-        std::vector<size_t> extent(3, 3);
+        const std::vector<size_t> extent(3, 3);
         rigid_registration.set_extent(extent);
         rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
       } else if (rigid_metric == Registration::Diff) {
@@ -866,15 +865,15 @@ void run() {
           Registration::Metric::MeanSquared metric;
           rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
         } else if (rigid_estimator == Registration::L1) {
-          Registration::Metric::L1 estimator;
+          const Registration::Metric::L1 estimator;
           Registration::Metric::DifferenceRobust<Registration::Metric::L1> metric(estimator);
           rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
         } else if (rigid_estimator == Registration::L2) {
-          Registration::Metric::L2 estimator;
+          const Registration::Metric::L2 estimator;
           Registration::Metric::DifferenceRobust<Registration::Metric::L2> metric(estimator);
           rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
         } else if (rigid_estimator == Registration::LP) {
-          Registration::Metric::LP estimator;
+          const Registration::Metric::LP estimator;
           Registration::Metric::DifferenceRobust<Registration::Metric::LP> metric(estimator);
           rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
         } else
@@ -906,24 +905,24 @@ void run() {
 
     if (images2.ndim() == 4) {
       if (do_reorientation)
-        affine_registration.set_directions(directions_cartesian);
+        affine_registration.set_directions(directions_cartesian.value());
       // if (affine_metric == Registration::NCC) // TODO
       if (affine_metric == Registration::Diff) {
         if (affine_estimator == Registration::None) {
           Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric;
           affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::L1) {
-          Registration::Metric::L1 estimator;
+          const Registration::Metric::L1 estimator;
           Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::L1>
               metric(images1, images2, estimator);
           affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::L2) {
-          Registration::Metric::L2 estimator;
+          const Registration::Metric::L2 estimator;
           Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::L2>
               metric(images1, images2, estimator);
           affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::LP) {
-          Registration::Metric::LP estimator;
+          const Registration::Metric::LP estimator;
           Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::LP>
               metric(images1, images2, estimator);
           affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
@@ -934,7 +933,7 @@ void run() {
     } else { // 3D
       if (affine_metric == Registration::NCC) {
         Registration::Metric::LocalCrossCorrelation metric;
-        std::vector<size_t> extent(3, 3);
+        const std::vector<size_t> extent(3, 3);
         affine_registration.set_extent(extent);
         affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
       } else if (affine_metric == Registration::Diff) {
@@ -942,15 +941,15 @@ void run() {
           Registration::Metric::MeanSquared metric;
           affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::L1) {
-          Registration::Metric::L1 estimator;
+          const Registration::Metric::L1 estimator;
           Registration::Metric::DifferenceRobust<Registration::Metric::L1> metric(estimator);
           affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::L2) {
-          Registration::Metric::L2 estimator;
+          const Registration::Metric::L2 estimator;
           Registration::Metric::DifferenceRobust<Registration::Metric::L2> metric(estimator);
           affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::LP) {
-          Registration::Metric::LP estimator;
+          const Registration::Metric::LP estimator;
           Registration::Metric::DifferenceRobust<Registration::Metric::LP> metric(estimator);
           affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
         } else
@@ -974,14 +973,14 @@ void run() {
     CONSOLE("running non-linear registration");
 
     if (do_reorientation)
-      nl_registration.set_aPSF_directions(directions_cartesian);
+      nl_registration.set_aPSF_directions(directions_cartesian.value());
 
     if (do_affine || init_affine_matrix_set) {
       nl_registration.run(affine, images1, images2, im1_mask, im2_mask);
     } else if (do_rigid || init_rigid_matrix_set) {
       nl_registration.run(rigid, images1, images2, im1_mask, im2_mask);
     } else {
-      Registration::Transform::Affine identity_transform;
+      const Registration::Transform::Affine identity_transform;
       nl_registration.run(identity_transform, images1, images2, im1_mask, im2_mask);
     }
     if (warp_full_path.has_value()) {
@@ -1087,7 +1086,8 @@ void run() {
 
   if (!input1_midway_transformed_paths.empty() and !input2_midway_transformed_paths.empty()) {
     Header midway_header;
-    Image<default_type> im1_deform_field, im2_deform_field;
+    Image<default_type> im1_deform_field;
+    Image<default_type> im2_deform_field;
 
     if (do_nonlinear)
       midway_header = Header(*nl_registration.get_im1_to_mid());

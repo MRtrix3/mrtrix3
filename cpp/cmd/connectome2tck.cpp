@@ -190,7 +190,7 @@ void run() {
   const std::filesystem::path output_path{argument[2]};
 
   // Determine output file format first, as it affects interpretation of both output paths
-  const FileOutput file_format = get_option_choice<FileOutput>("files", default_file_output);
+  const auto file_format = get_option_choice<FileOutput>("files", default_file_output);
 
   std::filesystem::path output_dir;
   std::filesystem::path output_file;
@@ -225,7 +225,7 @@ void run() {
         continue;
       std::stringstream line_stream(line);
       std::vector<node_t> nodes;
-      while (1) {
+      while (true) {
         node_t n;
         line_stream >> n;
         if (!line_stream)
@@ -241,7 +241,7 @@ void run() {
   }
   INFO("Maximum node index in assignments file is " + str(max_node_index));
 
-  const size_t count = to<size_t>(properties["count"]);
+  const auto count = to<size_t>(properties["count"]);
   if (assignments_lists.size() != count)
     throw Exception("Assignments file contains " + str(assignments_lists.size()) + " entries;" + //
                     " track file contains " + str(count) + " tracks");                           //
@@ -254,8 +254,8 @@ void run() {
   if (!nonpair_found) {
     INFO("Assignments file contains node pair for every streamline; operating accordingly");
     assignments_pairs.reserve(assignments_lists.size());
-    for (auto i = assignments_lists.begin(); i != assignments_lists.end(); ++i)
-      assignments_pairs.push_back(NodePair((*i)[0], (*i)[1]));
+    for (const auto &assignments_list : assignments_lists)
+      assignments_pairs.emplace_back(assignments_list[0], assignments_list[1]);
     assignments_lists.clear();
   }
 
@@ -296,11 +296,11 @@ void run() {
         WARN("Node of interest " + str(i) + " is above the maximum detected node index of " + str(max_node_index));
       } else {
         nodes.push_back(i);
-        if (!i)
+        if (i == 0U)
           zero_in_list = true;
       }
     }
-    if (!zero_in_list && !first_node)
+    if (!zero_in_list && (first_node == 0U))
       nodes.push_back(0);
     std::sort(nodes.begin(), nodes.end());
   } else {
@@ -350,9 +350,9 @@ void run() {
     std::vector<size_t> volumes(max_node_index + 1, 0);
     for (auto i = Loop()(image); i; ++i) {
       const node_t index = image.value();
-      if (index) {
+      if (index != 0U) {
         while (index >= COMs.size()) {
-          COMs.push_back(Eigen::Vector3d::Zero());
+          COMs.emplace_back(Eigen::Vector3d::Zero());
           volumes.push_back(0);
         }
         COMs[index] += Eigen::Vector3d(static_cast<default_type>(image.index(0)),
@@ -368,9 +368,9 @@ void run() {
            " (" + str(max_node_index) + ")");                                                    //
       max_node_index = COMs.size() - 1;
     }
-    Transform transform(image);
+    const Transform transform(image);
     for (node_t index = 1; index <= max_node_index; ++index) {
-      if (volumes[index])
+      if (volumes[index] != 0U)
         COMs[index] = transform.voxel2scanner * (COMs[index] * (1.0 / static_cast<default_type>(volumes[index])));
       else
         COMs[index].fill(NaN);
@@ -391,7 +391,7 @@ void run() {
         };
         auto worker = [&](const Tractography::Connectome::Streamline_nodepair &in) {
           generator(in);
-          std::lock_guard<std::mutex> lock(mutex);
+          const std::lock_guard<std::mutex> lock(mutex);
           ++progress;
           return true;
         };
@@ -406,7 +406,7 @@ void run() {
         };
         auto worker = [&](const Tractography::Connectome::Streamline_nodelist &in) {
           generator(in);
-          std::lock_guard<std::mutex> lock(mutex);
+          const std::lock_guard<std::mutex> lock(mutex);
           ++progress;
           return true;
         };
@@ -435,20 +435,20 @@ void run() {
       } else {
         // For each node in the list, write one file for an exemplar to every other node
         ProgressBar progress("writing exemplars to files", nodes.size() * COMs.size());
-        for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
+        for (auto node : nodes) {
           for (size_t i = first_node; i != COMs.size(); ++i) {
-            generator.write(*n,
+            generator.write(node,
                             i,
-                            output_dir / (str(*n) + "-" + str(i) + ".tck"),
-                            weights_path_for(str(*n) + "-" + str(i) + ".csv"));
+                            output_dir / (str(node) + "-" + str(i) + ".tck"),
+                            weights_path_for(str(node) + "-" + str(i) + ".csv"));
             ++progress;
           }
         }
       }
     } else if (file_format == FileOutput::PER_NODE) { // One file per node
       ProgressBar progress("writing exemplars to files", nodes.size());
-      for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
-        generator.write(*n, output_dir / (str(*n) + ".tck"), weights_path_for(str(*n) + ".csv"));
+      for (auto node : nodes) {
+        generator.write(node, output_dir / (str(node) + ".tck"), weights_path_for(str(node) + ".csv"));
         ++progress;
       }
     } else if (file_format == FileOutput::SINGLE) { // Single file
@@ -483,8 +483,8 @@ void run() {
       INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each edge)");
       break;
     case FileOutput::PER_NODE: // One file per node
-      for (std::vector<node_t>::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
-        writer.add(*i, output_dir / (str(*i) + ".tck"), weights_path_for(str(*i) + ".csv"));
+      for (auto node : nodes)
+        writer.add(node, output_dir / (str(node) + ".tck"), weights_path_for(str(node) + ".csv"));
       INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each node)");
       break;
     case FileOutput::SINGLE: // Single file

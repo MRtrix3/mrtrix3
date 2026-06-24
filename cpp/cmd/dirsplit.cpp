@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <memory>
+
 #include "command.h"
 #include "dwi/directions/file.h"
 #include "dwi/directions/validate.h"
@@ -59,8 +61,7 @@ public:
       : directions(directions),
         subset(num_subsets),
         best_energy(std::numeric_limits<value_type>::max()),
-        target_num_permutations(target_num_permutations),
-        num_permutations(0) {
+        target_num_permutations(target_num_permutations) {
     size_t s = 0;
     for (ssize_t n = 0; n < directions.rows(); ++n) {
       subset[s++].push_back(n);
@@ -69,6 +70,7 @@ public:
     }
     INFO("split " + str(directions.rows()) + " directions into subsets with " + str([&] {
            std::vector<size_t> c;
+           c.reserve(subset.size());
            for (auto &x : subset)
              c.push_back(x.size());
            return c;
@@ -77,9 +79,9 @@ public:
   }
 
   bool update(value_type energy, const std::vector<std::vector<size_t>> &set) {
-    std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     if (!progress)
-      progress.reset(new ProgressBar("distributing directions", target_num_permutations));
+      progress = std::make_unique<ProgressBar>("distributing directions", target_num_permutations);
     if (energy < best_energy) {
       best_energy = energy;
       best_subset = set;
@@ -90,14 +92,14 @@ public:
     return num_permutations < target_num_permutations;
   }
 
-  value_type energy(size_t i, size_t j) const {
-    vector3_type a = {directions(i, 0), directions(i, 1), directions(i, 2)};
-    vector3_type b = {directions(j, 0), directions(j, 1), directions(j, 2)};
+  [[nodiscard]] value_type energy(size_t i, size_t j) const {
+    const vector3_type a = {directions(i, 0), directions(i, 1), directions(i, 2)};
+    const vector3_type b = {directions(j, 0), directions(j, 1), directions(j, 2)};
     return 1.0 / (a - b).norm() + 1.0 / (a + b).norm();
   }
 
-  const std::vector<std::vector<size_t>> &get_init_subset() const { return subset; }
-  const std::vector<std::vector<size_t>> &get_best_subset() const { return best_subset; }
+  [[nodiscard]] const std::vector<std::vector<size_t>> &get_init_subset() const { return subset; }
+  [[nodiscard]] const std::vector<std::vector<size_t>> &get_best_subset() const { return best_subset; }
 
 protected:
   const Eigen::MatrixXd &directions;
@@ -105,7 +107,7 @@ protected:
   std::vector<std::vector<size_t>> subset, best_subset;
   value_type best_energy;
   const size_t target_num_permutations;
-  size_t num_permutations;
+  size_t num_permutations{0};
   std::unique_ptr<ProgressBar> progress;
 };
 
@@ -119,15 +121,16 @@ public:
   }
 
   void next_permutation() {
-    size_t i, j;
+    size_t i;
+    size_t j;
     std::uniform_int_distribution<size_t> dist(0, subset.size() - 1);
     do {
       i = dist(rng);
       j = dist(rng);
     } while (i == j);
 
-    size_t n_i = std::uniform_int_distribution<size_t>(0, subset[i].size() - 1)(rng);
-    size_t n_j = std::uniform_int_distribution<size_t>(0, subset[j].size() - 1)(rng);
+    const size_t n_i = std::uniform_int_distribution<size_t>(0, subset[i].size() - 1)(rng);
+    const size_t n_j = std::uniform_int_distribution<size_t>(0, subset[j].size() - 1)(rng);
 
     std::swap(subset[i][n_i], subset[j][n_j]);
   }
@@ -162,7 +165,7 @@ void run() {
   if (num_subsets == 1)
     throw Exception("Directions must be split across two or more output files");
 
-  const size_t num_permutations = get_option_value<size_t>("number", default_permutations);
+  const size_t num_permutations = get_option_value("number", default_permutations);
 
   std::vector<std::vector<size_t>> best;
   {

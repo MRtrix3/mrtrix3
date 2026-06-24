@@ -29,15 +29,15 @@ class Program;
 
 template <GLint TYPE> class Object {
 public:
-  Object() : index_(0) {}
-  Object(std::string_view source) : index_(0) {
+  Object() = default;
+  Object(std::string_view source) {
     if (!source.empty())
       compile(source);
   }
   Object(const Object &) = delete;
-  Object(Object &&other) : index_(other.index_) { other.index_ = 0; }
+  Object(Object &&other) noexcept : index_(other.index_) { other.index_ = 0U; }
   Object &operator=(const Object &) = delete;
-  Object &operator=(Object &&other) {
+  Object &operator=(Object &&other) noexcept {
     clear();
     index_ = other.index_;
     other.index_ = 0;
@@ -46,19 +46,19 @@ public:
   ~Object() { clear(); }
 
   void clear() {
-    if (index_) {
+    if (index_ != 0U) {
       GL_DEBUG("deleting OpenGL shader ID " + str(index_));
       gl::DeleteShader(index_);
     }
-    index_ = 0;
+    index_ = 0U;
   }
 
   operator GLuint() const { return (index_); }
 
   void compile(std::string_view source) {
-    std::string code = "#version 330 core\n" + source;
+    const std::string code = "#version 330 core\n" + source;
     DEBUG("compiling OpenGL " + this->type() + " shader:\n" + code);
-    if (!index_) {
+    if (index_ == 0U) {
       index_ = gl::CreateShader(TYPE);
       GL_DEBUG("created OpenGL " + this->type() + " shader ID " + str(index_));
     }
@@ -82,7 +82,7 @@ public:
   }
 
 protected:
-  GLuint index_;
+  GLuint index_{0U};
   friend class Program;
 };
 
@@ -92,11 +92,11 @@ using Fragment = Object<gl::FRAGMENT_SHADER>;
 
 class Program {
 public:
-  Program() : index_(0) {}
-  Program(Program &&other) : index_(other.index_) { other.index_ = 0; }
+  Program() = default;
+  Program(Program &&other) noexcept : index_(other.index_) { other.index_ = 0; }
   Program(const Program &) = delete;
   Program &operator=(const Program &) = delete;
-  Program &operator=(Program &&other) {
+  Program &operator=(Program &&other) noexcept {
     clear();
     index_ = other.index_;
     other.index_ = 0;
@@ -105,7 +105,7 @@ public:
   ~Program() { clear(); }
 
   void clear() {
-    if (index_) {
+    if (index_ != 0U) {
       GL_DEBUG("deleting OpenGL shader program " + str(index_));
       gl::DeleteProgram(index_);
     }
@@ -155,7 +155,7 @@ public:
   }
 
 protected:
-  GLuint index_;
+  GLuint index_{0};
 };
 
 } // namespace MR::GUI::GL::Shader

@@ -65,8 +65,8 @@ template <typename value_type> void write(std::vector<Header> &in, const size_t 
   auto image_out = Image<value_type>::create(header_out.path(), header_out);
   size_t axis_offset = 0;
 
-  for (size_t i = 0; i != in.size(); i++) {
-    auto image_in = in[i].get_image<value_type>();
+  for (auto &i : in) {
+    auto image_in = i.get_image<value_type>();
 
     auto copy_func = [&axis, &axis_offset](decltype(image_in) &in, decltype(image_out) &out) {
       out.index(axis) = axis < in.ndim() ? in.index(axis) + axis_offset : axis_offset;

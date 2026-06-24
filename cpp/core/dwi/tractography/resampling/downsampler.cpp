@@ -24,7 +24,7 @@ bool Downsampler::operator()(Tracking::GeneratedTrack &tck) const {
   if (ratio == 1 || tck.size() <= 2)
     return true;
   size_t index_old = ratio;
-  if (tck.get_seed_index()) {
+  if (tck.get_seed_index() != 0U) {
     index_old = (((tck.get_seed_index() - 1) % ratio) + 1);
     tck.set_seed_index(1 + ((tck.get_seed_index() - index_old) / ratio));
   }

@@ -61,10 +61,10 @@ public:
 
   FixelBase(const FixelBase &) = default;
 
-  default_type get_FOD() const { return FOD; }
-  default_type get_TD() const { return TD; }
-  default_type get_weight() const { return weight; }
-  const Eigen::Vector3d &get_dir() const { return dir; }
+  [[nodiscard]] default_type get_FOD() const { return FOD; }
+  [[nodiscard]] default_type get_TD() const { return TD; }
+  [[nodiscard]] default_type get_weight() const { return weight; }
+  [[nodiscard]] const Eigen::Vector3d &get_dir() const { return dir; }
 
   void scale_FOD(const default_type factor) { FOD *= factor; }
   void set_weight(const default_type w) { weight = w; }
@@ -75,14 +75,14 @@ public:
 
   void clear_TD() { TD = 0.0; }
 
-  default_type get_diff(const default_type mu) const { return ((TD * mu) - FOD); }
-  default_type get_cost(const default_type mu) const { return get_cost_unweighted(mu) * weight; }
+  [[nodiscard]] default_type get_diff(const default_type mu) const { return ((TD * mu) - FOD); }
+  [[nodiscard]] default_type get_cost(const default_type mu) const { return get_cost_unweighted(mu) * weight; }
 
 protected:
   default_type FOD, TD, weight;
   Eigen::Vector3d dir;
 
-  default_type get_cost_unweighted(const default_type mu) const { return Math::pow2(get_diff(mu)); }
+  [[nodiscard]] default_type get_cost_unweighted(const default_type mu) const { return Math::pow2(get_diff(mu)); }
 };
 
 // Templated Fixel class should derive from FixelBase to ensure that it has adequate functionality
@@ -98,15 +98,12 @@ protected:
 public:
   ModelBase(Image<float> &dwi, const DWI::Directions::FastLookupSet &dirs)
       : Mapping::Fixel_TD_map<Fixel>(dwi, dirs),
-        proc_mask(Image<float>::scratch(Fixel_map<Fixel>::header(), "SIFT model processing mask")),
-        FOD_sum(0.0),
-        TD_sum(0.0),
-        have_null_lobes(false) {
+        proc_mask(Image<float>::scratch(Fixel_map<Fixel>::header(), "SIFT model processing mask")) {
     SIFT::initialise_processing_mask(dwi, proc_mask, act_5tt);
   }
   ModelBase(const ModelBase &) = delete;
 
-  virtual ~ModelBase() {}
+  virtual ~ModelBase() = default;
 
   void perform_FOD_segmentation(Image<float> &);
   void scale_FDs_by_GM();
@@ -116,10 +113,10 @@ public:
   virtual bool operator()(const FMLS::FOD_lobes & /*in*/);
   virtual bool operator()(const Mapping::SetDixel & /*in*/);
 
-  default_type calc_cost_function() const;
+  [[nodiscard]] default_type calc_cost_function() const;
 
-  default_type mu() const { return FOD_sum / TD_sum; }
-  bool have_act_data() const { return act_5tt.valid(); }
+  [[nodiscard]] default_type mu() const { return FOD_sum / TD_sum; }
+  [[nodiscard]] bool have_act_data() const { return act_5tt.valid(); }
 
   void output_proc_mask(const std::filesystem::path & /*path*/);
   void output_5tt_image(const std::filesystem::path & /*path*/);
@@ -134,8 +131,8 @@ protected:
   using Mapping::Fixel_TD_map<Fixel>::dirs;
 
   Image<float> act_5tt, proc_mask;
-  default_type FOD_sum, TD_sum;
-  bool have_null_lobes;
+  default_type FOD_sum{0.0}, TD_sum{0.0};
+  bool have_null_lobes{false};
 
   // The definitions of these functions are located in dwi/tractography/SIFT/output.h
   void output_target_voxel(const std::filesystem::path &) const;
@@ -178,7 +175,7 @@ template <class Fixel> void ModelBase<Fixel>::scale_FDs_by_GM() {
   VoxelAccessor v(accessor());
   FOD_sum = 0.0;
   for (auto l = Loop(v)(v, act_5tt); l; ++l) {
-    Tractography::ACT::Tissues tissues(act_5tt);
+    const Tractography::ACT::Tissues tissues(act_5tt);
     const default_type multiplier = 1.0 - tissues.get_cgm() - (0.5 * tissues.get_sgm()); // Heuristic
     for (typename Fixel_map<Fixel>::Iterator i = begin(v); i; ++i) {
       i().scale_FOD(multiplier);
@@ -192,7 +189,7 @@ template <class Fixel> void ModelBase<Fixel>::map_streamlines(const std::filesys
   Tractography::Reader<> file(path, properties);
 
   const track_t count = (properties.find("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
-  if (!count)
+  if (count == 0U)
     throw Exception("Cannot map streamlines: track file " + path.filename().string() + " is empty");
 
   Mapping::TrackLoader loader(file, count);
@@ -229,11 +226,11 @@ template <class Fixel> bool ModelBase<Fixel>::operator()(const FMLS::FOD_lobes &
 
 template <class Fixel> bool ModelBase<Fixel>::operator()(const Mapping::SetDixel &in) {
   default_type total_contribution = 0.0;
-  for (Mapping::SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
-    const size_t fixel_index = Mapping::Fixel_TD_map<Fixel>::dixel2fixel(*i);
-    if (fixel_index) {
-      fixels[fixel_index] += i->get_length();
-      total_contribution += fixels[fixel_index].get_weight() * i->get_length();
+  for (const auto &i : in) {
+    const size_t fixel_index = Mapping::Fixel_TD_map<Fixel>::dixel2fixel(i);
+    if (fixel_index != 0U) {
+      fixels[fixel_index] += i.get_length();
+      total_contribution += fixels[fixel_index].get_weight() * i.get_length();
     }
   }
   TD_sum += total_contribution;

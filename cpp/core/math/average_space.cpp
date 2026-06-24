@@ -36,7 +36,7 @@ double matrix_average(std::vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixX
   Eigen::MatrixXd mat_l(rows, cols);
   for (size_t i = 0; i < 10000; ++i) {
     mat_s.setZero(rows, cols);
-    Eigen::ColPivHouseholderQR<Eigen::MatrixXd> dec(mat_avg);
+    const Eigen::ColPivHouseholderQR<Eigen::MatrixXd> dec(mat_avg);
     for (size_t j = 0; j < N; ++j) {
       mat_l = dec.solve(mat_in[j]); // solve mat_avg * mat_l = mat_in[j] for mat_l
       // std::cout << "mat_avg*mat_l - mat_in[j]:\n" << mat_avg*mat_l - mat_in[j] <<std::endl;
@@ -45,7 +45,7 @@ double matrix_average(std::vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixX
     mat_s *= 1. / N;
     mat_avg *= mat_s.exp();
     if (verbose)
-      std::cerr << i << " mat_s.squaredNorm(): " << mat_s.squaredNorm() << std::endl;
+      std::cerr << i << " mat_s.squaredNorm(): " << mat_s.squaredNorm() << '\n';
     if (mat_s.squaredNorm() < 1E-20) {
       break;
     }
@@ -126,10 +126,11 @@ Eigen::Quaterniond rot_match_coordinates(const Eigen::MatrixXd &target_vertices,
   assert(target_vertices.cols() == 3 && "3D");
 
   double sqnorm = std::numeric_limits<double>::max();
-  int tidx = 0, midx = 0;
+  int tidx = 0;
+  int midx = 0;
   for (int mrow = 0; mrow < nm; mrow++) {
     for (int trow = 0; trow < nt; trow++) {
-      double sn = (target_vertices.row(trow) - moving_vertices.row(mrow)).squaredNorm();
+      const double sn = (target_vertices.row(trow) - moving_vertices.row(mrow)).squaredNorm();
       if (sn < sqnorm) {
         sqnorm = sn;
         tidx = trow;
@@ -138,11 +139,11 @@ Eigen::Quaterniond rot_match_coordinates(const Eigen::MatrixXd &target_vertices,
     }
     break;
   }
-  Eigen::Vector3d tvec = target_vertices.row(tidx).transpose();
-  Eigen::Vector3d mvec = moving_vertices.row(midx).transpose();
+  const Eigen::Vector3d tvec = target_vertices.row(tidx).transpose();
+  const Eigen::Vector3d mvec = moving_vertices.row(midx).transpose();
 
   // quat1: rotate line of direction of moving_vertices to the line of target_vertices
-  Eigen::Quaterniond quat1 = Eigen::Quaterniond().setFromTwoVectors(mvec, tvec);
+  const Eigen::Quaterniond quat1 = Eigen::Quaterniond().setFromTwoVectors(mvec, tvec);
   const Eigen::Matrix3d R(quat1);
 
   midx = midx + 1 % nm;
@@ -151,7 +152,7 @@ Eigen::Quaterniond rot_match_coordinates(const Eigen::MatrixXd &target_vertices,
   for (int trow = 0; trow < nt; trow++) {
     if (trow == tidx)
       continue;
-    double sn = (target_vertices.row(trow) - mvec_rot.transpose()).squaredNorm();
+    const double sn = (target_vertices.row(trow) - mvec_rot.transpose()).squaredNorm();
     if (sn < sqnorm) {
       sqnorm = sn;
       tidx = trow;
@@ -198,14 +199,14 @@ void compute_average_voxel2scanner(
   // rotation is smallest rotation possible to rotate image towards scanner coordinate system grid
   // to factor out large rotations. For this, the matrix Frechet mean (average_matrix) is not suitable.
   // average quaternion calculation from http://www.acsu.buffalo.edu/~johnc/ave_quat07.pdf
-  Eigen::MatrixXd ScannerSpaceAxis3 = Eigen::MatrixXd::Identity(3, 3);
+  const Eigen::MatrixXd ScannerSpaceAxis3 = Eigen::MatrixXd::Identity(3, 3);
   Eigen::Matrix<default_type, 6, 3> ScannerSpaceAxis6;
   ScannerSpaceAxis6.block<3, 3>(0, 0) = ScannerSpaceAxis3;
   ScannerSpaceAxis6.block<3, 3>(3, 0) = -ScannerSpaceAxis3;
 
   Eigen::MatrixXd quaternions = Eigen::MatrixXd(4, num_images);
   for (size_t itrafo = 0; itrafo < num_images; itrafo++) {
-    Eigen::MatrixXd Other = ScannerSpaceAxis3 * transformation_matrices[itrafo].rotation().transpose();
+    const Eigen::MatrixXd Other = ScannerSpaceAxis3 * transformation_matrices[itrafo].rotation().transpose();
     Eigen::Quaterniond quat = rot_match_coordinates(ScannerSpaceAxis6, Other);
     // internally the coefficients are stored in the following order: [x, y, z, w]
     quaternions.col(itrafo) = quat.coeffs();
@@ -254,8 +255,8 @@ void compute_average_voxel2scanner(
   {
     // transform all image corners into inverse average space
     Eigen::MatrixXd bounding_box_corners_inv = bounding_box_corners * average_s2v_trafo.matrix().transpose();
-    Eigen::VectorXd bounding_box_corners_inv_min = bounding_box_corners_inv.colwise().minCoeff();
-    Eigen::VectorXd bounding_box_corners_inv_max = bounding_box_corners_inv.colwise().maxCoeff();
+    const Eigen::VectorXd bounding_box_corners_inv_min = bounding_box_corners_inv.colwise().minCoeff();
+    const Eigen::VectorXd bounding_box_corners_inv_max = bounding_box_corners_inv.colwise().maxCoeff();
     Eigen::VectorXd bounding_box_corners_inv_extent =
         (bounding_box_corners_inv_max - bounding_box_corners_inv_min).cwiseAbs();
     bounding_box_corners_inv_extent += 2.0 * padding;

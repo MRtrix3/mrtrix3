@@ -167,11 +167,11 @@ void run() {
         const Metadata::BIDS::axis_vector_type slice_encoding_axis_onehot =
             Metadata::BIDS::axisid2vector(slice_encoding_it->second);
         std::vector<size_t> auto_slice_axes = {0, 0};
-        if (slice_encoding_axis_onehot[0])
+        if (slice_encoding_axis_onehot[0] != 0)
           auto_slice_axes = {1, 2};
-        else if (slice_encoding_axis_onehot[1])
+        else if (slice_encoding_axis_onehot[1] != 0)
           auto_slice_axes = {0, 2};
-        else if (slice_encoding_axis_onehot[2])
+        else if (slice_encoding_axis_onehot[2] != 0)
           auto_slice_axes = {0, 1};
         else
           throw Exception("Fatal error: Invalid slice axis one-hot encoding [ " +

@@ -89,7 +89,8 @@ void run() {
     throw Exception("inconsistent number of arguments");
 
   // read them in:
-  size_t current = 1, nb = 0;
+  size_t current = 1;
+  size_t nb = 0;
   while (current < argument.size() - 1) {
     bvalue[nb] = to<value_type>(argument[current++]);
     std::vector<DirectionSet> d;
@@ -100,11 +101,12 @@ void run() {
       m = Math::Sphere::as_cartesian(m);
       DirectionSet set;
       for (ssize_t r = 0; r < m.rows(); ++r)
-        set.push_back(Direction(m(r, 0), m(r, 1), m(r, 2)));
+        set.emplace_back(m(r, 0), m(r, 1), m(r, 2));
       d.push_back(set);
     }
     INFO("found b = " + str(bvalue[nb]) + ", " + str([&] {
            std::vector<size_t> s;
+           s.reserve(d.size());
            for (auto &n : d)
              s.push_back(n.size());
            return s;
@@ -115,7 +117,7 @@ void run() {
     ++nb;
   }
 
-  size_t total = [&] {
+  const size_t total = [&] {
     size_t n = 0;
     for (auto &d : dirs)
       for (auto &m : d)
@@ -203,7 +205,7 @@ void run() {
     size_t best = 0;
     value_type bestE = std::numeric_limits<value_type>::max();
     for (size_t n = 0; n < dirs[b][p].size(); ++n) {
-      value_type E = energy(b, p, n);
+      const value_type E = energy(b, p, n);
       if (E < bestE) {
         bestE = E;
         best = n;
@@ -236,10 +238,11 @@ void run() {
   size_t nPE = num_subsets > 1 ? 1 : 0;
   while (merged.size() < total) {
     // find shell with shortfall in numbers:
-    size_t b = 0, n;
+    size_t b = 0;
+    size_t n = 0;
     value_type fraction_diff = std::numeric_limits<value_type>::max();
     for (n = 0; n < bvalue.size(); ++n) {
-      value_type f_diff = static_cast<float>(num_for_b(n)) / static_cast<float>(merged.size()) - fraction[n];
+      const value_type f_diff = static_cast<float>(num_for_b(n)) / static_cast<float>(merged.size()) - fraction[n];
       if (f_diff < fraction_diff && !dirs[n][nPE].empty()) {
         fraction_diff = f_diff;
         b = n;

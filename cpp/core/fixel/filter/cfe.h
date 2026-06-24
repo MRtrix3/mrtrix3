@@ -45,7 +45,7 @@ public:
       const value_type H = cfe_default_h,
       const value_type C = cfe_default_c,
       const bool norm = true);
-  virtual ~CFE() {}
+  virtual ~CFE() = default;
 
   // Override Fixel::Filter::Base functor
   void operator()(Image<float> &input, Image<float> &output) const override;

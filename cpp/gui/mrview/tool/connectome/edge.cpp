@@ -31,28 +31,28 @@ Edge::Edge(const node_t one, const node_t two, const Eigen::Vector3f &c_one, con
       node_centres{c_one, c_two},
       dir((node_centres[1] - node_centres[0]).normalized()),
       rot_matrix(new GLfloat[9]),
-      size(1.0f),
-      colour(0.5f, 0.5f, 0.5f),
-      alpha(1.0f),
+      size(1.0F),
+      colour(0.5F, 0.5F, 0.5F),
+      alpha(1.0F),
       visible(one != two),
       line(new Line(*this)) {
-  static const Eigen::Vector3f z_axis(0.0f, 0.0f, 1.0f);
+  static const Eigen::Vector3f z_axis(0.0F, 0.0F, 1.0F);
   if (is_diagonal()) {
 
-    rot_matrix[0] = 0.0f;
-    rot_matrix[1] = 0.0f;
-    rot_matrix[2] = 0.0f;
-    rot_matrix[3] = 0.0f;
-    rot_matrix[4] = 0.0f;
-    rot_matrix[5] = 0.0f;
-    rot_matrix[6] = 0.0f;
-    rot_matrix[7] = 0.0f;
-    rot_matrix[8] = 0.0f;
+    rot_matrix[0] = 0.0F;
+    rot_matrix[1] = 0.0F;
+    rot_matrix[2] = 0.0F;
+    rot_matrix[3] = 0.0F;
+    rot_matrix[4] = 0.0F;
+    rot_matrix[5] = 0.0F;
+    rot_matrix[6] = 0.0F;
+    rot_matrix[7] = 0.0F;
+    rot_matrix[8] = 0.0F;
 
   } else {
 
     // First, let's get an axis of rotation, s.t. the rotation angle is positive
-    Eigen::Vector3f v = (z_axis.cross(dir)).normalized();
+    const Eigen::Vector3f v = (z_axis.cross(dir)).normalized();
     // Now, a rotation angle
     const float angle = std::acos(z_axis.dot(dir));
     // Convert to rotation matrix representation
@@ -70,7 +70,7 @@ Edge::Edge(const node_t one, const node_t two, const Eigen::Vector3f &c_one, con
   }
 }
 
-Edge::Edge(Edge &&that)
+Edge::Edge(Edge &&that) noexcept
     : node_indices{that.node_indices[0], that.node_indices[1]},
       node_centres{that.node_centres[0], that.node_centres[1]},
       dir(that.dir),
@@ -87,7 +87,7 @@ Edge::Edge(Edge &&that)
 }
 
 Edge::~Edge() {
-  if (rot_matrix) {
+  if (rot_matrix != nullptr) {
     delete[] rot_matrix;
     rot_matrix = nullptr;
   }
@@ -98,7 +98,7 @@ Edge::Line::Line(const Edge &parent) {
   data.push_back(parent.get_node_centre(0));
   data.push_back(parent.get_node_centre(1));
 
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
 
   vertex_buffer.gen();
@@ -123,7 +123,7 @@ Edge::Line::Line(const Edge &parent) {
 }
 
 Edge::Line::~Line() {
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   vertex_buffer.clear();
   tangent_buffer.clear();
   vertex_array_object.clear();
@@ -131,7 +131,7 @@ Edge::Line::~Line() {
 
 void Edge::Line::render() const {
   GL::assert_context_is_current();
-  if (!vertex_buffer || !tangent_buffer || !vertex_array_object)
+  if ((vertex_buffer == 0U) || (tangent_buffer == 0U) || (vertex_array_object == 0U))
     return;
   vertex_buffer.bind(gl::ARRAY_BUFFER);
   tangent_buffer.bind(gl::ARRAY_BUFFER);
@@ -146,24 +146,15 @@ Edge::Exemplar::Exemplar(const Edge &parent, const MR::DWI::Tractography::Stream
   Math::RNG::Normal<float> rng;
   for (size_t i = 0; i != data.size(); ++i) {
     vertices.push_back(data[i]);
-    if (!i)
-      tangents.push_back((data[i + 1] - data[i]).normalized());
-    else if (i == data.size() - 1)
-      tangents.push_back((data[i] - data[i - 1]).normalized());
-    else
-      tangents.push_back((data[i + 1] - data[i - 1]).normalized());
-    Eigen::Vector3f n;
-    if (i)
-      n = binormals.back().cross(tangents[i]).normalized();
-    else
-      n = Eigen::Vector3f(rng(), rng(), rng()).cross(tangents[i]).normalized();
-    normals.push_back(n);
-    binormals.push_back(tangents[i].cross(n).normalized());
+    tangents.push_back(MR::DWI::Tractography::tangent(data, i));
+    normals.push_back((i == 0U) ? Eigen::Vector3f(rng(), rng(), rng()).cross(tangents[i]).normalized()
+                                : binormals.back().cross(tangents[i]).normalized());
+    binormals.push_back(tangents[i].cross(normals.back()).normalized());
   }
 }
 
 Edge::Streamline::Streamline(const Exemplar &data) {
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
   assert(data.tangents.size() == data.vertices.size());
 
@@ -193,7 +184,7 @@ Edge::Streamline::Streamline(const Exemplar &data) {
 }
 
 Edge::Streamline::~Streamline() {
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   vertex_buffer.clear();
   tangent_buffer.clear();
   vertex_array_object.clear();
@@ -201,7 +192,7 @@ Edge::Streamline::~Streamline() {
 
 void Edge::Streamline::render() const {
   GL::assert_context_is_current();
-  if (!vertex_buffer || !tangent_buffer || !vertex_array_object)
+  if ((vertex_buffer == 0U) || (tangent_buffer == 0U) || (vertex_array_object == 0U))
     return;
   vertex_buffer.bind(gl::ARRAY_BUFFER);
   tangent_buffer.bind(gl::ARRAY_BUFFER);
@@ -211,7 +202,7 @@ void Edge::Streamline::render() const {
 }
 
 Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size()) {
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
 
   assert(data.normals.size() == data.vertices.size());
@@ -222,9 +213,9 @@ Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size())
   std::vector<Eigen::Vector3f> vertices;
   const size_t N = shared.points_per_vertex();
   vertices.reserve(N * data.vertices.size());
-  for (std::vector<Eigen::Vector3f>::const_iterator i = data.vertices.begin(); i != data.vertices.end(); ++i) {
+  for (const auto &vertex : data.vertices) {
     for (size_t j = 0; j != N; ++j)
-      vertices.push_back(*i);
+      vertices.push_back(vertex);
   }
   vertex_buffer.gen();
   vertex_buffer.bind(gl::ARRAY_BUFFER);
@@ -233,9 +224,9 @@ Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size())
 
   std::vector<Eigen::Vector3f> tangents;
   tangents.reserve(vertices.size());
-  for (std::vector<Eigen::Vector3f>::const_iterator i = data.tangents.begin(); i != data.tangents.end(); ++i) {
+  for (const auto &tangent : data.tangents) {
     for (size_t j = 0; j != N; ++j)
-      tangents.push_back(*i);
+      tangents.push_back(tangent);
   }
   tangent_buffer.gen();
   tangent_buffer.bind(gl::ARRAY_BUFFER);
@@ -245,14 +236,13 @@ Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size())
   std::vector<std::pair<float, float>> normal_multipliers;
   const float angle_multiplier = 2.0 * Math::pi / static_cast<float>(shared.points_per_vertex());
   for (size_t i = 0; i != shared.points_per_vertex(); ++i)
-    normal_multipliers.push_back(std::make_pair(std::cos(i * angle_multiplier), std::sin(i * angle_multiplier)));
+    normal_multipliers.emplace_back(std::cos(i * angle_multiplier), std::sin(i * angle_multiplier));
   std::vector<Eigen::Vector3f> normals;
   normals.reserve(vertices.size());
   for (size_t i = 0; i != data.vertices.size(); ++i) {
-    for (std::vector<std::pair<float, float>>::const_iterator j = normal_multipliers.begin();
-         j != normal_multipliers.end();
-         ++j)
-      normals.push_back((j->first * data.normals[i]) + (j->second * data.binormals[i]));
+    for (const auto &normal_multiplier : normal_multipliers)
+      normals.emplace_back((normal_multiplier.first * data.normals[i]) +
+                           (normal_multiplier.second * data.binormals[i]));
   }
   normal_buffer.gen();
   normal_buffer.bind(gl::ARRAY_BUFFER);
@@ -274,7 +264,7 @@ Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size())
 }
 
 Edge::Streamtube::~Streamtube() {
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   vertex_buffer.clear();
   tangent_buffer.clear();
   normal_buffer.clear();
@@ -283,7 +273,7 @@ Edge::Streamtube::~Streamtube() {
 
 void Edge::Streamtube::render() const {
   GL::assert_context_is_current();
-  if (!vertex_buffer || !tangent_buffer || !normal_buffer || !vertex_array_object)
+  if ((vertex_buffer == 0U) || (tangent_buffer == 0U) || (normal_buffer == 0U) || (vertex_array_object == 0U))
     return;
   vertex_buffer.bind(gl::ARRAY_BUFFER);
   tangent_buffer.bind(gl::ARRAY_BUFFER);
@@ -301,7 +291,7 @@ Edge::Streamtube::Shared Edge::Streamtube::shared;
 
 void Edge::Streamtube::Shared::regenerate() {
   clear();
-  if (!max_num_points)
+  if (max_num_points == 0U)
     return;
 
   const size_t N = points_per_vertex();
@@ -325,11 +315,11 @@ void Edge::Streamtube::Shared::regenerate() {
 }
 
 void Edge::Streamtube::Shared::clear() {
-  if (element_counts) {
+  if (element_counts != nullptr) {
     delete[] element_counts;
     element_counts = nullptr;
   }
-  if (element_indices) {
+  if (element_indices != nullptr) {
     for (size_t i = 0; i != max_num_points; ++i) {
       delete[] element_indices[i];
       element_indices[i] = nullptr;

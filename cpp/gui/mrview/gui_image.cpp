@@ -28,9 +28,9 @@ ImageBase::ImageBase(MR::Header &&H) : Volume(std::move(H)), tex_positions(heade
 }
 
 ImageBase::~ImageBase() {
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   for (size_t axis = 0; axis != 3; ++axis) {
-    if (texture2D[axis])
+    if (texture2D[axis] != 0U)
       texture2D[axis].clear();
   }
 }
@@ -43,9 +43,11 @@ void ImageBase::render2D(Displayable::Shader &shader_program,
 
   auto V2S = voxel2scanner();
 
-  int x, y;
+  int x;
+  int y;
   get_axes(plane, x, y);
-  float xsize = header().size(x) - 0.5, ysize = header().size(y) - 0.5;
+  float xsize = header().size(x) - 0.5;
+  float ysize = header().size(y) - 0.5;
 
   Eigen::Vector3f p;
   p[plane] = slice;
@@ -53,22 +55,22 @@ void ImageBase::render2D(Displayable::Shader &shader_program,
   p[x] = -0.5;
   p[y] = -0.5;
   vertices[0].noalias() = V2S * p;
-  vertices[1] = {0.0f, 0.0f, 0.0f};
+  vertices[1] = {0.0F, 0.0F, 0.0F};
 
   p[x] = -0.5;
   p[y] = ysize;
   vertices[2].noalias() = V2S * p;
-  vertices[3] = {0.0f, 1.0f, 0.0f};
+  vertices[3] = {0.0F, 1.0F, 0.0F};
 
   p[x] = xsize;
   p[y] = ysize;
   vertices[4].noalias() = V2S * p;
-  vertices[5] = {1.0f, 1.0f, 0.0f};
+  vertices[5] = {1.0F, 1.0F, 0.0F};
 
   p[x] = xsize;
   p[y] = -0.5;
   vertices[6].noalias() = V2S * p;
-  vertices[7] = {1.0f, 0.0f, 0.0f};
+  vertices[7] = {1.0F, 0.0F, 0.0F};
 
   start(shader_program);
   projection.set(shader_program);
@@ -82,7 +84,7 @@ void ImageBase::render3D(Displayable::Shader &shader_program, const Projection &
 }
 
 void ImageBase::get_axes(const int plane, int &x, int &y) const {
-  if (plane) {
+  if (plane != 0) {
     if (plane == 1) {
       x = 0;
       y = 2;
@@ -102,7 +104,7 @@ Image::Image(MR::Header &&image_header)
       slice_min{{NaNF, NaNF, NaNF}},
       slice_max{{NaNF, NaNF, NaNF}} {
   set_colourmap(guess_colourmap());
-  const KeyValues::const_iterator i = header().keyval().find("comments");
+  const auto i = header().keyval().find("comments");
   if (i != header().keyval().end())
     _comments = split_lines(i->second);
 }
@@ -125,7 +127,7 @@ size_t Image::guess_colourmap() const {
 }
 
 void Image::update_texture2D(int plane, int slice) {
-  if (!texture2D[plane]) { // allocate:
+  if (texture2D[plane] == 0U) { // allocate:
     texture2D[plane].gen(gl::TEXTURE_3D);
     texture2D[plane].bind();
   } else
@@ -138,26 +140,28 @@ void Image::update_texture2D(int plane, int slice) {
 
   tex_positions[plane] = slice;
 
-  int x, y;
+  int x;
+  int y;
   get_axes(plane, x, y);
-  const ssize_t xsize = header().size(x), ysize = header().size(y);
+  const ssize_t xsize = header().size(x);
+  const ssize_t ysize = header().size(y);
 
   type = gl::FLOAT;
   std::vector<float> data;
 
-  std::string cmap_name = ColourMap::maps[colourmap].name;
+  const std::string cmap_name = ColourMap::maps[colourmap].name;
 
-  const bool windowing_reset_required = (!std::isfinite(display_range) || (display_range < 0.0f));
+  const bool windowing_reset_required = (!std::isfinite(display_range) || (display_range < 0.0F));
 
   if (cmap_name == "RGB") {
 
-    data.resize(3 * xsize * ysize, 0.0f);
+    data.resize(3 * xsize * ysize, 0.0F);
     format = gl::RGB;
     internal_format = gl::RGB32F;
 
     if (tex_positions[plane] < 0 || tex_positions[plane] >= header().size(plane)) {
-      value_min = 0.0f;
-      value_max = 0.0f;
+      value_min = 0.0F;
+      value_max = 0.0F;
     } else {
       // copy data:
       image.index(plane) = slice;
@@ -173,8 +177,8 @@ void Image::update_texture2D(int plane, int slice) {
         }
         for (image.index(y) = 0; image.index(y) < ysize; ++image.index(y)) {
           for (image.index(x) = 0; image.index(x) < xsize; ++image.index(x)) {
-            cfloat val = image.value();
-            float mag = MR::abs(val.real());
+            const cfloat val = image.value();
+            const float mag = MR::abs(val.real());
             data[3 * (image.index(x) + image.index(y) * xsize) + n] = mag;
             if (std::isfinite(mag)) {
               slice_min[plane] = std::min(slice_min[plane], mag);
@@ -202,21 +206,21 @@ void Image::update_texture2D(int plane, int slice) {
 
     if (tex_positions[plane] < 0 || tex_positions[plane] >= header().size(plane)) {
       for (auto &d : data)
-        d = 0.0f;
-      value_min = 0.0f;
-      value_max = 0.0f;
+        d = 0.0F;
+      value_min = 0.0F;
+      value_max = 0.0F;
     } else {
       // copy data:
       image.index(plane) = slice;
-      slice_min[plane] = 0.0f;
+      slice_min[plane] = 0.0F;
       slice_max[plane] = -std::numeric_limits<float>::infinity();
       for (image.index(y) = 0; image.index(y) < ysize; ++image.index(y)) {
         for (image.index(x) = 0; image.index(x) < xsize; ++image.index(x)) {
-          cfloat val = image.value();
-          size_t idx = 2 * (image.index(x) + image.index(y) * xsize);
+          const cfloat val = image.value();
+          const size_t idx = 2 * (image.index(x) + image.index(y) * xsize);
           data[idx] = val.real();
           data[idx + 1] = val.imag();
-          float mag = MR::abs(val);
+          const float mag = MR::abs(val);
           if (std::isfinite(mag))
             slice_max[plane] = std::max(slice_max[plane], mag);
         }
@@ -233,9 +237,9 @@ void Image::update_texture2D(int plane, int slice) {
 
     if (tex_positions[plane] < 0 || tex_positions[plane] >= header().size(plane)) {
       for (auto &d : data)
-        d = 0.0f;
-      value_min = 0.0f;
-      value_max = 0.0f;
+        d = 0.0F;
+      value_min = 0.0F;
+      value_max = 0.0F;
     } else {
       // copy data:
       image.index(plane) = slice;
@@ -243,7 +247,7 @@ void Image::update_texture2D(int plane, int slice) {
       slice_max[plane] = -std::numeric_limits<float>::infinity();
       for (image.index(y) = 0; image.index(y) < ysize; ++image.index(y)) {
         for (image.index(x) = 0; image.index(x) < xsize; ++image.index(x)) {
-          cfloat val = image.value();
+          const cfloat val = image.value();
           data[image.index(x) + image.index(y) * xsize] = val.real();
           if (std::isfinite(val.real())) {
             slice_min[plane] = std::min(slice_min[plane], val.real());
@@ -278,7 +282,7 @@ void Image::update_texture3D() {
   if (volume_unchanged() && !texture_mode_changed)
     return;
 
-  std::string cmap_name = ColourMap::maps[colourmap].name;
+  const std::string cmap_name = ColourMap::maps[colourmap].name;
 
   if (cmap_name == "RGB")
     format = gl::RGB;
@@ -294,7 +298,7 @@ void Image::update_texture3D() {
     type = gl::FLOAT;
   } else {
 
-    if (header().intensity_offset() || (header().intensity_scale() != 1.0)) {
+    if ((header().intensity_offset() != 0.0) || (header().intensity_scale() != 1.0)) {
       internal_format = (format == gl::RED ? gl::R32F : gl::RGB32F);
       type = gl::FLOAT;
       scale_to_float = true;
@@ -433,8 +437,8 @@ template <typename ValueType> inline void Image::copy_texture_3D() {
     WithType(const MR::Image<cfloat> &source) : MR::Image<cfloat>(source) {
       _set_fetch_store_scale_functions(fetch_func, store_func, buffer->datatype());
     }
-    FORCE_INLINE ValueType value() const {
-      ssize_t nseg = data_offset / buffer->get_io()->segment_size();
+    [[nodiscard]] FORCE_INLINE ValueType value() const {
+      const ssize_t nseg = data_offset / buffer->get_io()->segment_size();
       return fetch_func(buffer->get_io()->segment(nseg),
                         data_offset - nseg * buffer->get_io()->segment_size(),
                         buffer->intensity_offset(),
@@ -474,7 +478,7 @@ template <typename ValueType> inline void Image::copy_texture_3D() {
     } else {
 
       for (auto &d : data)
-        d = 0.0f;
+        d = 0.0F;
 
       for (size_t n = 0; n < 3; ++n) {
         if (V.ndim() > 3) {
@@ -527,10 +531,10 @@ inline void Image::copy_texture_3D_complex() {
 
     for (image.index(1) = 0; image.index(1) < image.size(1); ++image.index(1)) {
       for (image.index(0) = 0; image.index(0) < image.size(0); ++image.index(0)) {
-        cfloat val = image.value();
+        const cfloat val = image.value();
         *(p++) = val.real();
         *(p++) = val.imag();
-        float mag = MR::abs(val);
+        const float mag = MR::abs(val);
         if (std::isfinite(mag)) {
           value_min = std::min(value_min, mag);
           value_max = std::max(value_max, mag);
@@ -618,7 +622,7 @@ inline bool Image::volume_unchanged() {
 }
 
 inline bool Image::format_unchanged() {
-  std::string cmap_name = ColourMap::maps[colourmap].name;
+  const std::string cmap_name = ColourMap::maps[colourmap].name;
   return !((cmap_name == "RGB" && format != gl::RGB) ||    //
            (cmap_name == "Complex" && format != gl::RG) || //
            format != gl::RED);                             //

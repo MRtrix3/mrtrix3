@@ -119,8 +119,8 @@ void usage() {
 }
 // clang-format on
 
-void erase_if_present(Tractography::Properties &p, const std::string s) {
-  auto i = p.find(s);
+void erase_if_present(Tractography::Properties &p, std::string_view s) {
+  auto i = p.find(std::string(s));
   if (i != p.end())
     p.erase(i);
 }
@@ -143,7 +143,7 @@ void run() {
     input_file_list.push_back(input_path);
 
     Properties p;
-    { Reader<float> reader(input_path, p); }
+    { const Reader<float> reader(input_path, p); }
 
     for (const auto &i : p.comments) {
       bool present = false;

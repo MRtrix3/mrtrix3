@@ -31,16 +31,16 @@
 
 namespace MR::GUI::MRView::Tool {
 
-ODF::ODF(Dock *parent) : Base(parent), preview(nullptr), renderer(nullptr), lighting_dock(nullptr), lmax(0) {
+ODF::ODF(Dock *parent) : Base(parent) {
   lighting = new GL::Lighting(this);
 
-  VBoxLayout *main_box = new VBoxLayout(this);
+  auto *main_box = new VBoxLayout(this);
 
-  HBoxLayout *layout = new HBoxLayout;
+  auto *layout = new HBoxLayout;
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(0);
 
-  QPushButton *button = new QPushButton(this);
+  auto *button = new QPushButton(this);
   button->setToolTip(tr("Open SH image"));
   button->setIcon(QIcon(":/odf_sh.svg"));
   connect(button, SIGNAL(clicked()), this, SLOT(sh_open_slot()));
@@ -93,9 +93,9 @@ ODF::ODF(Dock *parent) : Base(parent), preview(nullptr), renderer(nullptr), ligh
   connect(show_preview_button, SIGNAL(clicked()), this, SLOT(show_preview_slot()));
   main_box->addWidget(show_preview_button, 1);
 
-  QGroupBox *group_box = new QGroupBox(tr("Display settings"));
+  auto *group_box = new QGroupBox(tr("Display settings"));
   main_box->addWidget(group_box);
-  GridLayout *box_layout = new GridLayout;
+  auto *box_layout = new GridLayout;
   group_box->setLayout(box_layout);
 
   level_of_detail_label = new QLabel("detail");
@@ -143,7 +143,7 @@ ODF::ODF(Dock *parent) : Base(parent), preview(nullptr), renderer(nullptr), ligh
   connect(shell_selector, SIGNAL(currentIndexChanged(int)), this, SLOT(shell_slot()));
   box_layout->addWidget(shell_selector, 1, 3);
 
-  QLabel *label = new QLabel("scale");
+  auto *label = new QLabel("scale");
   label->setAlignment(Qt::AlignHCenter);
   box_layout->addWidget(label, 2, 0);
   scale = new AdjustButton(this, 1.0);
@@ -200,7 +200,7 @@ ODF::ODF(Dock *parent) : Base(parent), preview(nullptr), renderer(nullptr), ligh
   connect(colour_relative_to_projection_box, SIGNAL(stateChanged(int)), this, SLOT(updateGL()));
   box_layout->addWidget(colour_relative_to_projection_box, 6, 0, 1, 2);
 
-  QPushButton *lighting_settings_button = new QPushButton("ODF lighting...", this);
+  auto *lighting_settings_button = new QPushButton("ODF lighting...", this);
   lighting_settings_button->setIcon(QIcon(":/light.svg"));
   connect(lighting_settings_button, SIGNAL(clicked(bool)), this, SLOT(lighting_settings_slot(bool)));
   box_layout->addWidget(lighting_settings_button, 6, 2, 1, 2);
@@ -222,15 +222,15 @@ ODF::ODF(Dock *parent) : Base(parent), preview(nullptr), renderer(nullptr), ligh
 }
 
 ODF::~ODF() {
-  if (renderer) {
+  if (renderer != nullptr) {
     delete renderer;
     renderer = nullptr;
   }
-  if (preview) {
+  if (preview != nullptr) {
     delete preview;
     preview = nullptr;
   }
-  if (lighting_dock) {
+  if (lighting_dock != nullptr) {
     delete lighting_dock;
     lighting_dock = nullptr;
   }
@@ -242,7 +242,7 @@ void ODF::draw(const Projection &projection, bool is_3D, int, int) {
     return;
 
   ODF_Item *settings = get_image();
-  if (!settings)
+  if (settings == nullptr)
     return;
 
   if (settings->odf_type == odf_type_t::DIXEL && settings->dixel->dir_type == ODF_Item::DixelPlugin::dir_t::NONE)
@@ -382,7 +382,7 @@ inline ODF_Item *ODF::get_image() {
 }
 
 void ODF::get_values(Eigen::VectorXf &values, ODF_Item &item, const Eigen::Vector3f &pos, const bool interp) {
-  MRView::Image &image(item.image);
+  const MRView::Image &image(item.image);
   values.setZero();
   if (interp) {
     auto linear_interp = Interp::make_linear(image.image);
@@ -409,7 +409,7 @@ void ODF::get_values(Eigen::VectorXf &values, ODF_Item &item, const Eigen::Vecto
 
 void ODF::setup_ODFtype_UI(const ODF_Item *image) {
   assert(image);
-  if (preview)
+  if (preview != nullptr)
     preview->render_frame->set_mode(image->odf_type);
   lmax_label->setVisible(image->odf_type == odf_type_t::SH);
   lmax_selector->setVisible(image->odf_type == odf_type_t::SH);
@@ -432,7 +432,7 @@ void ODF::setup_ODFtype_UI(const ODF_Item *image) {
         shell_selector->addItem(
             QString::fromStdString(str(static_cast<size_t>(std::round((*image->dixel->shells)[i].get_mean())))));
     }
-    if (shell_selector->count() && image->dixel->dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME)
+    if ((shell_selector->count() != 0) && image->dixel->dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME)
       shell_selector->setCurrentIndex(image->dixel->shell_index -
                                       (image->dixel->shells->smallest().is_bzero() ? 1 : 0));
   }
@@ -440,23 +440,24 @@ void ODF::setup_ODFtype_UI(const ODF_Item *image) {
   shell_selector->setEnabled(image->odf_type == odf_type_t::DIXEL &&
                              image->dixel->dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME &&
                              image->dixel->shells && image->dixel->shells->count() > 1);
-  if (preview)
+  if (preview != nullptr)
     preview->set_lod_enabled(image->odf_type != odf_type_t::DIXEL);
 }
 
 void ODF::add_images(std::vector<std::filesystem::path> &list, const odf_type_t mode) {
-  size_t previous_size = image_list_model->rowCount();
-  if (!image_list_model->add_items(
-          list, mode, colour_by_direction_box->isChecked(), hide_negative_values_box->isChecked(), scale->value()))
+  const size_t previous_size = image_list_model->rowCount();
+  if (image_list_model->add_items(
+          list, mode, colour_by_direction_box->isChecked(), hide_negative_values_box->isChecked(), scale->value()) ==
+      0U)
     return;
-  QModelIndex first = image_list_model->index(previous_size, 0, QModelIndex());
+  const QModelIndex first = image_list_model->index(previous_size, 0, QModelIndex());
   image_list_view->selectionModel()->select(first, QItemSelectionModel::ClearAndSelect);
   ODF_Item *settings = get_image();
   setup_ODFtype_UI(settings);
   assert(renderer);
   if (settings->odf_type == odf_type_t::DIXEL && settings->dixel->dirs) {
     renderer->dixel.update_mesh(*(settings->dixel->dirs));
-    if (preview)
+    if (preview != nullptr)
       preview->render_frame->set_dixels(*(settings->dixel->dirs));
   }
   updateGL();
@@ -498,13 +499,13 @@ void ODF::image_close_slot() {
 }
 
 void ODF::show_preview_slot() {
-  if (!preview) {
+  if (preview == nullptr) {
     preview = new ODF_Preview(this);
     connect(lighting, SIGNAL(changed()), preview, SLOT(lighting_update_slot()));
   }
 
   ODF_Item *settings = get_image();
-  if (settings) {
+  if (settings != nullptr) {
     preview->render_frame->set_mode(settings->odf_type);
     preview->render_frame->set_scale(settings->scale);
     preview->render_frame->set_hide_neg_values(settings->hide_negative);
@@ -534,10 +535,10 @@ void ODF::colour_by_direction_slot(int) {
     colour_button->setVisible(true);
   }
   ODF_Item *settings = get_image();
-  if (!settings)
+  if (settings == nullptr)
     return;
   settings->color_by_direction = colour_by_direction_box->isChecked();
-  if (preview)
+  if (preview != nullptr)
     preview->render_frame->set_color_by_dir(colour_by_direction_box->isChecked());
   updateGL();
   update_preview();
@@ -545,10 +546,10 @@ void ODF::colour_by_direction_slot(int) {
 
 void ODF::hide_negative_values_slot(int) {
   ODF_Item *settings = get_image();
-  if (!settings)
+  if (settings == nullptr)
     return;
   settings->hide_negative = hide_negative_values_box->isChecked();
-  if (preview)
+  if (preview != nullptr)
     preview->render_frame->set_hide_neg_values(hide_negative_values_box->isChecked());
   updateGL();
   update_preview();
@@ -558,7 +559,7 @@ void ODF::colour_change_slot() {
   assert(!colour_by_direction_box->isChecked());
   const QColor c = colour_button->color();
   renderer->set_colour(c);
-  if (preview)
+  if (preview != nullptr)
     preview->render_frame->set_colour(c);
   updateGL();
   update_preview();
@@ -566,18 +567,18 @@ void ODF::colour_change_slot() {
 
 void ODF::lmax_slot(int) {
   ODF_Item *settings = get_image();
-  if (!settings)
+  if (settings == nullptr)
     return;
   assert(settings->odf_type == odf_type_t::SH);
   settings->lmax = lmax_selector->value();
-  if (preview)
+  if (preview != nullptr)
     preview->render_frame->set_lmax(lmax_selector->value());
   updateGL();
 }
 
 void ODF::dirs_slot() {
   ODF_Item *settings = get_image();
-  if (!settings)
+  if (settings == nullptr)
     return;
   assert(settings->odf_type == odf_type_t::DIXEL);
   const size_t dir_type = dirs_selector->currentIndex();
@@ -586,12 +587,12 @@ void ODF::dirs_slot() {
   try {
     switch (dir_type) {
     case 0: // DW scheme
-      if (!settings->dixel->num_DW_shells())
+      if (settings->dixel->num_DW_shells() == 0U)
         throw Exception("Cannot draw orientation information from DW scheme: no such scheme stored in header");
       settings->dixel->set_shell(settings->dixel->shell_index);
       break;
     case 1: // Header
-      if (!settings->dixel->header_dirs.rows())
+      if (settings->dixel->header_dirs.rows() == 0)
         throw Exception("Cannot draw orientation information from header: no such data exist");
       settings->dixel->set_header();
       break;
@@ -600,7 +601,7 @@ void ODF::dirs_slot() {
       break;
     case 3: // None
       settings->dixel->set_none();
-      if (preview)
+      if (preview != nullptr)
         preview->render_frame->clear_dixels();
       break;
     case 4: { // From file
@@ -619,13 +620,13 @@ void ODF::dirs_slot() {
     }
     shell_selector->setEnabled(dir_type == 0 && settings->dixel->shells && settings->dixel->shells->count() > 1);
     if (dir_type == 3) {
-      if (preview)
+      if (preview != nullptr)
         preview->render_frame->clear_dixels();
     } else {
       assert(settings->dixel->dirs);
       assert(renderer);
       renderer->dixel.update_mesh(*(settings->dixel->dirs));
-      if (preview)
+      if (preview != nullptr)
         preview->render_frame->set_dixels(*(settings->dixel->dirs));
     }
   } catch (Exception &e) {
@@ -638,7 +639,7 @@ void ODF::dirs_slot() {
 
 void ODF::shell_slot() {
   ODF_Item *settings = get_image();
-  if (!settings)
+  if (settings == nullptr)
     return;
   assert(settings->odf_type == odf_type_t::DIXEL);
   assert(settings->dixel->dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME);
@@ -650,7 +651,7 @@ void ODF::shell_slot() {
   assert(settings->dixel->dirs);
   assert(renderer);
   renderer->dixel.update_mesh(*(settings->dixel->dirs));
-  if (preview) {
+  if (preview != nullptr) {
     preview->render_frame->set_dixels(*(settings->dixel->dirs));
     // Values at the focus point change if we're now looking at a different shell
     update_preview();
@@ -661,23 +662,23 @@ void ODF::shell_slot() {
 void ODF::adjust_scale_slot() {
   scale->setRate(0.01 * scale->value());
   ODF_Item *settings = get_image();
-  if (!settings)
+  if (settings == nullptr)
     return;
   settings->scale = scale->value();
-  if (preview)
+  if (preview != nullptr)
     preview->render_frame->set_scale(scale->value());
   updateGL();
 }
 
 void ODF::use_lighting_slot(int) {
-  if (preview)
+  if (preview != nullptr)
     preview->render_frame->set_use_lighting(use_lighting_box->isChecked());
   updateGL();
   update_preview();
 }
 
 void ODF::lighting_settings_slot(bool) {
-  if (!lighting_dock) {
+  if (lighting_dock == nullptr) {
     lighting_dock = new LightingDock("ODF lighting", *lighting);
     window().addDockWidget(Qt::RightDockWidgetArea, lighting_dock);
   }
@@ -685,9 +686,9 @@ void ODF::lighting_settings_slot(bool) {
 }
 
 void ODF::close_event() {
-  if (preview)
+  if (preview != nullptr)
     preview->hide();
-  if (lighting_dock)
+  if (lighting_dock != nullptr)
     lighting_dock->hide();
 }
 
@@ -697,12 +698,12 @@ void ODF::updateGL() {
 }
 
 void ODF::update_preview() {
-  if (!preview)
+  if (preview == nullptr)
     return;
   if (!preview->isVisible())
     return;
   ODF_Item *settings = get_image();
-  if (!settings)
+  if (settings == nullptr)
     return;
   Eigen::VectorXf values;
   switch (settings->odf_type) {
@@ -724,15 +725,15 @@ void ODF::update_preview() {
 
 void ODF::selection_changed_slot(const QItemSelection &, const QItemSelection &) {
   ODF_Item *settings = get_image();
-  if (!settings)
+  if (settings == nullptr)
     return;
   switch (settings->odf_type) {
   case odf_type_t::SH:
-    if (renderer->sh.get_LOD())
+    if (renderer->sh.get_LOD() != 0)
       level_of_detail_selector->setValue(renderer->sh.get_LOD());
     break;
   case odf_type_t::TENSOR:
-    if (renderer->tensor.get_LOD())
+    if (renderer->tensor.get_LOD() != 0)
       level_of_detail_selector->setValue(renderer->tensor.get_LOD());
     break;
   case odf_type_t::DIXEL:
@@ -744,7 +745,7 @@ void ODF::selection_changed_slot(const QItemSelection &, const QItemSelection &)
   scale->setValue(settings->scale);
   hide_negative_values_box->setChecked(settings->hide_negative);
   colour_by_direction_box->setChecked(settings->color_by_direction);
-  if (preview) {
+  if (preview != nullptr) {
     preview->render_frame->set_mode(settings->odf_type);
     preview->render_frame->set_scale(settings->scale);
     preview->render_frame->set_hide_neg_values(settings->hide_negative);

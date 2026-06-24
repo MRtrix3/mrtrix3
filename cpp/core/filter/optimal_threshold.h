@@ -32,15 +32,10 @@ namespace {
 class MeanStdFunctor {
 public:
   MeanStdFunctor(double &overall_sum, double &overall_sum_sqr, size_t &overall_count)
-      : overall_sum(overall_sum),
-        overall_sum_sqr(overall_sum_sqr),
-        overall_count(overall_count),
-        sum(0.0),
-        sum_sqr(0.0),
-        count(0) {}
+      : overall_sum(overall_sum), overall_sum_sqr(overall_sum_sqr), overall_count(overall_count) {}
 
   ~MeanStdFunctor() {
-    std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     overall_sum += sum;
     overall_sum_sqr += sum_sqr;
     overall_count += count;
@@ -48,7 +43,7 @@ public:
 
   template <class ImageType, class MaskType> void operator()(ImageType &vox, MaskType &mask) {
     if (mask.value()) {
-      double in = vox.value();
+      const double in = vox.value();
       if (std::isfinite(in)) {
         sum += in;
         sum_sqr += Math::pow2(in);
@@ -58,7 +53,7 @@ public:
   }
 
   template <class ImageType> void operator()(ImageType &vox) {
-    double in = vox.value();
+    const double in = vox.value();
     if (std::isfinite(in)) {
       sum += in;
       sum_sqr += Math::pow2(in);
@@ -69,8 +64,8 @@ public:
   double &overall_sum;
   double &overall_sum_sqr;
   size_t &overall_count;
-  double sum, sum_sqr;
-  size_t count;
+  double sum{0.0}, sum_sqr{0.0};
+  size_t count{0};
 
   static std::mutex mutex;
 };
@@ -79,16 +74,16 @@ std::mutex MeanStdFunctor::mutex;
 class CorrelationFunctor {
 public:
   CorrelationFunctor(double threshold, double &overall_sum, double &overall_mean_xy)
-      : threshold(threshold), overall_sum(overall_sum), overall_mean_xy(overall_mean_xy), sum(0), mean_xy(0.0) {}
+      : threshold(threshold), overall_sum(overall_sum), overall_mean_xy(overall_mean_xy) {}
 
   ~CorrelationFunctor() {
-    std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     overall_sum += sum;
     overall_mean_xy += mean_xy;
   }
 
   template <class ImageType> void operator()(ImageType &vox) {
-    double in = vox.value();
+    const double in = vox.value();
     if (std::isfinite(in)) {
       if (in > threshold) {
         sum += 1;
@@ -99,7 +94,7 @@ public:
 
   template <class ImageType, class MaskType> void operator()(ImageType &vox, MaskType &mask) {
     if (mask.value()) {
-      double in = vox.value();
+      const double in = vox.value();
       if (std::isfinite(in)) {
         if (in > threshold) {
           sum += 1;
@@ -112,8 +107,8 @@ public:
   const double threshold;
   double &overall_sum;
   double &overall_mean_xy;
-  double sum;
-  double mean_xy;
+  double sum{0};
+  double mean_xy{0.0};
 
   static std::mutex mutex;
 };
@@ -129,7 +124,8 @@ public:
   using mask_value_type = typename MaskType::value_type;
 
   ImageCorrelationCostFunction(ImageType &input, MaskType &mask) : input(input), mask(mask) {
-    double sum_sqr = 0.0, sum = 0.0;
+    double sum_sqr = 0.0;
+    double sum = 0.0;
     count = 0;
 
     if (mask.valid()) {
@@ -154,8 +150,8 @@ public:
       ThreadedLoop(input).run(CorrelationFunctor(threshold, sum, mean_xy), input);
 
     mean_xy /= count;
-    double covariance = mean_xy - (sum / count) * input_image_mean;
-    double mask_stdev = sqrt((sum - Math::pow2(sum) / static_cast<double>(count)) / static_cast<double>(count));
+    const double covariance = mean_xy - (sum / count) * input_image_mean;
+    const double mask_stdev = sqrt((sum - Math::pow2(sum) / static_cast<double>(count)) / static_cast<double>(count));
 
     return -covariance / (input_image_stdev * mask_stdev);
   }
@@ -172,7 +168,8 @@ template <class ImageType, class MaskType>
 typename ImageType::value_type estimate_optimal_threshold(ImageType &input, MaskType &mask) {
   using input_value_type = typename ImageType::value_type;
 
-  input_value_type min, max;
+  input_value_type min;
+  input_value_type max;
   if (mask.valid())
     min_max(input, mask, min, max);
   else

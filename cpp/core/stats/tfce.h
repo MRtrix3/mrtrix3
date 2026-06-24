@@ -31,7 +31,7 @@ using matrix_type = Math::Stats::matrix_type;
 
 class EnhancerBase : public Stats::EnhancerBase {
 public:
-  virtual ~EnhancerBase() {}
+  virtual ~EnhancerBase() = default;
 
 protected:
   // Alternative functor that also takes the threshold value;
@@ -47,14 +47,14 @@ protected:
 
 class Wrapper : public Stats::EnhancerBase {
 public:
-  Wrapper(const std::shared_ptr<TFCE::EnhancerBase> base) : enhancer(base), dH(NaN), E(NaN), H(NaN) {}
-  Wrapper(const std::shared_ptr<TFCE::EnhancerBase> base,
+  Wrapper(const std::shared_ptr<TFCE::EnhancerBase> &base) : enhancer(base), dH(NaN), E(NaN), H(NaN) {}
+  Wrapper(const std::shared_ptr<TFCE::EnhancerBase> &base,
           const default_type dh,
           const default_type e,
           const default_type h)
       : enhancer(base), dH(dh), E(e), H(h) {}
   Wrapper(const Wrapper &that) = default;
-  virtual ~Wrapper() {}
+  virtual ~Wrapper() = default;
 
   void set_tfce_parameters(const value_type d_height, const value_type extent, const value_type height) {
     dH = d_height;

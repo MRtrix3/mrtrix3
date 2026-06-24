@@ -66,16 +66,11 @@ LUT::file_format LUT::guess_file_format(const std::filesystem::path &path) {
   class Column {
   public:
     Column()
-        : numeric(true),
-          integer(true),
-          min(std::numeric_limits<default_type>::infinity()),
-          max(-std::numeric_limits<default_type>::infinity()),
-          sum_lengths(0),
-          count(0) {}
+        : min(std::numeric_limits<default_type>::infinity()), max(-std::numeric_limits<default_type>::infinity()) {}
 
     void operator()(std::string_view entry) {
       try {
-        const default_type value = to<default_type>(entry);
+        const auto value = to<default_type>(entry);
         min = std::min(min, value);
         max = std::max(max, value);
       } catch (...) {
@@ -87,32 +82,24 @@ LUT::file_format LUT::guess_file_format(const std::filesystem::path &path) {
       ++count;
     }
 
-    default_type mean_length() const { return sum_lengths / static_cast<default_type>(count); }
-    bool is_numeric() const { return numeric; }
-    bool is_integer() const { return integer; }
-    bool is_unary_range_float() const { return is_numeric() && min >= 0.0 && max <= 1.0; }
-    bool is_8bit() const { return is_integer() && min >= 0 && max <= 255; }
+    [[nodiscard]] default_type mean_length() const { return sum_lengths / static_cast<default_type>(count); }
+    [[nodiscard]] bool is_numeric() const { return numeric; }
+    [[nodiscard]] bool is_integer() const { return integer; }
+    [[nodiscard]] bool is_unary_range_float() const { return is_numeric() && min >= 0.0 && max <= 1.0; }
+    [[nodiscard]] bool is_8bit() const { return is_integer() && min >= 0 && max <= 255; }
 
     operator std::string() const {
       if (!is_numeric())
         return "text";
-      if (is_integer()) {
-        if (is_8bit())
-          return "8bit_integer";
-        else
-          return "integer";
-      }
-      if (is_unary_range_float())
-        return "unary_float";
-      else
-        return "float";
-      assert(0);
+      if (is_integer())
+        return is_8bit() ? "8bit_integer" : "integer";
+      return is_unary_range_float() ? "unary_float" : "float";
     }
 
   private:
-    bool numeric, integer;
+    bool numeric{true}, integer{true};
     default_type min, max;
-    size_t sum_lengths, count;
+    size_t sum_lengths{0}, count{0};
   };
 
   std::ifstream in_lut(path, std::ios_base::in);
@@ -128,7 +115,7 @@ LUT::file_format LUT::guess_file_format(const std::filesystem::path &path) {
       // Before splitting by whitespace, need to capture any strings that are
       //   encased within quotation marks
       auto split_by_quotes = split(line, "\"\'", false);
-      if (!(split_by_quotes.size() % 2))
+      if ((split_by_quotes.size() % 2) == 0U)
         throw Exception("Line " + str(line_counter) +                         //
                         " of LUT file \"" + path.filename().string() + "\"" + //
                         " contains an odd number of quotation marks," +       //
@@ -137,15 +124,15 @@ LUT::file_format LUT::guess_file_format(const std::filesystem::path &path) {
       for (size_t i = 0; i != split_by_quotes.size(); ++i) {
         // Every second line must be encased in quotation marks, and is
         //   therefore preserved without splitting
-        if (i % 2) {
+        if ((i % 2) != 0U) {
           entries.push_back(split_by_quotes[i]);
         } else {
           const auto block_split = split(split_by_quotes[i], "\t ", true);
           entries.insert(entries.end(), block_split.begin(), block_split.end());
         }
       }
-      for (decltype(entries)::iterator i = entries.begin(); i != entries.end();) {
-        if (i->empty() || (i->size() == 1 && std::isspace((*i)[0])))
+      for (auto i = entries.begin(); i != entries.end();) {
+        if (i->empty() || (i->size() == 1 && (std::isspace((*i)[0]) != 0)))
           i = entries.erase(i);
         else
           ++i;
@@ -226,7 +213,10 @@ void LUT::parse_line_basic(const std::string &line) { // check_syntax off
 }
 void LUT::parse_line_freesurfer(const std::string &line) { // check_syntax off
   node_t index = std::numeric_limits<node_t>::max();
-  node_t r = 256, g = 256, b = 256, a = 255;
+  node_t r = 256;
+  node_t g = 256;
+  node_t b = 256;
+  node_t a = 255;
   std::string name;
   std::istringstream iss(line);
   iss >> index >> name >> r >> g >> b >> a;
@@ -249,20 +239,26 @@ void LUT::parse_line_aal(const std::string &line) { // check_syntax off
 }
 void LUT::parse_line_itksnap(const std::string &line) { // check_syntax off
   node_t index = std::numeric_limits<node_t>::max();
-  node_t r = 256, g = 256, b = 256;
+  node_t r = 256;
+  node_t g = 256;
+  node_t b = 256;
   float a = 1.0;
-  unsigned int label_vis = 0, mesh_vis = 0;
+  unsigned int label_vis = 0;
+  unsigned int mesh_vis = 0;
   std::string name;
   std::istringstream iss(line);
   iss >> index >> r >> g >> b >> a >> label_vis >> mesh_vis >> name;
   if (!iss.fail()) {
-    std::string strname(strip(name, " \t\n\""));
+    const std::string strname(strip(name, " \t\n\""));
     check_and_insert(index, LUT_node(strname, r, g, b, static_cast<uint8_t>(std::round(a * 255.0F))));
   }
 }
 void LUT::parse_line_mrtrix(const std::string &line) { // check_syntax off
   node_t index = std::numeric_limits<node_t>::max();
-  node_t r = 256, g = 256, b = 256, a = 255;
+  node_t r = 256;
+  node_t g = 256;
+  node_t b = 256;
+  node_t a = 255;
   std::string short_name;
   std::string name;
   std::istringstream iss(line);
@@ -288,7 +284,7 @@ std::vector<node_t> get_lut_mapping(const LUT &in, const LUT &out) {
     node_t target = 0;
     for (const auto &node_out : out) {
       if (node_out.second.get_name() == node_in.second.get_name()) {
-        if (target) {
+        if (target != 0U) {
           throw Exception("Cannot perform LUT conversion: Node " + str(node_in.first) + " (" +
                           node_in.second.get_name() + ") has multiple possible targets");
           return std::vector<node_t>();
@@ -297,7 +293,7 @@ std::vector<node_t> get_lut_mapping(const LUT &in, const LUT &out) {
         break;
       }
     }
-    if (target)
+    if (target != 0U)
       map[node_in.first] = target;
   }
   return map;

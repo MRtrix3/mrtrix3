@@ -323,7 +323,7 @@ template <class OuterLoopType> struct ThreadedLoopRunOuter {
       return;
     }
 
-    ProgressBar::SwitchToMultiThreaded progress_functions;
+    const ProgressBar::SwitchToMultiThreaded progress_functions;
 
     struct Shared {
       Shared(const Shared &) = delete;
@@ -338,8 +338,8 @@ template <class OuterLoopType> struct ThreadedLoopRunOuter {
           assign_pos_of(iterator, loop.axes).to(pos);
           ++loop;
           return true;
-        } else
-          return false;
+        }
+        return false;
       }
     };
 

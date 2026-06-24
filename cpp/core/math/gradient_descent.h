@@ -63,18 +63,18 @@ public:
         step_down(step_size_downfactor),
         verbose(verbose),
         delim(","),
-        niter(0),
+
         x(func.size()),
         x2(func.size()),
         g(func.size()),
         g2(func.size()) {}
 
-  value_type value() const throw() { return f; }
-  const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &state() const throw() { return x; }
-  const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &gradient() const throw() { return g; }
-  value_type step_size() const { return dt; }
-  value_type gradient_norm() const throw() { return normg; }
-  int function_evaluations() const throw() { return nfeval; }
+  [[nodiscard]] value_type value() const throw() { return f; }
+  [[nodiscard]] const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &state() const throw() { return x; }
+  [[nodiscard]] const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &gradient() const throw() { return g; }
+  [[nodiscard]] value_type step_size() const { return dt; }
+  [[nodiscard]] value_type gradient_norm() const throw() { return normg; }
+  [[nodiscard]] int function_evaluations() const throw() { return nfeval; }
 
   void be_verbose(bool v) { verbose = v; }
   void precondition(const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &weights) { preconditioner_weights = weights; }
@@ -82,7 +82,7 @@ public:
   void run(const size_t max_iterations = 1000,
            const value_type grad_tolerance = 1e-6,
            std::streambuf *log_stream = nullptr) {
-    std::ostream log_os(log_stream ? log_stream : nullptr);
+    std::ostream log_os((log_stream == nullptr) ? nullptr : log_stream);
     if (log_os) {
       log_os << "#iteration" << delim << "feval" << delim << "cost" << delim << "stepsize";
       for (ssize_t a = 0; a < x.size(); a++)
@@ -98,7 +98,7 @@ public:
     DEBUG("Gradient descent iteration: init; cost: " + str(f));
 
     while (niter < max_iterations) {
-      bool retval = iterate(log_os);
+      const bool retval = iterate(log_os);
       DEBUG("Gradient descent iteration: " + str(niter) + "; cost: " + str(f));
       if (verbose) {
         CONSOLE("iteration " + str(niter) + ": f = " + str(f) + ", |g| = " + str(normg) + ":");
@@ -151,7 +151,7 @@ public:
       for (ssize_t i = 0; i < x.size(); ++i) {
         log_os << delim << str(g(i));
       }
-      log_os << std::endl;
+      log_os << '\n';
     }
   }
 
@@ -168,11 +168,11 @@ public:
       if (!update_func(x2, x, g, dt))
         return false;
 
-      value_type f2 = evaluate_func(x2, g2, verbose);
+      const value_type f2 = evaluate_func(x2, g2, verbose);
 
       // quadratic minimum:
-      value_type step_length = step_unscaled * dt;
-      value_type denom = 2.0 * (normg * step_length + f2 - f);
+      const value_type step_length = step_unscaled * dt;
+      const value_type denom = 2.0 * (normg * step_length + f2 - f);
       value_type quadratic_minimum = denom > 0.0 ? normg * step_length / denom : step_up;
 
       if (quadratic_minimum < step_down)
@@ -194,7 +194,7 @@ public:
           for (ssize_t i = 0; i < x.size(); ++i) {
             log_os << delim << str(g(i));
           }
-          log_os << std::endl;
+          log_os << '\n';
         }
         compute_normg_and_step_unscaled();
         return true;
@@ -216,7 +216,7 @@ protected:
   const value_type step_up, step_down;
   bool verbose;
   std::string delim;
-  size_t niter;
+  size_t niter{0};
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> x, x2, g, g2, preconditioner_weights;
   value_type f, dt, normg, step_unscaled;
   size_t nfeval;
@@ -225,7 +225,7 @@ protected:
                            Eigen::Matrix<value_type, Eigen::Dynamic, 1> &newg,
                            bool verbose = false) {
     nfeval++;
-    value_type cost = func(newx, newg);
+    const value_type cost = func(newx, newg);
     if (!std::isfinite(cost))
       throw Exception("cost function is NaN or Inf!");
     if (verbose)

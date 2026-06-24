@@ -85,11 +85,11 @@ std::ostream &operator<<(std::ostream &stream, const Properties &P) {
   stream << "seeds: " << P.seeds;
   stream << "include: " << P.include << ", ordered_include: " << P.ordered_include << ", exclude: " << P.exclude
          << ", mask: " << P.mask << ", dict: ";
-  for (KeyValues::const_iterator i = P.begin(); i != P.end(); ++i)
-    stream << "[ " << i->first << ": " << i->second << " ], ";
+  for (const auto &i : P)
+    stream << "[ " << i.first << ": " << i.second << " ], ";
   stream << "comments: ";
-  for (std::vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i)
-    stream << "\"" << *i << "\", ";
+  for (const auto &comment : P.comments)
+    stream << "\"" << comment << "\", ";
   return (stream);
 }
 

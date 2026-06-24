@@ -88,9 +88,9 @@ const LabelValidation validate_label_image(Image<node_t> image) {
   //     (and hence back to input parcellation index)
   //     based on the volume index of any voxel in the cluster
 
-  const uint32_t X = static_cast<uint32_t>(image.size(0));
-  const uint32_t Y = static_cast<uint32_t>(image.size(1));
-  const uint32_t Z = static_cast<uint32_t>(image.size(2));
+  const auto X = static_cast<uint32_t>(image.size(0));
+  const auto Y = static_cast<uint32_t>(image.size(1));
+  const auto Z = static_cast<uint32_t>(image.size(2));
 
   // Guard against images too large for the uint32_t index space used below.
   if (static_cast<uint64_t>(X) * static_cast<uint64_t>(Y) * static_cast<uint64_t>(Z) >
@@ -141,7 +141,7 @@ const LabelValidation validate_label_image(Image<node_t> image) {
 
   class Seeder {
   public:
-    Seeder(const std::vector<node_t> &labels) : data(labels), index(0) {}
+    Seeder(const std::vector<node_t> &labels) : data(labels) {}
     bool operator()(node_t &out) {
       if (index == data.size()) {
         out = std::numeric_limits<node_t>::max();
@@ -153,7 +153,7 @@ const LabelValidation validate_label_image(Image<node_t> image) {
 
   private:
     std::vector<node_t> data;
-    size_t index;
+    size_t index{0};
   };
   class Worker {
   public:
@@ -189,8 +189,8 @@ const LabelValidation validate_label_image(Image<node_t> image) {
       ++progress;
       return true;
     }
-    const std::map<node_t, uint32_t> &count_per_label() const { return data; }
-    node_t disconnected_count() const {
+    [[nodiscard]] const std::map<node_t, uint32_t> &count_per_label() const { return data; }
+    [[nodiscard]] node_t disconnected_count() const {
       node_t result = 0;
       for (const auto &item : data) {
         if (item.second > 1)

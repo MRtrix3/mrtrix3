@@ -15,6 +15,7 @@
  */
 
 #include <algorithm>
+#include <memory>
 
 #include "env.h"
 #include "file/dicom/image.h"
@@ -48,7 +49,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   // ENVVAR b-value scaling.
   const bool preserve_philips_iso = MR::get_env("MRTRIX_PRESERVE_PHILIPS_ISO").has_value();
 
-  assert(series.size() > 0);
+  assert(!series.empty());
   std::unique_ptr<MR::ImageIO::Base> io_handler;
 
   Patient *patient(series[0]->study->patient);
@@ -78,13 +79,13 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     std::sort(series_it->begin(), series_it->end(), compare_ptr_contents());
 
     // loop over images in each series:
-    for (auto image_it : *series_it) {
+    for (const auto &image_it : *series_it) {
       if (!image_it->transfer_syntax_supported)
         transfer_syntax_supported = false;
       // if multi-frame, loop over frames in image:
       if (!image_it->frames.empty()) {
         std::sort(image_it->frames.begin(), image_it->frames.end(), compare_ptr_contents());
-        for (auto frame_it : image_it->frames)
+        for (const auto &frame_it : image_it->frames)
           if (frame_it->image_type == series_it->image_type)
             if (!frame_it->is_philips_iso() || preserve_philips_iso)
               frames.push_back(frame_it.get());
@@ -108,14 +109,14 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
 
   if (dim[0] > 1) { // switch axes so slice dim is inner-most:
     std::vector<Frame *> list(frames);
-    std::vector<Frame *>::iterator it = frames.begin();
+    auto it = frames.begin();
     for (size_t k = 0; k < dim[2]; ++k)
       for (size_t i = 0; i < dim[0]; ++i)
         for (size_t j = 0; j < dim[1]; ++j)
           *(it++) = list[i + dim[0] * (j + dim[1] * k)];
   }
 
-  default_type slice_separation = Frame::get_slice_separation(frames, dim[1]);
+  const default_type slice_separation = Frame::get_slice_separation(frames, dim[1]);
 
   if (!series[0]->study->name.empty())
     add_line(H.keyval()["comments"],
@@ -164,7 +165,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
       "RepetitionTime", [](Frame *f) -> default_type { return f->repetition_time; }, 0.001);
 
   if (std::isfinite(frame.bvalue)) {
-    if (frame.bipolar_flag) {
+    if (frame.bipolar_flag != 0U) {
       switch (frame.bipolar_flag) {
       case 1:
         H.keyval()["DiffusionScheme"] = "Bipolar";
@@ -175,7 +176,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
       default:
         WARN("Unsupported DWI polarity scheme flag (" + str(frame.bipolar_flag) + ")");
       }
-    } else if (frame.readoutmode_flag) {
+    } else if (frame.readoutmode_flag != 0U) {
       switch (frame.readoutmode_flag) {
       case 1:
         H.keyval()["DiffusionScheme"] = "Monopolar";
@@ -211,7 +212,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
       INFO("data segment is larger than expected from image dimensions - interpreting as multi-channel data");
   }
 
-  H.ndim() = 3 + (dim[0] * dim[2] > 1) + (nchannels > 1);
+  H.ndim() = 3 + static_cast<int>(dim[0] * dim[2] > 1) + static_cast<int>(nchannels > 1);
 
   size_t current_axis = 0;
 
@@ -275,7 +276,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     M(2, 3) = +frame.position_vector[2];
 
     H.transform() = M;
-    std::string dw_scheme = Frame::get_DW_scheme(frames, dim[1], M);
+    const std::string dw_scheme = Frame::get_DW_scheme(frames, dim[1], M);
     if (!dw_scheme.empty())
       H.keyval()["dw_scheme"] = dw_scheme;
   }
@@ -291,7 +292,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   for (size_t n = 1; n < frames.size(); ++n) { // check consistency of data scaling:
     if (frames[n]->scale_intercept != frames[n - 1]->scale_intercept ||
         frames[n]->scale_slope != frames[n - 1]->scale_slope) {
-      if (image.images_in_mosaic)
+      if (image.images_in_mosaic != 0U)
         throw Exception("unable to load series due to inconsistent data scaling between DICOM mosaic frames");
       inconsistent_scaling = true;
       INFO("DICOM images contain inconsistency scaling - data will be rescaled and stored in 32-bit floating-point "
@@ -303,7 +304,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   // Slice timing may come from a few different potential sources
   std::vector<std::string> slices_timing_str;
   std::vector<float> slices_timing_float;
-  if (image.images_in_mosaic) {
+  if (image.images_in_mosaic != 0U) {
     if (image.mosaic_slices_timing.size() < image.images_in_mosaic) {
       WARN("Number of entries in mosaic slice timing (" + str(image.mosaic_slices_timing.size()) +
            ") is smaller than number of images in mosaic (" + str(image.images_in_mosaic) + "); omitting");
@@ -342,8 +343,8 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
       slices_timing_float.push_back(static_cast<default_type>(frames[n]->acquisition_time) - min_acquisition_time);
   }
   if (!slices_timing_float.empty()) {
-    const size_t slices_acquired_at_zero = std::count(slices_timing_float.begin(), slices_timing_float.end(), 0.0f);
-    if (slices_acquired_at_zero < (image.images_in_mosaic ? image.images_in_mosaic : dim[1])) {
+    const size_t slices_acquired_at_zero = std::count(slices_timing_float.begin(), slices_timing_float.end(), 0.0F);
+    if (slices_acquired_at_zero < ((image.images_in_mosaic != 0U) ? image.images_in_mosaic : dim[1])) {
       H.keyval()["SliceTiming"] =
           !slices_timing_str.empty() ? join(slices_timing_str, ",") : join(slices_timing_float, ",");
       H.keyval()["MultibandAccelerationFactor"] = str(slices_acquired_at_zero);
@@ -362,17 +363,17 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     WARN("See the MRtrix3 documentation on DICOM handling for details:");
     WARN("    http://mrtrix.readthedocs.io/en/latest/tips_and_tricks/dicom_handling.html" //
          "#error-unsupported-transfer-syntax");                                           //
-    io_handler.reset(new MR::ImageIO::Null(H));
+    io_handler = std::make_unique<MR::ImageIO::Null>(H);
     return io_handler;
   }
 
-  if (image.images_in_mosaic) {
+  if (image.images_in_mosaic != 0U) {
 
     INFO("DICOM image \"" + H.name() + "\" is in mosaic format");
     if (H.size(2) != 1)
       throw Exception("DICOM mosaic contains multiple slices in image \"" + H.name() + "\"");
 
-    size_t mosaic_size = std::ceil(std::sqrt(image.images_in_mosaic));
+    const size_t mosaic_size = std::ceil(std::sqrt(image.images_in_mosaic));
     H.size(0) = std::floor(frame.dim[0] / mosaic_size);
     H.size(1) = std::floor(frame.dim[1] / mosaic_size);
     H.size(2) = image.images_in_mosaic;
@@ -396,12 +397,12 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
       INFO("note: acquisition matrix [ " + str(frame.acq_dim[0]) + " " + str(frame.acq_dim[1]) +
            " ] differs from reconstructed matrix [ " + str(H.size(0)) + " " + str(H.size(1)) + " ]");
 
-    float xinc = H.spacing(0) * (frame.dim[0] - H.size(0)) / 2.0;
-    float yinc = H.spacing(1) * (frame.dim[1] - H.size(1)) / 2.0;
+    const float xinc = H.spacing(0) * (frame.dim[0] - H.size(0)) / 2.0;
+    const float yinc = H.spacing(1) * (frame.dim[1] - H.size(1)) / 2.0;
     for (size_t i = 0; i < 3; i++)
       H.transform()(i, 3) += xinc * H.transform()(i, 0) + yinc * H.transform()(i, 1);
 
-    io_handler.reset(new MR::ImageIO::Mosaic(H, frame.dim[0], frame.dim[1], H.size(0), H.size(1), H.size(2)));
+    io_handler = std::make_unique<MR::ImageIO::Mosaic>(H, frame.dim[0], frame.dim[1], H.size(0), H.size(1), H.size(2));
 
   } else if (inconsistent_scaling) {
 
@@ -409,19 +410,19 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     H.datatype() = DataType::Float32;
     H.datatype().set_byte_order_native();
 
-    MR::ImageIO::VariableScaling *handler = new MR::ImageIO::VariableScaling(H);
+    auto *handler = new MR::ImageIO::VariableScaling(H);
 
-    for (size_t n = 0; n < frames.size(); ++n)
-      handler->scale_factors.push_back({frames[n]->scale_intercept, frames[n]->scale_slope});
+    for (auto &frame : frames)
+      handler->scale_factors.push_back({frame->scale_intercept, frame->scale_slope});
 
     io_handler.reset(handler);
   } else {
 
-    io_handler.reset(new MR::ImageIO::Default(H));
+    io_handler = std::make_unique<MR::ImageIO::Default>(H);
   }
 
-  for (size_t n = 0; n < frames.size(); ++n)
-    io_handler->files.push_back(File::Entry(frames[n]->filepath, frames[n]->data));
+  for (auto &frame : frames)
+    io_handler->files.emplace_back(frame->filepath, frame->data);
 
   return io_handler;
 }

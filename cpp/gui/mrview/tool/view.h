@@ -47,10 +47,10 @@ public:
 
   QPushButton *clip_on_button[3], *clip_edit_button[3], *clip_modify_button;
 
-  std::vector<std::pair<GL::vec4, bool>> get_active_clip_planes() const;
-  std::vector<GL::vec4 *> get_clip_planes_to_be_edited() const;
-  bool get_cliphighlightstate() const;
-  bool get_clipintersectionmodestate() const;
+  [[nodiscard]] std::vector<std::pair<GL::vec4, bool>> get_active_clip_planes() const;
+  [[nodiscard]] std::vector<GL::vec4 *> get_clip_planes_to_be_edited() const;
+  [[nodiscard]] bool get_cliphighlightstate() const;
+  [[nodiscard]] bool get_clipintersectionmodestate() const;
 
   void update_lightbox_mode_gui(const Mode::LightBox &mode) override;
   void update_ortho_mode_gui(const Mode::Ortho &mode) override;

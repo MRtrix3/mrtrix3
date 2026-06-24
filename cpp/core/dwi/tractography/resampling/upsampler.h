@@ -29,13 +29,13 @@ public:
 
   Upsampler(const Upsampler &that) : M(that.M), temp(M.rows(), 3), data(4, 3) {}
 
-  ~Upsampler() {}
+  ~Upsampler() = default;
 
   bool operator()(const Streamline<> &, Streamline<> &) const override;
-  bool valid() const override { return true; }
+  [[nodiscard]] bool valid() const override { return true; }
 
   void set_ratio(const size_t);
-  size_t get_ratio() const { return (M.rows() ? (M.rows() + 1) : 1); }
+  [[nodiscard]] size_t get_ratio() const { return ((M.rows() == 0) ? 1 : (M.rows() + 1)); }
 
 private:
   Eigen::MatrixXf M;

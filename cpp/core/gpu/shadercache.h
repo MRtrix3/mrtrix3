@@ -28,11 +28,11 @@ public:
 
   explicit ShaderCache() = default;
 
-  bool contains(const CacheKey &key) const;
+  [[nodiscard]] bool contains(const CacheKey &key) const;
 
   void insert(const CacheKey &key, const CacheValue &value);
 
-  const CacheValue &get(const CacheKey &key) const;
+  [[nodiscard]] const CacheValue &get(const CacheKey &key) const;
 
   void clear();
 

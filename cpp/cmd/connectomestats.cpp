@@ -32,6 +32,7 @@
 
 #include "stats/permtest.h"
 #include <filesystem>
+#include <memory>
 
 using namespace MR;
 using namespace App;
@@ -149,7 +150,7 @@ public:
     if (Connectome::is_directed(M))
       throw Exception("Connectome from file \"" + path.filename().string() + "\" is a directed matrix");
     Connectome::to_upper(M);
-    Connectome::Mat2Vec mat2vec(M.rows());
+    const Connectome::Mat2Vec mat2vec(M.rows());
     mat2vec.M2V(M, data);
   }
 
@@ -163,7 +164,7 @@ public:
     return (data[index]);
   }
 
-  index_type size() const override { return data.size(); }
+  [[nodiscard]] index_type size() const override { return data.size(); }
 
 private:
   measurements_vector_type data;
@@ -186,7 +187,7 @@ void run() {
   // TODO Could determine this from the vector length with the right equation
   const MR::Connectome::matrix_type example_connectome = File::Matrix::load_matrix(importer[0]->name());
   const MR::Connectome::node_t num_nodes = example_connectome.rows();
-  Connectome::Mat2Vec mat2vec(num_nodes);
+  const Connectome::Mat2Vec mat2vec(num_nodes);
 
   // Initialise enhancement algorithm
   std::shared_ptr<Stats::EnhancerBase> enhancer;
@@ -195,18 +196,18 @@ void run() {
     auto opt = get_options("threshold");
     if (opt.empty())
       throw Exception("For NBS algorithm, -threshold option must be provided");
-    enhancer.reset(new MR::Connectome::Enhance::NBS(num_nodes, opt[0][0]));
+    enhancer = std::make_shared<MR::Connectome::Enhance::NBS>(num_nodes, opt[0][0]);
   } break;
   case Algorithm::TFNBS: {
-    std::shared_ptr<Stats::TFCE::EnhancerBase> base(new MR::Connectome::Enhance::NBS(num_nodes));
-    enhancer.reset(new Stats::TFCE::Wrapper(base));
+    const std::shared_ptr<Stats::TFCE::EnhancerBase> base(new MR::Connectome::Enhance::NBS(num_nodes));
+    enhancer = std::make_shared<Stats::TFCE::Wrapper>(base);
     load_tfce_parameters(*(dynamic_cast<Stats::TFCE::Wrapper *>(enhancer.get())));
     if (!get_options("threshold").empty())
       WARN(MR::Enum::lowercase_name(Algorithm::TFNBS) + " is a threshold-free algorithm;" + //
            " -threshold option ignored");                                                   //
   } break;
   case Algorithm::None: {
-    enhancer.reset(new MR::Connectome::Enhance::PassThrough());
+    enhancer = std::make_shared<MR::Connectome::Enhance::PassThrough>();
     if (!get_options("threshold").empty())
       WARN("No enhancement algorithm being used; -threshold option ignored");
   } break;
@@ -240,7 +241,7 @@ void run() {
   bool nans_in_columns = false;
   opt = get_options("column");
   for (size_t i = 0; i != opt.size(); ++i) {
-    extra_columns.push_back(CohortDataImport());
+    extra_columns.emplace_back();
     const std::filesystem::path path(opt[i][0]);
     extra_columns[i].initialise<SubjectConnectomeImport>(path);
     if (!extra_columns[i].allFinite())
@@ -361,7 +362,9 @@ void run() {
   }
 
   // Precompute default statistic, Z-transformation of such, and enhanced statistic
-  matrix_type default_statistic, default_zstat, default_enhanced;
+  matrix_type default_statistic;
+  matrix_type default_zstat;
+  matrix_type default_enhanced;
   Stats::PermTest::precompute_default_permutation(
       glm_test, enhancer, empirical_statistic, default_statistic, default_zstat, default_enhanced);
   for (index_type i = 0; i != num_hypotheses; ++i) {
@@ -380,7 +383,8 @@ void run() {
       WARN("Option -strong has no effect when testing a single hypothesis only");
     }
 
-    matrix_type null_distribution, uncorrected_pvalues;
+    matrix_type null_distribution;
+    matrix_type uncorrected_pvalues;
     count_matrix_type null_contributions;
     Stats::PermTest::run_permutations(glm_test,
                                       enhancer,

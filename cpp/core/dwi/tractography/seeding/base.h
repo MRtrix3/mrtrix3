@@ -57,19 +57,19 @@ class Base {
 
 public:
   Base(std::string_view in, std::string_view desc, const size_t attempts)
-      : volume(0.0), count(0), type(desc), name(in), max_attempts(attempts) {}
+      : type(desc), name(in), max_attempts(attempts) {}
 
-  virtual ~Base() {}
+  virtual ~Base() = default;
 
-  default_type vol() const { return volume; }
-  size_t num() const { return count; }
-  bool is_finite() const { return count; }
-  std::string get_type() const { return type; }
-  std::string get_name() const { return name; }
-  size_t get_max_attempts() const { return max_attempts; }
+  [[nodiscard]] default_type vol() const { return volume; }
+  [[nodiscard]] size_t num() const { return count; }
+  [[nodiscard]] bool is_finite() const { return count != 0U; }
+  [[nodiscard]] std::string get_type() const { return type; }
+  [[nodiscard]] std::string get_name() const { return name; }
+  [[nodiscard]] size_t get_max_attempts() const { return max_attempts; }
 
   virtual bool get_seed(Eigen::Vector3f &) const = 0;
-  virtual bool get_seed(Eigen::Vector3f &p, Eigen::Vector3f &) { return get_seed(p); }
+  [[nodiscard]] virtual bool get_seed(Eigen::Vector3f &p, Eigen::Vector3f &) { return get_seed(p); }
 
   friend inline std::ostream &operator<<(std::ostream &stream, const Base &B) {
     stream << B.name;
@@ -78,8 +78,8 @@ public:
 
 protected:
   // Finite seeds are defined by the number of seeds; non-limited are defined by volume
-  float volume;
-  size_t count;
+  float volume{0.0};
+  size_t count{0};
   mutable std::mutex mutex;
   const std::string type; // Text describing the type of seed this is
 

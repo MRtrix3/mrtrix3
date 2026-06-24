@@ -31,13 +31,13 @@ class TrackMapper : public Mapping::TrackMapperTWI {
 public:
   template <class HeaderType>
   TrackMapper(const HeaderType &template_image, const contrast_t c)
-      : BaseMapper(template_image, c, tck_stat_t::GAUSSIAN), gaussian_denominator(0.0) {
+      : BaseMapper(template_image, c, tck_stat_t::GAUSSIAN) {
     assert(c == contrast_t::SCALAR_MAP || c == contrast_t::SCALAR_MAP_COUNT || c == contrast_t::FOD_AMP ||
            c == contrast_t::CURVATURE);
   }
 
   TrackMapper(const TrackMapper &) = default;
-  ~TrackMapper() {}
+  ~TrackMapper() = default;
 
   void set_gaussian_FWHM(const default_type FWHM) {
     if (track_statistic != tck_stat_t::GAUSSIAN)
@@ -70,7 +70,7 @@ public:
   }
 
 protected:
-  default_type gaussian_denominator;
+  default_type gaussian_denominator{0.0};
   void gaussian_smooth_factors(const Streamline<> &) const;
 
   // Overload corresponding functions in TrackMapperTWI
@@ -109,7 +109,7 @@ protected:
 
   // Convenience function to convert from streamline position index to a linear-interpolated
   //   factor value (TrackMapperTWI member field factors[] only contains one entry per pre-upsampled point)
-  inline default_type tck_index_to_factor(const size_t) const;
+  [[nodiscard]] inline default_type tck_index_to_factor(const size_t) const;
 };
 
 template <class Cont> void TrackMapper::voxelise(const Streamline<> &tck, Cont &output) const {

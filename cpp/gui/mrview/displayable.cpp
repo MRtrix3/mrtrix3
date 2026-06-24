@@ -27,18 +27,15 @@ Displayable::Displayable(const std::filesystem::path &filepath)
       transparent_intensity(NaNF),
       opaque_intensity(NaNF),
       alpha(NaNF),
-      colourmap(0),
-      show(true),
-      show_colour_bar(true),
+
       filepath(filepath),
       value_min(NaNF),
-      value_max(NaNF),
-      flags_(0x00000000) {
+      value_max(NaNF) {
   colour[0] = colour[1] = 255;
   colour[2] = 0;
 }
 
-Displayable::~Displayable() {}
+Displayable::~Displayable() = default;
 
 bool Displayable::Shader::need_update(const Displayable &object) const {
   return flags != object.flags() || colourmap != object.colourmap;

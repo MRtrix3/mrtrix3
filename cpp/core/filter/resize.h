@@ -58,15 +58,14 @@ public:
   template <class HeaderType>
   Resize(const HeaderType &in)
       : Base(in),
-        interp_type(MR::Interp::interp_type::CUBIC),
+
         transformation(Adapter::NoTransform),
-        oversampling(Adapter::AutoOverSample),
-        out_of_bounds_value(nullptr) {}
+        oversampling(Adapter::AutoOverSample) {}
 
   ~Resize() { delete out_of_bounds_value; }
 
   void set_voxel_size(default_type size) {
-    std::vector<default_type> voxel_size(3, size);
+    const std::vector<default_type> voxel_size(3, size);
     set_voxel_size(voxel_size);
   }
 
@@ -163,10 +162,10 @@ public:
   }
 
 protected:
-  MR::Interp::interp_type interp_type;
+  MR::Interp::interp_type interp_type{MR::Interp::interp_type::CUBIC};
   transform_type transformation;
   std::vector<uint32_t> oversampling;
-  default_type *out_of_bounds_value;
+  default_type *out_of_bounds_value{nullptr};
 };
 //! @}
 } // namespace MR::Filter

@@ -27,13 +27,13 @@ namespace MR::GUI::Shapes {
 
 class Cube {
 public:
-  Cube() : num_indices(0) {}
+  Cube() = default;
 
   void generate();
 
   GL::VertexBuffer vertex_buffer, normals_buffer;
   GL::IndexBuffer index_buffer;
-  size_t num_indices;
+  size_t num_indices{0};
 };
 
 } // namespace MR::GUI::Shapes

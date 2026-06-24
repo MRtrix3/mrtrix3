@@ -37,13 +37,13 @@ namespace MR::DWI::Tractography {
 template <class ValueType> class ReaderInterface {
 public:
   virtual bool operator()(Streamline<ValueType> &) = 0;
-  virtual ~ReaderInterface() {}
+  virtual ~ReaderInterface() = default;
 };
 
 template <class ValueType> class WriterInterface {
 public:
   virtual bool operator()(const Streamline<ValueType> &) = 0;
-  virtual ~WriterInterface() {}
+  virtual ~WriterInterface() = default;
 };
 
 //! A class to read streamlines data
@@ -243,7 +243,7 @@ public:
       throw Exception("Cannot change output streamline weights file path");
     weights_path = path;
     App::check_overwrite(weights_path);
-    File::OFStream out(weights_path, std::ios::out | std::ios::binary | std::ios::trunc);
+    const File::OFStream out(weights_path, std::ios::out | std::ios::binary | std::ios::trunc);
   }
 
 protected:
@@ -251,9 +251,13 @@ protected:
   int64_t barrier_addr;
 
   //! indicates end of track and start of new track
-  vector_type delimiter() const { return vector_type::Constant(std::numeric_limits<ValueType>::quiet_NaN()); }
+  [[nodiscard]] vector_type delimiter() const {
+    return vector_type::Constant(std::numeric_limits<ValueType>::quiet_NaN());
+  }
   //! indicates end of data
-  vector_type barrier() const { return vector_type::Constant(std::numeric_limits<ValueType>::infinity()); }
+  [[nodiscard]] vector_type barrier() const {
+    return vector_type::Constant(std::numeric_limits<ValueType>::infinity());
+  }
 
   //! perform per-point byte-swapping if required
   void format_point(const vector_type &src, vector_type &dest) {
@@ -280,7 +284,7 @@ protected:
     if (num_points == 0 || !open_success)
       return;
 
-    int64_t prev_barrier_addr = barrier_addr;
+    const int64_t prev_barrier_addr = barrier_addr;
 
     format_point(barrier(), data[num_points]);
     File::OFStream out(path, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
@@ -335,8 +339,7 @@ public:
   Writer(const std::filesystem::path &path, const Properties &properties, size_t default_buffer_capacity = 16777216)
       : WriterUnbuffered<ValueType>(path, properties),
         buffer_capacity(File::Config::get_int("TrackWriterBufferSize", default_buffer_capacity) / sizeof(vector_type)),
-        buffer(new vector_type[buffer_capacity]),
-        buffer_size(0) {}
+        buffer(new vector_type[buffer_capacity]) {}
 
   Writer(const Writer &W) = delete;
 
@@ -376,7 +379,7 @@ public:
 protected:
   size_t buffer_capacity;
   std::unique_ptr<vector_type[]> buffer;
-  size_t buffer_size;
+  size_t buffer_size{0};
   std::string weights_buffer;
 
   //! add point to buffer and increment buffer_size accordingly

@@ -28,10 +28,10 @@ public:
   FixedNumPoints(const size_t n) : num_points(n) {}
 
   bool operator()(const Streamline<> &, Streamline<> &) const override;
-  bool valid() const override { return num_points; }
+  [[nodiscard]] bool valid() const override { return num_points != 0U; }
 
   void set_num_points(const size_t n) { num_points = n; }
-  size_t get_num_points() const { return num_points; }
+  [[nodiscard]] size_t get_num_points() const { return num_points; }
 
 private:
   size_t num_points;

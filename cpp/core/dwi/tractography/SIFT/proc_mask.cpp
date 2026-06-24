@@ -73,18 +73,18 @@ void initialise_processing_mask(Image<float> &in_dwi, Image<float> &out_mask, Im
 
       // Once all of the 5TT data has been read in, use it to derive the processing mask
       out_5tt.index(3) = 2; // Access the WM fraction
-      float integral = 0.0f;
+      float integral = 0.0F;
       for (auto l = Loop(out_5tt, 0, 3)(out_5tt, out_mask); l; ++l) {
         // Processing mask value is the square of the WM fraction
-        const float value = Math::pow2<float>(out_5tt.value());
+        const float value = Math::pow2(static_cast<float>(out_5tt.value()));
         if (std::isfinite(value)) {
           out_mask.value() = value;
           integral += value;
         } else {
-          out_mask.value() = 0.0f;
+          out_mask.value() = 0.0F;
         }
       }
-      if (!integral)
+      if (integral == 0.0F)
         throw Exception("Processing mask is empty; check input images / registration");
 
     } else {
@@ -104,8 +104,7 @@ ResampleFunctor::ResampleFunctor(Image<float> &dwi, Image<float> &anat, Image<fl
       interp_anat(anat),
       out(out) {}
 
-ResampleFunctor::ResampleFunctor(const ResampleFunctor &that)
-    : dwi(that.dwi), voxel2scanner(that.voxel2scanner), interp_anat(that.interp_anat), out(that.out) {}
+ResampleFunctor::ResampleFunctor(const ResampleFunctor &that) = default;
 
 void ResampleFunctor::operator()(const Iterator &pos) {
   assign_pos_of(pos).to(dwi, out);
@@ -132,7 +131,12 @@ ACT::Tissues ResampleFunctor::ACT2pve(const Iterator &pos) {
   static const float os_step = 1.0 / static_cast<float>(os_ratio);
   static const float os_offset = 0.5 * os_step;
 
-  size_t cgm_count = 0, sgm_count = 0, wm_count = 0, csf_count = 0, path_count = 0, total_count = 0;
+  size_t cgm_count = 0;
+  size_t sgm_count = 0;
+  size_t wm_count = 0;
+  size_t csf_count = 0;
+  size_t path_count = 0;
+  size_t total_count = 0;
 
   Eigen::Array3i i;
   Eigen::Vector3f subvoxel_pos_dwi;
@@ -172,9 +176,8 @@ ACT::Tissues ResampleFunctor::ACT2pve(const Iterator &pos) {
                         wm_count / static_cast<float>(total_count),
                         csf_count / static_cast<float>(total_count),
                         path_count / static_cast<float>(total_count));
-  } else {
-    return ACT::Tissues();
   }
+  return ACT::Tissues();
 }
 
 } // namespace MR::DWI::Tractography::SIFT

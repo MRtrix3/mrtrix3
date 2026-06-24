@@ -31,15 +31,15 @@
 #include "progressbar.h"
 #include "projection.h"
 
-const size_t MAX_BUFFER_SIZE = 2796200;                      // number of points to fill 32MB
-constexpr uint32_t PRIMITIVE_RESTART_SENTINEL = 0xFFFFFFFFu; // Primitive restart index for UNSIGNED_INT
+const size_t MAX_BUFFER_SIZE = 2796200;                     // number of points to fill 32MB
+constexpr uint32_t PRIMITIVE_RESTART_SENTINEL = 0xFFFFFFFF; // Primitive restart index for UNSIGNED_INT
 
 namespace MR::GUI::MRView::Tool {
 const int Tractogram::track_padding;
 TrackGeometryType Tractogram::default_tract_geom(TrackGeometryType::Pseudotubes);
 
 std::string Tractogram::Shader::vertex_shader_source(const Displayable &displayable) {
-  const Tractogram &tractogram = dynamic_cast<const Tractogram &>(displayable);
+  const auto &tractogram = dynamic_cast<const Tractogram &>(displayable);
 
   std::string source = "layout (location = 0) in vec3 vertex;\n"
                        "layout (location = 1) in vec3 prev_vertex;\n"
@@ -194,9 +194,9 @@ std::string Tractogram::Shader::geometry_shader_source(const Displayable &) {
 }
 
 std::string Tractogram::Shader::fragment_shader_source(const Displayable &displayable) {
-  const Tractogram &tractogram = dynamic_cast<const Tractogram &>(displayable);
-  bool using_geom = geometry_type == TrackGeometryType::Pseudotubes;
-  bool using_points = geometry_type == TrackGeometryType::Points;
+  const auto &tractogram = dynamic_cast<const Tractogram &>(displayable);
+  const bool using_geom = geometry_type == TrackGeometryType::Pseudotubes;
+  const bool using_points = geometry_type == TrackGeometryType::Points;
 
   std::string source = "uniform float lower, upper;\n"
                        "uniform vec3 colourmap_colour;\n"
@@ -288,7 +288,7 @@ std::string Tractogram::Shader::fragment_shader_source(const Displayable &displa
 }
 
 bool Tractogram::Shader::need_update(const Displayable &object) const {
-  const Tractogram &tractogram(dynamic_cast<const Tractogram &>(object));
+  const auto &tractogram(dynamic_cast<const Tractogram &>(object));
   if (do_crop_to_slab != tractogram.tractography_tool.crop_to_slab())
     return true;
   if (color_type != tractogram.color_type)
@@ -304,7 +304,7 @@ bool Tractogram::Shader::need_update(const Displayable &object) const {
 }
 
 void Tractogram::Shader::update(const Displayable &object) {
-  const Tractogram &tractogram(dynamic_cast<const Tractogram &>(object));
+  const auto &tractogram(dynamic_cast<const Tractogram &>(object));
   do_crop_to_slab = tractogram.tractography_tool.crop_to_slab();
   use_lighting = tractogram.tractography_tool.use_lighting;
   color_type = tractogram.color_type;
@@ -315,16 +315,14 @@ void Tractogram::Shader::update(const Displayable &object) {
 
 Tractogram::Tractogram(Tractography &tool, const std::filesystem::path &filepath)
     : Displayable(filepath),
-      show_colour_bar(true),
+
       original_fov(NaNF),
-      line_thickness(0.f),
+
       tractography_tool(tool),
       filepath(filepath),
-      color_type(TrackColourType::Direction),
-      threshold_type(TrackThresholdType::None),
+
       geometry_type(default_tract_geom),
-      sample_stride(0),
-      vao_dirty(true),
+
       threshold_min(NaNF),
       threshold_max(NaNF) {
   set_allowed_features(true, true, true);
@@ -379,7 +377,7 @@ void Tractogram::render(const Projection &transform) {
                   colour[2] / 255.0);
 
   if (color_type == TrackColourType::ScalarFile) {
-    gl::Uniform1f(gl::GetUniformLocation(track_shader, "offset"), display_midpoint - 0.5f * display_range);
+    gl::Uniform1f(gl::GetUniformLocation(track_shader, "offset"), display_midpoint - 0.5F * display_range);
     gl::Uniform1f(gl::GetUniformLocation(track_shader, "scale"), 1.0 / display_range);
   }
 
@@ -402,16 +400,16 @@ void Tractogram::render(const Projection &transform) {
     original_fov = std::pow(dim[0] * dim[1] * dim[2], 1.0F / 3.0F);
   }
 
-  float line_thickness_screenspace = Tractogram::default_line_thickness * std::exp(2.0e-3f * line_thickness) *
-                                     original_fov * (transform.width() + transform.height()) /
-                                     (2.f * window().FOV() * transform.width() * transform.height());
+  const float line_thickness_screenspace = Tractogram::default_line_thickness * std::exp(2.0e-3F * line_thickness) *
+                                           original_fov * (transform.width() + transform.height()) /
+                                           (2.F * window().FOV() * transform.width() * transform.height());
 
   gl::Uniform1f(gl::GetUniformLocation(track_shader, "line_thickness"), line_thickness_screenspace);
   gl::Uniform1f(gl::GetUniformLocation(track_shader, "scale_x"), transform.width());
   gl::Uniform1f(gl::GetUniformLocation(track_shader, "scale_y"), transform.height());
 
-  float point_size_screenspace = Tractogram::default_point_size * std::exp(2.0e-3f * line_thickness) * original_fov *
-                                 (transform.width() + transform.height()) / (2.f * window().FOV());
+  const float point_size_screenspace = Tractogram::default_point_size * std::exp(2.0e-3F * line_thickness) *
+                                       original_fov * (transform.width() + transform.height()) / (2.F * window().FOV());
 
   glPointSize(point_size_screenspace);
 
@@ -528,8 +526,8 @@ inline void Tractogram::render_streamlines() {
           --track_starts[buf][j];
 
         // Ensure final vertex corresponds to track end
-        GLint offset = original_track_starts[buf][j] + original_track_sizes[buf][j] -
-                       (track_starts[buf][j] + track_sizes[buf][j] - 1) * sample_stride;
+        const GLint offset = original_track_starts[buf][j] + original_track_sizes[buf][j] -
+                             (track_starts[buf][j] + track_sizes[buf][j] - 1) * sample_stride;
 
         track_sizes[buf][j] +=
             static_cast<GLint>(std::floor(static_cast<float>(offset) / static_cast<float>(sample_stride)));
@@ -582,7 +580,7 @@ inline void Tractogram::update_stride() {
 void Tractogram::load_tracks() {
   // Make sure to set graphics context!
   // We're setting up vertex array objects
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
 
   DWI::Tractography::Reader<float> file(filepath, properties);
@@ -597,7 +595,7 @@ void Tractogram::load_tracks() {
   while (file(tck)) {
 
     const size_t N = tck.size();
-    if (!N)
+    if (N == 0U)
       continue;
 
     // Pre padding
@@ -636,7 +634,7 @@ void Tractogram::load_end_colours() {
 
   // Make sure to set graphics context!
   // We're setting up vertex array objects
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
 
   erase_colour_data();
@@ -666,7 +664,7 @@ void Tractogram::load_end_colours() {
 void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filepath) {
   // Make sure to set graphics context!
   // We're setting up vertex array objects
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
 
   erase_intensity_scalar_data();
@@ -685,7 +683,7 @@ void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filep
       const size_t tck_size = tck_scalar.size();
       assert(tck_size == static_cast<size_t>(original_track_sizes[intensity_scalar_buffers.size()][tck_count]));
 
-      if (!tck_size)
+      if (tck_size == 0U)
         continue;
 
       // Pre padding to coincide with tracks buffer
@@ -713,8 +711,8 @@ void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filep
   } else {
     const Eigen::VectorXf scalars = File::Matrix::load_vector<float>(filepath);
     size_t total_num_tracks = 0;
-    for (std::vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
-      total_num_tracks += *i;
+    for (auto i : num_tracks_per_buffer)
+      total_num_tracks += i;
     if (static_cast<size_t>(scalars.size()) != total_num_tracks)
       throw Exception("The scalar text file does not contain the same number of elements as the selected tractogram");
     size_t running_index = 0;
@@ -758,7 +756,7 @@ void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filep
 void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filepath) {
   // Make sure to set graphics context!
   // We're setting up vertex array objects
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
 
   erase_threshold_scalar_data();
@@ -777,7 +775,7 @@ void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filep
       const size_t tck_size = tck_scalar.size();
       assert(tck_size == static_cast<size_t>(original_track_sizes[threshold_scalar_buffers.size()][tck_count]));
 
-      if (!tck_size)
+      if (tck_size == 0U)
         continue;
 
       // Pre padding to coincide with tracks buffer
@@ -805,8 +803,8 @@ void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filep
   } else {
     const Eigen::VectorXf scalars = File::Matrix::load_vector<float>(filepath);
     size_t total_num_tracks = 0;
-    for (std::vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
-      total_num_tracks += *i;
+    for (auto i : num_tracks_per_buffer)
+      total_num_tracks += i;
     if (static_cast<size_t>(scalars.size()) != total_num_tracks)
       throw Exception("The scalar text file does not contain the same number of elements as the selected tractogram");
     size_t running_index = 0;
@@ -846,7 +844,7 @@ void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filep
 }
 
 void Tractogram::erase_colour_data() {
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
   if (!colour_buffers.empty()) {
     gl::DeleteBuffers(colour_buffers.size(), &colour_buffers[0]);
@@ -856,7 +854,7 @@ void Tractogram::erase_colour_data() {
 }
 
 void Tractogram::erase_intensity_scalar_data() {
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
   if (!intensity_scalar_buffers.empty()) {
     gl::DeleteBuffers(intensity_scalar_buffers.size(), &intensity_scalar_buffers[0]);
@@ -867,7 +865,7 @@ void Tractogram::erase_intensity_scalar_data() {
 }
 
 void Tractogram::erase_threshold_scalar_data() {
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
   if (!threshold_scalar_buffers.empty()) {
     gl::DeleteBuffers(threshold_scalar_buffers.size(), &threshold_scalar_buffers[0]);

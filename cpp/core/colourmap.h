@@ -20,6 +20,7 @@
 #include "mrtrix.h"
 #include "types.h"
 #include <functional>
+#include <utility>
 
 namespace MR::ColourMap {
 
@@ -30,14 +31,14 @@ public:
   Entry(std::string_view name,
         std::string_view glsl_mapping,
         basic_map_fn basic_mapping,
-        const std::string amplitude = "",
+        std::string_view amplitude = "",
         bool special = false,
         bool is_colour = false,
         bool is_rgb = false)
       : name(name),
         glsl_mapping(glsl_mapping),
-        basic_mapping(basic_mapping),
-        amplitude(amplitude.empty() ? default_amplitude : amplitude),
+        basic_mapping(std::move(basic_mapping)),
+        amplitude(amplitude.empty() ? default_amplitude : std::string(amplitude)),
         special(special),
         is_colour(is_colour),
         is_rgb(is_rgb) {}

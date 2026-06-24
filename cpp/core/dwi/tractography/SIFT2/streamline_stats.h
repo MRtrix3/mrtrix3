@@ -34,19 +34,19 @@ public:
 
   void normalise();
 
-  double get_min() const { return min; }
-  double get_max() const { return max; }
-  double get_mean() const { return mean; }
-  double get_mean_abs() const { return mean_abs; }
-  double get_var() const { return var; }
+  [[nodiscard]] double get_min() const { return min; }
+  [[nodiscard]] double get_max() const { return max; }
+  [[nodiscard]] double get_mean() const { return mean; }
+  [[nodiscard]] double get_mean_abs() const { return mean_abs; }
+  [[nodiscard]] double get_var() const { return var; }
 
-  unsigned int get_count() const { return count; }
-  unsigned int get_nonzero() const { return nonzero; }
+  [[nodiscard]] unsigned int get_count() const { return count; }
+  [[nodiscard]] unsigned int get_nonzero() const { return nonzero; }
 
 private:
   double min, max;
-  double mean, mean_abs, var;
-  unsigned int count, nonzero;
+  double mean{0.0}, mean_abs{0.0}, var{0.0};
+  unsigned int count{0}, nonzero{0};
 };
 
 } // namespace MR::DWI::Tractography::SIFT2

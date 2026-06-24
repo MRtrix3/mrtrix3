@@ -33,7 +33,7 @@ namespace MR::Registration::Transform::Init {
 bool get_sorted_eigen_vecs_vals(const Eigen::Matrix<default_type, 3, 3> &mat,
                                 Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> &eigenvectors,
                                 Eigen::Matrix<default_type, Eigen::Dynamic, 1> &eigenvals) {
-  Eigen::EigenSolver<Eigen::Matrix<default_type, 3, 3>> es(mat);
+  const Eigen::EigenSolver<Eigen::Matrix<default_type, 3, 3>> es(mat);
   if (es.info() != Eigen::Success)
     return false;
   const Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> &evec = es.eigenvectors().real();
@@ -45,9 +45,9 @@ bool get_sorted_eigen_vecs_vals(const Eigen::Matrix<default_type, 3, 3> &mat,
 
   // sort eigenvectors by eigenvalue, largest first
   std::vector<std::pair<default_type, ssize_t>> eval_idx_vec;
-  for (ssize_t i = 0; i < eval.size(); ++i) {
+  eval_idx_vec.reserve(eval.size());
+  for (ssize_t i = 0; i < eval.size(); ++i)
     eval_idx_vec.emplace_back(eval[i], i);
-  }
   std::sort(std::begin(eval_idx_vec), std::end(eval_idx_vec), std::greater<std::pair<default_type, ssize_t>>());
 
   for (ssize_t i = 0; i < eval.size(); ++i) {
@@ -94,9 +94,9 @@ public:
                                     static_cast<default_type>(image.index(2))};
     const Eigen::Vector3d scanner_pos = transform.voxel2scanner * voxel_pos;
 
-    default_type xc = scanner_pos[0] - centre[0];
-    default_type yc = scanner_pos[1] - centre[1];
-    default_type zc = scanner_pos[2] - centre[2];
+    const default_type xc = scanner_pos[0] - centre[0];
+    const default_type yc = scanner_pos[1] - centre[1];
+    const default_type zc = scanner_pos[2] - centre[2];
 
     for (size_t idx = 0; idx < start_vol.size(); idx++) {
       if (image.ndim() > 3)
@@ -162,7 +162,7 @@ void get_moments(Image<default_type> &image,
   mu200 = 0.0;
   mu020 = 0.0;
   mu002 = 0.0;
-  MR::Transform transform(image);
+  const MR::Transform transform(image);
 
   if (!mask.valid()) {
     for (auto i = Loop(0, 3)(image); i; ++i) {
@@ -171,11 +171,11 @@ void get_moments(Image<default_type> &image,
                                       static_cast<default_type>(image.index(2))};
       const Eigen::Vector3d scanner_pos = transform.voxel2scanner * voxel_pos;
 
-      default_type xc = scanner_pos[0] - centre[0];
-      default_type yc = scanner_pos[1] - centre[1];
-      default_type zc = scanner_pos[2] - centre[2];
+      const default_type xc = scanner_pos[0] - centre[0];
+      const default_type yc = scanner_pos[1] - centre[1];
+      const default_type zc = scanner_pos[2] - centre[2];
 
-      default_type val = image.value();
+      const default_type val = image.value();
       m000 += val;
 
       m100 += scanner_pos[0] * val;
@@ -198,11 +198,11 @@ void get_moments(Image<default_type> &image,
                                       static_cast<default_type>(image.index(1)),
                                       static_cast<default_type>(image.index(2))};
       const Eigen::Vector3d scanner_pos = transform.voxel2scanner * voxel_pos;
-      default_type val = image.value();
+      const default_type val = image.value();
 
-      default_type xc = scanner_pos[0] - centre[0];
-      default_type yc = scanner_pos[1] - centre[1];
-      default_type zc = scanner_pos[2] - centre[2];
+      const default_type xc = scanner_pos[0] - centre[0];
+      const default_type yc = scanner_pos[1] - centre[1];
+      const default_type zc = scanner_pos[2] - centre[2];
 
       m100 += scanner_pos[0] * val;
       m010 += scanner_pos[1] * val;
@@ -228,7 +228,7 @@ public:
                       const std::vector<MultiContrastSetting> &contrast_settings)
       : transform(image),
         mask(mask),
-        mass(0.0),
+
         global_mass(weighted_mass),
         global_centre_of_mass(weighted_centre_of_mass) {
     centre_of_mass.setZero();
@@ -269,7 +269,7 @@ public:
 protected:
   MR::Transform transform;
   MaskType mask;
-  default_type mass;
+  default_type mass{0.0};
   default_type &global_mass;
   Eigen::Vector3d &global_centre_of_mass;
   Eigen::Vector3d centre_of_mass;
@@ -330,15 +330,16 @@ void initialise_using_image_mass(Image<default_type> &im1,
 
   CONSOLE("initialising translation and centre of rotation using centre of mass");
   Image<default_type> bogus_mask;
-  Eigen::Matrix<default_type, 3, 1> im1_centre_of_mass, im2_centre_of_mass;
+  Eigen::Matrix<default_type, 3, 1> im1_centre_of_mass;
+  Eigen::Matrix<default_type, 3, 1> im2_centre_of_mass;
 
   // ENH: add option to use mask instead of image intensities
 
   get_centre_of_mass(im1, init.init_translation.unmasked1 ? bogus_mask : mask1, im1_centre_of_mass, contrast_settings);
   get_centre_of_mass(im2, init.init_translation.unmasked2 ? bogus_mask : mask2, im2_centre_of_mass, contrast_settings);
 
-  Eigen::Vector3d centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
-  Eigen::Vector3d translation = im1_centre_of_mass - im2_centre_of_mass;
+  const Eigen::Vector3d centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
+  const Eigen::Vector3d translation = im1_centre_of_mass - im2_centre_of_mass;
   transform.set_centre_without_transform_update(centre);
   transform.set_translation(translation);
 #ifdef DEBUG_INIT
@@ -418,9 +419,9 @@ void MomentsInitialiser::create_moments_images() {
 void MomentsInitialiser::run() {
   if (!calculate_eigenvectors(im1, im2, mask1, mask2)) {
     WARN("Image moments not successful. Using centre of mass instead.");
-    Eigen::Vector3d centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
+    const Eigen::Vector3d centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
     transform.set_centre(centre);
-    Eigen::Vector3d translation = im1_centre_of_mass - im2_centre_of_mass;
+    const Eigen::Vector3d translation = im1_centre_of_mass - im2_centre_of_mass;
     transform.set_translation(translation);
     return;
   }
@@ -477,19 +478,21 @@ void MomentsInitialiser::run() {
   auto im1_evec_transpose = im1_evec.transpose().eval();
   auto im2_evec_transpose = im2_evec.transpose().eval();
 
-  Eigen::FullPivHouseholderQR<decltype(im2_evec_transpose)> dec(im2_evec_transpose);
+  Eigen::FullPivHouseholderQR<decltype(im2_evec_transpose)> const dec(im2_evec_transpose);
   Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> A(3, 3);
   A = dec.solve(im1_evec_transpose);
   assert((A * im1_evec).isApprox(im2_evec));
   assert(std::fabs(A.determinant() - 1.0) < 0.0001);
   A = A.transpose().eval(); // A * im2_evec = im1_evec
 
-  Eigen::Vector3d centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
-  Eigen::Vector3d offset = im1_centre_of_mass - im2_centre_of_mass;
+  const Eigen::Vector3d centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
+  const Eigen::Vector3d offset = im1_centre_of_mass - im2_centre_of_mass;
   transform.set_centre_without_transform_update(centre);
 
-  Eigen::Translation<default_type, 3> T_offset(offset), T_c2(im2_centre_of_mass);
-  transform_type T, R0;
+  Eigen::Translation<default_type, 3> T_offset(offset);
+  Eigen::Translation<default_type, 3> T_c2(im2_centre_of_mass);
+  transform_type T;
+  transform_type R0;
   R0.setIdentity();
   R0.linear() = A;
   T = T_c2 * T_offset * R0 * T_c2.inverse();
@@ -555,13 +558,13 @@ void FODInitialiser::init(Image<default_type> &im,
   // TODO multithread
   Eigen::Vector3d voxel_pos = Eigen::Vector3d::Zero();
   Eigen::Vector3d scanner = Eigen::Vector3d::Zero();
-  MR::Transform im_transform(im);
+  const MR::Transform im_transform(im);
   default_type im_mass(0.0);
 
   size_t cnt(0);
   if (mask.valid()) {
     for (auto i = Loop(0, 3)(im, mask); i; ++i) {
-      if (mask.value()) {
+      if (mask.value() != 0.0) {
         im_mass += im.value();
         voxel_pos << static_cast<default_type>(im.index(0)), static_cast<default_type>(im.index(1)),
             static_cast<default_type>(im.index(2));

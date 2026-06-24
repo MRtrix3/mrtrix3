@@ -264,8 +264,8 @@ void output_selected(const Metrics &metrics, std::string_view selection) {
     else if (xl == "n")
       std::cout << metrics.ndirs << " ";
     else if (xl.substr(0, 2) == "sh") {
-      size_t order = to<size_t>(x.substr(2));
-      if (order & 1U || order < 2)
+      auto order = to<size_t>(x.substr(2));
+      if (((order & 1U) != 0U) || order < 2)
         throw Exception("spherical harmonic order must be an even positive integer");
       order = (order / 2) - 1;
       if (order >= metrics.SH.size())

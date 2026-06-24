@@ -50,9 +50,7 @@ public:
           neg_lambda(default_csd_neglambda),
           norm_lambda(default_csd_normlambda),
           threshold(default_csd_threshold),
-          lmax_response(0),
-          lmax_cmdline(0),
-          lmax(0),
+
           niter(default_csd_maxiterations) {
       grad = DWI::get_DW_scheme(dwi_header);
       // Discard b=0 (b=0 normalisation not supported in this version)
@@ -117,14 +115,14 @@ public:
 
       lmax = lmax_cmdline > 0 ? lmax_cmdline : std::min(lmax_response, default_csd_lmax);
 
-      if (lmax <= 0 || lmax % 2)
+      if (lmax <= 0 || ((lmax % 2) != 0U))
         throw Exception("lmax must be a positive even integer");
 
       assert(response.size());
       lmax_response = std::min(lmax_response, std::min(lmax_data, lmax));
       INFO("calculating even spherical harmonic components up to order " + str(lmax_response) + " for initialisation");
 
-      if (!init_filter.size())
+      if (init_filter.size() == 0)
         init_filter = Eigen::VectorXd::Ones(3);
       init_filter.conservativeResizeLike(Eigen::VectorXd::Zero(Math::ZSH::NforL(lmax_response)));
 
@@ -139,7 +137,8 @@ public:
       // fconv.save ("fconv.txt");
       rconv = Math::pinv(fconv);
       // rconv.save ("rconv.txt");
-      ssize_t l = 0, nl = 1;
+      ssize_t l = 0;
+      ssize_t nl = 1;
       for (ssize_t row = 0; row < rconv.rows(); ++row) {
         if (row >= nl) {
           l++;
@@ -164,7 +163,8 @@ public:
 
       // high-res sampling to apply constraint:
       HR_trans = init_transform(HR_dirs, lmax);
-      default_type constraint_multiplier = neg_lambda * 50.0 * response[0] / static_cast<default_type>(HR_trans.rows());
+      const default_type constraint_multiplier =
+          neg_lambda * 50.0 * response[0] / static_cast<default_type>(HR_trans.rows());
       HR_trans.array() *= constraint_multiplier;
 
       // adjust threshold accordingly:
@@ -179,7 +179,7 @@ public:
       Mt_M.triangularView<Eigen::Lower>() = M.transpose() * M;
 
       // min-norm constraint:
-      if (norm_lambda) {
+      if (norm_lambda != 0.0) {
         norm_lambda *= csd_normlambda_multiplier * Mt_M(0, 0);
         Mt_M.diagonal().array() += norm_lambda;
       }
@@ -187,7 +187,7 @@ public:
       INFO("constrained spherical deconvolution initialised successfully");
     }
 
-    size_t nSH() const { return HR_trans.cols(); }
+    [[nodiscard]] size_t nSH() const { return HR_trans.cols(); }
 
     Eigen::MatrixXd grad;
     Eigen::VectorXd response, init_filter, RH;
@@ -195,7 +195,7 @@ public:
     Eigen::MatrixXd rconv, HR_trans, M, Mt_M;
     default_type neg_lambda, norm_lambda, threshold;
     std::vector<size_t> dwis;
-    uint32_t lmax_response, lmax_data, lmax_cmdline, lmax;
+    uint32_t lmax_response{0}, lmax_data, lmax_cmdline{0}, lmax{0};
     size_t niter;
   };
 
@@ -212,7 +212,7 @@ public:
 
   CSD(const CSD &) = default;
 
-  ~CSD() {}
+  ~CSD() = default;
 
   template <class VectorType> void set(const VectorType &DW_signals) {
     F.head(shared.rconv.rows()) = shared.rconv * DW_signals;
@@ -248,7 +248,7 @@ public:
     return false;
   }
 
-  const Eigen::VectorXd &FOD() const { return F; }
+  [[nodiscard]] const Eigen::VectorXd &FOD() const { return F; }
 
   const Shared &shared;
 

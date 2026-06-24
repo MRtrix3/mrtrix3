@@ -257,10 +257,10 @@ void usage() {
 
 void permute_DW_scheme(Header &H, const std::vector<int> &axes) {
   auto in = DWI::parse_DW_scheme(H);
-  if (!in.rows())
+  if (in.rows() == 0)
     return;
 
-  Transform T(H);
+  const Transform T(H);
   Eigen::Matrix3d permute = Eigen::Matrix3d::Zero();
   for (size_t axis = 0; axis != 3; ++axis)
     permute(axes[axis], axis) = 1.0;
@@ -277,7 +277,7 @@ void permute_DW_scheme(Header &H, const std::vector<int> &axes) {
 
 void permute_PE_scheme(Header &H, const std::vector<int> &axes) {
   auto in = Metadata::PhaseEncoding::parse_scheme(H.keyval(), H);
-  if (!in.rows())
+  if (in.rows() == 0)
     return;
 
   Eigen::Matrix3d permute = Eigen::Matrix3d::Zero();
@@ -429,13 +429,13 @@ void run() {
   }
 
   opt = get_options("clear_property");
-  for (size_t n = 0; n < opt.size(); ++n) {
-    if (str(opt[n][0]) == "command_history")
+  for (const auto &n : opt) {
+    if (str(n[0]) == "command_history")
       add_to_command_history = false;
-    auto entry = header_out.keyval().find(opt[n][0]);
+    auto entry = header_out.keyval().find(n[0]);
     if (entry == header_out.keyval().end()) {
-      if (std::string(opt[n][0]) != "command_history") {
-        WARN("No header key/value entry \"" + std::string(opt[n][0]) + "\" found; ignored");
+      if (std::string(n[0]) != "command_history") {
+        WARN("No header key/value entry \"" + std::string(n[0]) + "\" found; ignored");
       }
     } else {
       header_out.keyval().erase(entry);
@@ -443,30 +443,30 @@ void run() {
   }
 
   opt = get_options("set_property");
-  for (size_t n = 0; n < opt.size(); ++n) {
-    if (str(opt[n][0]) == "command_history")
+  for (const auto &n : opt) {
+    if (str(n[0]) == "command_history")
       add_to_command_history = false;
-    header_out.keyval()[std::string(opt[n][0])] = std::string(opt[n][1]);
+    header_out.keyval()[std::string(n[0])] = std::string(n[1]);
   }
 
   opt = get_options("append_property");
-  for (size_t n = 0; n < opt.size(); ++n) {
-    if (str(opt[n][0]) == "command_history")
+  for (const auto &n : opt) {
+    if (str(n[0]) == "command_history")
       add_to_command_history = false;
-    add_line(header_out.keyval()[std::string(opt[n][0])], std::string(opt[n][1]));
+    add_line(header_out.keyval()[std::string(n[0])], std::string(n[1]));
   }
 
   opt = get_options("coord");
   std::vector<std::vector<uint32_t>> pos;
   if (!opt.empty()) {
     pos.assign(header_in.ndim(), std::vector<uint32_t>());
-    for (size_t n = 0; n < opt.size(); n++) {
-      size_t axis = opt[n][0];
+    for (const auto &n : opt) {
+      const size_t axis = n[0];
       if (axis >= header_in.ndim())
         throw Exception("axis " + str(axis) + " provided with -coord option is out of range of input image");
       if (!pos[axis].empty())
         throw Exception("\"coord\" option specified twice for axis " + str(axis));
-      pos[axis] = parse_ints<uint32_t>(opt[n][1], header_in.size(axis) - 1);
+      pos[axis] = parse_ints<uint32_t>(n[1], header_in.size(axis) - 1);
 
       auto minval = std::min_element(std::begin(pos[axis]), std::end(pos[axis]));
       if (*minval < 0)
@@ -480,7 +480,7 @@ void run() {
       header_out.size(axis) = pos[axis].size();
       if (axis == 3) {
         const auto grad = DWI::parse_DW_scheme(header_out);
-        if (grad.rows()) {
+        if (grad.rows() != 0) {
           if (static_cast<ssize_t>(grad.rows()) != header_in.size(3)) {
             WARN("Diffusion encoding of input file does not match number of image volumes;" //
                  " omitting gradient information from output image");                       //
@@ -495,7 +495,7 @@ void run() {
         Eigen::MatrixXd pe_scheme;
         try {
           pe_scheme = Metadata::PhaseEncoding::get_scheme(header_in);
-          if (pe_scheme.rows()) {
+          if (pe_scheme.rows() != 0) {
             Eigen::MatrixXd extract_scheme(pos[3].size(), pe_scheme.cols());
             for (size_t vol = 0; vol != pos[3].size(); ++vol)
               extract_scheme.row(vol) = pe_scheme.row(pos[3][vol]);

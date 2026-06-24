@@ -34,7 +34,7 @@ public:
       : Fixel_map<Fixel>(H), dirs(directions) {}
   Fixel_TD_map(const Fixel_TD_map &) = delete;
 
-  virtual ~Fixel_TD_map() {}
+  virtual ~Fixel_TD_map() = default;
 
   virtual bool operator()(const SetDixel &in);
   using Fixel_map<Fixel>::operator();
@@ -45,13 +45,13 @@ protected:
 
   const DWI::Directions::FastLookupSet &dirs;
 
-  size_t dixel2fixel(const Dixel &) const;
+  [[nodiscard]] size_t dixel2fixel(const Dixel &) const;
 };
 
 template <class Fixel> bool Fixel_TD_map<Fixel>::operator()(const SetDixel &in) {
   for (const auto &i : in) {
     const size_t fixel_index = dixel2fixel(i);
-    if (fixel_index)
+    if (fixel_index != 0U)
       fixels[fixel_index] += i.get_length();
   }
   return true;

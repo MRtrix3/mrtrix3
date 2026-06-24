@@ -18,6 +18,7 @@
 
 #include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Dense>
+#include <utility>
 
 #include "image.h"
 #include "types.h"
@@ -27,7 +28,7 @@ namespace MR::Registration::Metric {
 class LinearBase {
 
 public:
-  LinearBase() : weighted(false) {}
+  LinearBase() = default;
 
   /** requires_precompute:
     using requires_precompute = int;
@@ -53,7 +54,7 @@ public:
 
   // set contrast weights for 4D metrics
   void set_weights(Eigen::VectorXd weights) {
-    mc_weights = weights;
+    mc_weights = std::move(weights);
     weighted = mc_weights.rows() > 0;
   }
 
@@ -66,7 +67,7 @@ public:
 
 protected:
   Eigen::VectorXd mc_weights;
-  bool weighted;
+  bool weighted{false};
 };
 
 } // namespace MR::Registration::Metric

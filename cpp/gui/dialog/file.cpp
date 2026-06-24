@@ -60,7 +60,7 @@ const FileDialogReturn input_filepath(QWidget *parent,
                                    FILE_DIALOG_OPTIONS);
 
   FileDialogReturn result;
-  if (qstring.size()) {
+  if (qstring.size() != 0) {
     result.single_selection = std::filesystem::path(qstring.toUtf8().data());
     result.last_directory = result.single_selection.parent_path();
   }
@@ -81,8 +81,8 @@ const FileDialogReturn input_filepaths(QWidget *parent,
 
   FileDialogReturn result;
   if (!qlist.empty()) {
-    for (int n = 0; n < qlist.size(); ++n)
-      result.multi_selection.emplace_back(std::filesystem::path(qlist[n].toUtf8().data()));
+    for (const auto &n : qlist)
+      result.multi_selection.emplace_back(n.toUtf8().data());
     result.last_directory = result.multi_selection.back().parent_path();
   }
   return result;
@@ -94,7 +94,7 @@ void check_overwrite_files_func(const std::filesystem::path &path) {
   if (overwrite_files)
     return;
 
-  QMessageBox::StandardButton response =
+  const QMessageBox::StandardButton response =
       QMessageBox::warning(QApplication::activeWindow(),
                            qstr("confirm file overwrite"),
                            qstr("Action will overwrite file \"" + path.string() + "\" - proceed?"),

@@ -16,8 +16,8 @@
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
-#include <stdint.h>
 
 #include "types.h"
 
@@ -32,8 +32,8 @@ using value_type = Math::Stats::value_type;
 // This should be possible to use for any domain of inference
 class PassThrough : public Stats::EnhancerBase {
 public:
-  PassThrough() {}
-  virtual ~PassThrough() {}
+  PassThrough() = default;
+  virtual ~PassThrough() = default;
 
 private:
   void operator()(in_column_type, out_column_type) const override;
@@ -45,7 +45,7 @@ public:
   NBS(const node_t i) : threshold(0.0) { initialise(i); }
   NBS(const node_t i, const value_type t) : threshold(t) { initialise(i); }
   NBS(const NBS &that) = default;
-  virtual ~NBS() {}
+  virtual ~NBS() = default;
 
   void set_threshold(const value_type t) { threshold = t; }
 

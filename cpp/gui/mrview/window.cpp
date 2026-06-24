@@ -147,10 +147,7 @@ QSize Window::GLArea::sizeHint() const {
   std::vector<uint32_t> init_window_size;
   if (from_config.has_value())
     init_window_size = parse_ints<uint32_t>(from_config.value());
-  if (init_window_size.size() == 2)
-    return QSize(init_window_size[0], init_window_size[1]);
-  else
-    return QSize(512, 512);
+  return (init_window_size.size() == 2) ? QSize(init_window_size[0], init_window_size[1]) : QSize(512, 512);
 }
 void Window::GLArea::dragEnterEvent(QDragEnterEvent *event) { event->acceptProposedAction(); }
 void Window::GLArea::dragMoveEvent(QDragMoveEvent *event) { event->acceptProposedAction(); }
@@ -159,7 +156,7 @@ void Window::GLArea::dropEvent(QDropEvent *event) {
   const QMimeData *mimeData = event->mimeData();
   if (mimeData->hasUrls()) {
     std::vector<std::unique_ptr<MR::Header>> list;
-    QList<QUrl> urlList = mimeData->urls();
+    const QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < 32; ++i) {
       try {
         list.push_back(std::make_unique<MR::Header>(MR::Header::open(QtHelpers::url_to_fspath(urlList.at(i)))));
@@ -217,20 +214,12 @@ Window::Window()
 #endif
       MoveModifier(get_modifier("MRViewMoveModifierKey", Qt::ShiftModifier)),
       RotateModifier(get_modifier("MRViewRotateModifierKey", Qt::ControlModifier)),
-      mouse_action(NoAction),
+
       focal_point(Eigen::Vector3f::Constant(NaNF)),
       camera_target(Eigen::Vector3f::Constant(NaNF)),
       orient(NaN, NaN, NaN, NaN),
-      field_of_view(100.0),
-      anatomical_plane(2),
-      colourbar_position(ColourBars::Position::BottomRight),
-      tools_colourbar_position(ColourBars::Position::TopRight),
-      snap_to_image_axes_and_voxel(true),
-      camera_interactor(nullptr),
-      tool_has_focus(nullptr),
-      best_FPS(NaN),
-      show_FPS(false),
-      current_option(0) {
+
+      best_FPS(NaN) {
   main = this;
   GUI::App::set_main_window(this, glarea);
   GUI::Dialog::init();
@@ -244,7 +233,7 @@ Window::Window()
   setWindowTitle(tr("MRView"));
   setWindowIcon(QPixmap(":/mrtrix.png"));
   {
-    int iconsize = MR::File::Config::get_int("IconSize", 30);
+    const int iconsize = MR::File::Config::get_int("IconSize", 30);
     setIconSize(QSize(iconsize, iconsize));
   }
   setCentralWidget(glarea);
@@ -287,7 +276,7 @@ Window::Window()
   // CONF default: 2
   // CONF The style of the main toolbar buttons in MRView. See Qt's
   // CONF documentation for Qt::ToolButtonStyle.
-  Qt::ToolButtonStyle button_style = static_cast<Qt::ToolButtonStyle>(MR::File::Config::get_int("ToolbarStyle", 2));
+  const auto button_style = static_cast<Qt::ToolButtonStyle>(MR::File::Config::get_int("ToolbarStyle", 2));
 
   toolbar = new QToolBar("Main toolbar", this);
   addToolBar(toolbar_position, toolbar);
@@ -650,7 +639,7 @@ Window::Window()
   toolbar->addSeparator();
 
   // Dynamic spacer:
-  QWidget *spacer = new QWidget();
+  auto *spacer = new QWidget();
   spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
   toolbar->addWidget(spacer);
 
@@ -709,7 +698,7 @@ Window::Window()
   // CONF Valid values are: bottomleft, bottomright, topleft, topright.
   std::string cbar_pos = lowercase(MR::File::Config::get("MRViewColourBarPosition", "bottomright"));
   colourbar_position = parse_colourmap_position_str(cbar_pos);
-  if (!colourbar_position)
+  if (colourbar_position == 0U)
     WARN("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewColourBarPosition\"");
 
   // CONF option: MRViewToolsColourBarPosition
@@ -718,7 +707,7 @@ Window::Window()
   // CONF Valid values are: bottomleft, bottomright, topleft, topright.
   cbar_pos = lowercase(MR::File::Config::get("MRViewToolsColourBarPosition", "topright"));
   tools_colourbar_position = parse_colourmap_position_str(cbar_pos);
-  if (!tools_colourbar_position)
+  if (tools_colourbar_position == 0U)
     WARN("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewToolsColourBarPosition\"");
 }
 
@@ -747,9 +736,9 @@ void Window::parse_arguments() {
     }
 
     std::vector<std::unique_ptr<MR::Header>> list;
-    for (size_t n = 0; n < MR::App::argument.size(); ++n) {
+    for (const auto &n : MR::App::argument) {
       try {
-        list.push_back(std::make_unique<MR::Header>(MR::Header::open(MR::App::argument[n])));
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(n)));
       } catch (CancelException &e) {
         for (const auto &msg : e.description) {
           CONSOLE(msg);
@@ -780,11 +769,11 @@ ColourBars::Position Window::parse_colourmap_position_str(std::string_view posit
 
 Window::~Window() {
   glarea->makeCurrent();
-  QList<QAction *> tools = tool_group->actions();
+  QList<QAction *> const tools = tool_group->actions();
   for (QAction *action : tools)
     delete action;
   mode.reset();
-  QList<QAction *> images = image_group->actions();
+  QList<QAction *> const images = image_group->actions();
   for (QAction *action : images)
     delete action;
 }
@@ -828,9 +817,9 @@ void Window::add_images(std::vector<std::unique_ptr<MR::Header>> &list) {
     return;
 
   QList<QAction *> new_actions;
-  for (size_t i = 0; i < list.size(); ++i) {
-    const std::string name = list[i]->name(); // Gets move-constructed out
-    QAction *action = new Image(std::move(*list[i]));
+  for (const auto &i : list) {
+    const std::string name = i->name(); // Gets move-constructed out
+    QAction *action = new Image(std::move(*i));
     action->setText(qstr(shorten(name, 20, 0)));
     action->setParent(Window::main);
     action->setCheckable(true);
@@ -849,7 +838,7 @@ void Window::add_images(std::vector<std::unique_ptr<MR::Header>> &list) {
   }
 
   for (auto *action : previous_actions) {
-    if (action) {
+    if (action != nullptr) {
       image_group->addAction(action);
       image_menu->addAction(action);
     }
@@ -911,7 +900,7 @@ void Window::select_mode_slot(QAction *action) {
 }
 
 void Window::select_mouse_mode_slot(QAction *action) {
-  bool rotate_button_checked = mode_action_group->actions().indexOf(action) == 2;
+  const bool rotate_button_checked = mode_action_group->actions().indexOf(action) == 2;
   if (rotate_button_checked)
     set_snap_to_image(false);
   snap_to_image_action->setEnabled(!rotate_button_checked);
@@ -920,7 +909,7 @@ void Window::select_mouse_mode_slot(QAction *action) {
 
 void Window::select_tool_slot(QAction *action) {
   Tool::Dock *tool = dynamic_cast<Tool::ActionWrapper *>(action)->dock;
-  if (!tool) {
+  if (tool == nullptr) {
     create_tool(action, true);
     return;
   }
@@ -945,7 +934,7 @@ void Window::create_tool(QAction *action, bool show) {
 
     for (int i = 0; i < tool_group->actions().size(); ++i) {
       Tool::Dock *other_tool = dynamic_cast<Tool::ActionWrapper *>(tool_group->actions()[i])->dock;
-      if (other_tool && other_tool != tool) {
+      if ((other_tool != nullptr) && other_tool != tool) {
         QList<QDockWidget *> list = QMainWindow::tabifiedDockWidgets(other_tool);
         if (!list.empty())
           QMainWindow::tabifyDockWidget(list.last(), tool);
@@ -966,7 +955,7 @@ void Window::create_tool(QAction *action, bool show) {
 
 void Window::selected_colourmap(size_t colourmap, const ColourMapButton &) {
   Image *imagep = image();
-  if (imagep) {
+  if (imagep != nullptr) {
     imagep->set_colourmap(colourmap);
     glarea->update();
   }
@@ -974,22 +963,22 @@ void Window::selected_colourmap(size_t colourmap, const ColourMapButton &) {
 
 void Window::selected_custom_colour(const QColor &colour, const ColourMapButton &) {
   Image *imagep = image();
-  if (imagep) {
-    std::array<GLubyte, 3> c_colour{{GLubyte(colour.red()), GLubyte(colour.green()), GLubyte(colour.blue())}};
+  if (imagep != nullptr) {
+    const std::array<GLubyte, 3> c_colour{{GLubyte(colour.red()), GLubyte(colour.green()), GLubyte(colour.blue())}};
     imagep->set_colour(c_colour);
     glarea->update();
   }
 }
 
 void Window::invert_scaling_slot() {
-  if (image()) {
+  if (image() != nullptr) {
     image()->set_invert_scale(invert_scale_action->isChecked());
     glarea->update();
   }
 }
 
 void Window::snap_to_image_slot() {
-  if (image()) {
+  if (image() != nullptr) {
     snap_to_image_axes_and_voxel = snap_to_image_action->isChecked();
     if (snap_to_image_axes_and_voxel)
       mode->reset_orientation();
@@ -1006,13 +995,13 @@ void Window::updateGL() { glarea->update(); }
 void Window::drawGL() { glarea->repaint(); }
 
 void Window::image_reset_slot() {
-  if (image())
+  if (image() != nullptr)
     mode->reset_windowing();
 }
 
 void Window::image_interpolate_slot() {
   Image *imagep = image();
-  if (imagep) {
+  if (imagep != nullptr) {
     imagep->set_interpolate(image_interpolate_action->isChecked());
     glarea->update();
   }
@@ -1048,25 +1037,25 @@ void Window::zoom_out_slot() {
 }
 
 void Window::reset_view_slot() {
-  if (image()) {
+  if (image() != nullptr) {
     mode->reset_event();
-    QList<QAction *> tools = tool_group->actions();
+    QList<QAction *> const tools = tool_group->actions();
     for (QAction *action : tools) {
       Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(action)->dock;
-      if (dock)
+      if (dock != nullptr)
         dock->tool->reset_event();
     }
   }
 }
 
 void Window::background_colour_slot() {
-  QColor colour =
+  const QColor colour =
       QColorDialog::getColor(Qt::black, this, "Select background colour", QColorDialog::DontUseNativeDialog);
 
   if (colour.isValid()) {
-    background_colour[0] = GLubyte(colour.red()) / 255.0f;
-    background_colour[1] = GLubyte(colour.green()) / 255.0f;
-    background_colour[2] = GLubyte(colour.blue()) / 255.0f;
+    background_colour[0] = GLubyte(colour.red()) / 255.0F;
+    background_colour[1] = GLubyte(colour.green()) / 255.0F;
+    background_colour[2] = GLubyte(colour.blue()) / 255.0F;
     glarea->update();
   }
 }
@@ -1091,88 +1080,89 @@ void Window::set_image_visibility(bool flag) {
 }
 
 void Window::hide_image_slot() {
-  bool visible = !image_hide_action->isChecked();
+  const bool visible = !image_hide_action->isChecked();
   mode->set_visible(visible);
   emit imageVisibilityChanged(visible);
 }
 
 void Window::slice_next_slot() {
   assert(mode);
-  if (image())
+  if (image() != nullptr)
     mode->slice_move_event(1);
 }
 
 void Window::slice_previous_slot() {
   assert(mode);
-  if (image())
+  if (image() != nullptr)
     mode->slice_move_event(-1);
 }
 
 void Window::image_next_slot() {
   QAction *action = image_group->checkedAction();
-  int N = image_group->actions().size();
-  int n = image_group->actions().indexOf(action);
+  const int N = image_group->actions().size();
+  const int n = image_group->actions().indexOf(action);
   image_select_slot(image_group->actions()[(n + 1) % N]);
 }
 
 void Window::image_previous_slot() {
   QAction *action = image_group->checkedAction();
-  int N = image_group->actions().size();
-  int n = image_group->actions().indexOf(action);
+  const int N = image_group->actions().size();
+  const int n = image_group->actions().indexOf(action);
   image_select_slot(image_group->actions()[(n + N - 1) % N]);
 }
 
 void Window::image_next_volume_slot() {
-  ssize_t vol = image()->image.index(3) + 1;
+  const ssize_t vol = image()->image.index(3) + 1;
   set_image_volume(3, vol);
 }
 
 void Window::image_previous_volume_slot() {
-  ssize_t vol = image()->image.index(3) - 1;
+  const ssize_t vol = image()->image.index(3) - 1;
   set_image_volume(3, vol);
 }
 
 void Window::image_goto_volume_slot() {
-  size_t maxvol = image()->image.size(3) - 1;
+  const size_t maxvol = image()->image.size(3) - 1;
   auto label = std::string("volume (0...") + str(maxvol) + std::string(")");
   bool ok;
-  ssize_t vol = QInputDialog::getInt(this, tr("Go to..."), qstr(label), image()->image.index(3), 0, maxvol, 1, &ok);
+  const ssize_t vol =
+      QInputDialog::getInt(this, tr("Go to..."), qstr(label), image()->image.index(3), 0, maxvol, 1, &ok);
   if (ok)
     set_image_volume(3, vol);
 }
 
 void Window::image_goto_volume_group_slot() {
-  size_t maxvolgroup = image()->image.size(4) - 1;
+  const size_t maxvolgroup = image()->image.size(4) - 1;
   auto label = std::string("volume group (0...") + str(maxvolgroup) + std::string(")");
   bool ok;
-  ssize_t grp =
+  const ssize_t grp =
       QInputDialog::getInt(this, tr("Go to..."), qstr(label), image()->image.index(4), 0, maxvolgroup, 1, &ok);
   if (ok)
     set_image_volume(4, grp);
 }
 
 void Window::image_next_volume_group_slot() {
-  ssize_t vol = image()->image.index(4) + 1;
+  const ssize_t vol = image()->image.index(4) + 1;
   set_image_volume(4, vol);
 }
 
 void Window::image_previous_volume_group_slot() {
-  ssize_t vol = image()->image.index(4) - 1;
+  const ssize_t vol = image()->image.index(4) - 1;
   set_image_volume(4, vol);
 }
 
 void Window::image_select_slot(QAction *action) {
   action->setChecked(true);
   image_interpolate_action->setChecked(image()->interpolate());
-  size_t cmap_index = image()->colourmap;
+  const size_t cmap_index = image()->colourmap;
   colourmap_button->colourmap_actions[cmap_index]->setChecked(true);
   invert_scale_action->setChecked(image()->scale_inverted());
   mode->image_changed_event();
   setWindowTitle(qstr(image()->image.name()));
   set_image_navigation_menu();
-  image()->set_allowed_features(mode->features & Mode::ShaderThreshold,
-                                mode->features & Mode::ShaderTransparency,
-                                mode->features & Mode::ShaderLighting);
+  image()->set_allowed_features((mode->features & Mode::ShaderThreshold) != 0,
+                                (mode->features & Mode::ShaderTransparency) != 0,
+                                (mode->features & Mode::ShaderLighting) != 0);
   emit imageChanged();
   glarea->update();
 }
@@ -1190,7 +1180,7 @@ void Window::toggle_annotations_slot() {
   if (show_colourbar())
     current_annotations |= 0x00000010;
 
-  if (current_annotations) {
+  if (current_annotations != 0) {
     annotations = current_annotations;
     show_crosshairs_action->setChecked(false);
     show_comments_action->setChecked(false);
@@ -1198,19 +1188,19 @@ void Window::toggle_annotations_slot() {
     show_orientation_labels_action->setChecked(false);
     show_colourbar_action->setChecked(false);
   } else {
-    if (!annotations)
+    if (annotations == 0)
       annotations = 0xFFFFFFFF;
-    show_crosshairs_action->setChecked(annotations & 0x00000001);
-    show_comments_action->setChecked(annotations & 0x00000002);
-    show_voxel_info_action->setChecked(annotations & 0x00000004);
-    show_orientation_labels_action->setChecked(annotations & 0x00000008);
-    show_colourbar_action->setChecked(annotations & 0x00000010);
+    show_crosshairs_action->setChecked((annotations & 0x00000001) != 0);
+    show_comments_action->setChecked((annotations & 0x00000002) != 0);
+    show_voxel_info_action->setChecked((annotations & 0x00000004) != 0);
+    show_orientation_labels_action->setChecked((annotations & 0x00000008) != 0);
+    show_colourbar_action->setChecked((annotations & 0x00000010) != 0);
   }
   glarea->update();
 }
 
 void Window::set_image_menu() {
-  int N = image_group->actions().size();
+  const int N = image_group->actions().size();
   next_image_action->setEnabled(N > 1);
   prev_image_action->setEnabled(N > 1);
   reset_windowing_action->setEnabled(N > 0);
@@ -1224,11 +1214,11 @@ void Window::set_image_menu() {
 
 int Window::get_mouse_mode() {
   if (mouse_action == NoAction && modifiers_ != Qt::NoModifier) {
-    if (modifiers_ == FocusModifier && (mode->features & Mode::FocusContrast))
+    if (modifiers_ == FocusModifier && ((mode->features & Mode::FocusContrast) != 0))
       return 1;
-    else if (modifiers_ == MoveModifier && (mode->features & Mode::MoveTarget))
+    if (modifiers_ == MoveModifier && ((mode->features & Mode::MoveTarget) != 0))
       return 2;
-    else if (modifiers_ == RotateModifier && (mode->features & Mode::TiltRotate))
+    if (modifiers_ == RotateModifier && ((mode->features & Mode::TiltRotate) != 0))
       return 3;
   }
 
@@ -1257,9 +1247,9 @@ void Window::set_cursor() {
     }
   }
 
-  if (tool_has_focus && modifiers_ == Qt::NoModifier) {
+  if ((tool_has_focus != nullptr) && modifiers_ == Qt::NoModifier) {
     QCursor *ptr = tool_has_focus->get_cursor();
-    if (ptr) {
+    if (ptr != nullptr) {
       glarea->setCursor(*ptr);
       return;
     }
@@ -1290,22 +1280,26 @@ void Window::set_cursor() {
 }
 
 void Window::set_mode_features() {
-  mode_action_group->actions()[0]->setEnabled(mode->features & Mode::FocusContrast);
-  mode_action_group->actions()[1]->setEnabled(mode->features & Mode::MoveTarget);
-  mode_action_group->actions()[2]->setEnabled(mode->features & Mode::TiltRotate);
+  mode_action_group->actions()[0]->setEnabled((mode->features & Mode::FocusContrast) != 0);
+  mode_action_group->actions()[1]->setEnabled((mode->features & Mode::MoveTarget) != 0);
+  mode_action_group->actions()[2]->setEnabled((mode->features & Mode::TiltRotate) != 0);
   if (!mode_action_group->checkedAction()->isEnabled())
     mode_action_group->actions()[0]->setChecked(true);
-  if (image())
-    image()->set_allowed_features(mode->features & Mode::ShaderThreshold,
-                                  mode->features & Mode::ShaderTransparency,
-                                  mode->features & Mode::ShaderLighting);
+  if (image() != nullptr)
+    image()->set_allowed_features((mode->features & Mode::ShaderThreshold) != 0,
+                                  (mode->features & Mode::ShaderTransparency) != 0,
+                                  (mode->features & Mode::ShaderLighting) != 0);
 }
 
 void Window::set_image_navigation_menu() {
-  bool show_next_volume(false), show_goto_volume(false), show_prev_volume(false);
-  bool show_next_volume_group(false), show_goto_volume_group(false), show_prev_volume_group(false);
+  bool show_next_volume(false);
+  bool show_goto_volume(false);
+  bool show_prev_volume(false);
+  bool show_next_volume_group(false);
+  bool show_goto_volume_group(false);
+  bool show_prev_volume_group(false);
   Image *imagep = image();
-  if (imagep) {
+  if (imagep != nullptr) {
     if (imagep->image.ndim() > 3) {
       if (imagep->image.size(3) > 1)
         show_goto_volume = true;
@@ -1346,22 +1340,22 @@ void Window::OpenGL_slot() {
 }
 
 void Window::about_slot() {
-  std::string message = std::string("<h1>MRView</h1>The MRtrix viewer, version ") + MR::App::mrtrix_version +
-                        "<br>"
-                        "<em>" +
-                        str(8 * sizeof(size_t)) +
-                        " bit "
+  const std::string message = std::string("<h1>MRView</h1>The MRtrix viewer, version ") + MR::App::mrtrix_version +
+                              "<br>"
+                              "<em>" +
+                              str(8 * sizeof(size_t)) +
+                              " bit "
 #ifdef NDEBUG
-                        "release"
+                              "release"
 #else
-                        "debug"
+                              "debug"
 #endif
-                        " version, built " +
-                        MR::App::build_date +
-                        "</em><p>"
-                        "<h4>Authors:</h4>" +
-                        MR::join(MR::split(MR::App::AUTHOR, ",;&\n", true), "<br>") + "<p><em>" + MR::App::COPYRIGHT +
-                        "</em>";
+                              " version, built " +
+                              MR::App::build_date +
+                              "</em><p>"
+                              "<h4>Authors:</h4>" +
+                              MR::join(MR::split(MR::App::AUTHOR, ",;&\n", true), "<br>") + "<p><em>" +
+                              MR::App::COPYRIGHT + "</em>";
 
   QMessageBox::about(this, tr("About MRView"), qstr(message));
 }
@@ -1414,9 +1408,9 @@ void Window::paintGL() {
 
   // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
   // otherwise we get transparent windows...
-  gl::ColorMask(false, false, false, true);
+  gl::ColorMask(0U, 0U, 0U, 1U);
   gl::Clear(gl::COLOR_BUFFER_BIT);
-  glColorMask(true, true, true, true);
+  glColorMask(1U, 1U, 1U, 1U);
   GL_CHECK_ERROR;
   GL::assert_context_is_current();
 }
@@ -1467,10 +1461,10 @@ void Window::mousePressEventGL(QMouseEvent *event) {
   assert(mode);
 
   grab_mouse_state(event);
-  if (image())
+  if (image() != nullptr)
     mode->mouse_press_event();
 
-  if (tool_has_focus && modifiers_ == Qt::NoModifier) {
+  if ((tool_has_focus != nullptr) && modifiers_ == Qt::NoModifier) {
     if (tool_has_focus->mouse_press_event()) {
       mouse_action = NoAction;
       event->accept();
@@ -1478,14 +1472,14 @@ void Window::mousePressEventGL(QMouseEvent *event) {
     }
   }
 
-  int group = get_mouse_mode();
+  const int group = get_mouse_mode();
 
   if (buttons_ == Qt::MiddleButton)
     mouse_action = Pan;
   else if (group == 1) {
     if (buttons_ == Qt::LeftButton) {
       mouse_action = SetFocus;
-      if (image())
+      if (image() != nullptr)
         mode->set_focus_event();
     } else if (buttons_ == Qt::RightButton)
       mouse_action = Contrast;
@@ -1507,13 +1501,13 @@ void Window::mousePressEventGL(QMouseEvent *event) {
 
 void Window::mouseMoveEventGL(QMouseEvent *event) {
   assert(mode);
-  if (!image())
+  if (image() == nullptr)
     return;
 
   update_mouse_state(event);
 
   if (mouse_action == NoAction) {
-    if (tool_has_focus)
+    if (tool_has_focus != nullptr)
       if (tool_has_focus->mouse_move_event())
         event->accept();
     return;
@@ -1549,7 +1543,7 @@ void Window::mouseReleaseEventGL(QMouseEvent *) {
   assert(mode);
   mode->mouse_release_event();
 
-  if (tool_has_focus && mouse_action == NoAction)
+  if ((tool_has_focus != nullptr) && mouse_action == NoAction)
     if (tool_has_focus->mouse_release_event())
       return;
 
@@ -1567,9 +1561,9 @@ void Window::wheelEventGL(QWheelEvent *event) {
   if (delta.isNull())
     return;
 
-  if (delta.y()) {
+  if (delta.y() != 0) {
 
-    if (image()) {
+    if (image() != nullptr) {
       grab_mouse_state(event);
       mode->mouse_press_event();
 
@@ -1597,8 +1591,8 @@ void Window::wheelEventGL(QWheelEvent *event) {
     if (buttons_ == Qt::RightButton && modifiers_ == Qt::NoModifier) {
       if (image_group->actions().size() > 1) {
         QAction *action = image_group->checkedAction();
-        int N = image_group->actions().size();
-        int n = image_group->actions().indexOf(action);
+        const int N = image_group->actions().size();
+        const int n = image_group->actions().indexOf(action);
         image_select_slot(image_group->actions()[(n + N + int(std::round(delta.y() / 120.0))) % N]);
       }
     }
@@ -1607,19 +1601,19 @@ void Window::wheelEventGL(QWheelEvent *event) {
 
 bool Window::gestureEventGL(QGestureEvent *event) {
   assert(mode);
-  if (!image())
+  if (image() == nullptr)
     return true;
 
   if (log_level > 2)
     qDebug() << event;
 
   if (QGesture *pinch = event->gesture(Qt::PinchGesture)) {
-    QPinchGesture *e = static_cast<QPinchGesture *>(pinch);
-    QPinchGesture::ChangeFlags changeFlags = e->changeFlags();
-    if (changeFlags & QPinchGesture::RotationAngleChanged) {
+    auto *e = static_cast<QPinchGesture *>(pinch);
+    const QPinchGesture::ChangeFlags changeFlags = e->changeFlags();
+    if ((changeFlags & QPinchGesture::RotationAngleChanged) != 0U) {
       // TODO
     }
-    if (changeFlags & QPinchGesture::ScaleFactorChanged) {
+    if ((changeFlags & QPinchGesture::ScaleFactorChanged) != 0U) {
       set_FOV(FOV() / e->scaleFactor());
       glarea->update();
     }
@@ -1644,7 +1638,7 @@ void Window::process_commandline_option_slot() {
 }
 
 void Window::register_camera_interactor(Tool::CameraInteractor *agent) {
-  if (camera_interactor && camera_interactor != agent)
+  if ((camera_interactor != nullptr) && camera_interactor != agent)
     camera_interactor->deactivate();
   camera_interactor = agent;
 }
@@ -1672,7 +1666,7 @@ void Window::process_commandline_option() {
 
     // process general options:
     if (opt.opt->is("mode")) {
-      int n = int(opt[0]) - 1;
+      const int n = int(opt[0]) - 1;
       if (n < 0 || n >= mode_group->actions().size())
         throw Exception("invalid mode index \"" + str(n) + "\" in batch command");
       select_mode_slot(mode_group->actions()[n]);
@@ -1685,8 +1679,8 @@ void Window::process_commandline_option() {
         throw Exception("invalid argument \"" + std::string(opt.args[0]) + "\" to -size batch command");
       if (glsize[0] < 1 || glsize[1] < 1)
         throw Exception("values provided to -size option must be positive");
-      QSize oldsize = glarea->size();
-      QSize winsize = size();
+      const QSize oldsize = glarea->size();
+      const QSize winsize = size();
       resize(winsize.width() - oldsize.width() + glsize[0], winsize.height() - oldsize.height() + glsize[1]);
       return;
     }
@@ -1697,7 +1691,7 @@ void Window::process_commandline_option() {
     }
 
     if (opt.opt->is("fov")) {
-      float fov = opt[0];
+      const float fov = opt[0];
       set_FOV(fov);
       glarea->update();
       return;
@@ -1721,7 +1715,7 @@ void Window::process_commandline_option() {
     }
 
     if (opt.opt->is("target")) {
-      if (image()) {
+      if (image() != nullptr) {
         std::vector<default_type> pos = parse_floats(opt[0]);
         if (pos.size() != 3)
           throw Exception("-target option expects a comma-separated list of 3 floating-point values");
@@ -1732,7 +1726,7 @@ void Window::process_commandline_option() {
     }
 
     if (opt.opt->is("orientation")) {
-      if (image()) {
+      if (image() != nullptr) {
         std::vector<default_type> pos = parse_floats(opt[0]);
         if (pos.size() != 4)
           throw Exception("-orientation option expects a comma-separated list of 4 floating-point values");
@@ -1746,7 +1740,7 @@ void Window::process_commandline_option() {
     }
 
     if (opt.opt->is("voxel")) {
-      if (image()) {
+      if (image() != nullptr) {
         std::vector<default_type> pos = parse_floats(opt[0]);
         if (pos.size() != 3)
           throw Exception("-voxel option expects a comma-separated list of 3 floating-point values");
@@ -1758,7 +1752,7 @@ void Window::process_commandline_option() {
     }
 
     if (opt.opt->is("volume")) {
-      if (image()) {
+      if (image() != nullptr) {
         auto pos = parse_ints<uint32_t>(opt[0]);
         for (size_t n = 0; n < std::min(pos.size(), image()->image.ndim()); ++n) {
           if (pos[n] >= image()->image.size(n + 3))
@@ -1772,28 +1766,28 @@ void Window::process_commandline_option() {
     }
 
     if (opt.opt->is("fov")) {
-      float fov = opt[0];
+      const float fov = opt[0];
       set_FOV(fov);
       glarea->update();
       return;
     }
 
     if (opt.opt->is("plane")) {
-      int n = opt[0];
+      const int n = opt[0];
       set_plane(n);
       glarea->update();
       return;
     }
 
     if (opt.opt->is("lock")) {
-      bool n = opt[0];
+      const bool n = opt[0];
       snap_to_image_action->setChecked(n);
       snap_to_image_slot();
       return;
     }
 
     if (opt.opt->is("select_image")) {
-      int n = int(opt[0]) - 1;
+      const int n = int(opt[0]) - 1;
       if (n < 0 || n >= image_group->actions().size())
         throw Exception("invalid image index requested for option -select_image");
       image_select_slot(image_group->actions()[n]);
@@ -1817,7 +1811,7 @@ void Window::process_commandline_option() {
     }
 
     if (opt.opt->is("colourmap")) {
-      int n = int(opt[0]) - 1;
+      const int n = int(opt[0]) - 1;
       if (n < 0 || n >= static_cast<int>(colourmap_button->colourmap_actions.size()))
         throw Exception("invalid image colourmap index \"" + str(n + 1) + "\" requested in batch command");
       colourmap_button->set_colourmap_index(n);
@@ -1835,7 +1829,7 @@ void Window::process_commandline_option() {
     }
 
     if (opt.opt->is("intensity_range")) {
-      if (image()) {
+      if (image() != nullptr) {
         std::vector<default_type> param = parse_floats(opt[0]);
         if (param.size() != 2)
           throw Exception("-intensity_range options expects comma-separated list of two floating-point values");

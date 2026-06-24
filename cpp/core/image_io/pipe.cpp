@@ -15,6 +15,7 @@
  */
 
 #include <limits>
+#include <memory>
 #include <unistd.h>
 
 #include "env.h"
@@ -30,7 +31,7 @@ void Pipe::load(const Header &header, size_t) {
 
   int64_t bytes_per_segment = (header.datatype().bits() * segsize + 7) / 8;
 
-  mmap.reset(new File::MMap(files[0], writable, !is_new, bytes_per_segment));
+  mmap = std::make_unique<File::MMap>(files[0], writable, !is_new, bytes_per_segment);
   addresses.resize(1);
   addresses[0].reset(mmap->address());
 }

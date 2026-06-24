@@ -152,8 +152,8 @@ protected:
   template <class AmpImageType> void get_amps(AmpImageType &amp) {
     double norm = 1.0;
     if (C.normalise) {
-      for (size_t n = 0; n < C.bzeros.size(); n++) {
-        amp.index(3) = C.bzeros[n];
+      for (unsigned long bzero : C.bzeros) {
+        amp.index(3) = bzero;
         norm += amp.value();
       }
       norm = C.bzeros.size() / norm;
@@ -192,7 +192,8 @@ void run() {
   Header header_out(header_in);
   header_out.datatype() = DataType::Float32;
 
-  std::vector<size_t> bzeros, dwis;
+  std::vector<size_t> bzeros;
+  std::vector<size_t> dwis;
   Eigen::MatrixXd dirs;
   auto opt = get_options("directions");
   if (!opt.empty()) {
@@ -210,7 +211,7 @@ void run() {
     auto hit = header_in.keyval().find("directions");
     if (hit != header_in.keyval().end()) {
       std::vector<default_type> dir_vector;
-      for (auto line : split_lines(hit->second)) {
+      for (const auto &line : split_lines(hit->second)) {
         auto v = parse_floats(line);
         dir_vector.insert(dir_vector.end(), v.begin(), v.end());
       }
@@ -243,7 +244,7 @@ void run() {
   header_out.size(3) = sh2amp.cols();
   Stride::set_from_command_line(header_out);
 
-  Amp2SHCommon common(sh2amp, bzeros, dwis, normalise);
+  const Amp2SHCommon common(sh2amp, bzeros, dwis, normalise);
   auto amp = header_in.get_image<value_type>(DirectIO{3});
   auto SH = Image<value_type>::create(argument[1], header_out);
 

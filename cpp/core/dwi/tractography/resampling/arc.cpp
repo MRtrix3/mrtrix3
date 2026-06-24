@@ -30,12 +30,13 @@ bool Arc::operator()(const Streamline<> &in, Streamline<> &out) const {
     return true;
   // Determine which points on the streamline correspond to the endpoints of the arc
   idx_start = idx_end = 0;
-  size_t a(in.size()), b(in.size());
+  size_t a(in.size());
+  size_t b(in.size());
 
   state_t prev_s = state_t::BEFORE_START;
   for (size_t i = 0; i < in.size(); ++i) {
     const state_t s = state(in[i]);
-    if (i) {
+    if (i != 0U) {
       if (prev_s == state_t::BEFORE_START && s == state_t::AFTER_START)
         a = i - 1;
       if (prev_s == state_t::AFTER_START && s == state_t::BEFORE_START)
@@ -56,7 +57,7 @@ bool Arc::operator()(const Streamline<> &in, Streamline<> &out) const {
     prev_s = s;
   }
 
-  if (!(idx_start && idx_end))
+  if ((idx_start == 0U) || (idx_end == 0U))
     return true;
 
   const bool reverse = idx_start > idx_end;
@@ -68,7 +69,7 @@ bool Arc::operator()(const Streamline<> &in, Streamline<> &out) const {
       if (d > 0.0) {
         const value_type f = d / (d - planes[n].dist(in[reverse ? i + 1 : i - 1]));
         assert(f >= 0.0 && f <= 1.0);
-        out.push_back(f * in[reverse ? i + 1 : i - 1] + (1.0f - f) * in[i]);
+        out.push_back(f * in[reverse ? i + 1 : i - 1] + (1.0F - f) * in[i]);
         break;
       }
       reverse ? --i : ++i;
@@ -84,7 +85,7 @@ void Arc::init_line() {
   mid_dir = end_dir = start_dir;
   for (size_t n = 0; n < nsamples; n++) {
     const value_type f = static_cast<value_type>(n) / static_cast<value_type>(nsamples - 1);
-    planes.push_back(Plane((1.0f - f) * start + f * end, (1.0f - f) * start_dir + f * end_dir));
+    planes.emplace_back((1.0F - f) * start + f * end, (1.0F - f) * start_dir + f * end_dir);
   }
 }
 
@@ -111,17 +112,18 @@ void Arc::init_arc() {
   a[1] = 0.5 * (end + mid).dot(end - mid);
   a[2] = start.dot(n);
 
-  point_type c = M.fullPivLu().solve(a);
+  const point_type c = M.fullPivLu().solve(a);
 
-  point_type x(start - c);
-  value_type R = x.norm();
+  const point_type x(start - c);
+  const value_type R = x.norm();
 
   point_type y(mid - c);
   y -= y.dot(x) / (x.norm() * y.norm()) * x;
   y *= R / y.norm();
 
-  point_type e(end - c);
-  value_type ex(x.dot(e)), ey(y.dot(e));
+  const point_type e(end - c);
+  value_type ex(x.dot(e));
+  value_type ey(y.dot(e));
 
   value_type angle = std::atan2(ey, ex);
   if (angle < 0.0)
@@ -129,7 +131,7 @@ void Arc::init_arc() {
 
   for (size_t n = 0; n < nsamples; n++) {
     const value_type f = angle * static_cast<value_type>(n) / static_cast<value_type>(nsamples - 1);
-    planes.push_back(Plane(c + x * cos(f) + y * sin(f), y * cos(f) - x * sin(f)));
+    planes.emplace_back(c + x * cos(f) + y * sin(f), y * cos(f) - x * sin(f));
   }
 
   start_dir = y;

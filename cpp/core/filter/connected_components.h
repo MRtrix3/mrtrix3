@@ -43,7 +43,7 @@ public:
     using index_t = Voxel2Vector::index_t;
     using axis_mask_type = Eigen::Array<bool, Eigen::Dynamic, 1>;
 
-    Adjacency() : use_26_neighbours(false), enabled_axes(axis_mask_type::Ones(3)), is_initialised(false) {}
+    Adjacency() = default;
 
     void toggle_axis(const size_t axis, const bool value) {
       if (axis > enabled_axes.size())
@@ -70,28 +70,28 @@ public:
       data.clear();
     }
 
-    size_t size() const { return data.size(); }
-    bool empty() const { return data.empty(); }
-    bool valid() const { return is_initialised; }
+    [[nodiscard]] size_t size() const { return data.size(); }
+    [[nodiscard]] bool empty() const { return data.empty(); }
+    [[nodiscard]] bool valid() const { return is_initialised; }
 
   private:
-    bool use_26_neighbours;
-    axis_mask_type enabled_axes;
+    bool use_26_neighbours{false};
+    axis_mask_type enabled_axes{axis_mask_type::Ones(3)};
     std::vector<std::vector<index_t>> data;
-    bool is_initialised;
+    bool is_initialised{false};
   } adjacency;
 
   class Cluster {
   public:
-    Cluster(const uint32_t l) : label(l), size(0) {}
+    Cluster(const uint32_t l) : label(l) {}
     uint32_t label;
-    uint32_t size;
+    uint32_t size{0};
     bool operator<(const Cluster &j) const { return size < j.size; }
   };
   // Used for sorting clusters in order of size
   static bool largest(const Cluster &i, const Cluster &j) { return (i.size > j.size); }
 
-  Connector() {}
+  Connector() = default;
 
   // Perform connected components on vectorized binary data
   void run(std::vector<Cluster> &, std::vector<uint32_t> &) const;
@@ -115,7 +115,7 @@ void Connector::run(std::vector<Cluster> &clusters,
                     std::vector<uint32_t> &labels,
                     const VectorType &data,
                     const float threshold) const {
-  assert(adjacency.size());
+  assert(!adjacency.empty());
   labels.resize(adjacency.size(), 0);
   uint32_t current_label = 0;
   for (uint32_t i = 0; i < labels.size(); i++) {
@@ -158,14 +158,13 @@ void Connector::depth_first_search(const uint32_t root,
     cluster.size++;
     if (next_neighbour(node, labels, data, threshold)) {
       continue;
-    } else {
-      do {
-        if (stack.top() == root)
-          return;
-        stack.pop();
-        node = stack.top();
-      } while (!next_neighbour(node, labels, data, threshold));
     }
+    do {
+      if (stack.top() == root)
+        return;
+      stack.pop();
+      node = stack.top();
+    } while (!next_neighbour(node, labels, data, threshold));
   }
 }
 
@@ -209,7 +208,7 @@ public:
   template <class InputVoxelType, class OutputVoxelType> void operator()(InputVoxelType &in, OutputVoxelType &out) {
     std::unique_ptr<ProgressBar> progress(!message.empty() ? new ProgressBar(message, 5) : nullptr);
 
-    Voxel2Vector v2v(in, *this);
+    const Voxel2Vector v2v(in, *this);
     if (progress)
       ++(*progress);
 

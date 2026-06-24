@@ -41,12 +41,12 @@ public:
     }
   }
 
-  size_t ndim() const { return header_.ndim(); }
-  ssize_t size(size_t axis) const { return header_.size(axis); }
-  float spacing(size_t axis) const { return header_.spacing(axis); }
-  ssize_t stride(size_t axis) const { return axis < parent().ndim() ? parent().stride(axis) : 0; }
+  [[nodiscard]] size_t ndim() const { return header_.ndim(); }
+  [[nodiscard]] ssize_t size(size_t axis) const { return header_.size(axis); }
+  [[nodiscard]] float spacing(size_t axis) const { return header_.spacing(axis); }
+  [[nodiscard]] ssize_t stride(size_t axis) const { return axis < parent().ndim() ? parent().stride(axis) : 0; }
 
-  ssize_t get_index(size_t axis) const { return pos_[axis]; }
+  [[nodiscard]] ssize_t get_index(size_t axis) const { return pos_[axis]; }
   void move_index(size_t axis, ssize_t increment) {
     pos_[axis] += increment;
     if (axis < parent().ndim())

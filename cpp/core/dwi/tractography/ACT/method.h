@@ -47,9 +47,9 @@ public:
 
   ACT_Method_additions() = delete;
 
-  const Tissues &tissues() const { return tissue_values; }
+  [[nodiscard]] const Tissues &tissues() const { return tissue_values; }
 
-  std::optional<term_t> check_structural(const Eigen::Vector3f &pos) {
+  [[nodiscard]] std::optional<term_t> check_structural(const Eigen::Vector3f &pos) {
     if (!fetch_tissue_data(pos))
       return term_t::EXIT_IMAGE;
 
@@ -60,7 +60,7 @@ public:
       if (tissues().get_cgm() >= tissues().get_sgm())
         return term_t::ENTER_CGM;
       ++sgm_depth;
-    } else if (sgm_depth) {
+    } else if (sgm_depth != 0U) {
       if (seed_in_sgm && !sgm_seed_to_wm) {
         sgm_seed_to_wm = true;
         sgm_depth = 0;
@@ -72,7 +72,7 @@ public:
     return std::nullopt;
   }
 
-  bool check_seed(const Eigen::Vector3f &pos) {
+  [[nodiscard]] bool check_seed(const Eigen::Vector3f &pos) {
     sgm_depth = 0;
 
     if (!fetch_tissue_data(pos))
@@ -93,7 +93,7 @@ public:
     return true;
   }
 
-  bool seed_is_unidirectional(const Eigen::Vector3f &pos, Eigen::Vector3f &dir) {
+  [[nodiscard]] bool seed_is_unidirectional(const Eigen::Vector3f &pos, Eigen::Vector3f &dir) {
     // Tissue values should have already been acquired for the seed point when this function is run
     if (tissues().is_sgm())
       return false;
@@ -103,15 +103,21 @@ public:
     const Tissues tissues_at_pos(tissues());
 
     const Eigen::Vector3f pos_plus(pos + (dir * gmwmi_normal_perturbation));
-    fetch_tissue_data(pos_plus);
+    if (!fetch_tissue_data(pos_plus)) {
+      tissue_values = tissues_at_pos;
+      return true;
+    }
     const Tissues tissues_plus(tissues());
 
     const Eigen::Vector3f pos_minus(pos - (dir * gmwmi_normal_perturbation));
-    fetch_tissue_data(pos_minus);
+    if (!fetch_tissue_data(pos_minus)) {
+      tissue_values = tissues_at_pos;
+      return true;
+    }
     const Tissues &tissues_minus(tissues());
 
-    const float gradient =
-        (tissues_plus.get_gm() - tissues_plus.get_wm()) - (tissues_minus.get_gm() - tissues_minus.get_wm());
+    const float gradient = (tissues_plus.get_gm() - tissues_plus.get_wm()) -  //
+                           (tissues_minus.get_gm() - tissues_minus.get_wm()); //
     if (gradient > 0.0)
       dir = -dir;
 
@@ -120,7 +126,7 @@ public:
     return true;
   }
 
-  bool fetch_tissue_data(const Eigen::Vector3f &pos) {
+  [[nodiscard]] bool fetch_tissue_data(const Eigen::Vector3f &pos) {
     if (!act_image.scanner(pos)) {
       tissue_values.reset();
       return false;
@@ -128,7 +134,7 @@ public:
     return tissue_values.set(act_image);
   }
 
-  bool in_pathology() const { return (tissue_values.valid() && tissue_values.is_path()); }
+  [[nodiscard]] bool in_pathology() const { return (tissue_values.valid() && tissue_values.is_path()); }
 
   void reverse_track() { sgm_depth = 0; }
 

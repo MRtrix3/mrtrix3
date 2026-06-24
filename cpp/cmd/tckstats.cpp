@@ -75,8 +75,8 @@ public:
   LW(const float l, const float w) : length(l), weight(w) {}
   LW() : length(NaNF), weight(NaNF) {}
   bool operator<(const LW &that) const { return length < that.length; }
-  float get_length() const { return length; }
-  float get_weight() const { return weight; }
+  [[nodiscard]] float get_length() const { return length; }
+  [[nodiscard]] float get_weight() const { return weight; }
 
 private:
   float length, weight;
@@ -95,11 +95,14 @@ void run() {
   const bool weights_provided = !get_options("tck_weights_in").empty();
 
   float step_size = NaNF;
-  size_t count = 0, header_count = 0;
+  size_t count = 0;
+  size_t header_count = 0;
   float min_length = std::numeric_limits<float>::infinity();
   float max_length = -std::numeric_limits<float>::infinity();
-  size_t empty_streamlines = 0, zero_length_streamlines = 0;
-  default_type sum_lengths = 0.0, sum_weights = 0.0;
+  size_t empty_streamlines = 0;
+  size_t zero_length_streamlines = 0;
+  default_type sum_lengths = 0.0;
+  default_type sum_weights = 0.0;
   std::vector<default_type> histogram;
   std::vector<LW> all_lengths;
   all_lengths.reserve(header_count);
@@ -112,7 +115,7 @@ void run() {
       header_count = to<size_t>(properties["count"]);
 
     step_size = properties.get_stepsize();
-    if ((!std::isfinite(step_size) || !step_size) && !get_options("histogram").empty()) {
+    if ((!std::isfinite(step_size) || (step_size == 0.0F)) && !get_options("histogram").empty()) {
       WARN("Do not have streamline step size with which to bin histogram; histogram will be generated using 1mm bin "
            "widths");
     }
@@ -130,12 +133,12 @@ void run() {
         max_length = std::max(max_length, length);
         sum_lengths += tck.weight * length;
         sum_weights += tck.weight;
-        all_lengths.push_back(LW(length, tck.weight));
+        all_lengths.emplace_back(length, tck.weight);
         const size_t index = std::isfinite(step_size) ? std::round(length / step_size) : std::round(length);
         while (histogram.size() <= index)
           histogram.push_back(0.0);
         histogram[index] += tck.weight;
-        if (!length)
+        if (length == 0.0F)
           ++zero_length_streamlines;
       } else {
         ++empty_streamlines;
@@ -149,14 +152,14 @@ void run() {
       File::Matrix::save_vector(dump, opt[0][0]);
   }
 
-  if (get_options("ignorezero").empty() && (empty_streamlines || zero_length_streamlines)) {
+  if (get_options("ignorezero").empty() && ((empty_streamlines != 0U) || (zero_length_streamlines != 0U))) {
     std::string s("read");
-    if (empty_streamlines) {
+    if (empty_streamlines != 0U) {
       s += " " + str(empty_streamlines) + " empty streamlines";
-      if (zero_length_streamlines)
+      if (zero_length_streamlines != 0U)
         s += " and";
     }
-    if (zero_length_streamlines)
+    if (zero_length_streamlines != 0U)
       s += " " + str(zero_length_streamlines) + " streamlines with zero length (one vertex only)";
     WARN(s);
   }
@@ -167,10 +170,10 @@ void run() {
   if (!std::isfinite(max_length))
     max_length = NaNF;
 
-  const float mean_length = sum_weights ? (sum_lengths / sum_weights) : NaNF;
+  const float mean_length = (sum_weights != 0.0) ? (sum_lengths / sum_weights) : NaNF;
 
-  float median_length = 0.0f;
-  if (count) {
+  float median_length = 0.0F;
+  if (count != 0U) {
     if (weights_provided) {
       // Perform a weighted median calculation
       std::sort(all_lengths.begin(), all_lengths.end());
@@ -188,29 +191,30 @@ void run() {
   }
 
   default_type ssd = 0.0;
-  for (std::vector<LW>::const_iterator i = all_lengths.begin(); i != all_lengths.end(); ++i)
-    ssd += i->get_weight() * Math::pow2(i->get_length() - mean_length);
-  const float stdev = sum_weights ? (std::sqrt(ssd / ((static_cast<default_type>(count - 1) / static_cast<default_type>(count)) * sum_weights))) : NaNF;
+  for (const auto &length_bin : all_lengths)
+    ssd += length_bin.get_weight() * Math::pow2(length_bin.get_length() - mean_length);
+  const float stdev = (sum_weights != 0.0) ? (std::sqrt(ssd / ((static_cast<default_type>(count - 1) / static_cast<default_type>(count)) * sum_weights))) : NaNF;
 
   std::vector<FieldChoice> fields;
   auto opt = get_options("output");
-  for (size_t n = 0; n < opt.size(); ++n)
-    fields.push_back(MR::Enum::from_name<FieldChoice>(opt[n][0]));
+  fields.reserve(opt.size());
+  for (const auto & n : opt)
+    fields.push_back(MR::Enum::from_name<FieldChoice>(n[0]));
 
   if (!fields.empty()) {
 
-    for (size_t n = 0; n < fields.size(); ++n) {
-      if (fields[n] == FieldChoice::MEAN)
+    for (const auto &field : fields) {
+      if (field == FieldChoice::MEAN)
         std::cout << str(mean_length) << " ";
-      else if (fields[n] == FieldChoice::MEDIAN)
+      else if (field == FieldChoice::MEDIAN)
         std::cout << str(median_length) << " ";
-      else if (fields[n] == FieldChoice::STD)
+      else if (field == FieldChoice::STD)
         std::cout << str(stdev) << " ";
-      else if (fields[n] == FieldChoice::MIN)
+      else if (field == FieldChoice::MIN)
         std::cout << str(min_length) << " ";
-      else if (fields[n] == FieldChoice::MAX)
+      else if (field == FieldChoice::MAX)
         std::cout << str(max_length) << " ";
-      else if (fields[n] == FieldChoice::COUNT)
+      else if (field == FieldChoice::COUNT)
         std::cout << count << " ";
     }
     std::cout << "\n";

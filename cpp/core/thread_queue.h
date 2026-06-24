@@ -327,8 +327,7 @@ public:
         front(buffer),
         back(buffer),
         capacity(buffer_size),
-        writer_count(0),
-        reader_count(0),
+
         name(description) {
     assert(capacity > 0);
   }
@@ -392,7 +391,7 @@ public:
       T *p;
     };
 
-    Item placeholder() const { return Item(*this); }
+    [[nodiscard]] Item placeholder() const { return Item(*this); }
 
   private:
     Queue<T> &Q;
@@ -450,14 +449,14 @@ public:
       FORCE_INLINE void recycle(T *item) const throw() { Q.recycle(item); }
       FORCE_INLINE T &operator*() const throw() { return *p; }
       FORCE_INLINE T *operator->() const throw() { return p; }
-      FORCE_INLINE bool operator!() const throw() { return !p; }
+      FORCE_INLINE bool operator!() const throw() { return p == nullptr; }
 
     private:
       Queue<T> &Q;
       T *p;
     };
 
-    Item placeholder() const { return Item(*this); }
+    [[nodiscard]] Item placeholder() const { return Item(*this); }
 
   private:
     Queue<T> &Q;
@@ -478,44 +477,44 @@ private:
   T **front;
   T **back;
   size_t capacity;
-  size_t writer_count, reader_count;
+  size_t writer_count{0}, reader_count{0};
   std::stack<T *, std::vector<T *>> item_stack;
   std::vector<std::unique_ptr<T>> items;
   std::string name;
 
   void register_writer() {
-    std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     ++writer_count;
   }
   void unregister_writer() {
-    std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     assert(writer_count);
     --writer_count;
-    if (!writer_count) {
+    if (writer_count == 0U) {
       DEBUG("no writers left on queue \"" + name + "\"");
       more_data.notify_all();
     }
   }
   void register_reader() {
-    std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     ++reader_count;
   }
   void unregister_reader() {
-    std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     assert(reader_count);
     --reader_count;
-    if (!reader_count) {
+    if (reader_count == 0U) {
       DEBUG("no readers left on queue \"" + name + "\"");
       more_space.notify_all();
     }
   }
 
-  FORCE_INLINE bool empty() const { return (front == back); }
-  FORCE_INLINE bool full() const { return (inc(back) == front); }
-  FORCE_INLINE size_t size() const { return ((back < front ? back + capacity : back) - front); }
+  [[nodiscard]] FORCE_INLINE bool empty() const { return (front == back); }
+  [[nodiscard]] FORCE_INLINE bool full() const { return (inc(back) == front); }
+  [[nodiscard]] FORCE_INLINE size_t size() const { return ((back < front ? back + capacity : back) - front); }
 
   FORCE_INLINE T *get_item() {
-    std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     T *item(new T);
     items.push_back(std::unique_ptr<T>(item));
     return item;
@@ -524,7 +523,7 @@ private:
   FORCE_INLINE bool push(T *&item) {
     std::unique_lock<std::mutex> lock(mutex);
     more_space.wait(lock, [this] { return !(full() && reader_count); });
-    if (!reader_count)
+    if (reader_count == 0U)
       return false;
     *back = item;
     back = inc(back);
@@ -545,7 +544,7 @@ private:
       item_stack.push(item);
     item = nullptr;
     more_data.wait(lock, [this] { return !(empty() && writer_count); });
-    if (empty() && !writer_count)
+    if (empty() && (writer_count == 0U))
       return false;
     item = *front;
     front = inc(front);
@@ -554,7 +553,7 @@ private:
   }
 
   FORCE_INLINE void recycle(T *&item) {
-    std::unique_lock<std::mutex> lock(mutex);
+    const std::unique_lock<std::mutex> lock(mutex);
     if (item)
       item_stack.push(item);
   }
@@ -617,7 +616,7 @@ template <class Item> struct FetchItem {
 };
 
 template <class Item> struct FetchItem<Batch<Item>> {
-  FetchItem(typename Type<Batch<Item>>::reader &in) : in(in.placeholder()), n(0) {}
+  FetchItem(typename Type<Batch<Item>>::reader &in) : in(in.placeholder()) {}
   bool read() {
     if (!in)
       return in.read();
@@ -631,7 +630,7 @@ template <class Item> struct FetchItem<Batch<Item>> {
   }
   Item &value() { return (*in)[n]; }
   typename Type<Batch<Item>>::read_item in;
-  size_t n;
+  size_t n{0};
 };
 
 template <class Item> struct StoreItem {
@@ -644,7 +643,7 @@ template <class Item> struct StoreItem {
 
 template <class Item> struct StoreItem<Batch<Item>> {
   StoreItem(size_t batch_size, typename Type<Batch<Item>>::writer &item)
-      : out(item.placeholder()), batch_size(batch_size), n(0) {
+      : out(item.placeholder()), batch_size(batch_size) {
     out->resize(batch_size);
   }
   bool write() {
@@ -659,14 +658,14 @@ template <class Item> struct StoreItem<Batch<Item>> {
   }
   Item &value() { return (*out)[n]; }
   void flush() {
-    if (n) {
+    if (n != 0U) {
       out->resize(n);
       out.write();
     }
   }
   typename Type<Batch<Item>>::write_item out;
   const size_t batch_size;
-  size_t n;
+  size_t n{0};
 };
 
 template <class Item, class Functor> struct SourceWrapper {

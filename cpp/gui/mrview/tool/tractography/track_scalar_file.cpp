@@ -22,16 +22,16 @@
 namespace MR::GUI::MRView::Tool {
 
 TrackScalarFileOptions::TrackScalarFileOptions(Tractography *parent)
-    : QGroupBox("Scalar file options", parent), tool(parent), tractogram(nullptr) {
+    : QGroupBox("Scalar file options", parent), tool(parent) {
   main_box = new Tool::Base::VBoxLayout(this);
 
   colour_groupbox = new QGroupBox("Colour map and scaling");
-  Tool::Base::VBoxLayout *vlayout = new Tool::Base::VBoxLayout;
+  auto *vlayout = new Tool::Base::VBoxLayout;
   vlayout->setContentsMargins(0, 0, 0, 0);
   vlayout->setSpacing(0);
   colour_groupbox->setLayout(vlayout);
 
-  Tool::Base::HBoxLayout *hlayout = new Tool::Base::HBoxLayout;
+  auto *hlayout = new Tool::Base::HBoxLayout;
   hlayout->setContentsMargins(0, 0, 0, 0);
   hlayout->setSpacing(0);
 
@@ -61,7 +61,7 @@ TrackScalarFileOptions::TrackScalarFileOptions(Tractography *parent)
 
   main_box->addWidget(colour_groupbox);
 
-  QGroupBox *threshold_box = new QGroupBox("Thresholds");
+  auto *threshold_box = new QGroupBox("Thresholds");
   vlayout = new Tool::Base::VBoxLayout;
   vlayout->setContentsMargins(0, 0, 0, 0);
   vlayout->setSpacing(0);
@@ -103,12 +103,12 @@ void TrackScalarFileOptions::set_tractogram(Tractogram *selected_tractogram) { t
 
 void TrackScalarFileOptions::render_tractogram_colourbar(const Tractogram &tractogram) {
 
-  float min_value =
+  const float min_value =
       (tractogram.get_threshold_type() == TrackThresholdType::UseColourFile && tractogram.use_discard_lower())
           ? tractogram.scaling_min_thresholded()
           : tractogram.scaling_min();
 
-  float max_value =
+  const float max_value =
       (tractogram.get_threshold_type() == TrackThresholdType::UseColourFile && tractogram.use_discard_upper())
           ? tractogram.scaling_max_thresholded()
           : tractogram.scaling_max();
@@ -120,12 +120,12 @@ void TrackScalarFileOptions::render_tractogram_colourbar(const Tractogram &tract
       max_value,
       tractogram.scaling_min(),
       tractogram.display_range,
-      {tractogram.colour[0] / 255.0f, tractogram.colour[1] / 255.0f, tractogram.colour[2] / 255.0f});
+      {tractogram.colour[0] / 255.0F, tractogram.colour[1] / 255.0F, tractogram.colour[2] / 255.0F});
 }
 
 void TrackScalarFileOptions::update_UI() {
 
-  if (!tractogram) {
+  if (tractogram == nullptr) {
     setVisible(false);
     return;
   }
@@ -215,21 +215,21 @@ bool TrackScalarFileOptions::open_intensity_track_scalar_file_slot(const std::fi
 }
 
 void TrackScalarFileOptions::toggle_show_colour_bar(bool show_colour_bar, const ColourMapButton &) {
-  if (tractogram) {
+  if (tractogram != nullptr) {
     tractogram->show_colour_bar = show_colour_bar;
     window().updateGL();
   }
 }
 
 void TrackScalarFileOptions::selected_colourmap(size_t cmap, const ColourMapButton &) {
-  if (tractogram) {
+  if (tractogram != nullptr) {
     tractogram->colourmap = cmap;
     window().updateGL();
   }
 }
 
 void TrackScalarFileOptions::selected_custom_colour(const QColor &c, const ColourMapButton &) {
-  if (tractogram) {
+  if (tractogram != nullptr) {
     tractogram->set_colour(c);
     window().updateGL();
   }
@@ -239,7 +239,7 @@ void TrackScalarFileOptions::selected_custom_colour(const QColor &c, const Colou
 void TrackScalarFileOptions::set_threshold(GUI::MRView::Tool::TrackThresholdType dataSource,
                                            default_type min,
                                            default_type max) {
-  if (tractogram) {
+  if (tractogram != nullptr) {
     // Source
     tractogram->set_threshold_type(dataSource);
     // Range
@@ -256,7 +256,7 @@ void TrackScalarFileOptions::set_threshold(GUI::MRView::Tool::TrackThresholdType
 }
 
 void TrackScalarFileOptions::set_scaling(default_type min, default_type max) {
-  if (tractogram) {
+  if (tractogram != nullptr) {
     tractogram->set_windowing(min, max);
     update_UI();
     window().updateGL();
@@ -264,7 +264,7 @@ void TrackScalarFileOptions::set_scaling(default_type min, default_type max) {
 }
 
 void TrackScalarFileOptions::on_set_scaling_slot() {
-  if (tractogram) {
+  if (tractogram != nullptr) {
     tractogram->set_windowing(min_entry->value(), max_entry->value());
     window().updateGL();
   }
@@ -350,7 +350,7 @@ bool TrackScalarFileOptions::threshold_scalar_file_slot(int /*unused*/) {
 }
 
 void TrackScalarFileOptions::threshold_lower_changed(int) {
-  if (tractogram) {
+  if (tractogram != nullptr) {
     threshold_lower->setEnabled(threshold_lower_box->isChecked());
     tractogram->set_use_discard_lower(threshold_lower_box->isChecked());
     window().updateGL();
@@ -358,7 +358,7 @@ void TrackScalarFileOptions::threshold_lower_changed(int) {
 }
 
 void TrackScalarFileOptions::threshold_upper_changed(int) {
-  if (tractogram) {
+  if (tractogram != nullptr) {
     threshold_upper->setEnabled(threshold_upper_box->isChecked());
     tractogram->set_use_discard_upper(threshold_upper_box->isChecked());
     window().updateGL();
@@ -366,21 +366,21 @@ void TrackScalarFileOptions::threshold_upper_changed(int) {
 }
 
 void TrackScalarFileOptions::threshold_lower_value_changed() {
-  if (tractogram && threshold_lower_box->isChecked()) {
+  if ((tractogram != nullptr) && threshold_lower_box->isChecked()) {
     tractogram->lessthan = threshold_lower->value();
     window().updateGL();
   }
 }
 
 void TrackScalarFileOptions::threshold_upper_value_changed() {
-  if (tractogram && threshold_upper_box->isChecked()) {
+  if ((tractogram != nullptr) && threshold_upper_box->isChecked()) {
     tractogram->greaterthan = threshold_upper->value();
     window().updateGL();
   }
 }
 
 void TrackScalarFileOptions::reset_colourmap(const ColourMapButton &) {
-  if (tractogram) {
+  if (tractogram != nullptr) {
     tractogram->reset_windowing();
     update_UI();
     window().updateGL();
@@ -388,7 +388,7 @@ void TrackScalarFileOptions::reset_colourmap(const ColourMapButton &) {
 }
 
 void TrackScalarFileOptions::toggle_invert_colourmap(bool invert, const ColourMapButton &) {
-  if (tractogram) {
+  if (tractogram != nullptr) {
     tractogram->set_invert_scale(invert);
     window().updateGL();
   }

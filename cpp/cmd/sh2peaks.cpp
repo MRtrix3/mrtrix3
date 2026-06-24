@@ -15,6 +15,7 @@
  */
 
 #include <array>
+#include <utility>
 
 #include "algo/loop.h"
 #include "app.h"
@@ -103,7 +104,7 @@ void usage() {
 class Direction {
 public:
   Direction() : a(NaNF) {}
-  Direction(const Direction &d) : a(d.a), v(d.v) {}
+  Direction(const Direction &d) = default;
   Direction(value_type phi, value_type theta)
       : a(1.0), v(std::cos(phi) * std::sin(theta), std::sin(phi) * std::sin(theta), std::cos(theta)) {}
   value_type a;
@@ -167,10 +168,10 @@ public:
         dirs(directions),
         lmax(lmax),
         npeaks(npeaks),
-        true_peaks(true_peaks),
+        true_peaks(std::move(true_peaks)),
         threshold(threshold),
         peaks_out(npeaks),
-        ipeaks_vox(ipeaks_data),
+        ipeaks_vox(std::move(ipeaks_data)),
         precomputer(use_precomputer ? std::make_shared<Math::SH::PrecomputedAL<value_type>>(lmax) : nullptr) {}
 
   bool operator()(const Item &item) {
@@ -191,8 +192,8 @@ public:
       Direction p(dirs(i, 0), dirs(i, 1));
       p.a = Math::SH::get_peak(item.data, lmax, p.v, precomputer.get());
       if (std::isfinite(p.a)) {
-        for (size_t j = 0; j < all_peaks.size(); j++) {
-          if (std::fabs(p.v.dot(all_peaks[j].v)) > dotproduct_threshold) {
+        for (auto &peak : all_peaks) {
+          if (std::fabs(p.v.dot(peak.v)) > dotproduct_threshold) {
             p.a = NaNF;
             break;
           }
@@ -217,22 +218,22 @@ public:
         p.normalize();
 
         value_type mdot = 0.0;
-        for (size_t n = 0; n < all_peaks.size(); n++) {
-          value_type f = std::fabs(p.dot(all_peaks[n].v));
+        for (auto &peak : all_peaks) {
+          const value_type f = std::fabs(p.dot(peak.v));
           if (f > mdot) {
             mdot = f;
-            peaks_out[i] = all_peaks[n];
+            peaks_out[i] = peak;
           }
         }
       }
     } else if (!true_peaks.empty()) {
       for (int i = 0; i < npeaks; i++) {
         value_type mdot = 0.0;
-        for (size_t n = 0; n < all_peaks.size(); n++) {
-          value_type f = std::fabs(all_peaks[n].v.dot(true_peaks[i].v));
+        for (auto &peak : all_peaks) {
+          const value_type f = std::fabs(peak.v.dot(true_peaks[i].v));
           if (f > mdot) {
             mdot = f;
-            peaks_out[i] = all_peaks[n];
+            peaks_out[i] = peak;
           }
         }
       }
@@ -311,9 +312,9 @@ void run() {
 
   opt = get_options("direction");
   std::vector<Direction> true_peaks;
-  for (size_t n = 0; n < opt.size(); ++n) {
-    Direction p(Math::pi * static_cast<default_type>(opt[n][0]) / 180.0,
-                Math::pi * static_cast<default_type>(opt[n][1]) / 180.0);
+  for (const auto &n : opt) {
+    const Direction p(Math::pi * static_cast<default_type>(n[0]) / 180.0,
+                      Math::pi * static_cast<default_type>(n[1]) / 180.0);
     true_peaks.push_back(p);
   }
   if (!true_peaks.empty())

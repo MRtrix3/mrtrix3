@@ -43,7 +43,7 @@ class Gradient : public Base {
 public:
   template <class HeaderType>
   Gradient(const HeaderType &in, const bool magnitude = false)
-      : Base(in), smoother(in), wrt_scanner(true), magnitude(magnitude), stdev(1, 0) {
+      : Base(in), smoother(in), magnitude(magnitude), stdev(1, 0) {
     if (in.ndim() == 4) {
       if (!magnitude) {
         axes_.resize(5);
@@ -85,7 +85,7 @@ public:
       full_gradient(in, temp);
       for (auto l = Loop(out)(out, temp); l; ++l) {
         if (out.ndim() == 4) {
-          ssize_t tmp = out.index(3);
+          const ssize_t tmp = out.index(3);
           temp.index(4) = tmp;
         }
         float grad_sq = 0.0;
@@ -129,7 +129,7 @@ public:
         ++(*progress);
 
       if (wrt_scanner) {
-        Transform transform(in);
+        const Transform transform(in);
         for (auto l = Loop(0, 3)(out); l; ++l)
           out.row(3) = transform.image2scanner.linear() * Eigen::Vector3d(out.row(3));
       }
@@ -138,7 +138,7 @@ public:
 
 protected:
   Filter::Smooth smoother;
-  bool wrt_scanner;
+  bool wrt_scanner{true};
   const bool magnitude;
   std::vector<default_type> stdev;
 };

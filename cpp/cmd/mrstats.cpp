@@ -57,7 +57,7 @@ using complex_type = Stats::complex_type;
 
 class Volume_loop {
 public:
-  Volume_loop(Image<complex_type> &in) : image(in), is_4D(in.ndim() == 4), status(true) {
+  Volume_loop(Image<complex_type> &in) : image(in), is_4D(in.ndim() == 4) {
     if (is_4D)
       image.index(3) = 0;
   }
@@ -73,14 +73,13 @@ public:
   operator bool() const {
     if (is_4D)
       return (image.index(3) >= 0 && image.index(3) < image.size(3));
-    else
-      return status;
+    return status;
   }
 
 private:
   Image<complex_type> &image;
   const bool is_4D;
-  bool status;
+  bool status{true};
 };
 
 void run_volume(Stats::Stats &stats, Image<complex_type> &data, Image<bool> &mask) {
@@ -113,10 +112,10 @@ void run() {
   std::vector<Stats::field_t> fields;
   opt = get_options("output");
   fields.reserve(opt.size());
-  for (size_t n = 0; n < opt.size(); ++n)
-    fields.push_back(MR::Enum::from_name<Stats::field_t>(opt[n][0]));
+  for (const auto &n : opt)
+    fields.push_back(Enum::from_name<Stats::field_t>(n[0]));
 
-  if (App::log_level && fields.empty())
+  if ((App::log_level != 0) && fields.empty())
     Stats::print_header(is_complex);
 
   if (get_options("allvolumes").empty()) {

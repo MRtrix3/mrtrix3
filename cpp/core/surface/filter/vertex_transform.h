@@ -29,7 +29,7 @@ class VertexTransform : public Base {
 public:
   enum class transform_t { UNDEFINED, FIRST2REAL, REAL2FIRST, VOXEL2REAL, REAL2VOXEL, FS2REAL };
 
-  VertexTransform(const Header &H) : header(H), transform(H), mode(transform_t::UNDEFINED) {}
+  VertexTransform(const Header &H) : header(H), transform(H) {}
 
   void set_first2real() { mode = transform_t::FIRST2REAL; }
   void set_real2first() { mode = transform_t::REAL2FIRST; }
@@ -37,7 +37,7 @@ public:
   void set_real2voxel() { mode = transform_t::REAL2VOXEL; }
   void set_fs2real() { mode = transform_t::FS2REAL; }
 
-  transform_t get_mode() const { return mode; }
+  [[nodiscard]] transform_t get_mode() const { return mode; }
 
   void operator()(const Mesh &, Mesh &) const override;
 
@@ -46,7 +46,7 @@ public:
 private:
   const Header &header;
   Transform transform;
-  transform_t mode;
+  transform_t mode{transform_t::UNDEFINED};
 };
 
 } // namespace MR::Surface::Filter

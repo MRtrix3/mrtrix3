@@ -179,9 +179,9 @@ public:
     return static_cast<default_type>(static_cast<float>(temp.value()));
   }
 
-  Math::Stats::index_type size() const override { return data.size(0); }
+  [[nodiscard]] Math::Stats::index_type size() const override { return data.size(0); }
 
-  const Header &header() const { return H; }
+  [[nodiscard]] const Header &header() const { return H; }
 
 private:
   Header H;
@@ -277,7 +277,7 @@ void run() {
   bool nans_in_columns = false;
   opt = get_options("column");
   for (size_t i = 0; i != opt.size(); ++i) {
-    extra_columns.push_back(Math::Stats::CohortDataImport());
+    extra_columns.emplace_back();
     const std::filesystem::path path{opt[i][0]};
     extra_columns[i].initialise<SubjectFixelImport>(path);
     // Check for non-finite values in mask fixels only
@@ -311,7 +311,7 @@ void run() {
 
   // Load variance groups
   auto variance_groups = Math::Stats::GLM::load_variance_groups(design.rows());
-  const Math::Stats::index_type num_vgs = variance_groups.size() ? variance_groups.maxCoeff() + 1 : 1;
+  const Math::Stats::index_type num_vgs = (variance_groups.size() != 0) ? variance_groups.maxCoeff() + 1 : 1;
   if (num_vgs > 1)
     CONSOLE("Number of variance groups: " + str(num_vgs));
 
@@ -341,7 +341,7 @@ void run() {
     if (mask_processing_image.value() && matrix.size(f) == 0U)
       ++num_unconnected_fixels;
   }
-  if (num_unconnected_fixels) {
+  if (num_unconnected_fixels != 0U) {
     WARN("A total of " + str(num_unconnected_fixels) + " fixels " +
          (mask_proc_fixels == num_fixels ? "" : "in the provided mask ") +
          "do not possess any streamlines-based connectivity; "
@@ -443,14 +443,14 @@ void run() {
   // Construct the class for performing the initial statistical tests
   std::unique_ptr<Math::Stats::GLM::TestBase> glm_test;
   if (variable_design_matrix) {
-    if (variance_groups.size())
+    if (variance_groups.size() != 0)
       glm_test = std::make_unique<Math::Stats::GLM::TestVariableHeteroscedastic>(
           data, design, hypotheses, variance_groups, extra_columns, nans_in_data, nans_in_columns);
     else
       glm_test = std::make_unique<Math::Stats::GLM::TestVariableHomoscedastic>(
           data, design, hypotheses, extra_columns, nans_in_data, nans_in_columns);
   } else {
-    if (variance_groups.size())
+    if (variance_groups.size() != 0)
       glm_test =
           std::make_unique<Math::Stats::GLM::TestFixedHeteroscedastic>(data, design, hypotheses, variance_groups);
     else
@@ -476,7 +476,9 @@ void run() {
   }
 
   // Precompute default statistic and CFE statistic
-  matrix_type default_statistic, default_zstat, default_enhanced;
+  matrix_type default_statistic;
+  matrix_type default_zstat;
+  matrix_type default_enhanced;
   Stats::PermTest::precompute_default_permutation(
       glm_test, cfe_integrator, empirical_cfe_statistic, default_statistic, default_zstat, default_enhanced);
   for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i) {
@@ -514,7 +516,8 @@ void run() {
     for (auto l = Loop(0)(mask_inference_image); l; ++l)
       mask_inference[mask_inference_image.index(0)] = mask_inference_image.value();
 
-    matrix_type null_distribution, uncorrected_pvalues;
+    matrix_type null_distribution;
+    matrix_type uncorrected_pvalues;
     count_matrix_type null_contributions;
     Stats::PermTest::run_permutations(glm_test,
                                       cfe_integrator,

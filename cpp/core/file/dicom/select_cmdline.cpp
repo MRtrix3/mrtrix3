@@ -56,10 +56,10 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
     // select using environment variables:
 
     std::vector<std::shared_ptr<Patient>> patient;
-    for (size_t i = 0; i < tree.size(); i++) {
-      if ((!patient_from_env.has_value() || match(patient_from_env.value(), tree[i]->name, true)) &&
-          (!patid_from_env.has_value() || match(patid_from_env.value(), tree[i]->ID, true)))
-        patient.push_back(tree[i]);
+    for (const auto &i : tree) {
+      if ((!patient_from_env.has_value() || match(patient_from_env.value(), i->name, true)) &&
+          (!patid_from_env.has_value() || match(patid_from_env.value(), i->ID, true)))
+        patient.push_back(i);
     }
     if (patient.empty())
       throw Exception("no matching patients in DICOM dataset \"" + tree.description + "\"");
@@ -105,12 +105,12 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
       std::cin >> buf;
       if (!std::cin || buf[0] == 'q' || buf[0] == 'Q')
         throw CancelException();
-      if (isdigit(buf[0])) {
+      if (isdigit(buf[0]) != 0) {
         const int n = to<int>(buf) - 1;
         if (n <= static_cast<int>(tree.size()))
           patient_p = tree[n].get();
       }
-      if (!patient_p)
+      if (patient_p == nullptr)
         fprintf(stderr, "invalid selection - try again\n");
     }
   } else
@@ -143,12 +143,12 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
       std::cin >> buf;
       if (!std::cin || buf[0] == 'q' || buf[0] == 'Q')
         throw CancelException();
-      if (isdigit(buf[0])) {
+      if (isdigit(buf[0]) != 0) {
         const int n = to<int>(buf) - 1;
         if (n <= static_cast<int>(patient.size()))
           study_p = patient[n].get();
       }
-      if (!study_p)
+      if (study_p == nullptr)
         fprintf(stderr, "invalid selection - try again\n");
     }
   } else
@@ -184,16 +184,16 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
       std::cin >> buf;
       if (!std::cin || buf[0] == 'q' || buf[0] == 'Q')
         throw CancelException();
-      if (isdigit(buf[0])) {
+      if (isdigit(buf[0]) != 0) {
         std::vector<uint32_t> seq;
         try {
           seq = parse_ints<uint32_t>(buf);
-          for (size_t i = 0; i < seq.size(); i++) {
-            if (seq[i] < 0 || seq[i] >= static_cast<uint32_t>(study.size())) {
+          for (unsigned int i : seq) {
+            if (i < 0 || i >= static_cast<uint32_t>(study.size())) {
               series.clear();
               break;
             }
-            series.push_back(study[seq[i]]);
+            series.push_back(study[i]);
           }
         } catch (Exception) {
           seq.clear();

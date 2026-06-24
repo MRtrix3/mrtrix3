@@ -75,8 +75,7 @@ public:
       : ImageType(parent),
         Transform(parent),
         out_of_bounds_value(value_when_out_of_bounds),
-        bounds{parent.size(0) - 0.5, parent.size(1) - 0.5, parent.size(2) - 0.5},
-        out_of_bounds(true) {}
+        bounds{parent.size(0) - 0.5, parent.size(1) - 0.5, parent.size(2) - 0.5} {}
 
   //! Functions that must be defined by interpolation classes
   /*! The follwing functions must be defined by any derived
@@ -183,7 +182,7 @@ public:
 
 protected:
   std::array<default_type, 3> bounds;
-  bool out_of_bounds;
+  bool out_of_bounds{true};
 
   // Some helper functions
   template <class VectorType> bool set_out_of_bounds(const VectorType &pos) {

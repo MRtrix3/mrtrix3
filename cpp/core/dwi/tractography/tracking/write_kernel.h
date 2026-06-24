@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cinttypes>
+#include <memory>
 #include <string>
 
 #include <nlohmann/json.hpp>
@@ -43,17 +44,15 @@ public:
               const DWI::Tractography::Properties &properties)
       : S(shared),
         writer(output_path, properties),
-        always_increment(S.properties.seeds.is_finite() || !S.max_num_tracks),
+        always_increment(S.properties.seeds.is_finite() || (S.max_num_tracks == 0U)),
         warn_on_max_seeds(S.implicit_max_num_seeds),
-        seeds(0),
-        streamlines(0),
-        selected(0),
+
         progress(printf("       0 seeds,        0 streamlines,        0 selected", 0, 0),
                  always_increment ? S.max_num_seeds : S.max_num_tracks),
         early_exit(shared) {
     const auto p = properties.find("seed_output");
     if (p != properties.end()) {
-      output_seeds.reset(new File::OFStream(p->second, std::ios_base::out | std::ios_base::trunc));
+      output_seeds = std::make_unique<File::OFStream>(p->second, std::ios_base::out | std::ios_base::trunc);
       (*output_seeds) << "# " << App::command_history_string << "\n";
       (*output_seeds) << "#Track_index,Seed_index,Pos_x,Pos_y,Pos_z,\n";
     }
@@ -66,8 +65,8 @@ public:
     // Use set_text() rather than update() here to force update of the text before progress goes out of scope
     progress.set_text(
         printf("%8" PRIu64 " seeds, %8" PRIu64 " streamlines, %8" PRIu64 " selected", seeds, streamlines, selected));
-    if (warn_on_max_seeds && writer.total_count == S.max_num_seeds && S.max_num_tracks &&
-        writer.count < S.max_num_tracks) {
+    if (warn_on_max_seeds && (writer.total_count == S.max_num_seeds) && (S.max_num_tracks != 0U) &&
+        (writer.count < S.max_num_tracks)) {
       WARN("less than desired streamline number due to implicit maximum number of seeds; set -seeds 0 to override");
     }
     if (output_seeds) {
@@ -96,15 +95,16 @@ public:
 
   bool operator()(const GeneratedTrack &);
 
-  bool complete() const {
-    return ((S.max_num_tracks && selected >= S.max_num_tracks) || (S.max_num_seeds && seeds >= S.max_num_seeds));
+  [[nodiscard]] bool complete() const {
+    return (((S.max_num_tracks != 0U) && (selected >= S.max_num_tracks)) ||
+            ((S.max_num_seeds != 0U) && (seeds >= S.max_num_seeds)));
   }
 
 protected:
   const SharedBase &S;
   Writer<> writer;
   const bool always_increment, warn_on_max_seeds;
-  size_t seeds, streamlines, selected;
+  size_t seeds{0}, streamlines{0}, selected{0};
   std::unique_ptr<File::OFStream> output_seeds;
   ProgressBar progress;
   EarlyExit early_exit;

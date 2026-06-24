@@ -16,6 +16,7 @@
 #include <QApplication>
 #include <QtNetwork>
 
+#include <memory>
 #include <thread>
 
 #include "exception.h"
@@ -42,13 +43,13 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
     }
 
     // Search for a free id
-    QLocalSocket *socket = new QLocalSocket(this);
+    auto *socket = new QLocalSocket(this);
     freeEntry = -1;
     for (int i = 0; i < maximum_instances; i++) {
-      QString serverName = "mrtrix_interprocesssyncer_" + QString::number(i);
+      const QString serverName = "mrtrix_interprocesssyncer_" + QString::number(i);
       socket->connectToServer(serverName);
       socket->waitForConnected();
-      QLocalSocket::LocalSocketState state = socket->state();
+      const QLocalSocket::LocalSocketState state = socket->state();
       socket->abort();
       if (state != QLocalSocket::ConnectedState) {
         // we found a free name
@@ -61,7 +62,7 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
       }
     }
     if (freeEntry == -1) {
-      std::string errMsg = "No free ids available";
+      const std::string errMsg = "No free ids available";
       throw std::runtime_error(errMsg);
     }
 
@@ -100,7 +101,7 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
 void InterprocessCommunicator::OnNewIncomingConnection() {
   // Parent the reader to this communicator so that Qt's object-ownership model
   // reclaims it when this object is destroyed, rather than leaking the allocation.
-  LocalSocketReader *lsr = new LocalSocketReader(receiver->nextPendingConnection(), this);
+  auto lsr = new LocalSocketReader(receiver->nextPendingConnection(), this);
   connect(lsr,
           SIGNAL(DataReceived(std::vector<std::shared_ptr<QByteArray>>)),
           this,
@@ -113,37 +114,36 @@ void InterprocessCommunicator::OnNewIncomingConnection() {
  * it can connect back to us
  */
 void InterprocessCommunicator::TryConnectTo(int connectToId) {
-  if (connectToId != id) // don't connect to ourself!
-  {
-    QString serverName = "mrtrix_interprocesssyncer_" + QString::number(connectToId);
+  if (connectToId == id) // don't connect to ourself!
+    return;
 
-    // check we are not already connected
-    for (unsigned int i = 0; i < senders.size(); i++) {
-      if (senders[i]->GetServerName() == serverName) {
-        // we have already connected to this
-        return;
-      }
-    }
+  const QString serverName = "mrtrix_interprocesssyncer_" + QString::number(connectToId);
 
-    std::shared_ptr<GUI::MRView::Sync::Client> curCl =
-        std::shared_ptr<GUI::MRView::Sync::Client>(new GUI::MRView::Sync::Client());
+  // check we are not already connected
+  if (std::any_of(senders.begin(), senders.end(), [&serverName](std::shared_ptr<MR::GUI::MRView::Sync::Client> sender) {
+        return sender->GetServerName() == serverName;
+      }))
+    // we have already connected to this
+    return;
 
-    curCl->SetServerName(serverName);
-    if (curCl->TryConnect()) {
-      // Save this connection
-      senders.emplace_back(curCl);
+  const std::shared_ptr<GUI::MRView::Sync::Client> curCl = std::make_shared<GUI::MRView::Sync::Client>();
 
-      // Send it our id so that it connects back to us (i.e. two-way syncing)
-      std::array<char, 8> a;
-      const int32_t connected_id = static_cast<int32_t>(MessageKey::ConnectedID);
-      memcpy(&a[0], &connected_id, 4);
-      memcpy(&a[4], &id, 4);
-      QByteArray dat;
-      dat.insert(0, &a[0], 8);
-      curCl->SendData(dat);
-    }
-    // else we couldn't connect - likely that there was nothing to connect to
-  }
+  curCl->SetServerName(serverName);
+  if (!curCl->TryConnect())
+    // we couldn't connect - likely that there was nothing to connect to
+    return;
+
+  // Save this connection
+  senders.emplace_back(curCl);
+
+  // Send it our id so that it connects back to us (i.e. two-way syncing)
+  std::array<char, 8> a;
+  const auto connected_id = static_cast<int32_t>(MessageKey::ConnectedID);
+  memcpy(&a[0], &connected_id, 4);
+  memcpy(&a[4], &id, 4);
+  QByteArray dat;
+  dat.insert(0, &a[0], 8);
+  curCl->SendData(dat);
 }
 
 /**
@@ -152,8 +152,7 @@ void InterprocessCommunicator::TryConnectTo(int connectToId) {
 void InterprocessCommunicator::OnDataReceived(std::vector<std::shared_ptr<QByteArray>> allMessages) {
   std::vector<std::shared_ptr<QByteArray>> toSync;
 
-  for (size_t i = 0; i < allMessages.size(); i++) {
-    std::shared_ptr<QByteArray> dat = allMessages[i];
+  for (const auto &dat : allMessages) {
     int dataLength = dat->size();
 
     if (dataLength < 4) {
@@ -172,7 +171,7 @@ void InterprocessCommunicator::OnDataReceived(std::vector<std::shared_ptr<QByteA
     }
     case static_cast<int32_t>(MessageKey::SyncData): {
       // The other process has sent information to sync with
-      std::shared_ptr<QByteArray> trimmed = std::shared_ptr<QByteArray>(new QByteArray());
+      const std::shared_ptr<QByteArray> trimmed = std::make_shared<QByteArray>();
       trimmed->insert(0, dat->data() + 4, dataLength);
       toSync.emplace_back(trimmed);
       break;
@@ -200,32 +199,31 @@ bool InterprocessCommunicator::SendData(QByteArray dat) {
   // not cross-platform, probably poor performance, and/or require much more programming
   // than below.
 
-  if (QApplication::activeWindow() != 0 && QApplication::focusWidget() != 0) {
-    // make an array: the message key followed by the message
-    //--Key
-    const int32_t sync_data = static_cast<int32_t>(MessageKey::SyncData);
-    QByteArray data;
-    data.insert(0, reinterpret_cast<const char *>(&sync_data), 4);
-    //--Data
-    data.insert(4, dat.data(), dat.size());
-
-    // send to all senders
-    bool allOk = true;
-    for (int i = senders.size() - 1; i >= 0; i--) {
-      try {
-        senders[i]->SendData(data);
-      } catch (...) {
-        DEBUG("Send Error");
-        allOk = false;
-        // sending error.
-        // TODO: send again or disconnect this item
-      }
-    }
-    return allOk;
-  } else {
-    // We are not the active window
+  // We are not the active window
+  if (QApplication::activeWindow() == 0 || QApplication::focusWidget() == 0)
     return false;
+
+  // make an array: the message key followed by the message
+  //--Key
+  const auto sync_data = static_cast<int32_t>(MessageKey::SyncData);
+  QByteArray data;
+  data.insert(0, reinterpret_cast<const char *>(&sync_data), 4);
+  //--Data
+  data.insert(4, dat.data(), dat.size());
+
+  // send to all senders
+  bool allOk = true;
+  for (int i = senders.size() - 1; i >= 0; i--) {
+    try {
+      senders[i]->SendData(data);
+    } catch (...) {
+      DEBUG("Send Error");
+      allOk = false;
+      // sending error.
+      // TODO: send again or disconnect this item
+    }
   }
+  return allOk;
 }
 
 } // namespace MR::GUI::MRView::Sync

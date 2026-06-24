@@ -59,13 +59,13 @@ PreProcessor::PreProcessor(const PreProcessor &that)
       mutex(that.mutex) {}
 
 PreProcessor::~PreProcessor() {
-  std::lock_guard<std::mutex> lock(*mutex);
+  const std::lock_guard<std::mutex> lock(*mutex);
   global_enhanced_sum.array() += enhanced_sum.array();
   global_enhanced_count += enhanced_count;
 }
 
 bool PreProcessor::operator()(const Math::Stats::Shuffle &shuffle) {
-  if (!shuffle.data.rows())
+  if (shuffle.data.rows() == 0)
     return false;
   (*stats_calculator)(shuffle.data, stats, zstats);
   (*enhancer)(zstats, enhanced_stats);
@@ -126,7 +126,7 @@ Processor::Processor(const Processor &that)
       mutex(that.mutex) {}
 
 Processor::~Processor() {
-  std::lock_guard<std::mutex> lock(*mutex);
+  const std::lock_guard<std::mutex> lock(*mutex);
   global_uncorrected_pvalue_counter += local_uncorrected_pvalue_counter;
   global_nulldist_contributions += local_nulldist_contributions;
 }
@@ -138,11 +138,12 @@ bool Processor::operator()(const Math::Stats::Shuffle &shuffle) {
   else
     enhanced_statistics = zstatistics;
 
-  if (empirical_enhanced_statistics.size())
+  if (empirical_enhanced_statistics.size() != 0)
     enhanced_statistics.array() /= empirical_enhanced_statistics.array();
 
   if (null_dist.cols() == 1) { // strong fwe control
-    ssize_t max_element, max_hypothesis;
+    ssize_t max_element;
+    ssize_t max_hypothesis;
     null_dist(shuffle.index, 0) = (enhanced_statistics.array().colwise() * mask.cast<matrix_type::Scalar>())
                                       .maxCoeff(&max_element, &max_hypothesis);
     local_nulldist_contributions(max_element, max_hypothesis)++;
@@ -216,7 +217,7 @@ void precompute_default_permutation(const std::unique_ptr<Math::Stats::GLM::Test
     output_enhanced = output_statistics;
   ++progress;
 
-  if (empirical_enhanced.size())
+  if (empirical_enhanced.size() != 0)
     output_enhanced.array() /= empirical_enhanced.array();
 }
 

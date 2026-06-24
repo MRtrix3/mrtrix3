@@ -58,7 +58,7 @@ void MeshMulti::load(const std::filesystem::path &path) {
         throw Exception("Malformed OBJ file: vertex outside object (line " + str(counter) + ")");
       std::array<float, 4> values{};
       sscanf(data.c_str(), "%f %f %f %f", &values[0], &values[1], &values[2], &values[3]);
-      vertices.push_back(Vertex(values[0], values[1], values[2]));
+      vertices.emplace_back(values[0], values[1], values[2]);
     } else if (prefix == "f") {
       if (index < 0)
         throw Exception("Malformed OBJ file: face outside object (line " + str(counter) + ")");
@@ -66,7 +66,7 @@ void MeshMulti::load(const std::filesystem::path &path) {
       do {
         const size_t first_space = data.find_first_of(' ');
         if (first_space == data.npos) {
-          if (std::isalnum(data[0]))
+          if (std::isalnum(data[0]) != 0)
             elements.push_back(data);
           data.clear();
         } else {
@@ -79,28 +79,28 @@ void MeshMulti::load(const std::filesystem::path &path) {
                         " (face with neither 3 nor 4 vertices; line " + str(counter) + ")"); //
       std::vector<FaceData> face_data;
       size_t values_per_element = 0;
-      for (std::vector<std::string>::iterator i = elements.begin(); i != elements.end(); ++i) {
+      for (const auto &element : elements) {
         FaceData temp;
         temp.vertex = 0;
         temp.texture = 0;
         temp.normal = 0;
-        const size_t first_slash = i->find_first_of('/');
-        temp.vertex = to<uint32_t>(i->substr(0, first_slash)) - vertex_index_offset;
+        const size_t first_slash = element.find_first_of('/');
+        temp.vertex = to<uint32_t>(element.substr(0, first_slash)) - vertex_index_offset;
         size_t this_values_count = 0;
-        if (first_slash == i->npos) {
+        if (first_slash == element.npos) {
           this_values_count = 1;
         } else {
-          const size_t last_slash = i->find_last_of('/');
+          const size_t last_slash = element.find_last_of('/');
           if (last_slash == first_slash) {
-            temp.texture = to<uint32_t>(i->substr(last_slash + 1)) - vertex_index_offset;
+            temp.texture = to<uint32_t>(element.substr(last_slash + 1)) - vertex_index_offset;
             this_values_count = 2;
           } else {
-            temp.texture = to<uint32_t>(i->substr(first_slash, last_slash)) - vertex_index_offset;
-            temp.normal = to<uint32_t>(i->substr(last_slash + 1)) - vertex_index_offset;
+            temp.texture = to<uint32_t>(element.substr(first_slash, last_slash)) - vertex_index_offset;
+            temp.normal = to<uint32_t>(element.substr(last_slash + 1)) - vertex_index_offset;
             this_values_count = 3;
           }
         }
-        if (!values_per_element)
+        if (values_per_element == 0U)
           values_per_element = this_values_count;
         else if (values_per_element != this_values_count)
           throw Exception(std::string("Malformed face information in input OBJ file:") +           //
@@ -108,11 +108,12 @@ void MeshMulti::load(const std::filesystem::path &path) {
         face_data.push_back(temp);
       }
       if (face_data.size() == 3) {
-        std::vector<uint32_t> temp{face_data[0].vertex, face_data[1].vertex, face_data[2].vertex};
-        triangles.push_back(Triangle(temp));
+        const std::vector<uint32_t> temp{face_data[0].vertex, face_data[1].vertex, face_data[2].vertex};
+        triangles.emplace_back(temp);
       } else {
-        std::vector<uint32_t> temp{face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex};
-        quads.push_back(Quad(temp));
+        const std::vector<uint32_t> temp{
+            face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex};
+        quads.emplace_back(temp);
       }
     } else if (prefix == "o") {
       // This is where this function differs from the standard OBJ load
@@ -147,16 +148,16 @@ void MeshMulti::save(const std::filesystem::path &path) const {
   File::OFStream out(path);
   size_t offset = 1;
   out << "# " << App::command_history_string << "\n";
-  for (const_iterator i = begin(); i != end(); ++i) {
-    out << "o " << i->get_name() << "\n";
-    for (VertexList::const_iterator v = i->vertices.begin(); v != i->vertices.end(); ++v)
-      out << "v " << str((*v)[0]) << " " << str((*v)[1]) << " " << str((*v)[2]) << " 1.0\n";
-    for (TriangleList::const_iterator t = i->triangles.begin(); t != i->triangles.end(); ++t)
-      out << "f " << str((*t)[0] + offset) << " " << str((*t)[1] + offset) << " " << str((*t)[2] + offset) << "\n";
-    for (QuadList::const_iterator q = i->quads.begin(); q != i->quads.end(); ++q)
-      out << "f " << str((*q)[0] + offset) << " " << str((*q)[1] + offset) << " " << str((*q)[2] + offset) << " "
-          << str((*q)[3] + offset) << "\n";
-    offset += i->vertices.size();
+  for (const auto &i : *this) {
+    out << "o " << i.get_name() << "\n";
+    for (const auto &v : i.vertices)
+      out << "v " << str(v[0]) << " " << str(v[1]) << " " << str(v[2]) << " 1.0\n";
+    for (const auto &t : i.triangles)
+      out << "f " << str(t[0] + offset) << " " << str(t[1] + offset) << " " << str(t[2] + offset) << "\n";
+    for (const auto &q : i.quads)
+      out << "f " << str(q[0] + offset) << " " << str(q[1] + offset) << " " << str(q[2] + offset) << " "
+          << str(q[3] + offset) << "\n";
+    offset += i.vertices.size();
   }
 }
 

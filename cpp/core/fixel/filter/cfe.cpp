@@ -118,7 +118,7 @@ normalise_cfe(DataType &data, const size_t index, const default_type multiplier)
 
 template <class InputType, class OutputType> void CFE::run(InputType stats, OutputType enhanced_stats) const {
   zero(enhanced_stats);
-  std::vector<default_type> connected_stats;
+  const std::vector<default_type> connected_stats;
   for (size_t fixel = 0; fixel < matrix.size(); ++fixel) {
     set_index(enhanced_stats, fixel);
     const default_type stat = get(stats, fixel);

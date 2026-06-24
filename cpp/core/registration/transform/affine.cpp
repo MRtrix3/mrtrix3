@@ -43,7 +43,18 @@ bool AffineUpdate::operator()(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &ne
   }
 
   Eigen::Matrix<default_type, 12, 1> delta;
-  Eigen::Matrix<default_type, 4, 4> X, Delta, G, A, Asqrt, B, Bsqrt, Bsqrtinv, Xnew, P, Diff, XnewP;
+  Eigen::Matrix<default_type, 4, 4> X;
+  Eigen::Matrix<default_type, 4, 4> Delta;
+  Eigen::Matrix<default_type, 4, 4> G;
+  Eigen::Matrix<default_type, 4, 4> A;
+  Eigen::Matrix<default_type, 4, 4> Asqrt;
+  Eigen::Matrix<default_type, 4, 4> B;
+  Eigen::Matrix<default_type, 4, 4> Bsqrt;
+  Eigen::Matrix<default_type, 4, 4> Bsqrtinv;
+  Eigen::Matrix<default_type, 4, 4> Xnew;
+  Eigen::Matrix<default_type, 4, 4> P;
+  Eigen::Matrix<default_type, 4, 4> Diff;
+  Eigen::Matrix<default_type, 4, 4> XnewP;
   Registration::Transform::param_vec2mat(g, G);
   Registration::Transform::param_vec2mat(x, X);
 
@@ -52,7 +63,7 @@ bool AffineUpdate::operator()(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &ne
     step_size = 0.2 / G.block(0, 0, 3, 3).array().abs().maxCoeff();
   }
   // use control points and coherence length as regulariser for the step_size
-  if (control_points.size()) {
+  if (control_points.size() != 0) {
     P = control_points;
     const default_type orig_step_size(step_size);
     const default_type step_down_factor(0.5);
@@ -123,10 +134,10 @@ bool AffineUpdate::operator()(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &ne
         // project affine 3x3 matrix to rigid matrix
         // adjust translation to account for scale of affine by matching projected control point
         // centroids of affine and projected rigid transformation
-        Eigen::Matrix<default_type, 3, 3> L(Xnew.template block<3, 3>(0, 0));
+        const Eigen::Matrix<default_type, 3, 3> L(Xnew.template block<3, 3>(0, 0));
         Eigen::Matrix<default_type, 3, 3> R;
-        Eigen::JacobiSVD<Eigen::Matrix<default_type, 3, 3>> svd(L, Eigen::ComputeFullU | Eigen::ComputeFullV);
-        default_type x = (svd.matrixU() * svd.matrixV().adjoint()).determinant(); // so x has absolute value 1
+        const Eigen::JacobiSVD<Eigen::Matrix<default_type, 3, 3>> svd(L, Eigen::ComputeFullU | Eigen::ComputeFullV);
+        const default_type x = (svd.matrixU() * svd.matrixV().adjoint()).determinant(); // so x has absolute value 1
         Eigen::Matrix<default_type, 3, 1> sv(svd.singularValues());
         sv.coeffRef(0) *= x;
         Eigen::Matrix<default_type, 3, 3> m(svd.matrixU());
@@ -138,7 +149,9 @@ bool AffineUpdate::operator()(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &ne
 
         Xnew.template block<3, 3>(0, 0) = R;
         P = control_points;
-        Eigen::Matrix<default_type, 3, 1> T_affine, T_new, centroid;
+        Eigen::Matrix<default_type, 3, 1> T_affine;
+        Eigen::Matrix<default_type, 3, 1> T_new;
+        Eigen::Matrix<default_type, 3, 1> centroid;
         T_affine = Xnew.block<3, 1>(0, 3);
         centroid = P.rowwise().mean().head<3>();
         T_new = L.sqrt() * centroid + T_affine - R.sqrt() * centroid;
@@ -221,7 +234,7 @@ bool AffineUpdate::operator()(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &ne
     return false;
   }
 
-  if (control_points.size()) {
+  if (control_points.size() != 0) {
     XnewP = (Xnew * P).eval();
 
     // stop criterion based on slope of smoothed control point trajectories

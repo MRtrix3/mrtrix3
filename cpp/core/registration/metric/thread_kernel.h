@@ -78,7 +78,7 @@ public:
       : metric(metric),
         params(parameters),
         cost_function(overall_cost_function.size()),
-        cnt(0),
+
         gradient(overall_gradient.size()),
         overall_cost_function(overall_cost_function),
         overall_gradient(overall_gradient),
@@ -102,7 +102,7 @@ public:
   ~ThreadKernel() {
     overall_cost_function += cost_function;
     overall_gradient += gradient;
-    if (overall_cnt)
+    if (overall_cnt != nullptr)
       (*overall_cnt) += cnt;
   }
 
@@ -116,7 +116,7 @@ public:
     const Eigen::Vector3d voxel_pos{static_cast<default_type>(iter.index(0)),
                                     static_cast<default_type>(iter.index(1)),
                                     static_cast<default_type>(iter.index(2))};
-    Eigen::Vector3d midway_point = voxel2scanner * voxel_pos;
+    const Eigen::Vector3d midway_point = voxel2scanner * voxel_pos;
 
     Eigen::Vector3d im2_point;
     params.transformation.transform_half_inverse(im2_point, midway_point);
@@ -234,7 +234,7 @@ public:
                                     static_cast<default_type>(iter.index(1)),
                                     static_cast<default_type>(iter.index(2))};
 
-    Eigen::Vector3d midway_point = voxel2scanner * voxel_pos;
+    const Eigen::Vector3d midway_point = voxel2scanner * voxel_pos;
 
     Eigen::Vector3d im2_point;
     params.transformation.transform_half_inverse(im2_point, midway_point);
@@ -312,7 +312,7 @@ protected:
   ParamType params;
 
   Eigen::VectorXd cost_function;
-  ssize_t cnt;
+  ssize_t cnt{0};
   Eigen::VectorXd gradient;
   Eigen::VectorXd &overall_cost_function;
   Eigen::VectorXd &overall_gradient;

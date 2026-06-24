@@ -116,47 +116,49 @@ template <typename ValueType> class Image;
 
 //! convenience function for SFINAE on header types
 template <class HeaderType, typename ReturnType> struct enable_if_header_type {
-  typedef decltype((void)(std::declval<HeaderType>().ndim() + std::declval<HeaderType>().size(0) +
-                          std::declval<HeaderType>().name().size()),
-                   std::declval<ReturnType>()) type;
+  using type = decltype((void)(std::declval<HeaderType>().ndim() + std::declval<HeaderType>().size(0) +
+                               std::declval<HeaderType>().name().size()),
+                        std::declval<ReturnType>());
 };
 
 //! convenience function for SFINAE on header types
 template <typename HeaderType> class is_header_type {
-  typedef char yes[1], no[2]; // check_syntax off
+  using yes = char[1]; // check_syntax off
+  using no = char[2];  // check_syntax off
   template <typename C> static yes &test(typename enable_if_header_type<HeaderType, int>::type);
   template <typename C> static no &test(...);
 
 public:
-  static bool const value = sizeof(test<HeaderType>(0)) == sizeof(yes);
+  static const bool value = sizeof(test<HeaderType>(0)) == sizeof(yes);
 };
 
 //! convenience function for SFINAE on image types
 template <class ImageType, typename ReturnType> struct enable_if_image_type {
-  typedef decltype((void)(std::declval<ImageType>().ndim() + std::declval<ImageType>().size(0) +
-                          std::declval<ImageType>().name().size() + std::declval<ImageType>().value() +
-                          std::declval<ImageType>().index(0)),
-                   std::declval<ReturnType>()) type;
+  using type = decltype((void)(std::declval<ImageType>().ndim() + std::declval<ImageType>().size(0) +
+                               std::declval<ImageType>().name().size() + std::declval<ImageType>().value() +
+                               std::declval<ImageType>().index(0)),
+                        std::declval<ReturnType>());
 };
 
 //! convenience function for SFINAE on image types
 template <typename ImageType> class is_image_type {
-  typedef char yes[1], no[2]; // check_syntax off
+  using yes = char[1]; // check_syntax off
+  using no = char[2];  // check_syntax off
   template <typename C> static yes &test(typename enable_if_image_type<ImageType, int>::type);
   template <typename C> static no &test(...);
 
 public:
-  static bool const value = sizeof(test<ImageType>(0)) == sizeof(yes);
+  static const bool value = sizeof(test<ImageType>(0)) == sizeof(yes);
 };
 
 //! convenience function for SFINAE on images of type Image<ValueType>
 template <class ImageType> struct is_pure_image {
-  static bool const value = std::is_same<ImageType, ::MR::Image<typename ImageType::value_type>>::value;
+  static const bool value = std::is_same<ImageType, ::MR::Image<typename ImageType::value_type>>::value;
 };
 
 //! convenience function for SFINAE on images NOT of type Image<ValueType>
 template <class ImageType> struct is_adapter_type {
-  static bool const value = is_image_type<ImageType>::value && !is_pure_image<ImageType>::value;
+  static const bool value = is_image_type<ImageType>::value && !is_pure_image<ImageType>::value;
 };
 
 //! returns a functor to set the position in ref to other voxels
@@ -264,9 +266,9 @@ template <class HeaderType> inline size_t voxel_count(const HeaderType &in, cons
 //! returns the number of voxel in the relevant subvolume of the data set
 template <class HeaderType> inline int64_t voxel_count(const HeaderType &in, const std::vector<size_t> &axes) {
   int64_t fp = 1;
-  for (size_t n = 0; n < axes.size(); ++n) {
-    assert(axes[n] < in.ndim());
-    fp *= in.size(axes[n]);
+  for (unsigned long axis : axes) {
+    assert(axis < in.ndim());
+    fp *= in.size(axis);
   }
   return fp;
 }
@@ -325,11 +327,10 @@ inline bool spacings_match(const HeaderType1 &in1,
                            const HeaderType2 &in2,
                            const std::vector<size_t> &axes,
                            const double tol = 0.0) {
-  for (size_t n = 0; n < axes.size(); ++n) {
-    if (in1.ndim() <= axes[n] || in2.ndim() <= axes[n])
+  for (unsigned long axis : axes) {
+    if (in1.ndim() <= axis || in2.ndim() <= axis)
       return false;
-    if (std::fabs(in1.spacing(axes[n]) - in2.spacing(axes[n])) >
-        tol * 0.5 * (in1.spacing(axes[n]) + in2.spacing(axes[n])))
+    if (std::fabs(in1.spacing(axis) - in2.spacing(axis)) > tol * 0.5 * (in1.spacing(axis) + in2.spacing(axis)))
       return false;
   }
   return true;
@@ -358,10 +359,10 @@ inline bool dimensions_match(const HeaderType1 &in1, const HeaderType2 &in2, siz
 
 template <class HeaderType1, class HeaderType2>
 inline bool dimensions_match(const HeaderType1 &in1, const HeaderType2 &in2, const std::vector<size_t> &axes) {
-  for (size_t n = 0; n < axes.size(); ++n) {
-    if (in1.ndim() <= axes[n] || in2.ndim() <= axes[n])
+  for (unsigned long axis : axes) {
+    if (in1.ndim() <= axis || in2.ndim() <= axis)
       return false;
-    if (in1.size(axes[n]) != in2.size(axes[n]))
+    if (in1.size(axis) != in2.size(axis))
       return false;
   }
   return true;
@@ -400,7 +401,7 @@ inline void check_dimensions(const HeaderType1 &in1, const HeaderType2 &in2, con
 template <class HeaderType1, class HeaderType2>
 inline void
 check_voxel_grids_match_in_scanner_space(const HeaderType1 &in1, const HeaderType2 &in2, const double tol = 1.0e-3) {
-  Eigen::IOFormat FullPrecFmt(Eigen::FullPrecision, 0, ", ", "\n", "[", "]");
+  const Eigen::IOFormat FullPrecFmt(Eigen::FullPrecision, 0, ", ", "\n", "[", "]");
   if (!voxel_grids_match_in_scanner_space(in1, in2, tol))
     throw Exception("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not have matching header transforms " +
                     "\n" + str(in1.transform().matrix().format(FullPrecFmt)) + "\nvs\n" +
@@ -424,11 +425,11 @@ voxel_grids_match_in_scanner_space(const HeaderType1 in1, const HeaderType2 in2,
   voxel_coord(1, 1) = voxel_coord(1, 3) = 0.5 * (in1.size(1) + in2.size(1));
   voxel_coord(2, 2) = voxel_coord(2, 3) = 0.5 * (in1.size(2) + in2.size(2));
 
-  double diff_in_scannercoord = std::sqrt((vs1.asDiagonal() * in1.transform().matrix() * voxel_coord -
-                                           vs2.asDiagonal() * in2.transform().matrix() * voxel_coord)
-                                              .colwise()
-                                              .squaredNorm()
-                                              .maxCoeff());
+  const double diff_in_scannercoord = std::sqrt((vs1.asDiagonal() * in1.transform().matrix() * voxel_coord -
+                                                 vs2.asDiagonal() * in2.transform().matrix() * voxel_coord)
+                                                    .colwise()
+                                                    .squaredNorm()
+                                                    .maxCoeff());
   DEBUG("transforms_match: FOV difference in scanner coordinates: " + str(diff_in_scannercoord));
   return diff_in_scannercoord < (0.5 * (vs1 + vs2)).minCoeff() * tol;
 }
@@ -477,7 +478,7 @@ public:
     return get();
   }
   FORCE_INLINE ssize_t operator=(ssize_t position) { return (*this += position - get()); }
-  FORCE_INLINE ssize_t operator=(Index &&position) { return (*this = position.get()); }
+  FORCE_INLINE ssize_t operator=(Index &&position) noexcept { return (*this = position.get()); }
   friend std::ostream &operator<<(std::ostream &stream, const Index &p) {
     stream << p.get();
     return stream;
@@ -486,7 +487,7 @@ public:
 protected:
   ImageType &image;
   const size_t axis;
-  FORCE_INLINE ssize_t get() const { return image.get_index(axis); }
+  [[nodiscard]] FORCE_INLINE ssize_t get() const { return image.get_index(axis); }
   FORCE_INLINE void move(ssize_t amount) { image.move_index(axis, amount); }
 };
 
@@ -515,7 +516,7 @@ public:
 
 private:
   ImageType &image;
-  FORCE_INLINE value_type get() const { return image.get_value(); }
+  [[nodiscard]] FORCE_INLINE value_type get() const { return image.get_value(); }
   FORCE_INLINE value_type set(value_type value) {
     image.set_value(value);
     return value;
@@ -525,7 +526,7 @@ private:
 template <class ImageType> class ConstRow {
 public:
   ConstRow(ImageType &image, size_t axis) : axis(axis), image(image) { assert(axis < image.ndim()); }
-  ssize_t size() const { return image.size(axis); }
+  [[nodiscard]] ssize_t size() const { return image.size(axis); }
   typename ImageType::value_type operator[](ssize_t n) const {
     image.index(axis) = n;
     return image.value();
@@ -579,7 +580,7 @@ public:
   MRTRIX_OP(/=);
 #undef MRTRIX_OP
 
-  FORCE_INLINE void operator=(Row &&other) {
+  FORCE_INLINE void operator=(Row &&other) noexcept {
     assert(image.size(axis) == other.image.size(other.axis));
     for (image.index(axis) = 0, other.image.index(other.axis) = 0; image.index(axis) < image.size(axis);
          ++image.index(axis), ++other.image.index(other.axis))
@@ -612,10 +613,12 @@ public:
   using value_type = ValueType;
 
   FORCE_INLINE Helper::Index<Derived> index(size_t axis) { return {static_cast<Derived &>(*this), axis}; }
-  FORCE_INLINE ssize_t index(size_t axis) const { return static_cast<const Derived *>(this)->get_index(axis); }
+  [[nodiscard]] FORCE_INLINE ssize_t index(size_t axis) const {
+    return static_cast<const Derived *>(this)->get_index(axis);
+  }
 
   FORCE_INLINE Helper::Value<Derived> value() { return {static_cast<Derived &>(*this)}; }
-  FORCE_INLINE ValueType value() const { return static_cast<const Derived *>(this)->get_value(); }
+  [[nodiscard]] FORCE_INLINE ValueType value() const { return static_cast<const Derived *>(this)->get_value(); }
 
   //! a proxy class for the vector of values along the specified axis
   /*! returns a proxy class to simplify interactions with the data as a
@@ -631,7 +634,9 @@ public:
    * out.row(3) += M*Eigen::Vector3f(in.row(3)) + Eigen::VectorXf (other.row(3));
    * \code
    * */
-  FORCE_INLINE Helper::ConstRow<Derived> row(size_t axis) const { return {static_cast<Derived &>(*this), axis}; }
+  [[nodiscard]] FORCE_INLINE Helper::ConstRow<Derived> row(size_t axis) const {
+    return {static_cast<Derived &>(*this), axis};
+  }
   FORCE_INLINE Helper::Row<Derived> row(size_t axis) { return {static_cast<Derived &>(*this), axis}; }
 };
 

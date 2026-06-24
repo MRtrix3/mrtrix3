@@ -44,7 +44,7 @@ public:
       variable = to<T>((*this)[key]);
   }
 
-  float get_stepsize() const;
+  [[nodiscard]] float get_stepsize() const;
   void compare_stepsize_rois() const;
 
   // In use at time of execution

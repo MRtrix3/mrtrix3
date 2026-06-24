@@ -17,8 +17,8 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <fstream>
-#include <stdint.h>
 
 #include "raw.h"
 

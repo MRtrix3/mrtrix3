@@ -26,19 +26,18 @@ bool DoubleExpSmoothSlopeCheck::go_on(const Eigen::Matrix<default_type, Eigen::D
   ++iter_count;
   // initialise
   if (len == 0) {
-    if (!x0.size()) {
+    if (x0.size() == 0) {
       x0 = element;
       return true;
-    } else {
-      ds.emplace_back(element);
-      db.emplace_back(element - x0);
-      if (check_all(db.back()))
-        ++stop_cnt;
-      else
-        stop_cnt = 0;
-      ++len;
-      return true;
     }
+    ds.emplace_back(element);
+    db.emplace_back(element - x0);
+    if (check_all(db.back()))
+      ++stop_cnt;
+    else
+      stop_cnt = 0;
+    ++len;
+    return true;
   }
   // add smoothed elements
   ds.emplace_back(alpha * element + (1.0 - alpha) * (ds.back() + db.back()));
@@ -79,7 +78,7 @@ void DoubleExpSmoothSlopeCheck::set_parameters(const Eigen::Matrix<default_type,
 
 bool DoubleExpSmoothSlopeCheck::last_b(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &b) const {
   assert(is_initialised);
-  if (!len)
+  if (len == 0U)
     return false;
   b = db.back();
   return true;
@@ -87,7 +86,7 @@ bool DoubleExpSmoothSlopeCheck::last_b(Eigen::Matrix<default_type, Eigen::Dynami
 
 bool DoubleExpSmoothSlopeCheck::last_s(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &s) const {
   assert(is_initialised);
-  if (!len)
+  if (len == 0U)
     return false;
   s = ds.back();
   return true;
@@ -98,14 +97,14 @@ void DoubleExpSmoothSlopeCheck::debug(const Eigen::Matrix<default_type, Eigen::D
     WARN("DoubleExpSmoothSlopeCheck not initialised");
     return;
   }
-  std::cout << str(control_points_vec.transpose()) << std::endl;
+  std::cout << str(control_points_vec.transpose()) << '\n';
   if (len == 0) {
     INFO("DoubleExpSmoothSlopeCheck did not run");
     return;
   }
 
-  std::cout << "#b " + str(db.back().transpose()) << std::endl;
-  std::cout << "#s " + str(ds.back().transpose()) << std::endl;
+  std::cout << "#b " + str(db.back().transpose()) << '\n';
+  std::cout << "#s " + str(ds.back().transpose()) << '\n';
   DEBUG("bmax : " + str(db.back().array().abs().maxCoeff()));
 }
 //! @}

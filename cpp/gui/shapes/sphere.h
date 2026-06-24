@@ -34,23 +34,23 @@ public:
   // TODO Initialise sphere & buffers at construction;
   //   currently it doesn't seem to work as a GL context has not yet been
   //   created, so gl::GenBuffers() returns zero
-  Sphere() : num_indices(0) {}
+  Sphere() = default;
 
   void LOD(const size_t);
 
-  size_t num_indices;
+  size_t num_indices{0};
   GL::VertexBuffer vertex_buffer;
   GL::IndexBuffer index_buffer;
 
   class Vertex {
   public:
-    Vertex() {}
+    Vertex() = default;
     Vertex(const float x[3]) {
       p[0] = x[0];
       p[1] = x[1];
       p[2] = x[2];
     }
-    Vertex(Eigen::Map<const Eigen::Matrix<float, 12, 3, Eigen::RowMajor>>::ConstRowXpr row) {
+    Vertex(Eigen::Map<const Eigen::Matrix<float, 12, 3, Eigen::RowMajor>>::ConstRowXpr &row) {
       p[0] = row[0];
       p[1] = row[1];
       p[2] = row[2];

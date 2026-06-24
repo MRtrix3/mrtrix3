@@ -28,6 +28,7 @@
 #include "dwi/sdeconv/msmt_csd.h"
 
 #include <filesystem>
+#include <utility>
 
 using namespace MR;
 using namespace App;
@@ -133,7 +134,7 @@ void usage() {
 class CSD_Processor {
 public:
   CSD_Processor(const DWI::SDeconv::CSD::Shared &shared, Image<bool> &mask, Image<float> dwi_modelled = Image<float>())
-      : sdeconv(shared), data(shared.dwis.size()), mask(mask), modelled_image(dwi_modelled) {}
+      : sdeconv(shared), data(shared.dwis.size()), mask(mask), modelled_image(std::move(dwi_modelled)) {}
 
   void operator()(Image<float> &dwi, Image<float> &fod) {
     if (!load_data(dwi)) {
@@ -154,7 +155,7 @@ public:
       if (sdeconv.iterate())
         break;
 
-    if (sdeconv.shared.niter && n >= sdeconv.shared.niter)
+    if ((sdeconv.shared.niter != 0U) && n >= sdeconv.shared.niter)
       INFO("voxel [ " + str(dwi.index(0)) + " " + str(dwi.index(1)) + " " + str(dwi.index(2)) +
            " ] did not reach full convergence");
 
@@ -208,8 +209,8 @@ public:
                  Image<float> dwi_modelled = Image<float>())
       : sdeconv(shared),
         mask_image(mask_image),
-        odf_images(odf_images),
-        modelled_image(dwi_modelled),
+        odf_images(std::move(odf_images)),
+        modelled_image(std::move(dwi_modelled)),
         dwi_data(shared.grad.rows()),
         output_data(shared.problem.H.cols()) {}
 
@@ -229,10 +230,10 @@ public:
     }
 
     size_t j = 0;
-    for (size_t i = 0; i < odf_images.size(); ++i) {
-      assign_pos_of(dwi_image, 0, 3).to(odf_images[i]);
-      for (auto l = Loop(3)(odf_images[i]); l; ++l)
-        odf_images[i].value() = output_data[j++];
+    for (auto &odf_image : odf_images) {
+      assign_pos_of(dwi_image, 0, 3).to(odf_image);
+      for (auto l = Loop(3)(odf_image); l; ++l)
+        odf_image.value() = output_data[j++];
     }
 
     if (modelled_image.valid()) {
@@ -270,10 +271,10 @@ void run() {
 
   Image<float> dwi_modelled;
   opt = get_options("predicted_signal");
-  if (opt.size())
+  if (!opt.empty())
     dwi_modelled = Image<float>::create(opt[0][0], header_out);
 
-  const Algorithm algorithm = MR::Enum::from_name<Algorithm>(argument[0]);
+  const auto algorithm = MR::Enum::from_name<Algorithm>(argument[0]);
   switch (algorithm) {
   case Algorithm::CSD: {
     if (argument.size() != 4)
@@ -301,7 +302,7 @@ void run() {
     break;
   }
   case Algorithm::MSMT_CSD: {
-    if (argument.size() % 2)
+    if ((argument.size() % 2) != 0U)
       throw Exception(
           "MSMT_CSD algorithm expects pairs of (input response function & output FOD image) to be provided");
 

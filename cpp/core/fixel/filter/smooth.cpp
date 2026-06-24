@@ -51,7 +51,7 @@ Smooth::Smooth(Image<index_type> index_image,
 }
 
 void Smooth::set_fwhm(const float fwhm) {
-  stdev = fwhm / 2.3548f;
+  stdev = fwhm / 2.3548F;
   gaussian_const1 = 1.0 / (stdev * std::sqrt(2.0 * Math::pi));
   gaussian_const2 = -1.0 / (2.0 * stdev * stdev);
 }
@@ -70,7 +70,7 @@ void Smooth::operator()(Image<float> &input, Image<float> &output) const {
 
   class Source {
   public:
-    Source(const size_t N) : number(N), counter(0) {}
+    Source(const size_t N) : number(N) {}
     bool operator()(size_t &fixel) {
       fixel = counter;
       if (fixel == number)
@@ -81,7 +81,7 @@ void Smooth::operator()(Image<float> &input, Image<float> &output) const {
 
   private:
     const size_t number;
-    size_t counter;
+    size_t counter{0};
   };
 
   class Worker {

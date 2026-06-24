@@ -24,13 +24,12 @@ namespace MR::GUI::MRView::Tool {
 
 NodeOverlay::NodeOverlay(MR::Header &&H)
     : MR::GUI::MRView::ImageBase(std::move(H)),
-      data(MR::Image<float>::scratch(header(), "node overlay scratch image")),
-      need_update(true) {
+      data(MR::Image<float>::scratch(header(), "node overlay scratch image")) {
   tex_positions.assign(3, -1);
   set_interpolate(false);
   set_colourmap(5);
-  value_min = 0.0f;
-  value_max = 1.0f;
+  value_min = 0.0F;
+  value_max = 1.0F;
   min_max_set();
   set_allowed_features(true, true, true);
   set_use_discard_lower(true);
@@ -39,7 +38,7 @@ NodeOverlay::NodeOverlay(MR::Header &&H)
   set_invert_scale(false);
   set_interpolate(false);
   transparent_intensity = opaque_intensity = lessthan = std::numeric_limits<float>::min();
-  alpha = 1.0f;
+  alpha = 1.0F;
   type = gl::FLOAT;
   format = gl::RGBA;
   internal_format = gl::RGBA32F;
@@ -51,7 +50,7 @@ void NodeOverlay::update_texture2D(const int plane, const int slice) {
   // 'overhauled' the main image, and the camera & focus plane were set based on the
   // parcellation image
   assert(0);
-  if (!texture2D[plane])
+  if (texture2D[plane] == 0U)
     texture2D[plane].gen(gl::TEXTURE_3D);
   texture2D[plane].bind();
   gl::PixelStorei(gl::UNPACK_ALIGNMENT, 1);
@@ -61,12 +60,14 @@ void NodeOverlay::update_texture2D(const int plane, const int slice) {
     return;
   tex_positions[plane] = slice;
 
-  int x, y;
+  int x;
+  int y;
   get_axes(plane, x, y);
-  const ssize_t xsize = data.size(x), ysize = data.size(y);
+  const ssize_t xsize = data.size(x);
+  const ssize_t ysize = data.size(y);
 
   std::vector<float> texture_data;
-  texture_data.resize(4 * xsize * ysize, 0.0f);
+  texture_data.resize(4 * xsize * ysize, 0.0F);
   if (tex_positions[plane] >= 0 && tex_positions[plane] < data.size(plane)) {
     data.index(plane) = slice;
     for (data.index(y) = 0; data.index(y) < ysize; ++data.index(y)) {

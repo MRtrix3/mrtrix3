@@ -16,6 +16,7 @@
 
 #include <filesystem>
 #include <limits>
+#include <memory>
 
 #include "algo/threaded_loop.h"
 #include "command.h"
@@ -130,25 +131,25 @@ using value_type = float;
 
 class Mean {
 public:
-  Mean() : sum(0.0), count(0) {}
+  Mean() = default;
   void operator()(value_type val) {
     if (std::isfinite(val)) {
       sum += val;
       ++count;
     }
   }
-  value_type result() const {
-    if (!count)
+  [[nodiscard]] value_type result() const {
+    if (count == 0U)
       return NaNF;
     return sum / count;
   }
-  double sum;
-  size_t count;
+  double sum{0.0};
+  size_t count{0};
 };
 
 class Median {
 public:
-  Median() {}
+  Median() = default;
   void operator()(value_type val) {
     if (!std::isnan(val))
       values.push_back(val);
@@ -159,66 +160,66 @@ public:
 
 class Sum {
 public:
-  Sum() : sum(0.0) {}
+  Sum() = default;
   void operator()(value_type val) {
     if (std::isfinite(val))
       sum += val;
   }
-  value_type result() const { return sum; }
-  double sum;
+  [[nodiscard]] value_type result() const { return sum; }
+  double sum{0.0};
 };
 
 class Product {
 public:
-  Product() : product(NaN) {}
+  Product() = default;
   void operator()(value_type val) {
     if (std::isfinite(val))
       product = std::isfinite(product) ? product * val : val;
   }
-  value_type result() const { return product; }
-  double product;
+  [[nodiscard]] value_type result() const { return product; }
+  double product{NaN};
 };
 
 class RMS {
 public:
-  RMS() : sum(0.0), count(0) {}
+  RMS() = default;
   void operator()(value_type val) {
     if (std::isfinite(val)) {
       sum += Math::pow2(val);
       ++count;
     }
   }
-  value_type result() const {
-    if (!count)
+  [[nodiscard]] value_type result() const {
+    if (count == 0U)
       return NaNF;
     return std::sqrt(sum / count);
   }
-  double sum;
-  size_t count;
+  double sum{0.0};
+  size_t count{0};
 };
 
 class NORM2 {
 public:
-  NORM2() : sum(0.0), count(0) {}
+  NORM2() = default;
   void operator()(value_type val) {
     if (std::isfinite(val)) {
       sum += Math::pow2(val);
       ++count;
     }
   }
-  value_type result() const {
-    if (!count)
+  [[nodiscard]] value_type result() const {
+    if (count == 0U)
       return NaNF;
     return std::sqrt(sum);
   }
-  double sum;
-  size_t count;
+  double sum{0.0};
+  size_t count{0};
 };
 
 // Welford's algorithm to avoid catastrophic cancellation
 class Var {
 public:
-  Var() : delta(0.0), delta2(0.0), mean(0.0), m2(0.0), count(0) {}
+  Var() = default;
   void operator()(value_type val) {
     if (std::isfinite(val)) {
       ++count;
@@ -228,19 +229,19 @@ public:
       m2 += delta * delta2;
     }
   }
-  value_type result() const {
+  [[nodiscard]] value_type result() const {
     if (count < 2)
       return NaNF;
     return m2 / (static_cast<double>(count) - 1.0);
   }
-  double delta, delta2, mean, m2;
-  size_t count;
+  double delta{0.0}, delta2{0.0}, mean{0.0}, m2{0.0};
+  size_t count{0};
 };
 
 class Std : public Var {
 public:
   Std() : Var() {}
-  value_type result() const { return std::sqrt(Var::result()); }
+  [[nodiscard]] value_type result() const { return std::sqrt(Var::result()); }
 };
 
 class Min {
@@ -250,7 +251,7 @@ public:
     if (std::isfinite(val) && val < min)
       min = val;
   }
-  value_type result() const { return std::isfinite(min) ? min : NaNF; }
+  [[nodiscard]] value_type result() const { return std::isfinite(min) ? min : NaNF; }
   value_type min;
 };
 
@@ -261,7 +262,7 @@ public:
     if (std::isfinite(val) && val > max)
       max = val;
   }
-  value_type result() const { return std::isfinite(max) ? max : NaNF; }
+  [[nodiscard]] value_type result() const { return std::isfinite(max) ? max : NaNF; }
   value_type max;
 };
 
@@ -272,7 +273,7 @@ public:
     if (std::isfinite(val) && std::fabs(val) > max)
       max = std::fabs(val);
   }
-  value_type result() const { return std::isfinite(max) ? max : NaNF; }
+  [[nodiscard]] value_type result() const { return std::isfinite(max) ? max : NaNF; }
   value_type max;
 };
 
@@ -284,7 +285,7 @@ public:
     if (std::isfinite(val) && (!std::isfinite(max) || std::fabs(val) > std::fabs(max)))
       max = val;
   }
-  value_type result() const { return std::isfinite(max) ? max : NaNF; }
+  [[nodiscard]] value_type result() const { return std::isfinite(max) ? max : NaNF; }
   value_type max;
 };
 
@@ -294,7 +295,7 @@ public:
     if (!std::isnan(val))
       values.push_back(val);
   }
-  value_type result() const {
+  [[nodiscard]] value_type result() const {
     if (values.empty())
       return NaNF;
     if constexpr (logbase == Math::Entropy::log_base_t::TWO)
@@ -330,7 +331,7 @@ protected:
 
 class ImageKernelBase {
 public:
-  virtual ~ImageKernelBase() {}
+  virtual ~ImageKernelBase() = default;
   virtual void process(Header &image_in) = 0;
   virtual void write_back(Image<value_type> &out) = 0;
 };
@@ -374,7 +375,7 @@ protected:
 void run() {
   const std::filesystem::path first_input_image_path{argument[0]};
   const size_t num_inputs = argument.size() - 2;
-  const Operation op = MR::Enum::from_name<Operation>(argument[num_inputs]);
+  const auto op = MR::Enum::from_name<Operation>(argument[num_inputs]);
 
   auto opt = get_options("axis");
   if (!opt.empty()) {
@@ -505,49 +506,49 @@ void run() {
     std::unique_ptr<ImageKernelBase> kernel;
     switch (op) {
     case Operation::MEAN:
-      kernel.reset(new ImageKernel<Mean>(header));
+      kernel = std::make_unique<ImageKernel<Mean>>(header);
       break;
     case Operation::MEDIAN:
-      kernel.reset(new ImageKernel<Median>(header));
+      kernel = std::make_unique<ImageKernel<Median>>(header);
       break;
     case Operation::SUM:
-      kernel.reset(new ImageKernel<Sum>(header));
+      kernel = std::make_unique<ImageKernel<Sum>>(header);
       break;
     case Operation::PRODUCT:
-      kernel.reset(new ImageKernel<Product>(header));
+      kernel = std::make_unique<ImageKernel<Product>>(header);
       break;
     case Operation::RMS:
-      kernel.reset(new ImageKernel<RMS>(header));
+      kernel = std::make_unique<ImageKernel<RMS>>(header);
       break;
     case Operation::NORM:
-      kernel.reset(new ImageKernel<NORM2>(header));
+      kernel = std::make_unique<ImageKernel<NORM2>>(header);
       break;
     case Operation::VAR:
-      kernel.reset(new ImageKernel<Var>(header));
+      kernel = std::make_unique<ImageKernel<Var>>(header);
       break;
     case Operation::STD:
-      kernel.reset(new ImageKernel<Std>(header));
+      kernel = std::make_unique<ImageKernel<Std>>(header);
       break;
     case Operation::MIN:
-      kernel.reset(new ImageKernel<Min>(header));
+      kernel = std::make_unique<ImageKernel<Min>>(header);
       break;
     case Operation::MAX:
-      kernel.reset(new ImageKernel<Max>(header));
+      kernel = std::make_unique<ImageKernel<Max>>(header);
       break;
     case Operation::ABSMAX:
-      kernel.reset(new ImageKernel<AbsMax>(header));
+      kernel = std::make_unique<ImageKernel<AbsMax>>(header);
       break;
     case Operation::MAGMAX:
-      kernel.reset(new ImageKernel<MagMax>(header));
+      kernel = std::make_unique<ImageKernel<MagMax>>(header);
       break;
     case Operation::SHANNONS:
-      kernel.reset(new ImageKernel<EntropyBits>(header));
+      kernel = std::make_unique<ImageKernel<EntropyBits>>(header);
       break;
     case Operation::NATS:
-      kernel.reset(new ImageKernel<EntropyNits>(header));
+      kernel = std::make_unique<ImageKernel<EntropyNits>>(header);
       break;
     case Operation::HARTLEYS:
-      kernel.reset(new ImageKernel<EntropyDits>(header));
+      kernel = std::make_unique<ImageKernel<EntropyDits>>(header);
       break;
     default:
       assert(0);
@@ -558,10 +559,10 @@ void run() {
       ProgressBar progress(std::string("computing ") + MR::Enum::lowercase_name(op) + " across " +
                                str(headers_in.size()) + " images",
                            num_inputs);
-      for (size_t i = 0; i != headers_in.size(); ++i) {
-        assert(headers_in[i].valid());
-        assert(headers_in[i].is_file_backed());
-        kernel->process(headers_in[i]);
+      for (auto &i : headers_in) {
+        assert(i.valid());
+        assert(i.is_file_backed());
+        kernel->process(i);
         ++progress;
       }
     }

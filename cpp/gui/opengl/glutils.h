@@ -81,7 +81,7 @@ std::string ErrorString(GLenum errorcode);
 
 inline void check_error(const char *filename, int line) { // check_syntax off (input is __FILE__)
   GLenum err = gl::GetError();
-  while (err) {
+  while (err != 0U) {
     FAIL(std::string("[") + filename + ": " + str(line) + "] OpenGL error: " + ErrorString(err));
     err = gl::GetError();
   }
@@ -99,31 +99,31 @@ extern Area *glwidget;
 namespace Context {
 inline std::pair<QOpenGLContext *, QSurface *> current() {
   QOpenGLContext *context = QOpenGLContext::currentContext();
-  QSurface *surface = context ? context->surface() : nullptr;
+  QSurface *surface = (context == nullptr) ? nullptr : context->surface();
   return {context, surface};
 }
 
 inline std::pair<QOpenGLContext *, QSurface *> get(QWidget *window) {
   QOpenGLContext *context = reinterpret_cast<QOpenGLWidget *>(window)->context();
-  QSurface *surface = context ? context->surface() : nullptr;
+  QSurface *surface = (context == nullptr) ? nullptr : context->surface();
   return {context, surface};
 }
 
 inline std::pair<QOpenGLContext *, QSurface *> makeCurrent(QWidget *window) {
   auto previous_context = current();
-  if (window)
+  if (window != nullptr)
     reinterpret_cast<QOpenGLWidget *>(window)->makeCurrent();
   return previous_context;
 }
 
 inline void restore(std::pair<QOpenGLContext *, QSurface *> previous_context) {
-  if (previous_context.first)
+  if (previous_context.first != nullptr)
     previous_context.first->makeCurrent(previous_context.second);
 }
 
 struct Grab {
   decltype(current()) previous_context;
-  Grab(QWidget *window = nullptr) : previous_context(makeCurrent(window ? window : GL::glwidget)) {
+  Grab(QWidget *window = nullptr) : previous_context(makeCurrent((window == nullptr) ? GL::glwidget : window)) {
     assert_context_is_current(window);
   }
   ~Grab() { restore(previous_context); }
@@ -145,11 +145,11 @@ struct Checker {
 
 class Texture {
 public:
-  Texture() : id(0), tex_type(0) {}
+  Texture() = default;
   ~Texture() { clear(); }
-  Texture(const Texture &) : id(0), tex_type(0) {}
-  Texture(Texture &&t) : id(t.id), tex_type(t.tex_type) { t.id = t.tex_type = 0; }
-  Texture &operator=(Texture &&t) {
+  Texture(const Texture &) {}
+  Texture(Texture &&t) noexcept : id(t.id), tex_type(t.tex_type) { t.id = t.tex_type = 0; }
+  Texture &operator=(Texture &&t) noexcept {
     clear();
     id = t.id;
     tex_type = t.tex_type;
@@ -162,7 +162,7 @@ public:
   }
   operator GLuint() const { return id; }
   void gen(GLenum target, GLint interp_type = gl::LINEAR) {
-    if (!id) {
+    if (id == 0U) {
       check_context.set();
       tex_type = target;
       gl::GenTextures(1, &id);
@@ -178,9 +178,9 @@ public:
         gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_R, gl::CLAMP_TO_EDGE);
     }
   }
-  GLenum type() const { return tex_type; }
+  [[nodiscard]] GLenum type() const { return tex_type; }
   void clear() {
-    if (id) {
+    if (id != 0U) {
       check_context();
       GL_DEBUG("deleting OpenGL texture ID " + str(id));
       gl::DeleteTextures(1, &id);
@@ -203,17 +203,17 @@ public:
 
 protected:
   Context::Checker check_context;
-  GLuint id;
-  GLenum tex_type;
+  GLuint id{0};
+  GLenum tex_type{0};
 };
 
 class VertexBuffer {
 public:
-  VertexBuffer() : id(0) {}
+  VertexBuffer() = default;
   ~VertexBuffer() { clear(); }
-  VertexBuffer(const VertexBuffer &) : id(0) {}
-  VertexBuffer(VertexBuffer &&t) : id(t.id) { t.id = 0; }
-  VertexBuffer &operator=(VertexBuffer &&t) {
+  VertexBuffer(const VertexBuffer &) {}
+  VertexBuffer(VertexBuffer &&t) noexcept : id(t.id) { t.id = 0; }
+  VertexBuffer &operator=(VertexBuffer &&t) noexcept {
     clear();
     id = t.id;
     t.id = 0;
@@ -221,14 +221,14 @@ public:
   }
   operator GLuint() const { return id; }
   void gen() {
-    if (!id) {
+    if (id == 0U) {
       check_context.set();
       gl::GenBuffers(1, &id);
       GL_DEBUG("created OpenGL vertex buffer ID " + str(id));
     }
   }
   void clear() {
-    if (id) {
+    if (id != 0U) {
       check_context();
       GL_DEBUG("deleting OpenGL vertex buffer ID " + str(id));
       gl::DeleteBuffers(1, &id);
@@ -244,16 +244,16 @@ public:
 
 protected:
   Context::Checker check_context;
-  GLuint id;
+  GLuint id{0};
 };
 
 class VertexArrayObject {
 public:
-  VertexArrayObject() : id(0) {}
+  VertexArrayObject() = default;
   ~VertexArrayObject() { clear(); }
-  VertexArrayObject(const VertexArrayObject &) : id(0) {}
-  VertexArrayObject(VertexArrayObject &&t) : id(t.id) { t.id = 0; }
-  VertexArrayObject &operator=(VertexArrayObject &&t) {
+  VertexArrayObject(const VertexArrayObject &) {}
+  VertexArrayObject(VertexArrayObject &&t) noexcept : id(t.id) { t.id = 0; }
+  VertexArrayObject &operator=(VertexArrayObject &&t) noexcept {
     clear();
     id = t.id;
     t.id = 0;
@@ -261,14 +261,14 @@ public:
   }
   operator GLuint() const { return id; }
   void gen() {
-    if (!id) {
+    if (id == 0U) {
       check_context.set();
       gl::GenVertexArrays(1, &id);
       GL_DEBUG("created OpenGL vertex array ID " + str(id));
     }
   }
   void clear() {
-    if (id) {
+    if (id != 0U) {
       check_context();
       GL_DEBUG("deleting OpenGL vertex array ID " + str(id));
       gl::DeleteVertexArrays(1, &id);
@@ -284,16 +284,16 @@ public:
 
 protected:
   Context::Checker check_context;
-  GLuint id;
+  GLuint id{0};
 };
 
 class IndexBuffer {
 public:
-  IndexBuffer() : id(0) {}
+  IndexBuffer() = default;
   ~IndexBuffer() { clear(); }
-  IndexBuffer(const IndexBuffer &) : id(0) {}
-  IndexBuffer(IndexBuffer &&t) : id(t.id) { t.id = 0; }
-  IndexBuffer &operator=(IndexBuffer &&t) {
+  IndexBuffer(const IndexBuffer &) {}
+  IndexBuffer(IndexBuffer &&t) noexcept : id(t.id) { t.id = 0; }
+  IndexBuffer &operator=(IndexBuffer &&t) noexcept {
     clear();
     id = t.id;
     t.id = 0;
@@ -301,14 +301,14 @@ public:
   }
   operator GLuint() const { return id; }
   void gen() {
-    if (!id) {
+    if (id == 0U) {
       check_context.set();
       gl::GenBuffers(1, &id);
       GL_DEBUG("created OpenGL index buffer ID " + str(id));
     }
   }
   void clear() {
-    if (id) {
+    if (id != 0U) {
       check_context();
       GL_DEBUG("deleting OpenGL index buffer ID " + str(id));
       gl::DeleteBuffers(1, &id);
@@ -324,16 +324,16 @@ public:
 
 protected:
   Context::Checker check_context;
-  GLuint id;
+  GLuint id{0};
 };
 
 class FrameBuffer {
 public:
-  FrameBuffer() : id(0) {}
+  FrameBuffer() = default;
   ~FrameBuffer() { clear(); }
-  FrameBuffer(const FrameBuffer &) : id(0) {}
-  FrameBuffer(FrameBuffer &&t) : id(t.id) { t.id = 0; }
-  FrameBuffer &operator=(FrameBuffer &&t) {
+  FrameBuffer(const FrameBuffer &) {}
+  FrameBuffer(FrameBuffer &&t) noexcept : id(t.id) { t.id = 0; }
+  FrameBuffer &operator=(FrameBuffer &&t) noexcept {
     clear();
     id = t.id;
     t.id = 0;
@@ -341,14 +341,14 @@ public:
   }
   operator GLuint() const { return id; }
   void gen() {
-    if (!id) {
+    if (id == 0U) {
       check_context.set();
       gl::GenFramebuffers(1, &id);
       GL_DEBUG("created OpenGL framebuffer ID " + str(id));
     }
   }
   void clear() {
-    if (id) {
+    if (id != 0U) {
       check_context();
       GL_DEBUG("deleting OpenGL framebuffer ID " + str(id));
       gl::DeleteFramebuffers(1, &id);
@@ -395,7 +395,7 @@ public:
 
 protected:
   Context::Checker check_context;
-  GLuint id;
+  GLuint id{0};
 };
 
 } // namespace MR::GUI::GL

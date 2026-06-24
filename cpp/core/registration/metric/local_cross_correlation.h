@@ -36,15 +36,15 @@ template <typename ImageType1, typename ImageType2> struct LCCPrecomputeFunctorM
     out.index(2) = pos[2];
     out.index(3) = 0;
 
-    int nmax = extent[0] * extent[1] * extent[2];
-    Eigen::VectorXd n1 = Eigen::VectorXd(nmax);
-    Eigen::VectorXd n2 = Eigen::VectorXd(nmax);
+    const int nmax = extent[0] * extent[1] * extent[2];
+    auto n1 = Eigen::VectorXd(nmax);
+    auto n2 = Eigen::VectorXd(nmax);
 
     using value_type = typename ImageType3::value_type;
     in1.index(0) = pos[0];
     in1.index(1) = pos[1];
     in1.index(2) = pos[2];
-    value_type value_in1 = in1.value();
+    const value_type value_in1 = in1.value();
     if (value_in1 != value_in1) { // nan in image 1, update mask
       mask.value() = false;
       out.row(3) = 0.0;
@@ -53,7 +53,7 @@ template <typename ImageType1, typename ImageType2> struct LCCPrecomputeFunctorM
     in2.index(0) = pos[0];
     in2.index(1) = pos[1];
     in2.index(2) = pos[2];
-    value_type value_in2 = in2.value();
+    const value_type value_in2 = in2.value();
     if (value_in2 != value_in2) { // nan in image 2, update mask
       mask.value() = false;
       out.row(3) = 0.0;
@@ -73,14 +73,14 @@ template <typename ImageType1, typename ImageType2> struct LCCPrecomputeFunctorM
       in1.index(0) = niter.index(0);
       in1.index(1) = niter.index(1);
       in1.index(2) = niter.index(2);
-      value_type val1 = in1.value();
+      const value_type val1 = in1.value();
       if (val1 != val1) {
         continue;
       }
       in2.index(0) = niter.index(0);
       in2.index(1) = niter.index(1);
       in2.index(2) = niter.index(2);
-      value_type val2 = in2.value();
+      const value_type val2 = in2.value();
       if (val2 != val2) {
         continue;
       }
@@ -99,8 +99,8 @@ template <typename ImageType1, typename ImageType2> struct LCCPrecomputeFunctorM
       throw Exception("FIXME: neighbourhood does not contain centre");
 
     // local mean subtracted
-    default_type m1 = n1.sum() / cnt;
-    default_type m2 = n2.sum() / cnt;
+    const default_type m1 = n1.sum() / cnt;
+    const default_type m2 = n2.sum() / cnt;
     n1.array() -= m1;
     n2.array() -= m2;
     out.row(3) = (Eigen::Matrix<default_type, 5, 1>() << value_in1 - m1,
@@ -132,7 +132,7 @@ public:
    * before the operator() is called */
   using requires_precompute = int;
 
-  void set_weights(Eigen::Matrix<default_type, Eigen::Dynamic, 1> weights) {
+  void set_weights(const Eigen::Matrix<default_type, Eigen::Dynamic, 1> &weights) {
     assert("FIXME: set_weights not implemented");
   }
 
@@ -148,7 +148,7 @@ public:
     using ProcessedMaskInterpolatorType = typename ParamType::ProcessedMaskInterpType;
     using CCInterpType = typename ParamType::ProcessedImageInterpType;
 
-    Header midway_header(parameters.midway_image);
+    const Header midway_header(parameters.midway_image);
     midway_v2s = MR::Transform(midway_header).voxel2scanner;
 
     // store precomputed values in cc_image:
@@ -161,9 +161,9 @@ public:
     auto cc_mask_header = Header::scratch(parameters.midway_image);
 
     auto cc_image = cc_image_header.template get_image<ProcessedImageValueType>(DirectIO{3});
-    std::vector<uint32_t> NoOversample;
+    const std::vector<uint32_t> NoOversample;
     {
-      LogLevelLatch log_level(0);
+      const LogLevelLatch log_level(0);
       if (parameters.im1_mask.valid() or parameters.im2_mask.valid())
         cc_mask = cc_mask_header.template get_image<bool>();
       if (parameters.im1_mask.valid() and !parameters.im2_mask.valid())
@@ -237,12 +237,12 @@ public:
     assert(params.processed_image.index(2) == iter.index(2));
 
     params.processed_image.index(3) = 2;
-    default_type A = params.processed_image.value();
+    const default_type A = params.processed_image.value();
     params.processed_image.index(3) = 3;
-    default_type B = params.processed_image.value();
+    const default_type B = params.processed_image.value();
     params.processed_image.index(3) = 4;
-    default_type C = params.processed_image.value();
-    default_type A_BC = A / (B * C);
+    const default_type C = params.processed_image.value();
+    const default_type A_BC = A / (B * C);
     params.processed_image.index(3) = 0;
 
     if (A_BC != A_BC || A_BC == 0.0) {

@@ -34,14 +34,14 @@ public:
   EarlyExit(const SharedBase &shared)
       : max_num_seeds(shared.max_num_seeds),
         max_num_tracks(shared.max_num_tracks),
-        counter(0),
-        next_test((max_num_seeds && max_num_tracks) ? (10 * max_num_seeds / max_num_tracks) : 0) {}
+
+        next_test(((max_num_seeds != 0U) && (max_num_tracks != 0U)) ? (10 * max_num_seeds / max_num_tracks) : 0) {}
 
   bool operator()(const size_t, const size_t);
 
 private:
   const size_t max_num_seeds, max_num_tracks;
-  size_t counter, next_test;
+  size_t counter{0}, next_test;
 
   static const default_type zvalue_threshold;
   static const default_type cease_testing_percentage;

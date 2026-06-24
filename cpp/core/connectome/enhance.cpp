@@ -15,8 +15,10 @@
  */
 
 #include "connectome/enhance.h"
-#include "connectome/mat2vec.h"
 
+#include <memory>
+
+#include "connectome/mat2vec.h"
 #include "progressbar.h"
 
 namespace MR::Connectome::Enhance {
@@ -28,7 +30,7 @@ void NBS::operator()(in_column_type in, const value_type T, out_column_type out)
   Eigen::Array<bool, Eigen::Dynamic, 1> visited(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(in.size()));
 
   for (ssize_t seed = 0; seed != in.size(); ++seed) {
-    if (std::isfinite(in[seed]) && in[seed] >= T && !out[seed]) {
+    if (std::isfinite(in[seed]) && in[seed] >= T && (out[seed] == 0.0)) {
 
       visited.setZero();
       visited[seed] = true;
@@ -41,10 +43,10 @@ void NBS::operator()(in_column_type in, const value_type T, out_column_type out)
         to_expand.pop_back();
         cluster_size++;
 
-        for (std::vector<size_t>::const_iterator i = (*adjacency)[index].begin(); i != (*adjacency)[index].end(); ++i) {
-          if (!visited[*i] && std::isfinite(in[*i]) && in[*i] >= T) {
-            visited[*i] = true;
-            to_expand.push_back(*i);
+        for (const auto i : (*adjacency)[index]) {
+          if (!visited[i] && std::isfinite(in[i]) && in[i] >= T) {
+            visited[i] = true;
+            to_expand.push_back(i);
           }
         }
       }
@@ -59,7 +61,7 @@ void NBS::initialise(const node_t num_nodes) {
   const Mat2Vec mat2vec(num_nodes);
   const size_t num_edges = mat2vec.vec_size();
   ProgressBar progress("Pre-computing statistical correlation matrix...", num_edges);
-  adjacency.reset(new std::vector<std::vector<size_t>>(num_edges, std::vector<size_t>()));
+  adjacency = std::make_shared<std::vector<std::vector<size_t>>>(num_edges, std::vector<size_t>());
   for (node_t row = 0; row != num_nodes; ++row) {
     for (node_t column = row; column != num_nodes; ++column) {
 

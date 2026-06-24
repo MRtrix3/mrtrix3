@@ -18,6 +18,8 @@
 
 #include <sys/stat.h>
 
+#include <memory>
+
 namespace MR::File::NPY {
 
 DataType descr2datatype(std::string_view s) {
@@ -48,27 +50,27 @@ DataType descr2datatype(std::string_view s) {
   switch (s[type_offset]) {
   case '?':
     data_type = DataType::Bit;
-    if (bytes && bytes > 1)
+    if ((bytes != 0U) && (bytes > 1))
       throw Exception("Unexpected byte width (" + str(bytes) + ") for bitwise data");
     break;
   case 'b':
     data_type = DataType::Int8;
-    if (bytes && bytes > 1)
+    if ((bytes != 0U) && (bytes > 1))
       throw Exception("Unexpected byte width (" + str(bytes) + ") for signed byte data");
     break;
   case 'B':
     data_type = DataType::UInt8;
-    if (bytes && bytes > 1)
+    if ((bytes != 0U) && (bytes > 1))
       throw Exception("Unexpected byte width (" + str(bytes) + ") for unsigned byte data");
     break;
   case 'h':
     data_type = DataType::Int16;
-    if (bytes && bytes != 2)
+    if ((bytes != 0U) && (bytes != 2))
       throw Exception("Unexpected byte width (" + str(bytes) + ") for signed short integer data");
     break;
   case 'H':
     data_type = DataType::UInt16;
-    if (bytes && bytes != 2)
+    if ((bytes != 0U) && (bytes != 2))
       throw Exception("Unexpected byte width (" + str(bytes) + ") for unsigned short integer data");
     break;
   case 'i':
@@ -173,7 +175,7 @@ std::string datatype2descr(const DataType data_type) {
 // CONF use a precision any greater than this value in bits (used to
 // CONF minimise file size). Must be equal to either 16, 32 or 64.
 size_t float_max_save_precision() {
-  static size_t result = to<size_t>(File::Config::get("NPYFloatMaxSavePrecision", "64"));
+  static const auto result = to<size_t>(File::Config::get("NPYFloatMaxSavePrecision", "64"));
   if (!(result == 16 || result == 32 || result == 64))
     throw Exception("Invalid value for config file entry \"NPYFloatMaxSavePrecision\""
                     " (must be 16, 32 or 64)");
@@ -190,7 +192,8 @@ KeyValues parse_dict(std::string s) {
   const std::map<char, char> pairs{{'{', '}'}, {'[', ']'}, {'(', ')'}, {'\'', '\''}, {'"', '"'}};
   std::vector<char> openers;
   bool prev_was_escape = false;
-  std::string current, key;
+  std::string current;
+  std::string key;
   KeyValues keyval;
   for (const auto c : s) {
     // std::cerr << "Openers: [" << join(openers, ",") << "]; prev_was_escape = " << str(prev_was_escape) << "; current:
@@ -275,14 +278,15 @@ KeyValues parse_dict(std::string s) {
 ReadInfo read_header(const std::filesystem::path &path) {
   ReadInfo info;
   std::ifstream in(path, std::ios_base::in | std::ios_base::binary);
-  if (!in)
+  if (!in.is_open())
     throw Exception("Unable to load file \"" + path.string() + "\"");
 
   std::array<char, 6> magic;
   in.read(magic.data(), 6);
   if (magic != magic_string)
     throw Exception("Invalid magic string in NPY binary file \"" + path.string() + "\": " + str(magic));
-  uint8_t major_version, minor_version;
+  uint8_t major_version;
+  uint8_t minor_version;
   in.read(reinterpret_cast<char *>(&major_version), 1);
   in.read(reinterpret_cast<char *>(&minor_version), 1);
   uint32_t header_len;
@@ -302,7 +306,7 @@ ReadInfo read_header(const std::filesystem::path &path) {
     throw Exception("Incompatible major version (" + str(major_version) + ") detected in NumPy file \"" +
                     path.string() + "\"");
   }
-  std::unique_ptr<char[]> header_cstr(new char[header_len + 1]);
+  const std::unique_ptr<char[]> header_cstr(new char[header_len + 1]);
   in.read(header_cstr.get(), header_len);
   header_cstr[header_len] = '\0';
   info.data_offset = in.tellg();
@@ -422,6 +426,7 @@ prepare_ND_write(const std::filesystem::path &path, const DataType data_type, co
   const size_t num_elements = shape[0] * (shape.size() == 2 ? shape[1] : 1);
   const size_t data_size = num_elements * info.data_type.bytes();
   std::filesystem::resize_file(path, leadin_size + data_size);
+  // NOLINTNEXTLINE(modernize-make-unique): braced-init-list argument cannot be perfect-forwarded
   info.mmap.reset(new File::MMap({path, leadin_size}, true, false));
   return info;
 }

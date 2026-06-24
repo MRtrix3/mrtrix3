@@ -49,12 +49,12 @@ public:
   void undo();
   void redo();
 
-  bool saved;
+  bool saved{true};
   float min_brush_size, max_brush_size, brush_size;
 
 private:
   std::vector<ROI_UndoEntry> undo_list;
-  int current_undo;
+  int current_undo{-1};
 
   static int number_of_undos;
   static int current_preset_colour;

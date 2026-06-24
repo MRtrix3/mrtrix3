@@ -32,7 +32,7 @@ namespace MR {
 //   with any number of axes, to an index within a 1D vector of data.
 class Voxel2Vector {
 public:
-  typedef uint32_t index_t;
+  using index_t = uint32_t;
 
   static const index_t invalid = std::numeric_limits<index_t>::max();
 
@@ -52,8 +52,8 @@ public:
           str(reverse.size()) + " elements");
   }
 
-  bool empty() const { return reverse.empty(); }
-  size_t size() const { return reverse.size(); }
+  [[nodiscard]] bool empty() const { return reverse.empty(); }
+  [[nodiscard]] size_t size() const { return reverse.size(); }
 
   const std::vector<index_t> &operator[](const size_t index) const {
     assert(index < reverse.size());
@@ -72,7 +72,7 @@ private:
   Image<index_t> forward;
   std::vector<std::vector<index_t>> reverse;
 
-  std::vector<index_t> pos() const {
+  [[nodiscard]] std::vector<index_t> pos() const {
     std::vector<index_t> result;
     for (size_t index = 0; index != forward.ndim(); ++index)
       result.push_back(forward.index(index));

@@ -50,7 +50,7 @@ bool Worker::operator()(Streamline<> &in, Streamline<> &out) const {
 
       if (ends_only) {
         for (size_t i = 0; i != 2; ++i) {
-          const Eigen::Vector3f &p(i ? in.back() : in.front());
+          const Eigen::Vector3f &p((i == 0U) ? in.front() : in.back());
           include_visitation(p);
           if (properties.exclude.contains(p)) {
             exclude = true;
@@ -78,7 +78,7 @@ bool Worker::operator()(Streamline<> &in, Streamline<> &out) const {
   if (exclude != inverse)
     return true;
 
-  if (!properties.mask.size()) {
+  if (properties.mask.empty()) {
     std::swap(in, out);
     return true;
   }
@@ -121,9 +121,9 @@ bool Worker::operator()(Streamline<> &in, Streamline<> &out) const {
 
 Worker::Thresholds::Thresholds(Tractography::Properties &properties)
     : max_length(std::numeric_limits<float>::infinity()),
-      min_length(0.0F),
+
       max_weight(std::numeric_limits<float>::infinity()),
-      min_weight(0.0F),
+
       step_size(properties.get_stepsize()) {
   if (properties.find("max_dist") != properties.end()) {
     try {
@@ -158,12 +158,7 @@ Worker::Thresholds::Thresholds(Tractography::Properties &properties)
     min_weight = to<float>(properties["min_weight"]);
 }
 
-Worker::Thresholds::Thresholds(const Worker::Thresholds &that)
-    : max_length(that.max_length),
-      min_length(that.min_length),
-      max_weight(that.max_weight),
-      min_weight(that.min_weight),
-      step_size(that.step_size) {}
+Worker::Thresholds::Thresholds(const Worker::Thresholds &that) = default;
 
 bool Worker::Thresholds::operator()(const Streamline<> &in) const {
   const float length = Tractography::length(in);

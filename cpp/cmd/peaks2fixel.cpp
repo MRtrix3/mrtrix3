@@ -59,14 +59,14 @@ std::vector<Eigen::Vector3d> get(Image<float> &data) {
       direction[axis] = data.value();
       data.index(3)++;
     }
-    if (direction.allFinite() && direction.squaredNorm())
+    if (direction.allFinite() && (direction.squaredNorm() != 0.0))
       result.push_back(direction);
   }
   return result;
 }
 
 void run() {
-  std::string dataname = get_option_value<std::string>("dataname", "");
+  auto dataname = get_option_value<std::string>("dataname", "");
 
   auto input_header = Header::open(argument[0]);
   Peaks::validate_header(input_header);
@@ -117,7 +117,7 @@ void run() {
 
   Image<float> amplitudes_image;
   if (!dataname.empty()) {
-    Header amplitudes_header = Fixel::data_header_from_index(index_header);
+    const Header amplitudes_header = Fixel::data_header_from_index(index_header);
     amplitudes_image = Image<float>::create(output_path / dataname, amplitudes_header);
   }
 
@@ -128,7 +128,7 @@ void run() {
     index_image.value() = dirs.size();
     index_image.index(3) = 1;
     index_image.value() = dirs.empty() ? 0 : output_index;
-    for (auto d : dirs) {
+    for (const auto &d : dirs) {
       directions_image.index(0) = output_index;
       if (amplitudes_image.valid()) {
         directions_image.row(1) = d.normalized();

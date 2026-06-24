@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "app.h"
 #include "progressbar.h"
 #include "types.h"
@@ -71,7 +73,7 @@ public:
   //   generate each as it is required, based on the more compressed representations
   bool operator()(Shuffle &output);
 
-  index_type size() const { return nshuffles; }
+  [[nodiscard]] index_type size() const { return nshuffles; }
 
   // Go back to the first permutation
   void reset();
@@ -81,7 +83,7 @@ private:
   std::vector<PermuteLabels> permutations;
   std::vector<FlipSigns> signflips;
   index_type nshuffles, counter;
-  std::unique_ptr<ProgressBar> progress;
+  std::optional<ProgressBar> progress;
 
   void initialise(const error_t error_types,
                   const bool nshuffles_explicit,
@@ -90,11 +92,11 @@ private:
                   const index_array_type &eb_whole);
 
   // For exchangeability blocks (either within or whole)
-  index_array_type load_blocks(const std::filesystem::path &filename, const bool equal_sizes);
+  [[nodiscard]] index_array_type load_blocks(const std::filesystem::path &filename, const bool equal_sizes);
 
   // For generating unique permutations
-  bool is_duplicate(const PermuteLabels &, const PermuteLabels &) const;
-  bool is_duplicate(const PermuteLabels &) const;
+  [[nodiscard]] bool is_duplicate(const PermuteLabels &, const PermuteLabels &) const;
+  [[nodiscard]] bool is_duplicate(const PermuteLabels &) const;
 
   // Note that this function does not take into account identical rows and therefore generated
   // permutations are not guaranteed to be unique wrt the computed test statistic.
@@ -113,7 +115,7 @@ private:
   void load_permutations(const std::filesystem::path &filename);
 
   // Similar functions required for sign-flipping
-  bool is_duplicate(const FlipSigns &) const;
+  [[nodiscard]] bool is_duplicate(const FlipSigns &) const;
 
   void generate_random_signflips(const index_type num_signflips,
                                  const index_type num_rows,
@@ -123,7 +125,7 @@ private:
 
   void generate_all_signflips(const index_type num_rows, const index_array_type &blocks);
 
-  std::vector<std::vector<index_type>> indices2blocks(const index_array_type &) const;
+  [[nodiscard]] std::vector<std::vector<index_type>> indices2blocks(const index_array_type &) const;
 };
 
 } // namespace MR::Math::Stats

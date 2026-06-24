@@ -73,7 +73,7 @@ std::string Slice::Shader::fragment_shader_source(const Displayable &object) {
   return source;
 }
 
-Slice::~Slice() {}
+Slice::~Slice() = default;
 
 void Slice::paint(Projection &with_projection) {
   GL::assert_context_is_current();

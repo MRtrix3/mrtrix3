@@ -17,6 +17,7 @@
 #include "mrview/tool/connectome/node_list.h"
 
 #include <QVector>
+#include <memory>
 
 #include "mrview/tool/base.h"
 #include "mrview/tool/connectome/connectome.h"
@@ -44,12 +45,11 @@ QVariant Node_list_model::data(const QModelIndex &index, int role) const {
   }
   if (index.column() == 0 && role == Qt::DisplayRole)
     return qstr(str(index.row()));
-  else if (index.column() == 1 && role == Qt::DecorationRole)
+  if (index.column() == 1 && role == Qt::DecorationRole)
     return connectome.nodes[index.row()].get_pixmap();
-  else if (index.column() == 2 && role == Qt::DisplayRole)
+  if (index.column() == 2 && role == Qt::DisplayRole)
     return qstr(connectome.nodes[index.row()].get_name());
-  else
-    return QVariant();
+  return QVariant();
 }
 
 QVariant Node_list_model::headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const {
@@ -70,7 +70,7 @@ QVariant Node_list_model::headerData(int section, Qt::Orientation orientation, i
 
 int Node_list_model::rowCount(const QModelIndex &parent) const {
   (void)parent; // to suppress warnings about unused parameters
-  return (connectome.num_nodes() ? connectome.num_nodes() + 1 : 0);
+  return ((connectome.num_nodes() == 0U) ? 0 : (connectome.num_nodes() + 1));
 }
 int Node_list_model::columnCount(const QModelIndex &parent) const {
   (void)parent;
@@ -78,17 +78,17 @@ int Node_list_model::columnCount(const QModelIndex &parent) const {
 }
 
 void Node_list_model::reset_pixmaps() {
-  QModelIndex topleft = createIndex(0, 0);
-  QModelIndex bottomright = createIndex(rowCount() - 1, 0);
-  QVector<int> roles(1, Qt::DecorationRole);
+  const QModelIndex topleft = createIndex(0, 0);
+  const QModelIndex bottomright = createIndex(rowCount() - 1, 0);
+  const QVector<int> roles(1, Qt::DecorationRole);
   emit dataChanged(topleft, bottomright, roles);
 }
 
 Node_list::Node_list(Tool::Dock *dock, Connectome *master)
     : Tool::Base(dock), connectome(*master), node_selection_dialog(nullptr) {
-  VBoxLayout *main_box = new VBoxLayout(this);
+  auto *main_box = new VBoxLayout(this);
 
-  HBoxLayout *hlayout = new HBoxLayout;
+  auto *hlayout = new HBoxLayout;
   main_box->addLayout(hlayout);
   clear_selection_button = new QPushButton(this);
   clear_selection_button->setToolTip(tr("Clear node selection"));
@@ -136,22 +136,22 @@ int Node_list::row_height() const { return node_list_view->fontMetrics().height(
 
 void Node_list::clear_selection_slot() {
   node_list_view->clearSelection();
-  std::vector<node_t> empty_node_list;
+  const std::vector<node_t> empty_node_list;
   connectome.node_selection_changed(empty_node_list);
 }
 
 void Node_list::node_selection_settings_dialog_slot() {
   if (!node_selection_dialog)
-    node_selection_dialog.reset(new NodeSelectionSettingsDialog(
-        &window(), "Node selection visual settings", connectome.node_selection_settings));
+    node_selection_dialog = std::make_unique<NodeSelectionSettingsDialog>(
+        &window(), "Node selection visual settings", connectome.node_selection_settings);
   node_selection_dialog->show();
 }
 
 void Node_list::node_selection_changed_slot(const QItemSelection &, const QItemSelection &) {
   QModelIndexList list = node_list_view->selectionModel()->selectedRows();
   std::vector<node_t> nodes;
-  for (int i = 0; i != list.size(); ++i)
-    nodes.push_back(list[i].row());
+  for (const auto &i : list)
+    nodes.push_back(i.row());
   connectome.node_selection_changed(nodes);
 }
 

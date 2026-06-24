@@ -50,12 +50,12 @@ public:
     ACT::debug_validate_5TT_image(interp);
   }
 
-  GMWMI_finder(const GMWMI_finder &that) : interp_template(that.interp_template), min_vox(that.min_vox) {}
+  GMWMI_finder(const GMWMI_finder &that) = default;
 
   bool find_interface(Eigen::Vector3f &) const;
-  Eigen::Vector3f normal(const Eigen::Vector3f &) const;
+  [[nodiscard]] Eigen::Vector3f normal(const Eigen::Vector3f &) const;
 
-  Eigen::Vector3f find_interface(const std::vector<Eigen::Vector3f> &, const bool) const;
+  [[nodiscard]] Eigen::Vector3f find_interface(const std::vector<Eigen::Vector3f> &, const bool) const;
   void crop_track(std::vector<Eigen::Vector3f> &) const;
 
 protected:

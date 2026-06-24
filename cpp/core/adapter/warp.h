@@ -65,13 +65,13 @@ public:
     assert(warp.size(3) == 3);
   }
 
-  size_t ndim() const { return interp.ndim(); }
-  bool valid() const { return interp.valid(); }
-  int size(size_t axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
-  default_type spacing(size_t axis) const { return axis < 3 ? vox[axis] : interp.spacing(axis); }
-  std::string name() const { return interp.name(); }
+  [[nodiscard]] size_t ndim() const { return interp.ndim(); }
+  [[nodiscard]] bool valid() const { return interp.valid(); }
+  [[nodiscard]] int size(size_t axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
+  [[nodiscard]] default_type spacing(size_t axis) const { return axis < 3 ? vox[axis] : interp.spacing(axis); }
+  [[nodiscard]] std::string name() const { return interp.name(); }
 
-  ssize_t stride(size_t axis) const { return interp.stride(axis); }
+  [[nodiscard]] ssize_t stride(size_t axis) const { return interp.stride(axis); }
 
   void reset() {
     x = {0, 0, 0};
@@ -93,7 +93,7 @@ public:
     return static_cast<value_type>(val);
   }
 
-  ssize_t get_index(size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
+  [[nodiscard]] ssize_t get_index(size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
   void move_index(size_t axis, ssize_t increment) {
     if (axis < 3)
       x[axis] += increment;

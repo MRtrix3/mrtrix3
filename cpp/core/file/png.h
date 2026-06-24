@@ -33,15 +33,15 @@ public:
   Reader(const std::filesystem::path &filepath);
   ~Reader();
 
-  uint32_t get_width() const { return width; }
-  uint32_t get_height() const { return height; }
-  int get_bitdepth() const { return bit_depth; }
-  int get_colortype() const { return color_type; }
-  int get_channels() const { return channels; }
+  [[nodiscard]] uint32_t get_width() const { return width; }
+  [[nodiscard]] uint32_t get_height() const { return height; }
+  [[nodiscard]] int get_bitdepth() const { return bit_depth; }
+  [[nodiscard]] int get_colortype() const { return color_type; }
+  [[nodiscard]] int get_channels() const { return channels; }
 
-  size_t get_size() const { return png_get_rowbytes(png_ptr, info_ptr) * height; }
-  int get_output_bitdepth() const { return output_bitdepth; }
-  bool has_transparency() const { return png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS); }
+  [[nodiscard]] size_t get_size() const { return png_get_rowbytes(png_ptr, info_ptr) * height; }
+  [[nodiscard]] int get_output_bitdepth() const { return output_bitdepth; }
+  [[nodiscard]] bool has_transparency() const { return png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS) != 0U; }
 
   void set_expand();
 
@@ -49,11 +49,11 @@ public:
 
 private:
   FILE *infile;
-  png_structp png_ptr;
-  png_infop info_ptr;
-  png_uint_32 width, height;
-  int bit_depth, color_type;
-  uint8_t channels;
+  png_structp png_ptr{nullptr};
+  png_infop info_ptr{nullptr};
+  png_uint_32 width{0}, height{0};
+  int bit_depth{0}, color_type{0};
+  uint8_t channels{0};
 
   int output_bitdepth;
 };
@@ -63,19 +63,19 @@ public:
   Writer(const Header &, const std::filesystem::path &);
   ~Writer();
 
-  size_t get_size() const { return png_get_rowbytes(png_ptr, info_ptr) * height; }
+  [[nodiscard]] size_t get_size() const { return png_get_rowbytes(png_ptr, info_ptr) * height; }
 
   void save(std::byte *);
 
 private:
-  png_structp png_ptr;
-  png_infop info_ptr;
+  png_structp png_ptr{nullptr};
+  png_infop info_ptr{nullptr};
   uint32_t width, height;
-  int color_type, bit_depth;
+  int color_type{0}, bit_depth{0};
   std::filesystem::path filepath;
   DataType data_type;
-  default_type multiplier;
-  FILE *outfile;
+  default_type multiplier{1.0};
+  FILE *outfile{nullptr};
 
   static void error_handler(png_struct_def *, const char *);
   static jmp_buf jmpbuf;

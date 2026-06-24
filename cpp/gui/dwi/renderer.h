@@ -49,7 +49,7 @@ public:
 
   Renderer(QOpenGLWidget *);
 
-  bool ready() const { return shader; }
+  [[nodiscard]] bool ready() const { return shader != 0U; }
 
   void initGL() {
     sh.initGL();
@@ -72,29 +72,24 @@ public:
 
   void stop() const { shader.stop(); }
 
-  QColor get_colour() const {
-    return QColor(object_color[0] * 255.0f, object_color[1] * 255.0f, object_color[2] * 255.0f);
+  [[nodiscard]] QColor get_colour() const {
+    return QColor(object_color[0] * 255.0F, object_color[1] * 255.0F, object_color[2] * 255.0F);
   }
 
   void set_colour(const QColor &c) {
-    object_color[0] = c.red() / 255.0f;
-    object_color[1] = c.green() / 255.0f;
-    object_color[2] = c.blue() / 255.0f;
+    object_color[0] = c.red() / 255.0F;
+    object_color[1] = c.green() / 255.0F;
+    object_color[2] = c.blue() / 255.0F;
   }
 
 protected:
-  mode_t mode;
+  mode_t mode{mode_t::SH};
   Eigen::Array3f object_color;
-  mutable GLuint reverse_ID, origin_ID;
+  mutable GLuint reverse_ID{0}, origin_ID{0};
 
   class Shader : public GL::Shader::Program {
   public:
-    Shader()
-        : mode_(mode_t::SH),
-          use_lighting_(true),
-          colour_by_direction_(true),
-          hide_neg_values_(true),
-          orthographic_(false) {}
+    Shader() = default;
     void start(mode_t mode,
                bool use_lighting,
                bool colour_by_direction,
@@ -103,11 +98,12 @@ protected:
                bool colour_relative_to_projection);
 
   protected:
-    mode_t mode_;
-    bool use_lighting_, colour_by_direction_, hide_neg_values_, orthographic_, colour_relative_to_projection_;
-    std::string vertex_shader_source() const;
-    std::string geometry_shader_source() const;
-    std::string fragment_shader_source() const;
+    mode_t mode_{mode_t::SH};
+    bool use_lighting_{true}, colour_by_direction_{true}, hide_neg_values_{true}, orthographic_{false},
+        colour_relative_to_projection_;
+    [[nodiscard]] std::string vertex_shader_source() const;
+    [[nodiscard]] std::string geometry_shader_source() const;
+    [[nodiscard]] std::string fragment_shader_source() const;
   } shader;
 
   void half_draw() const {
@@ -120,12 +116,12 @@ private:
   class ModeBase {
   public:
     ModeBase(Renderer &parent) : parent(parent) {}
-    virtual ~ModeBase() {}
+    virtual ~ModeBase() = default;
 
     virtual void initGL() = 0;
     virtual void bind() = 0;
     virtual void set_data(const vector_t &, int buffer_ID = 0) const = 0;
-    virtual GLuint num_indices() const = 0;
+    [[nodiscard]] virtual GLuint num_indices() const = 0;
 
   protected:
     Renderer &parent;
@@ -134,34 +130,34 @@ private:
 public:
   class SH : public ModeBase {
   public:
-    SH(Renderer &parent) : ModeBase(parent), LOD(0) {}
+    SH(Renderer &parent) : ModeBase(parent) {}
     ~SH();
 
     void initGL() override;
     void bind() override;
     void set_data(const vector_t &r_del_daz, int buffer_ID = 0) const override;
-    GLuint num_indices() const override { return half_sphere.num_indices; }
+    [[nodiscard]] GLuint num_indices() const override { return half_sphere.num_indices; }
 
     void update_mesh(const size_t, const int);
 
     void compute_r_del_daz(matrix_t &r_del_daz, const matrix_t &SH) const {
-      if (!SH.rows() || !SH.cols())
+      if ((SH.rows() == 0) || (SH.cols() == 0))
         return;
       assert(transform.rows());
       r_del_daz.noalias() = SH * transform.transpose();
     }
 
     void compute_r_del_daz(vector_t &r_del_daz, const vector_t &SH) const {
-      if (!SH.size())
+      if (SH.size() == 0)
         return;
       assert(transform.rows());
       r_del_daz.noalias() = transform * SH;
     }
 
-    int get_LOD() const { return LOD; }
+    [[nodiscard]] int get_LOD() const { return LOD; }
 
   private:
-    int LOD;
+    int LOD{0};
     matrix_t transform;
     Shapes::HalfSphere half_sphere;
     GL::VertexBuffer surface_buffer;
@@ -173,20 +169,20 @@ public:
 
   class Tensor : public ModeBase {
   public:
-    Tensor(Renderer &parent) : ModeBase(parent), LOD(0) {}
+    Tensor(Renderer &parent) : ModeBase(parent) {}
     ~Tensor();
 
     void initGL() override;
     void bind() override;
     void set_data(const vector_t &data, int buffer_ID = 0) const override;
-    GLuint num_indices() const override { return half_sphere.num_indices; }
+    [[nodiscard]] GLuint num_indices() const override { return half_sphere.num_indices; }
 
     void update_mesh(const size_t);
 
-    int get_LOD() const { return LOD; }
+    [[nodiscard]] int get_LOD() const { return LOD; }
 
   private:
-    int LOD;
+    int LOD{0};
     Shapes::HalfSphere half_sphere;
     GL::VertexArrayObject VAO;
 
@@ -199,13 +195,13 @@ public:
     using dir_t = MR::DWI::Directions::index_type;
 
   public:
-    Dixel(Renderer &parent) : ModeBase(parent), vertex_count(0), index_count(0) {}
+    Dixel(Renderer &parent) : ModeBase(parent) {}
     ~Dixel();
 
     void initGL() override;
     void bind() override;
     void set_data(const vector_t &, int buffer_ID = 0) const override;
-    GLuint num_indices() const override { return index_count; }
+    [[nodiscard]] GLuint num_indices() const override { return index_count; }
 
     void update_mesh(const MR::DWI::Directions::Set &);
 
@@ -213,7 +209,7 @@ public:
     GL::VertexBuffer vertex_buffer, value_buffer;
     GL::IndexBuffer index_buffer;
     GL::VertexArrayObject VAO;
-    GLuint vertex_count, index_count;
+    GLuint vertex_count{0}, index_count{0};
 
     void update_dixels(const MR::DWI::Directions::Set &);
 

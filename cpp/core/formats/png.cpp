@@ -32,7 +32,7 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
     return std::unique_ptr<ImageIO::Base>();
 
   const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
-  File::PNG::Reader png(hpath);
+  const File::PNG::Reader png(hpath);
 
   switch (png.get_colortype()) {
   case PNG_COLOR_TYPE_GRAY:
@@ -84,7 +84,7 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
   case 1:
     if (png.get_colortype() == PNG_COLOR_TYPE_PALETTE) {
       H.datatype() = DataType::UInt8;
-    } else if (png.get_width() % 8) {
+    } else if ((png.get_width() % 8) != 0U) {
       WARN("Bitwise PNG being read with width not a factor of 8; will be converted to UInt8 datatype");
       H.datatype() = DataType::UInt8;
     } else {
@@ -107,7 +107,7 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
   }
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::PNG(H));
-  io_handler->files.push_back(File::Entry(hpath, 0));
+  io_handler->files.emplace_back(hpath, 0);
 
   return io_handler;
 }
@@ -224,7 +224,7 @@ bool PNG::check(Header &H, size_t num_axes) const {
 
 std::unique_ptr<ImageIO::Base> PNG::create(Header &H) const {
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::PNG(H));
-  io_handler->files.push_back(File::Entry(static_cast<const Header &>(H).path(), 0));
+  io_handler->files.emplace_back(static_cast<const Header &>(H).path(), 0);
   return io_handler;
 }
 

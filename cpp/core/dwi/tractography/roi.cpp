@@ -54,20 +54,20 @@ const OptionGroup ROIOption =
 
 void load_rois(Properties &properties) {
   auto opt = get_options("include");
-  for (size_t i = 0; i < opt.size(); ++i)
-    properties.include.add(ROI(opt[i][0]));
+  for (const auto &i : opt)
+    properties.include.add(ROI(i[0]));
 
   opt = get_options("include_ordered");
-  for (size_t i = 0; i < opt.size(); ++i)
-    properties.ordered_include.add(ROI(opt[i][0]));
+  for (const auto &i : opt)
+    properties.ordered_include.add(ROI(i[0]));
 
   opt = get_options("exclude");
-  for (size_t i = 0; i < opt.size(); ++i)
-    properties.exclude.add(ROI(opt[i][0]));
+  for (const auto &i : opt)
+    properties.exclude.add(ROI(i[0]));
 
   opt = get_options("mask");
-  for (size_t i = 0; i < opt.size(); ++i)
-    properties.mask.add(ROI(opt[i][0]));
+  for (const auto &i : opt)
+    properties.mask.add(ROI(i[0]));
 }
 
 Image<bool> Mask::get_mask(const std::filesystem::path &path) {
@@ -96,14 +96,14 @@ Image<bool> Mask::get_mask(const std::filesystem::path &path) {
     }
   }
 
-  if (!sum)
+  if (sum == 0U)
     throw Exception("Cannot use image " + path.string() + " as ROI - image is empty");
 
-  if (bottom[0])
+  if (bottom[0] != 0U)
     --bottom[0];
-  if (bottom[1])
+  if (bottom[1] != 0U)
     --bottom[1];
-  if (bottom[2])
+  if (bottom[2] != 0U)
     --bottom[2];
 
   top[0] = std::min(static_cast<size_t>(data.size(0)) - bottom[0], top[0] + 2 - bottom[0]);

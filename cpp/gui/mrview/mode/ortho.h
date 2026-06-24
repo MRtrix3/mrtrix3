@@ -31,7 +31,7 @@ public:
   virtual void mouse_press_event();
   virtual void slice_move_event(float x);
   virtual void panthrough_event();
-  virtual const Projection *get_current_projection() const;
+  [[nodiscard]] virtual const Projection *get_current_projection() const;
   virtual void request_update_mode_gui(ModeGuiVisitor &visitor) const { visitor.update_ortho_mode_gui(*this); }
 
   static bool show_as_row;
@@ -41,7 +41,7 @@ public slots:
 
 protected:
   std::vector<Projection> projections;
-  int current_plane;
+  int current_plane{0};
   GL::VertexBuffer frame_VB;
   GL::VertexArrayObject frame_VAO;
   GL::Shader::Program frame_program;

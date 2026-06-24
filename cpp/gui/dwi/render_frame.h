@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "dwi/directions/set.h"
 #include "dwi/renderer.h"
 #include "memory.h"
@@ -94,7 +96,7 @@ public:
     assert(mode == mode_t::DIXEL);
     if (dirs)
       delete dirs.release();
-    dirs.reset(new MR::DWI::Directions::Set(directions));
+    dirs = std::make_unique<MR::DWI::Directions::Set>(directions);
     recompute_mesh = recompute_amplitudes = true;
     update();
   }
@@ -110,23 +112,24 @@ public:
     update();
   }
 
-  int get_LOD() const { return lod_computed; }
-  int get_lmax() const { return lmax_computed; }
-  float get_scale() const { return scale; }
-  mode_t get_mode() const { return mode; }
-  bool get_show_axes() const { return show_axes; }
-  bool get_hide_neg_lobes() const { return hide_neg_values; }
-  bool get_color_by_dir() const { return color_by_dir; }
-  bool get_use_lighting() const { return use_lighting; }
-  bool get_normalise() const { return normalise; }
+  [[nodiscard]] int get_LOD() const { return lod_computed; }
+  [[nodiscard]] int get_lmax() const { return lmax_computed; }
+  [[nodiscard]] float get_scale() const { return scale; }
+  [[nodiscard]] mode_t get_mode() const { return mode; }
+  [[nodiscard]] bool get_show_axes() const { return show_axes; }
+  [[nodiscard]] bool get_hide_neg_lobes() const { return hide_neg_values; }
+  [[nodiscard]] bool get_color_by_dir() const { return color_by_dir; }
+  [[nodiscard]] bool get_use_lighting() const { return use_lighting; }
+  [[nodiscard]] bool get_normalise() const { return normalise; }
 
   void screenshot(int oversampling, const std::filesystem::path &image_path);
 
 protected:
   float view_angle, distance, scale;
-  int lmax_computed, lod_computed;
-  mode_t mode;
-  bool recompute_mesh, recompute_amplitudes, show_axes, hide_neg_values, color_by_dir, use_lighting, normalise;
+  int lmax_computed{0}, lod_computed{0};
+  mode_t mode{mode_t::SH};
+  bool recompute_mesh{true}, recompute_amplitudes{true}, show_axes{true}, hide_neg_values{true}, color_by_dir{true},
+      use_lighting{true}, normalise;
   std::unique_ptr<MR::DWI::Directions::Set> dirs;
 
   QPointF last_pos;
@@ -138,7 +141,7 @@ protected:
   std::filesystem::path screenshot_path;
   std::unique_ptr<QImage> pix;
   std::unique_ptr<GLubyte[]> framebuffer;
-  int OS, OS_x, OS_y;
+  int OS{0}, OS_x{0}, OS_y{0};
 
   GL::VertexBuffer axes_VB;
   GL::VertexArrayObject axes_VAO;

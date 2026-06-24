@@ -61,7 +61,7 @@ void Scalar::load_fs_w(const std::filesystem::path &path, const Mesh &mesh) {
   Base::operator=(Base::Zero(num_entries));
   for (int32_t i = 0; i != num_entries; ++i) {
     const int32_t index = FreeSurfer::get_int24_BE(in);
-    const float value = FreeSurfer::get_BE<float>(in);
+    const auto value = FreeSurfer::get_BE<float>(in);
     if (static_cast<size_t>(index) >= mesh.num_vertices())
       throw Exception("Error opening file \"" + path.string() + "\" as FreeSurfer w-file:" + //
                       " invalid vertex index (" + str(index) + "," +                         //
@@ -80,19 +80,19 @@ void Scalar::load_fs_curv(const std::filesystem::path &path, const Mesh &mesh) {
   const int32_t magic_number = FreeSurfer::get_int24_BE(in);
   if (magic_number == FreeSurfer::new_curv_file_magic_number) {
 
-    const int32_t num_vertices = FreeSurfer::get_BE<int32_t>(in);
+    const auto num_vertices = FreeSurfer::get_BE<int32_t>(in);
     if (static_cast<size_t>(num_vertices) != mesh.num_vertices())
       throw Exception("Error opening file \"" + path.string() + "\" as Freesurfer curv file:" + //
                       " incorrect number of vertices (" + str(num_vertices) + "," +             //
                       " mesh has " + str(mesh.num_vertices()) + ")");                           //
 
-    const int32_t num_faces = FreeSurfer::get_BE<int32_t>(in);
+    const auto num_faces = FreeSurfer::get_BE<int32_t>(in);
     if (static_cast<size_t>(num_faces) != mesh.num_polygons())
       throw Exception("Error opening file \"" + path.string() + "\" as Freesurfer curv file:" + //
                       " incorrect number of polygons (" + str(num_faces) + "," +                //
                       " mesh has " + str(mesh.num_polygons()) + ")");                           //
 
-    const int32_t vals_per_vertex = FreeSurfer::get_BE<int32_t>(in);
+    const auto vals_per_vertex = FreeSurfer::get_BE<int32_t>(in);
     if (vals_per_vertex != 1)
       throw Exception("Error opening file \"" + path.string() + "\" as Freesurfer curv file:" + //
                       " only support 1 value per vertex");                                      //

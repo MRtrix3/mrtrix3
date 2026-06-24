@@ -34,7 +34,7 @@ private:
     //   has in fact held the mouse button, rather than the timer expiry
     //   simply appearing before the mouse release in the event queue
     qApp->processEvents();
-    if (QApplication::mouseButtons() & Qt::LeftButton)
+    if ((QApplication::mouseButtons() & Qt::LeftButton) != 0U)
       QSpinBox::timerEvent(event);
   }
 };

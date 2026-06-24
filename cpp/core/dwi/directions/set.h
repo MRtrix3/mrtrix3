@@ -51,7 +51,7 @@ public:
 
   Set(const Set &that) = default;
 
-  Set(Set &&that)
+  Set(Set &&that) noexcept
       : unit_vectors(std::move(that.unit_vectors)),
         adj_dirs(std::move(that.adj_dirs)),
         dir_mask_bytes(that.dir_mask_bytes),
@@ -67,28 +67,28 @@ public:
     initialise(m);
   }
 
-  size_t size() const { return unit_vectors.size(); }
-  const Eigen::Vector3d &get_dir(const size_t i) const {
+  [[nodiscard]] size_t size() const { return unit_vectors.size(); }
+  [[nodiscard]] const Eigen::Vector3d &get_dir(const size_t i) const {
     assert(i < size());
     return unit_vectors[i];
   }
-  const std::vector<index_type> &get_adj_dirs(const size_t i) const {
+  [[nodiscard]] const std::vector<index_type> &get_adj_dirs(const size_t i) const {
     assert(i < size());
     return adj_dirs[i];
   }
-  bool adjacent(const index_type one, const index_type two) const {
+  [[nodiscard]] bool adjacent(const index_type one, const index_type two) const {
     assert(one < size());
     assert(two < size());
     return std::any_of(adj_dirs[one].begin(), adj_dirs[one].end(), [&](index_type i) { return i == two; });
   }
-  bool adjacent(const mask_type &mask, const index_type i) const {
+  [[nodiscard]] bool adjacent(const mask_type &mask, const index_type i) const {
     assert(mask.size() == size());
     return std::any_of(adj_dirs[i].begin(), adj_dirs[i].end(), [&](index_type j) { return mask[j]; });
   }
 
-  index_type get_min_linkage(const index_type one, const index_type two) const;
+  [[nodiscard]] index_type get_min_linkage(const index_type one, const index_type two) const;
 
-  const std::vector<Eigen::Vector3d> &get_dirs() const { return unit_vectors; }
+  [[nodiscard]] const std::vector<Eigen::Vector3d> &get_dirs() const { return unit_vectors; }
   const Eigen::Vector3d &operator[](const size_t i) const {
     assert(i < size());
     return unit_vectors[i];
@@ -139,7 +139,7 @@ public:
 
   FastLookupSet(const size_t d) : Set(d) { initialise(); }
 
-  FastLookupSet(FastLookupSet &&that)
+  FastLookupSet(FastLookupSet &&that) noexcept
       : Set(std::move(static_cast<Set &&>(that))),
         grid_lookup(std::move(that.grid_lookup)),
         num_az_grids(that.num_az_grids),
@@ -150,7 +150,7 @@ public:
         az_begin(that.az_begin),
         el_begin(that.el_begin) {}
 
-  index_type select_direction(const Eigen::Vector3d &) const;
+  [[nodiscard]] index_type select_direction(const Eigen::Vector3d &) const;
 
 private:
   std::vector<std::vector<index_type>> grid_lookup;
@@ -160,11 +160,11 @@ private:
 
   FastLookupSet();
 
-  index_type select_direction_slow(const Eigen::Vector3d &) const;
+  [[nodiscard]] index_type select_direction_slow(const Eigen::Vector3d &) const;
 
   void initialise();
 
-  size_t dir2gridindex(const Eigen::Vector3d &) const;
+  [[nodiscard]] size_t dir2gridindex(const Eigen::Vector3d &) const;
 
   void test_lookup() const;
 };

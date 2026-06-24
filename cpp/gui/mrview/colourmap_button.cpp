@@ -28,11 +28,7 @@ ColourMapButton::ColourMapButton(QWidget *parent,
                                  bool use_shortcuts,
                                  bool use_special_colourmaps,
                                  bool use_customise_state_items)
-    : QToolButton(parent),
-      observer(obs),
-      core_colourmaps_actions(new QActionGroup(parent)),
-      invert_scale_action(nullptr),
-      fixed_colour_index(0) {
+    : QToolButton(parent), observer(obs), core_colourmaps_actions(new QActionGroup(parent)) {
   setToolTip(tr("Colourmap menu"));
   setIcon(QIcon(":/colourmap.svg"));
   setPopupMode(QToolButton::InstantPopup);
@@ -46,7 +42,7 @@ void ColourMapButton::init_core_menu_items(bool create_shortcuts) {
   size_t n = 0;
   for (const auto &map : ColourMap::maps) {
     if (!map.special && !map.is_colour) {
-      QAction *action = new QAction(map.name.c_str(), this);
+      auto *action = new QAction(map.name.c_str(), this);
       action->setCheckable(true);
       core_colourmaps_actions->addAction(action);
 
@@ -87,7 +83,7 @@ void ColourMapButton::init_special_colour_menu_items(bool create_shortcuts) {
   size_t n = colourmap_actions.size();
   for (const auto &map : ColourMap::maps) {
     if (map.special) {
-      QAction *action = new QAction(map.name.c_str(), this);
+      auto *action = new QAction(map.name.c_str(), this);
       action->setCheckable(true);
       core_colourmaps_actions->addAction(action);
 
@@ -170,7 +166,7 @@ void ColourMapButton::select_colourmap_slot(QAction *action) {
 }
 
 void ColourMapButton::select_colour_slot() {
-  QColor colour = QColorDialog::getColor(Qt::red, this, "Select Color", QColorDialog::DontUseNativeDialog);
+  const QColor colour = QColorDialog::getColor(Qt::red, this, "Select Color", QColorDialog::DontUseNativeDialog);
 
   if (colour.isValid())
     observer.selected_custom_colour(colour, *this);

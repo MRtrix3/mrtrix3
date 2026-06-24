@@ -17,6 +17,7 @@
 #include "surface/algo/mesh2image.h"
 
 #include <map>
+#include <memory>
 
 #include "header.h"
 #include "progressbar.h"
@@ -65,10 +66,10 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
 
     // Compute normals for polygons
     polygon_normals.reserve(mesh.num_polygons());
-    for (TriangleList::const_iterator p = mesh.get_triangles().begin(); p != mesh.get_triangles().end(); ++p)
-      polygon_normals.push_back(normal(mesh, *p));
-    for (QuadList::const_iterator p = mesh.get_quads().begin(); p != mesh.get_quads().end(); ++p)
-      polygon_normals.push_back(normal(mesh, *p));
+    for (const auto &p : mesh.get_triangles())
+      polygon_normals.push_back(normal(mesh, p));
+    for (const auto &p : mesh.get_quads())
+      polygon_normals.push_back(normal(mesh, p));
     ++progress;
 
     // Create some memory to work with:
@@ -104,15 +105,16 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
       const size_t num_vertices = (poly_index < mesh.num_triangles()) ? 3 : 4;
 
       // Figure out the voxel extent of this polygon in three dimensions
-      Vox lower_bound(H.size(0) - 1, H.size(1) - 1, H.size(2) - 1), upper_bound(0, 0, 0);
+      Vox lower_bound(H.size(0) - 1, H.size(1) - 1, H.size(2) - 1);
+      Vox upper_bound(0, 0, 0);
       VertexList this_poly_verts;
       if (num_vertices == 3)
         mesh.load_triangle_vertices(this_poly_verts, poly_index);
       else
         mesh.load_quad_vertices(this_poly_verts, poly_index - mesh.num_triangles());
-      for (VertexList::const_iterator v = this_poly_verts.begin(); v != this_poly_verts.end(); ++v) {
+      for (const auto &vertex_index : this_poly_verts) {
         for (size_t axis = 0; axis != 3; ++axis) {
-          const int this_axis_voxel = std::round((*v)[axis]);
+          const int this_axis_voxel = std::round(vertex_index[axis]);
           lower_bound[axis] = std::min(lower_bound[axis], this_axis_voxel);
           upper_bound[axis] = std::max(upper_bound[axis], this_axis_voxel);
         }
@@ -205,7 +207,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
               //   (which involves deleting the existing entry then re-writing the concatenated list);
               // If it has not, we're adding a new entry to the list of voxels to be tested,
               //   with only one entry in the list for that voxel
-              Vox2Poly::const_iterator existing = voxel2poly.find(voxel);
+              const auto existing = voxel2poly.find(voxel);
               if (existing != voxel2poly.end()) {
                 this_voxel_polys = existing->second;
                 voxel2poly.erase(existing);
@@ -257,7 +259,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
     }
     ++progress;
     for (auto l = Loop(init_seg)(init_seg, sum_distances); l; ++l) {
-      if (static_cast<float>(sum_distances.value()) != 0.0f && init_seg.value() != vox_mesh_t::ON_MESH)
+      if (static_cast<float>(sum_distances.value()) != 0.0F && init_seg.value() != vox_mesh_t::ON_MESH)
         init_seg.value() = sum_distances.value() < 0.0 ? vox_mesh_t::PRELIM_INSIDE : vox_mesh_t::PRELIM_OUTSIDE;
     }
     ++progress;
@@ -279,13 +281,14 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
     std::stack<Vox> to_expand;
     for (auto l = Loop(seed)(seed); l; ++l) {
       if (seed.value() == vox_mesh_t::PRELIM_INSIDE || seed.value() == vox_mesh_t::PRELIM_OUTSIDE) {
-        size_t prelim_inside_count = 0, prelim_outside_count = 0;
-        float sum_sum_distances = 0.0f;
+        size_t prelim_inside_count = 0;
+        size_t prelim_outside_count = 0;
+        float sum_sum_distances = 0.0F;
         if (seed.value() == vox_mesh_t::PRELIM_INSIDE)
           prelim_inside_count = 1;
         else
           prelim_outside_count = 1;
-        to_expand.push(Vox(seed.index(0), seed.index(1), seed.index(2)));
+        to_expand.emplace(seed.index(0), seed.index(1), seed.index(2));
         to_fill.assign(1, to_expand.top());
         do {
           const Vox voxel(to_expand.top());
@@ -329,17 +332,17 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
         //   or sub-voxel meshes the voxelised surface does not form a closed shell separating
         //   interior from exterior, so the flood fill merges the two into a single region whose
         //   normal-based vote can be unanimous yet wrong (e.g. labelling the whole FoV inside).
-        if (corner_count == 8 || prelim_outside_count > 10 * prelim_inside_count) {
+        if (corner_count == 8 || prelim_outside_count > 10U * prelim_inside_count) {
           fill_value = vox_mesh_t::OUTSIDE;
         } else if (prelim_inside_count == prelim_outside_count && sum_sum_distances != 0.0F) {
-          fill_value = sum_sum_distances < 0.0f ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
+          fill_value = sum_sum_distances < 0.0F ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
         } else if (prelim_inside_count > 10 * prelim_outside_count) {
           fill_value = vox_mesh_t::INSIDE;
         } else {
           // Residual ambiguity about whether the connected region is inside or outside the surface
           // What other tests can we perform to make this decision?
           // A region containing none of the FoV corners is most consistent with a bounded interior
-          if (corner_count == 0) {
+          if (corner_count == 0U) {
             fill_value = vox_mesh_t::INSIDE;
           } else if (sum_sum_distances != 0.0F) {
             fill_value = sum_sum_distances < 0.0F ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
@@ -426,7 +429,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
 
     {
       // Generate a set of points within this voxel that need to be tested individually
-      offsets_to_test.reset(new std::vector<Eigen::Vector3d>());
+      offsets_to_test = std::make_shared<std::vector<Eigen::Vector3d>>();
       offsets_to_test->reserve(pve_nsamples);
       for (size_t x_idx = 0; x_idx != pve_os_ratio; ++x_idx) {
         const default_type x =
@@ -437,7 +440,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
           for (size_t z_idx = 0; z_idx != pve_os_ratio; ++z_idx) {
             const default_type z =
                 -0.5 + ((static_cast<default_type>(z_idx) + 0.5) / static_cast<default_type>(pve_os_ratio));
-            offsets_to_test->push_back(Vertex(x, y, z));
+            offsets_to_test->emplace_back(x, y, z);
           }
         }
       }
@@ -448,8 +451,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
 
       // Count the number of these points that lie inside the mesh
       size_t inside_mesh_count = 0;
-      for (std::vector<Vertex>::const_iterator i_p = offsets_to_test->begin(); i_p != offsets_to_test->end(); ++i_p) {
-        Vertex p(*i_p);
+      for (auto p : *offsets_to_test) {
         p += Eigen::Vector3d(voxel[0], voxel[1], voxel[2]);
 
         default_type best_min_edge_distance_on_plane = -std::numeric_limits<default_type>::infinity();
@@ -457,11 +459,10 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
         default_type best_min_distance_from_interior_projection = std::numeric_limits<default_type>::infinity();
 
         // Only test against those polygons that are near this voxel
-        for (std::vector<size_t>::const_iterator polygon_index = in.second.begin(); polygon_index != in.second.end();
-             ++polygon_index) {
-          const Eigen::Vector3d &n(polygon_normals[*polygon_index]);
+        for (size_t polygon_index : in.second) {
+          const Eigen::Vector3d &n(polygon_normals[polygon_index]);
 
-          const size_t polygon_num_vertices = (*polygon_index < mesh.num_triangles()) ? 3 : 4;
+          const size_t polygon_num_vertices = (polygon_index < mesh.num_triangles()) ? 3 : 4;
           VertexList v;
 
           bool is_inside = false;
@@ -477,7 +478,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
 
           if (polygon_num_vertices == 3) {
 
-            mesh.load_triangle_vertices(v, *polygon_index);
+            mesh.load_triangle_vertices(v, polygon_index);
 
             // First: is it aligned with the normal?
             const Vertex poly_centre((v[0] + v[1] + v[2]) * (1.0 / 3.0));
@@ -502,7 +503,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
 
           } else {
 
-            mesh.load_quad_vertices(v, *polygon_index);
+            mesh.load_quad_vertices(v, polygon_index);
 
             // This may be slightly ill-posed with a quad; no guarantee of fixed normal
             // Proceed regardless

@@ -87,7 +87,7 @@ void display_func_redirect(const ProgressBar &p) {
                              p.text_cstr(),
                              p.ellipsis_cstr()));
       }
-      if (next_update_at)
+      if (next_update_at != 0U)
         next_update_at *= 2;
       else
         next_update_at = 1;
@@ -110,7 +110,7 @@ void display_func_redirect(const ProgressBar &p) {
       if (p.value() == 0) {
         _print_stderr(printf("%s: %s%s ", App::NAME.c_str(), p.text_cstr(), p.ellipsis_cstr()));
         ;
-      } else if (!(p.value() & (p.value() - 1))) {
+      } else if ((p.value() & (p.value() - 1)) == 0U) {
         _print_stderr(".");
       }
     }
@@ -164,7 +164,7 @@ bool ProgressBar::set_update_method() {
   bool stderr_to_file = false;
 
   struct stat buf;
-  if (fstat(STDERR_FILENO, &buf))
+  if (fstat(STDERR_FILENO, &buf) != 0)
     // unable to determine nature of stderr; assuming socket
     stderr_to_file = false;
   else
@@ -183,17 +183,11 @@ bool ProgressBar::set_update_method() {
 
 ProgressBar::ProgressBar(std::string_view text, size_t target, int log_level)
     : first_time(true),
-      last_value(0),
+
       show(std::this_thread::get_id() == ::MR::App::main_thread_ID && !progressbar_active &&
            App::log_level >= log_level),
       _text(text),
-      _ellipsis("..."),
-      _value(0),
-      current_val(0),
-      next_percent(0),
-      next_time(0.0),
-      _multiplier(0.0),
-      _text_has_been_modified(false) {
+      _ellipsis("...") {
   if (show) {
     set_max(target);
     progressbar_active = true;

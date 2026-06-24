@@ -122,9 +122,11 @@ namespace {
 
 std::string short_description(const Header &H) {
   std::vector<std::string> dims;
+  dims.reserve(H.ndim());
   for (size_t n = 0; n < H.ndim(); ++n)
     dims.push_back(str(H.size(n)));
   std::vector<std::string> vox;
+  vox.reserve(H.ndim());
   for (size_t n = 0; n < H.ndim(); ++n)
     vox.push_back(str(H.spacing(n)));
 
@@ -149,13 +151,13 @@ Header Header::open(const std::filesystem::path &image_path) {
     size_t item_index = 0;
     H.path() = list[item_index].name();
 
-    for (; *format_handler; format_handler++) {
+    for (; *format_handler != nullptr; format_handler++) {
       H.io = (*format_handler)->read(H);
       if (static_cast<bool>(H.io))
         break;
     }
 
-    if (!*format_handler)
+    if (*format_handler == nullptr)
       throw Exception("unknown format for image \"" + H.path().string() + "\"");
     assert(H.io);
 
@@ -303,18 +305,17 @@ Header Header::create(const std::filesystem::path &image_name, //
 
     const std::vector<ssize_t> strides(Stride::get_symbolic(H));
     const Formats::Base **format_handler = Formats::handlers;
-    for (; *format_handler; format_handler++)
+    for (; *format_handler != nullptr; format_handler++)
       if ((*format_handler)->check(H, H.ndim() - Pdim.size()))
         break;
 
-    if (!*format_handler) {
+    if (*format_handler == nullptr) {
       const std::string basename = image_name.filename().string();
-      const size_t extension_index = basename.find_last_of(".");
-      if (extension_index == std::string::npos)
-        throw Exception("unknown format for image \"" + image_name.string() + "\" (no file extension specified)");
-      else
-        throw Exception("unknown format for image \"" + image_name.string() +
-                        "\" (unsupported file extension: " + basename.substr(extension_index) + ")");
+      const size_t extension_index = basename.find_last_of('.');
+      throw Exception("unknown format for image \"" + image_name.string() + "\"" +
+                      (extension_index == std::string::npos
+                           ? " (no file extension specified)"
+                           : " (unsupported file extension: " + basename.substr(extension_index) + ")"));
     }
 
     const std::vector<ssize_t> strides_aftercheck(Stride::get_symbolic(H));
@@ -326,17 +327,18 @@ Header Header::create(const std::filesystem::path &image_name, //
 
     H.datatype().set_byte_order_native();
     size_t a = 0;
-    for (size_t n = 0; n < Pdim.size(); ++n) {
-      while (a < H.ndim() && H.stride(a))
+    for (unsigned int &n : Pdim) {
+      while (a < H.ndim() && (H.stride(a) != 0))
         a++;
-      Pdim[n] = Hdim[a++];
+      n = Hdim[a++];
     }
     parser.calculate_padding(Pdim);
 
     // FIXME This fails to appropriately assign rows of these schemes to images
     //   if splitting 4D image into 2D images
     const bool split_4d_schemes = (parser.ndim() == 1 && template_header.ndim() == 4);
-    Eigen::MatrixXd dw_scheme, pe_scheme;
+    Eigen::MatrixXd dw_scheme;
+    Eigen::MatrixXd pe_scheme;
     try {
       dw_scheme = DWI::parse_DW_scheme(template_header);
     } catch (Exception &) {
@@ -391,21 +393,22 @@ Header Header::create(const std::filesystem::path &image_name, //
       header.path() = parser.name(num);
       ++counter;
       if (split_4d_schemes) {
-        if (dw_scheme.rows())
+        if (dw_scheme.rows() != 0)
           DWI::set_DW_scheme(header, dw_scheme.row(counter));
-        if (pe_scheme.rows())
+        if (pe_scheme.rows() != 0)
           Metadata::PhaseEncoding::set_scheme(header.keyval(), pe_scheme.row(counter));
       }
-      std::shared_ptr<ImageIO::Base> io_handler((*format_handler)->create(header));
+      const std::shared_ptr<ImageIO::Base> io_handler((*format_handler)->create(header));
       assert(io_handler);
       H.io->merge(*io_handler);
     }
 
     if (!Pdim.empty()) {
-      int a = 0, n = 0;
+      int a = 0;
+      int n = 0;
       ssize_t next_stride = 0;
       for (size_t i = 0; i < H.ndim(); ++i) {
-        if (H.stride(i)) {
+        if (H.stride(i) != 0) {
           ++n;
           next_stride = std::max(next_stride, MR::abs(H.stride(i)));
         }
@@ -413,10 +416,10 @@ Header Header::create(const std::filesystem::path &image_name, //
 
       H.axes_.resize(n + Pdim.size());
 
-      for (size_t i = 0; i < Pdim.size(); ++i) {
-        while (H.stride(a))
+      for (unsigned int i : Pdim) {
+        while (H.stride(a) != 0)
           ++a;
-        H.size(a) = Pdim[i];
+        H.size(a) = i;
         H.stride(a) = ++next_stride;
       }
 
@@ -484,14 +487,14 @@ std::string Header::description(bool print_all) const {
   desc += "  Dimensions:        ";
   size_t i;
   for (i = 0; i < ndim(); i++) {
-    if (i)
+    if (i != 0U)
       desc += " x ";
     desc += str(size(i));
   }
 
   desc += "\n  Voxel size:        ";
   for (i = 0; i < ndim(); i++) {
-    if (i)
+    if (i != 0U)
       desc += " x ";
     desc += std::isnan(spacing(i)) ? "?" : str(spacing(i), 6);
   }
@@ -575,7 +578,7 @@ std::string Header::description(bool print_all) const {
       return "    (on-disk: " + ondisk_entries[line_index] + ")";
     };
     if (!entries.empty()) {
-      bool shorten = (!print_all && entries.size() > 5);
+      const bool shorten = (!print_all && entries.size() > 5);
       desc += key + entries[0] + annotation_for(0) + "\n";
       if (entries.size() > 5) {
         key = "  [" + str(entries.size()) + " entries] ";
@@ -617,7 +620,7 @@ void Header::sanitise_voxel_sizes() {
         mean_vox_size += spacing(i);
       }
     }
-    mean_vox_size = num_valid_vox ? mean_vox_size / num_valid_vox : 1.0;
+    mean_vox_size = (num_valid_vox != 0U) ? mean_vox_size / num_valid_vox : 1.0;
     for (size_t i = 0; i < 3; ++i)
       if (!std::isfinite(spacing(i)))
         spacing(i) = mean_vox_size;
@@ -783,9 +786,9 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
   };
 
   auto concat_scheme = [](Eigen::MatrixXd &existing, const Eigen::MatrixXd &extra) {
-    if (!existing.rows())
+    if (existing.rows() == 0)
       return;
-    if (!extra.rows() || (extra.cols() != existing.cols())) {
+    if ((extra.rows() == 0) || (extra.cols() != existing.cols())) {
       existing.resize(0, 0);
       return;
     }
@@ -835,7 +838,8 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
   // Need an enum to track what we're going to do with these fields,
   //   rather than relying exclusively on Header::merge_keyval()
   enum class scheme_manip_t { ABSENT, MERGE, CONCAT, ERASE };
-  Eigen::MatrixXd dw_scheme, pe_scheme;
+  Eigen::MatrixXd dw_scheme;
+  Eigen::MatrixXd pe_scheme;
   scheme_manip_t dwscheme_manip = scheme_manip_t::MERGE;
   scheme_manip_t pescheme_manip = scheme_manip_t::MERGE;
   if (axis_to_concat == 3) {
@@ -977,10 +981,6 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
     break;
   }
   return result;
-}
-
-Header::Realignment::Realignment() : state_(State::Unknown), applied_transform_(applied_transform_type::Identity()) {
-  orig_transform_.matrix().fill(std::numeric_limits<default_type>::quiet_NaN());
 }
 
 std::vector<std::string> Header::Realignment::describe_axis_mapping() const {

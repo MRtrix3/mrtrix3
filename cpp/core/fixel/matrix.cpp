@@ -32,7 +32,8 @@
 namespace MR::Fixel::Matrix {
 
 template <class ElementType> void InitFixelBase<ElementType>::add(const MappedTrack &mapped_track) {
-  ssize_t self_index = 0, in_index = 0;
+  ssize_t self_index = 0;
+  ssize_t in_index = 0;
 
   // For anything in mapped_track that doesn't yet appear in *this,
   //   add to this list; once completed, extend *this by the appropriate
@@ -329,7 +330,7 @@ template <class MatrixType> void Writer<MatrixType>::save(const std::filesystem:
 
     const ssize_t connection_offset = fixel_image.index(0);
     index_type connection_count = 0;
-    connectivity_value_type sum_connectivity = connectivity_value_type(0.0);
+    connectivity_value_type sum_connectivity = 0.0F;
     const connectivity_value_type normalisation_factor = matrix[fixel_index].norm_factor();
     for (auto &it : matrix[fixel_index]) {
       const connectivity_value_type connectivity = normalisation_factor * it.value();
@@ -347,7 +348,7 @@ template <class MatrixType> void Writer<MatrixType>::save(const std::filesystem:
     index_image.index(3) = 0;
     index_image.value() = static_cast<uint64_t>(connection_count);
     index_image.index(3) = 1;
-    index_image.value() = connection_count ? connection_offset : uint64_t(0);
+    index_image.value() = (connection_count != 0U) ? connection_offset : uint64_t(0);
 
     if (count_image.valid()) {
       count_image.index(0) = fixel_index;
@@ -406,11 +407,11 @@ NormFixel Reader::operator[](const size_t i) const {
   index.index(0) = i;
   index.index(3) = 0;
   const index_image_type num_connections = index.value();
-  if (!num_connections)
+  if (num_connections == 0U)
     return result;
   index.index(3) = 1;
   const index_image_type offset = index.value();
-  connectivity_value_type sum(connectivity_value_type(0));
+  connectivity_value_type sum = 0.0F;
   fixel.index(0) = value.index(0) = offset;
   if (mask.valid()) {
     for (size_t i = 0; i != num_connections; ++i) {

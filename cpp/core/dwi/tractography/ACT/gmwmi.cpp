@@ -67,7 +67,7 @@ bool GMWMI_finder::find_interface(Eigen::Vector3f &p, Interp &interp) const {
 
   // Make sure an appropriate cost function minimum has been found, and that
   //   this would be an acceptable termination point if it were processed by the tracking algorithm
-  if (!tissues.valid() || tissues.is_csf() || tissues.is_path() || !tissues.get_wm() ||
+  if (!tissues.valid() || tissues.is_csf() || tissues.is_path() || (tissues.get_wm() == 0.0F) ||
       (std::fabs(tissues.get_gm() - tissues.get_wm()) > gmwmi_accuracy)) {
 
     p.fill(NaNF);
@@ -80,7 +80,7 @@ bool GMWMI_finder::find_interface(Eigen::Vector3f &p, Interp &interp) const {
   step = get_cf_min_step(p, interp);
   if (!step.allFinite())
     return true;
-  if (!step.squaredNorm()) {
+  if (step.squaredNorm() == 0.0F) {
     p.fill(NaNF);
     return false;
   }
@@ -142,7 +142,7 @@ Eigen::Vector3f GMWMI_finder::get_cf_min_step(const Eigen::Vector3f &p, Interp &
 
   grad *= (1.0 / perturbation_mm);
 
-  if (!grad.squaredNorm())
+  if (grad.squaredNorm() == 0.0F)
     return Eigen::Vector3f::Zero();
 
   const Tissues local_tissue = get_tissues(p, interp);
@@ -170,7 +170,7 @@ GMWMI_finder::find_interface(const std::vector<Eigen::Vector3f> &tck, const bool
 
   // Track is long enough; can do the proper search
   // Need to generate an additional point beyond the end point
-  size_t last = tck.size() - 1;
+  const size_t last = tck.size() - 1;
 
   const Eigen::Vector3f p_end(end ? tck.back() : tck.front());
   const Eigen::Vector3f p_prev(end ? tck[last - 1] : tck[1]);
@@ -200,7 +200,8 @@ GMWMI_finder::find_interface(const std::vector<Eigen::Vector3f> &tck, const bool
 
   Math::Hermite<float> hermite(hermite_tension);
 
-  float min_mu = 0.0, max_mu = 1.0;
+  float min_mu = 0.0;
+  float max_mu = 1.0;
   Eigen::Vector3f p_best = p_end;
   size_t iters = 0;
   do {

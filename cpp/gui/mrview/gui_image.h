@@ -70,14 +70,14 @@ public:
 
   MR::Image<cfloat> image;
 
-  cfloat trilinear_value(const Eigen::Vector3f &) const;
-  cfloat nearest_neighbour_value(const Eigen::Vector3f &) const;
-  Eigen::VectorXcf trilinear_values(const Eigen::Vector3f &, const size_t axis = 3) const;
-  Eigen::VectorXcf nearest_neighbour_values(const Eigen::Vector3f &, const size_t axis = 3) const;
+  [[nodiscard]] cfloat trilinear_value(const Eigen::Vector3f &) const;
+  [[nodiscard]] cfloat nearest_neighbour_value(const Eigen::Vector3f &) const;
+  [[nodiscard]] Eigen::VectorXcf trilinear_values(const Eigen::Vector3f &, const size_t axis = 3) const;
+  [[nodiscard]] Eigen::VectorXcf nearest_neighbour_values(const Eigen::Vector3f &, const size_t axis = 3) const;
 
-  const transform_type &transform() const { return image.transform(); }
-  const std::vector<std::string> &comments() const { return _comments; }
-  std::string describe_value(const Eigen::Vector3f &focus) const;
+  [[nodiscard]] const transform_type &transform() const { return image.transform(); }
+  [[nodiscard]] const std::vector<std::string> &comments() const { return _comments; }
+  [[nodiscard]] std::string describe_value(const Eigen::Vector3f &focus) const;
 
   void reset_windowing(const int, const bool);
 
@@ -91,9 +91,9 @@ protected:
   std::unordered_map<size_t, CachedTexture> tex_4d_cache;
 
 private:
-  bool volume_unchanged();
-  bool format_unchanged();
-  size_t guess_colourmap() const;
+  [[nodiscard]] bool volume_unchanged();
+  [[nodiscard]] bool format_unchanged();
+  [[nodiscard]] size_t guess_colourmap() const;
 
   template <typename T> void copy_texture_3D();
   void copy_texture_3D_complex();

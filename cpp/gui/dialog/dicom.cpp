@@ -42,15 +42,15 @@ public:
   ~Item() { qDeleteAll(childItems); }
   void appendChild(Item *child) { childItems.append(child); }
   Item *child(int row) { return childItems.value(row); }
-  int childCount() const { return childItems.count(); }
-  QVariant data() const { return itemData; }
-  int row() const {
-    if (parentItem)
+  [[nodiscard]] int childCount() const { return childItems.count(); }
+  [[nodiscard]] QVariant data() const { return itemData; }
+  [[nodiscard]] int row() const {
+    if (parentItem != nullptr)
       return (parentItem->childItems.indexOf(const_cast<Item *>(this)));
     return (0);
   }
   Item *parent() { return (parentItem); }
-  const std::shared_ptr<Series> &series() const { return (dicom_series); }
+  [[nodiscard]] const std::shared_ptr<Series> &series() const { return (dicom_series); }
 
 private:
   QList<Item *> childItems;
@@ -62,13 +62,13 @@ private:
 class Model : public QAbstractItemModel {
 public:
   Model(QObject *parent) : QAbstractItemModel(parent) {
-    QList<QVariant> rootData;
+    const QList<QVariant> rootData;
     rootItem = new Item;
   }
 
   ~Model() { delete rootItem; }
 
-  QVariant data(const QModelIndex &index, int role) const {
+  [[nodiscard]] QVariant data(const QModelIndex &index, int role) const {
     if (!index.isValid())
       return (QVariant());
     if (role != Qt::DisplayRole)
@@ -78,19 +78,19 @@ public:
     return static_cast<Item *>(index.internalPointer())->data();
   }
 
-  Qt::ItemFlags flags(const QModelIndex &index) const {
+  [[nodiscard]] Qt::ItemFlags flags(const QModelIndex &index) const {
     if (!index.isValid())
       return {};
     return (Qt::ItemIsEnabled | Qt::ItemIsSelectable);
   }
 
-  QVariant headerData(int, Qt::Orientation orientation, int role = Qt::DisplayRole) const {
+  [[nodiscard]] QVariant headerData(int, Qt::Orientation orientation, int role = Qt::DisplayRole) const {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
       return ("Name");
     return QVariant();
   }
 
-  QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const {
+  [[nodiscard]] QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const {
     if (!hasIndex(row, column, parent))
       return QModelIndex();
     Item *parentItem;
@@ -99,23 +99,18 @@ public:
     else
       parentItem = static_cast<Item *>(parent.internalPointer());
     Item *childItem = parentItem->child(row);
-    if (childItem)
-      return createIndex(row, column, childItem);
-    else
-      return QModelIndex();
+    return (childItem == nullptr) ? QModelIndex() : createIndex(row, column, childItem);
   }
 
-  QModelIndex parent(const QModelIndex &index) const {
+  [[nodiscard]] QModelIndex parent(const QModelIndex &index) const {
     if (!index.isValid())
       return QModelIndex();
     Item *childItem = static_cast<Item *>(index.internalPointer());
     Item *parentItem = childItem->parent();
-    if (parentItem == rootItem)
-      return QModelIndex();
-    return createIndex(parentItem->row(), 0, parentItem);
+    return (parentItem == rootItem) ? QModelIndex() : createIndex(parentItem->row(), 0, parentItem);
   }
 
-  int rowCount(const QModelIndex &parent = QModelIndex()) const {
+  [[nodiscard]] int rowCount(const QModelIndex &parent = QModelIndex()) const {
     if (parent.column() > 0)
       return 0;
     Item *parentItem;
@@ -126,7 +121,7 @@ public:
     return parentItem->childCount();
   }
 
-  int columnCount(const QModelIndex &parent = QModelIndex()) const {
+  [[nodiscard]] int columnCount(const QModelIndex &parent = QModelIndex()) const {
     (void)parent; // to suppress warnings about unused parameters
     return 1;
   }
@@ -136,19 +131,19 @@ public:
 class DicomSelector : public QDialog {
 public:
   DicomSelector(const Tree &tree) : QDialog(GUI::App::main_window) {
-    Model *model = new Model(this);
+    auto *model = new Model(this);
 
     Item *root = model->rootItem;
-    for (size_t i = 0; i < tree.size(); ++i) {
-      Item *patient_root = new Item(root, tree[i]);
+    for (const auto &i : tree) {
+      Item *patient_root = new Item(root, i);
       root->appendChild(patient_root);
-      const Patient patient(*tree[i]);
-      for (size_t j = 0; j < patient.size(); ++j) {
-        Item *study_root = new Item(patient_root, patient[j]);
+      const Patient &patient(*i);
+      for (const auto &j : patient) {
+        Item *study_root = new Item(patient_root, j);
         patient_root->appendChild(study_root);
-        const Study study(*patient[j]);
-        for (size_t k = 0; k < study.size(); ++k)
-          study_root->appendChild(new Item(study_root, study[k]));
+        const Study &study(*j);
+        for (const auto &k : study)
+          study_root->appendChild(new Item(study_root, k));
       }
     }
 
@@ -157,11 +152,11 @@ public:
     view->setMinimumSize(500, 200);
     view->expandAll();
 
-    QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
+    auto *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
     connect(buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(view, SIGNAL(activated(const QModelIndex &)), this, SLOT(accept()));
 
-    QVBoxLayout *layout = new QVBoxLayout(this);
+    auto *layout = new QVBoxLayout(this);
     layout->addWidget(view);
     layout->addWidget(buttonBox);
     setLayout(layout);
@@ -187,8 +182,8 @@ std::vector<std::shared_ptr<Series>> select_dicom(const Tree &tree) {
   }
 
   DicomSelector selector(tree);
-  if (selector.exec()) {
-    QModelIndexList indexes = selector.view->selectionModel()->selectedIndexes();
+  if (selector.exec() != 0) {
+    const QModelIndexList indexes = selector.view->selectionModel()->selectedIndexes();
     if (!indexes.empty()) {
       QModelIndex index;
       Q_FOREACH (index, indexes) {

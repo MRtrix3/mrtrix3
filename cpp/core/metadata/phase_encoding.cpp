@@ -53,7 +53,7 @@ const OptionGroup ExportOptions =
 // clang-format on
 
 void check(const scheme_type &PE) {
-  if (!PE.rows())
+  if (PE.rows() == 0)
     throw Exception("No valid phase encoding table found");
 
   if (PE.cols() < 3)
@@ -85,7 +85,7 @@ void erase(KeyValues &keyval, std::string_view s) {
 };
 } // namespace
 void set_scheme(KeyValues &keyval, const scheme_type &PE) {
-  if (!PE.rows()) {
+  if (PE.rows() == 0) {
     erase(keyval, "pe_scheme");
     erase(keyval, "PhaseEncodingDirection");
     erase(keyval, "TotalReadoutTime");
@@ -266,7 +266,7 @@ scheme_type transform_for_image_load(const scheme_type &pe_scheme, const Header 
 }
 
 void transform_for_nifti_write(KeyValues &keyval, const Header &H) {
-  scheme_type pe_scheme = parse_scheme(keyval, H);
+  const scheme_type pe_scheme = parse_scheme(keyval, H);
   if (pe_scheme.rows() == 0) {
     DEBUG(std::string("No phase encoding information found for transformation") + //
           " with save of NIfTI image \"" + H.name() + "\"");                      //
@@ -288,10 +288,10 @@ scheme_type transform_for_nifti_write(const scheme_type &pe_scheme, const Header
   for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
     Eigen::VectorXd new_line = pe_scheme.row(row);
     for (ssize_t axis = 0; axis != 3; ++axis)
-      new_line[axis] =                                                      //
-          pe_scheme(row, shuffle.permutations[axis]) && shuffle.flips[axis] //
-              ? -pe_scheme(row, shuffle.permutations[axis])                 //
-              : pe_scheme(row, shuffle.permutations[axis]);                 //
+      new_line[axis] =                                                               //
+          (pe_scheme(row, shuffle.permutations[axis]) != 0.0) && shuffle.flips[axis] //
+              ? -pe_scheme(row, shuffle.permutations[axis])                          //
+              : pe_scheme(row, shuffle.permutations[axis]);                          //
     result.row(row) = new_line;
   }
   INFO("Phase encoding data transformed to match NIfTI / MGH image export prior to writing to file");
@@ -310,8 +310,8 @@ void topup2eddy(const scheme_type &PE, Eigen::MatrixXd &config, Eigen::Array<int
   indices = Eigen::Array<int, Eigen::Dynamic, 1>::Constant(PE.rows(), PE.rows());
   for (ssize_t PE_row = 0; PE_row != PE.rows(); ++PE_row) {
     for (ssize_t config_row = 0; config_row != config.rows(); ++config_row) {
-      bool dir_match = PE.template block<1, 3>(PE_row, 0).isApprox(config.block<1, 3>(config_row, 0));
-      bool time_match = std::fabs(PE(PE_row, 3) - config(config_row, 3)) < trt_tolerance;
+      const bool dir_match = PE.template block<1, 3>(PE_row, 0).isApprox(config.block<1, 3>(config_row, 0));
+      const bool time_match = std::fabs(PE(PE_row, 3) - config(config_row, 3)) < trt_tolerance;
       if (dir_match && time_match) {
         // FSL-style index file indexes from 1
         indices[PE_row] = config_row + 1;

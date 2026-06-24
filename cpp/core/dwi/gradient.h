@@ -284,7 +284,7 @@ Eigen::MatrixXd compute_SH2amp_mapping(const MatrixType &directions,       //
                                        bool lmax_from_command_line = true, //
                                        int default_lmax = 8) {             //
   int lmax = -1;
-  int lmax_from_ndir = Math::SH::LforN(directions.rows());
+  const int lmax_from_ndir = Math::SH::LforN(directions.rows());
   bool lmax_set_from_commandline = false;
   if (lmax_from_command_line) {
     auto opt = App::get_options("lmax");
@@ -310,7 +310,7 @@ Eigen::MatrixXd compute_SH2amp_mapping(const MatrixType &directions,       //
 
   INFO("computing SH transform using lmax = " + str(lmax));
 
-  int lmax_prev = lmax;
+  const int lmax_prev = lmax;
   Eigen::MatrixXd mapping;
   do {
     mapping = Math::SH::init_transform(directions, lmax);

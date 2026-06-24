@@ -210,7 +210,7 @@ void run() {
 
   auto input_header = Header::open(input_path);
 
-  const Operation op = MR::Enum::from_name<Operation>(argument[1]);
+  const auto op = MR::Enum::from_name<Operation>(argument[1]);
   const std::string operation_name = MR::Enum::lowercase_name(op);
 
   // Out of bounds value
@@ -222,7 +222,7 @@ void run() {
     regrid_filter.set_out_of_bounds_value(out_of_bounds_value);
     size_t resize_option_count = 0;
     size_t template_option_count = 0;
-    const MR::Interp::interp_type interp = get_option_choice<MR::Interp::interp_type>("interp", default_interp);
+    const auto interp = get_option_choice<MR::Interp::interp_type>("interp", default_interp);
 
     // over-sampling
     std::vector<uint32_t> oversample = Adapter::AutoOverSample;
@@ -277,7 +277,7 @@ void run() {
       ++resize_option_count;
     }
 
-    if (!resize_option_count and !template_option_count)
+    if ((resize_option_count == 0U) and (template_option_count == 0U))
       throw Exception("please use either the -scale, -voxel, -resolution or -template option to regrid the image");
     if (resize_option_count > 1)
       throw Exception(
@@ -294,7 +294,7 @@ void run() {
 
   } else { // crop or pad
     const bool do_crop = op == Operation::CROP;
-    std::string message = do_crop ? "cropping image" : "padding image";
+    const std::string message = do_crop ? "cropping image" : "padding image";
     INFO("operation: " + operation_name);
     const bool crop_unbound = !get_options("crop_unbound").empty();
     if (crop_unbound && !do_crop)
@@ -363,7 +363,7 @@ void run() {
 
     opt = get_options("as");
     if (!opt.empty()) {
-      if (crop_pad_option_count)
+      if (crop_pad_option_count != 0U)
         throw Exception(operation_name + " can be performed using either a mask or a template image");
       ++crop_pad_option_count;
 
@@ -385,7 +385,7 @@ void run() {
     opt = get_options("uniform");
     if (!opt.empty()) {
       ++crop_pad_option_count;
-      ssize_t val = opt[0][0];
+      const ssize_t val = opt[0][0];
       INFO("uniformly " + str(do_crop ? "cropping" : "padding") + " by " + str(val) + " voxels");
       for (size_t axis = 0; axis < nd; axis++) {
         bounds[axis][0] += do_crop ? val : -val;
@@ -396,8 +396,8 @@ void run() {
     if (do_crop && !crop_unbound) {
       opt = get_options("axis");
       std::set<size_t> ignore;
-      for (size_t i = 0; i != opt.size(); ++i)
-        ignore.insert(opt[i][0]);
+      for (const auto &i : opt)
+        ignore.insert(i[0]);
       for (size_t axis = 0; axis != 3; ++axis) {
         if (bounds[axis][0] < 0 || bounds[axis][1] > input_header.size(axis) - 1) {
           if (ignore.find(axis) == ignore.end())
@@ -411,18 +411,17 @@ void run() {
     }
 
     opt = get_options("axis"); // overrides image bounds set by other options
-    for (size_t i = 0; i != opt.size(); ++i) {
+    for (const auto &i : opt) {
       ++crop_pad_option_count;
-      const size_t axis = opt[i][0];
+      const size_t axis = i[0];
       if (axis >= input_header.ndim())
         throw Exception("-axis " + str(axis) + " larger than image dimensions (" + str(input_header.ndim()) + ")");
-      std::string spec = str(opt[i][1]);
-      std::string::size_type start = 0, end;
-      end = spec.find_first_of(":", start);
+      const std::string spec = str(i[1]);
+      const std::string::size_type end = spec.find_first_of(':');
       if (end == std::string::npos) { // spec = delta_lower,delta_upper
         std::vector<int> delta;       // 0: not changed, > 0: pad, < 0: crop
         try {
-          delta = parse_ints<int>(opt[i][1]);
+          delta = parse_ints<int>(i[1]);
         } catch (Exception &E) {
           throw Exception(E, "-axis " + str(axis) + ": can't parse delta specifier \"" + spec + "\"");
         }
@@ -431,7 +430,7 @@ void run() {
         bounds[axis][0] = do_crop ? delta[0] : -delta[0];
         bounds[axis][1] = input_header.size(axis) - 1 + (do_crop ? -delta[1] : delta[1]);
       } else { // spec = delta_lower:delta_upper
-        std::string token(strip(spec.substr(start, end - start)));
+        std::string token(strip(spec.substr(0, end)));
         try {
           bounds[axis][0] = std::stoi(token);
         } catch (Exception &E) {
@@ -474,7 +473,7 @@ void run() {
                 " (n=" + str(size[axis]) + ")");
       }
     }
-    if (!changed_axes)
+    if (changed_axes == 0U)
       WARN("no axes were changed");
 
     auto input = input_header.get_image<float>();

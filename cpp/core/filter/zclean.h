@@ -65,9 +65,13 @@ public:
     for (auto l = Loop(0, 3)(int_roi); l; ++l) {
       cnt += int_roi.value();
     }
-    ssize_t cnt_lower = std::max<size_t>(10000, std::floor(fov_min * input.size(0) * input.size(1) * input.size(2)));
-    ssize_t cnt_upper = std::floor(fov_max * input.size(0) * input.size(1) * input.size(2));
-    float mad, median, previous_mad, previous_median;
+    const ssize_t cnt_lower =
+        std::max<size_t>(10000, std::floor(fov_min * input.size(0) * input.size(1) * input.size(2)));
+    const ssize_t cnt_upper = std::floor(fov_max * input.size(0) * input.size(1) * input.size(2));
+    float mad;
+    float median;
+    float previous_mad;
+    float previous_median;
     calculate_median_mad<Image<float>, Image<bool>>(input, int_roi, cnt, median, mad);
     INFO("median: " + str(median));
     INFO("mad: " + str(mad));
@@ -126,8 +130,8 @@ public:
         cnt = 0;
         for (auto l = Loop(0, 3)(input, int_roi); l; ++l) {
           if (int_roi.value()) {
-            float z = (input.value() - median) / mad;
-            bool good = (z > -zlower) && (z < zupper);
+            const float z = (input.value() - median) / mad;
+            const bool good = (z > -zlower) && (z < zupper);
             if (App::log_level >= 3) {
               assign_pos_of(input, 0, 3).to(eroded_zscore_image);
               eroded_zscore_image.value() = (z > -zlower) && (dont_maskupper || z < zupper) ? z : NaNF;
@@ -148,7 +152,7 @@ public:
         INFO("median: " + str(median) + ", changed: " + str((median - previous_median)));
         INFO("mad: " + str(mad) + ", changed: " + str((mad - previous_mad)));
         INFO("lower: " + str(lower) + " upper: " + str(upper));
-        float change = MR::abs(median - previous_median) / previous_mad;
+        const float change = MR::abs(median - previous_median) / previous_mad;
         INFO("convergence: " + str(change));
         if (change < 1e-2)
           break;
@@ -234,22 +238,22 @@ public:
     if (progress)
       ++(*progress);
 
-    float lo = std::max<float>(median - 2.5 * mad, lower);
-    float hi = std::min<float>(median + 2.5 * mad, upper);
+    const float lo = std::max<float>(median - 2.5 * mad, lower);
+    const float hi = std::min<float>(median + 2.5 * mad, upper);
     for (auto l = Loop(0, 3)(input, spatial_prior, mask, output); l; ++l) {
       if (!spatial_prior.value())
         continue;
-      float val = input.value();
+      const float val = input.value();
       if (mask.value()) {
         // Includes hack for val < lo
         output.value() = val > hi ? hi : val;
         continue;
-      } else { // outside refined mask but inside initial mask
-        if (keep_lower && val < lo)
-          output.value() = lo;
-        else if (keep_upper && val > hi)
-          output.value() = hi;
       }
+      // outside refined mask but inside initial mask
+      if (keep_lower && val < lo)
+        output.value() = lo;
+      else if (keep_upper && val > hi)
+        output.value() = hi;
     }
   }
 

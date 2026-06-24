@@ -42,13 +42,13 @@ public:
   ~GZ() {
     try {
       close();
-    } catch (...) {
+    } catch (...) { // NOLINT(bugprone-empty-catch)
       FAIL("error closing GZ file \"" + filepath.string() + "\": " + error());
       App::exit_error_code = 1;
     }
   }
 
-  const std::filesystem::path &name() const { return filepath; }
+  [[nodiscard]] const std::filesystem::path &name() const { return filepath; }
   void open(const std::filesystem::path &fname, std::string_view mode) {
     close();
     filepath = fname;
@@ -56,29 +56,29 @@ public:
       throw Exception("cannot access file \"" + filepath.string() + "\": No such file or directory");
 
     gz = gzopen(filepath.string().c_str(), std::string(mode).c_str());
-    if (!gz)
+    if (gz == nullptr)
       throw Exception("error opening file \"" + filepath.string() + "\": " + error());
   }
 
   void close() {
-    if (gz) {
-      if (gzclose(gz))
+    if (gz != nullptr) {
+      if (gzclose(gz) != 0)
         throw Exception("error closing GZ file \"" + filepath.string() + "\": " + error());
       filepath.clear();
       gz = nullptr;
     }
   }
 
-  bool is_open() const { return gz; }
-  bool eof() const {
+  [[nodiscard]] bool is_open() const { return gz != nullptr; }
+  [[nodiscard]] bool eof() const {
     assert(gz);
-    return gzeof(gz);
+    return gzeof(gz) != 0;
   }
-  int64_t tell() const {
+  [[nodiscard]] int64_t tell() const {
     assert(gz);
     return gztell(gz);
   }
-  int64_t tellg() const { return tell(); }
+  [[nodiscard]] int64_t tellg() const { return tell(); }
 
   void seek(int64_t offset) {
     assert(gz);
@@ -89,7 +89,7 @@ public:
 
   int read(void *const s, size_t n) {
     assert(gz);
-    int n_read = gzread(gz, s, n);
+    const int n_read = gzread(gz, s, n);
     if (n_read < 0)
       throw Exception("error uncompressing GZ file \"" + filepath.string() + "\": " + error());
     return n_read;

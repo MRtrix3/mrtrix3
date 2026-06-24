@@ -45,7 +45,7 @@ namespace MR::Math::Stats {
 class SubjectDataImportBase {
 public:
   SubjectDataImportBase(const std::filesystem::path &path) : path(path) {}
-  virtual ~SubjectDataImportBase() {}
+  virtual ~SubjectDataImportBase() = default;
 
   /*!
    * @param row the row of a matrix into which the data from this
@@ -59,9 +59,9 @@ public:
    */
   virtual measurements_value_type operator[](const index_type index) const = 0;
 
-  const std::filesystem::path &name() const { return path; }
+  [[nodiscard]] const std::filesystem::path &name() const { return path; }
 
-  virtual index_type size() const = 0;
+  [[nodiscard]] virtual index_type size() const = 0;
 
 protected:
   const std::filesystem::path path;
@@ -76,7 +76,7 @@ protected:
 //   processing.
 class CohortDataImport {
 public:
-  CohortDataImport() {}
+  CohortDataImport() = default;
 
   // Needs to be its own function rather than the constructor
   //   so that the correct template type can be invoked explicitly
@@ -88,17 +88,17 @@ public:
    * @param index for a particular element being tested (data will be acquired for
    * all subjects for that element)
    */
-  measurements_vector_type operator()(const index_type element_index) const;
+  [[nodiscard]] measurements_vector_type operator()(const index_type element_index) const;
 
-  operator bool() const { return !files.empty(); }
-  index_type size() const { return files.size(); }
+  [[nodiscard]] operator bool() const { return !files.empty(); }
+  [[nodiscard]] index_type size() const { return files.size(); }
 
-  std::shared_ptr<SubjectDataImportBase> operator[](const index_type i) const {
+  [[nodiscard]] std::shared_ptr<SubjectDataImportBase> operator[](const index_type i) const {
     assert(i < files.size());
     return files[i];
   }
 
-  bool allFinite() const;
+  [[nodiscard]] bool allFinite() const;
 
 protected:
   std::vector<std::shared_ptr<SubjectDataImportBase>> files;
@@ -138,7 +138,7 @@ void CohortDataImport::initialise(const std::filesystem::path &listpath,
   if (directories[0].empty())
     directories[0] = ".";
   else if (directories[0] != ".")
-    directories.push_back(".");
+    directories.emplace_back(".");
   if (explicit_from_directory.has_value())
     directories.insert(directories.begin(), explicit_from_directory.value());
 
@@ -168,7 +168,7 @@ void CohortDataImport::initialise(const std::filesystem::path &listpath,
 
   for (const auto &line : lines) {
     try {
-      std::shared_ptr<SubjectDataImport> subject(new SubjectDataImport((load_from_dir / line)));
+      const std::shared_ptr<SubjectDataImport> subject(new SubjectDataImport((load_from_dir / line)));
       files.emplace_back(subject);
     } catch (Exception &e) {
       throw Exception(e, "Input data not successfully configured for load: \"" + line + "\"");

@@ -22,18 +22,15 @@
 namespace MR::Math {
 
 template <typename T> T factorial(const T i) {
-  if (i < 2) {
+  if (i < 2)
     return T(1);
-  } else if (i == std::numeric_limits<T>::max()) {
+  if (i == std::numeric_limits<T>::max())
     return i;
-  } else {
-    const T multiplier = factorial<T>(i - 1);
-    const T result = i * multiplier;
-    if (result / multiplier == i)
-      return result;
-    else
-      return std::numeric_limits<T>::max();
-  }
+  const T multiplier = factorial<T>(i - 1);
+  const T result = i * multiplier;
+  if (result / multiplier == i)
+    return result;
+  return std::numeric_limits<T>::max();
 };
 
 } // namespace MR::Math

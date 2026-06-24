@@ -30,7 +30,7 @@ FileDataVector::FileDataVector() : base_t(), min(NaNF), mean(NaNF), max(NaNF) {}
 FileDataVector::FileDataVector(const FileDataVector &V)
     : base_t(V), name(V.name), min(V.min), mean(V.mean), max(V.max) {}
 
-FileDataVector::FileDataVector(FileDataVector &&V)
+FileDataVector::FileDataVector(FileDataVector &&V) noexcept
     : base_t(std::move(static_cast<base_t &&>(V))), name(std::move(V.name)), min(V.min), mean(V.mean), max(V.max) {
   V.name.clear();
   V.min = V.mean = V.max = NaNF;
@@ -40,20 +40,13 @@ FileDataVector::FileDataVector(const size_t nelements) : base_t(nelements), min(
 
 FileDataVector::FileDataVector(const std::filesystem::path &file)
     : base_t(), name(qstr(file.filename().string())), min(NaNF), mean(NaNF), max(NaNF) {
-  base_t temp = File::Matrix::load_vector<float>(file);
+  const base_t temp = File::Matrix::load_vector<float>(file);
   base_t::operator=(temp);
   calc_stats();
 }
 
-FileDataVector &FileDataVector::operator=(const FileDataVector &that) {
-  base_t::operator=(that);
-  name = that.name;
-  min = that.min;
-  mean = that.mean;
-  max = that.max;
-  return *this;
-}
-FileDataVector &FileDataVector::operator=(FileDataVector &&that) {
+FileDataVector &FileDataVector::operator=(const FileDataVector &that) = default;
+FileDataVector &FileDataVector::operator=(FileDataVector &&that) noexcept {
   base_t::operator=(std::move(static_cast<base_t &&>(that)));
   name = that.name;
   min = that.min;
@@ -67,7 +60,7 @@ FileDataVector &FileDataVector::operator=(FileDataVector &&that) {
 }
 
 FileDataVector &FileDataVector::load(const std::filesystem::path &filePath) {
-  base_t temp = File::Matrix::load_vector<float>(filePath);
+  const base_t temp = File::Matrix::load_vector<float>(filePath);
   base_t::operator=(temp);
   name = qstr(filePath.filename().string());
   calc_stats();

@@ -45,7 +45,7 @@ public:
 
   template <class HeaderType> Base(const HeaderType &in, std::string_view message) : Header(in), message(message) {}
 
-  virtual ~Base() {}
+  virtual ~Base() = default;
 
   void set_message(std::string_view s) { message = s; }
 

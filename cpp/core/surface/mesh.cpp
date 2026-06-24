@@ -63,18 +63,18 @@ void Mesh::save(const std::filesystem::path &path, const bool binary) const {
 void Mesh::calculate_normals() {
   normals.clear();
   normals.assign(vertices.size(), Vertex(0.0, 0.0, 0.0));
-  for (TriangleList::const_iterator p = triangles.begin(); p != triangles.end(); ++p) {
-    const Vertex this_normal = normal(*this, *p);
+  for (const auto &triangle : triangles) {
+    const Vertex this_normal = normal(*this, triangle);
     for (size_t index = 0; index != 3; ++index)
-      normals[(*p)[index]] += this_normal;
+      normals[triangle[index]] += this_normal;
   }
-  for (QuadList::const_iterator p = quads.begin(); p != quads.end(); ++p) {
-    const Vertex this_normal = normal(*this, *p);
+  for (const auto &quad : quads) {
+    const Vertex this_normal = normal(*this, quad);
     for (size_t index = 0; index != 4; ++index)
-      normals[(*p)[index]] += this_normal;
+      normals[quad[index]] += this_normal;
   }
-  for (VertexList::iterator n = normals.begin(); n != normals.end(); ++n)
-    n->normalize();
+  for (auto &normal : normals)
+    normal.normalize();
 }
 
 namespace {
@@ -145,9 +145,9 @@ void Mesh::load_vtk(const std::filesystem::path &path) {
       char c = 0;
       do {
         in.read(&c, sizeof(char));
-        if (isalnum(c) || c == ' ')
+        if ((isalnum(c) != 0) || c == ' ')
           line.push_back(c);
-      } while (!in.eof() && (isalnum(c) || c == ' '));
+      } while (!in.eof() && ((isalnum(c) != 0) || c == ' '));
     }
 
     if (!line.empty()) {
@@ -155,7 +155,7 @@ void Mesh::load_vtk(const std::filesystem::path &path) {
 
         line = line.substr(7);
         const size_t ws = line.find(' ');
-        const vertex_index_type num_vertices = to<vertex_index_type>(line.substr(0, ws));
+        const auto num_vertices = to<vertex_index_type>(line.substr(0, ws));
         line = line.substr(ws + 1);
         bool is_double = false;
         if (line.substr(0, 6) == "double")
@@ -188,7 +188,8 @@ void Mesh::load_vtk(const std::filesystem::path &path) {
         line = line.substr(ws + 1);
         const int num_elements = to<int>(line);
 
-        int polygon_count = 0, element_count = 0;
+        int polygon_count = 0;
+        int element_count = 0;
         while (polygon_count < num_polygons && element_count < num_elements) {
 
           int vertex_count;
@@ -222,9 +223,9 @@ void Mesh::load_vtk(const std::filesystem::path &path) {
               in.read(reinterpret_cast<char *>(&t[index]), sizeof(int));
           }
           if (vertex_count == 3)
-            triangles.push_back(Polygon<3>(t));
+            triangles.emplace_back(t);
           else
-            quads.push_back(Polygon<4>(t));
+            quads.emplace_back(t);
           ++polygon_count;
           element_count += 1 + vertex_count;
         }
@@ -278,9 +279,9 @@ void Mesh::load_vtk(const std::filesystem::path &path) {
   }
 
   if (!vertices_float.empty()) {
-    assert(!vertices.size());
+    assert(vertices.empty());
     for (const auto &v : vertices_float)
-      vertices.emplace_back(Vertex(v.cast<double>()));
+      vertices.emplace_back(v.cast<double>());
   }
 
   try {
@@ -295,7 +296,8 @@ void Mesh::load_stl(const std::filesystem::path &path) {
   if (!in)
     throw Exception("Error opening input file!");
 
-  bool warn_right_hand_rule = false, warn_nonstandard_normals = false;
+  bool warn_right_hand_rule = false;
+  bool warn_nonstandard_normals = false;
 
   std::string init(7, '\0');
   in.get(&init[0], 6);
@@ -314,21 +316,22 @@ void Mesh::load_stl(const std::filesystem::path &path) {
     uint16_t attribute_byte_count;
     bool warn_attribute = false;
 
-    Eigen::Vector3f vertex, normal;
+    Eigen::Vector3f vertex;
+    Eigen::Vector3f normal;
 
     while (in.read(reinterpret_cast<char *>(normal.data()), 3 * sizeof(float))) {
       for (size_t index = 0; index != 3; ++index) {
         if (!in.read(reinterpret_cast<char *>(vertex.data()), 3 * sizeof(float)))
           throw Exception("Error in parsing binary STL file");
-        vertices.push_back(vertex.cast<default_type>());
+        vertices.emplace_back(vertex.cast<default_type>());
       }
       in.read(reinterpret_cast<char *>(&attribute_byte_count), sizeof(uint16_t));
-      if (attribute_byte_count)
+      if (attribute_byte_count != 0U)
         warn_attribute = true;
 
-      triangles.push_back(std::vector<vertex_index_type>{static_cast<vertex_index_type>(vertices.size() - 3),
-                                                         static_cast<vertex_index_type>(vertices.size() - 2),
-                                                         static_cast<vertex_index_type>(vertices.size() - 1)});
+      triangles.emplace_back(std::vector<vertex_index_type>{static_cast<vertex_index_type>(vertices.size() - 3),
+                                                            static_cast<vertex_index_type>(vertices.size() - 2),
+                                                            static_cast<vertex_index_type>(vertices.size() - 1)});
       const Eigen::Vector3d computed_normal = Surface::normal(*this, triangles.back());
       if (computed_normal.dot(normal.cast<default_type>()) < 0.0)
         warn_right_hand_rule = true;
@@ -347,11 +350,14 @@ void Mesh::load_stl(const std::filesystem::path &path) {
     std::string rest_of_header;
     std::getline(in, rest_of_header);
 
-    Vertex vertex, normal;
+    Vertex vertex;
+    Vertex normal;
 
     std::string line;
     vertex_index_type vertex_index = 0;
-    bool inside_solid = true, inside_facet = false, inside_loop = false;
+    bool inside_solid = true;
+    bool inside_facet = false;
+    bool inside_loop = false;
     try {
       while (std::getline(in, line)) {
         // Strip leading whitespace
@@ -393,9 +399,9 @@ void Mesh::load_stl(const std::filesystem::path &path) {
           inside_facet = false;
           if (vertex_index != 3)
             throw Exception("facet ended with " + str(vertex_index) + " vertices");
-          triangles.push_back(std::vector<uint32_t>{static_cast<vertex_index_type>(vertices.size() - 3),
-                                                    static_cast<vertex_index_type>(vertices.size() - 2),
-                                                    static_cast<vertex_index_type>(vertices.size() - 1)});
+          triangles.emplace_back(std::vector<uint32_t>{static_cast<vertex_index_type>(vertices.size() - 3),
+                                                       static_cast<vertex_index_type>(vertices.size() - 2),
+                                                       static_cast<vertex_index_type>(vertices.size() - 1)});
           vertex_index = 0;
           const Eigen::Vector3d computed_normal = Surface::normal(*this, triangles.back());
           if (computed_normal.dot(normal) < 0.0)
@@ -418,7 +424,7 @@ void Mesh::load_stl(const std::filesystem::path &path) {
         throw Exception("failed to close facet");
       if (inside_loop)
         throw Exception("failed to close loop");
-      if (vertex_index)
+      if (vertex_index != 0U)
         throw Exception("failed to complete triangle");
     } catch (Exception &e) {
       throw Exception("Error parsing STL file " + path.string() + ": " + e[0]);
@@ -448,7 +454,8 @@ void Mesh::load_obj(const std::filesystem::path &path) {
   if (!in)
     throw Exception("Error opening input file!");
   std::string line;
-  std::string group, object;
+  std::string group;
+  std::string object;
   int counter = -1;
   while (std::getline(in, line)) {
     ++counter;
@@ -462,11 +469,11 @@ void Mesh::load_obj(const std::filesystem::path &path) {
     if (prefix == "v") {
       std::array<float, 4> values{};
       sscanf(data.c_str(), "%f %f %f %f", &values[0], &values[1], &values[2], &values[3]);
-      vertices.push_back(Vertex(values[0], values[1], values[2]));
+      vertices.emplace_back(values[0], values[1], values[2]);
     } else if (prefix == "vn") {
       std::array<float, 3> values{};
       sscanf(data.c_str(), "%f %f %f", &values[0], &values[1], &values[2]);
-      normals.push_back(Vertex(values[0], values[1], values[2]));
+      normals.emplace_back(values[0], values[1], values[2]);
     } else if (prefix == "f") {
       // Parse face information
       // Need to handle:
@@ -476,7 +483,7 @@ void Mesh::load_obj(const std::filesystem::path &path) {
       do {
         const size_t first_space = data.find_first_of(' ');
         if (first_space == data.npos) {
-          if (std::isalnum(data[0]))
+          if (std::isalnum(data[0]) != 0)
             elements.push_back(data);
           data.clear();
         } else {
@@ -489,29 +496,29 @@ void Mesh::load_obj(const std::filesystem::path &path) {
                         str(counter) + ")");
       std::vector<FaceData> face_data;
       size_t values_per_element = 0;
-      for (std::vector<std::string>::iterator i = elements.begin(); i != elements.end(); ++i) {
+      for (const auto &element : elements) {
         FaceData temp;
         temp.vertex = 0;
         temp.texture = 0;
         temp.normal = 0;
-        const size_t first_slash = i->find_first_of('/');
+        const size_t first_slash = element.find_first_of('/');
         // OBJ format counts from 1 - therefore need to decrement
-        temp.vertex = to<uint32_t>(i->substr(0, first_slash)) - 1;
+        temp.vertex = to<uint32_t>(element.substr(0, first_slash)) - 1;
         size_t this_values_count = 0;
-        if (first_slash == i->npos) {
+        if (first_slash == element.npos) {
           this_values_count = 1;
         } else {
-          const size_t last_slash = i->find_last_of('/');
+          const size_t last_slash = element.find_last_of('/');
           if (last_slash == first_slash) {
-            temp.texture = to<uint32_t>(i->substr(last_slash + 1)) - 1;
+            temp.texture = to<uint32_t>(element.substr(last_slash + 1)) - 1;
             this_values_count = 2;
           } else {
-            temp.texture = to<uint32_t>(i->substr(first_slash, last_slash)) - 1;
-            temp.normal = to<uint32_t>(i->substr(last_slash + 1)) - 1;
+            temp.texture = to<uint32_t>(element.substr(first_slash, last_slash)) - 1;
+            temp.normal = to<uint32_t>(element.substr(last_slash + 1)) - 1;
             this_values_count = 3;
           }
         }
-        if (!values_per_element)
+        if (values_per_element == 0U)
           values_per_element = this_values_count;
         else if (values_per_element != this_values_count)
           throw Exception(
@@ -578,10 +585,10 @@ void Mesh::load_fs(const std::filesystem::path &path) {
     // Some FreeSurfer files will have a second comment line; others will not
     // Need to make honest attempt at both possible scenarios
     auto load_triangles = [&]() {
-      const int32_t num_vertices = FreeSurfer::get_BE<int32_t>(in);
+      const auto num_vertices = FreeSurfer::get_BE<int32_t>(in);
       if (num_vertices <= 0)
         throw Exception("Error reading FreeSurfer file: Non-positive vertex count (" + str(num_vertices) + ")");
-      const int32_t num_polygons = FreeSurfer::get_BE<int32_t>(in);
+      const auto num_polygons = FreeSurfer::get_BE<int32_t>(in);
       if (num_polygons <= 0)
         throw Exception("Error reading FreeSurfer file: Non-positive polygon count (" + str(num_polygons) + ")");
       if (num_polygons > 3 * num_vertices)
@@ -606,7 +613,7 @@ void Mesh::load_fs(const std::filesystem::path &path) {
         if (!in.good())
           throw Exception("Error reading FreeSurfer file: EOF reached after " + str(vertices.size()) + " of " +
                           str(num_vertices) + " vertices");
-        vertices.push_back(Vertex(temp[0], temp[1], temp[2]));
+        vertices.emplace_back(temp[0], temp[1], temp[2]);
       }
       for (int32_t i = 0; i != num_polygons; ++i) {
         std::array<int32_t, 3> temp;
@@ -615,7 +622,7 @@ void Mesh::load_fs(const std::filesystem::path &path) {
         if (!in.good())
           throw Exception("Error reading FreeSurfer file: EOF reached after " + str(triangles.size()) + " of " +
                           str(num_polygons) + " triangles");
-        triangles.push_back(Triangle(temp));
+        triangles.emplace_back(temp);
       }
     };
 
@@ -650,13 +657,13 @@ void Mesh::load_fs(const std::filesystem::path &path) {
       std::array<int16_t, 3> temp{};
       for (size_t axis = 0; axis != 3; ++axis)
         temp[axis] = FreeSurfer::get_BE<int16_t>(in);
-      vertices.push_back(Vertex(0.01 * temp[0], 0.01 * temp[1], 0.01 * temp[2]));
+      vertices.emplace_back(0.01 * temp[0], 0.01 * temp[1], 0.01 * temp[2]);
     }
     for (int32_t i = 0; i != num_polygons; ++i) {
       std::array<int32_t, 4> temp;
       for (size_t v = 0; v != 4; ++v)
         temp[v] = FreeSurfer::get_int24_BE(in);
-      quads.push_back(Quad(temp));
+      quads.emplace_back(temp);
     }
 
   } else {
@@ -751,12 +758,12 @@ void Mesh::save_stl(const std::filesystem::path &path, const bool binary) const 
     const uint32_t count = triangles.size();
     out.write(reinterpret_cast<const char *>(&count), sizeof(uint32_t));
     const uint16_t attribute_byte_count = 0;
-    for (TriangleList::const_iterator i = triangles.begin(); i != triangles.end(); ++i) {
-      const Eigen::Vector3d n(normal(*this, *i));
+    for (const auto &triangle : triangles) {
+      const Eigen::Vector3d n(normal(*this, triangle));
       const float n_temp[3]{static_cast<float>(n[0]), static_cast<float>(n[1]), static_cast<float>(n[2])};
       out.write(reinterpret_cast<const char *>(&n_temp[0]), 3 * sizeof(float));
       for (size_t v = 0; v != 3; ++v) {
-        const Vertex &p(vertices[(*i)[v]]);
+        const Vertex &p(vertices[triangle[v]]);
         const Eigen::Matrix<float, 3, 1> p_temp(p.cast<float>());
         out.write(reinterpret_cast<const char *>(p_temp.data()), 3 * sizeof(float));
       }
@@ -768,12 +775,12 @@ void Mesh::save_stl(const std::filesystem::path &path, const bool binary) const 
 
     File::OFStream out(path);
     out << "solid \n";
-    for (TriangleList::const_iterator i = triangles.begin(); i != triangles.end(); ++i) {
-      const Eigen::Vector3d n(normal(*this, *i));
+    for (const auto &triangle : triangles) {
+      const Eigen::Vector3d n(normal(*this, triangle));
       out << "facet normal " << str(n[0]) << " " << str(n[1]) << " " << str(n[2]) << "\n";
       out << "    outer loop\n";
       for (size_t v = 0; v != 3; ++v) {
-        const Vertex p(vertices[(*i)[v]]);
+        const Vertex p(vertices[triangle[v]]);
         out << "        vertex " << str(p[0]) << " " << str(p[1]) << " " << str(p[2]) << "\n";
       }
       out << "    endloop\n";
@@ -788,12 +795,12 @@ void Mesh::save_obj(const std::filesystem::path &path) const {
   File::OFStream out(path);
   out << "# " << App::command_history_string << "\n";
   out << "o " << name << "\n";
-  for (VertexList::const_iterator v = vertices.begin(); v != vertices.end(); ++v)
-    out << "v " << str((*v)[0]) << " " << str((*v)[1]) << " " << str((*v)[2]) << " 1.0\n";
-  for (TriangleList::const_iterator t = triangles.begin(); t != triangles.end(); ++t)
-    out << "f " << str((*t)[0] + 1) << " " << str((*t)[1] + 1) << " " << str((*t)[2] + 1) << "\n";
-  for (QuadList::const_iterator q = quads.begin(); q != quads.end(); ++q)
-    out << "f " << str((*q)[0] + 1) << " " << str((*q)[1] + 1) << " " << str((*q)[2] + 1) << " " << str((*q)[3] + 1)
+  for (const auto &vertex : vertices)
+    out << "v " << str(vertex[0]) << " " << str(vertex[1]) << " " << str(vertex[2]) << " 1.0\n";
+  for (const auto &triangle : triangles)
+    out << "f " << str(triangle[0] + 1) << " " << str(triangle[1] + 1) << " " << str(triangle[2] + 1) << "\n";
+  for (const auto &quad : quads)
+    out << "f " << str(quad[0] + 1) << " " << str(quad[1] + 1) << " " << str(quad[2] + 1) << " " << str(quad[3] + 1)
         << "\n";
 }
 
@@ -810,18 +817,17 @@ void Mesh::load_quad_vertices(VertexList &output, const size_t index) const {
 }
 
 void Mesh::verify_data() const {
-  for (VertexList::const_iterator i = vertices.begin(); i != vertices.end(); ++i) {
-    if (std::isnan((*i)[0]) || std::isnan((*i)[1]) || std::isnan((*i)[2]))
-      throw Exception("NaN values in mesh vertex data");
-  }
-  for (TriangleList::const_iterator i = triangles.begin(); i != triangles.end(); ++i)
-    for (size_t j = 0; j != 3; ++j)
-      if ((*i)[j] >= vertices.size())
-        throw Exception("Mesh vertex index exceeds number of vertices read");
-  for (QuadList::const_iterator i = quads.begin(); i != quads.end(); ++i)
-    for (size_t j = 0; j != 4; ++j)
-      if ((*i)[j] >= vertices.size())
-        throw Exception("Mesh vertex index exceeds number of vertices read");
+  if (std::any_of(vertices.begin(), vertices.end(), [](const Vertex &v) { return !v.allFinite(); }))
+    throw Exception("NaN values in mesh vertex data");
+  const size_t nv = num_vertices();
+  if (std::any_of(triangles.begin(), triangles.end(), [&nv](const Triangle &t) {
+        return std::max({t[0], t[1], t[2]}) >= nv;
+      }))
+    throw Exception("Mesh vertex index exceeds number of vertices read");
+  if (std::any_of(quads.begin(), quads.end(), [&nv](const Quad &q) {
+        return std::max({q[0], q[1], q[2], q[3]}) >= nv;
+      }))
+    throw Exception("Mesh vertex index exceeds number of vertices read");
 }
 
 } // namespace MR::Surface

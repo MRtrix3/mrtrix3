@@ -31,7 +31,7 @@ namespace MR::File::Dicom {
 class CSAEntry {
 public:
   CSAEntry(const std::byte *start_p, const std::byte *end_p, bool output_fields = false)
-      : start(start_p), end(end_p), print(output_fields), cnum(0) {
+      : start(start_p), end(end_p), print(output_fields) {
     if (std::string_view(reinterpret_cast<const char *>(start), 4) == "SV10") {
       DEBUG("Siemens CSA entry does not start with \"SV10\"; ignoring");
       num = 0;
@@ -42,7 +42,7 @@ public:
           unused1[3] != std::byte{0x01})
         DEBUG("WARNING: CSA2 \'unused1\' int8 field contains unexpected data");
       num = Raw::fetch_LE<uint32_t>(start + 8);
-      const uint32_t unused2 = Raw::fetch_LE<uint32_t>(start + 12);
+      const auto unused2 = Raw::fetch_LE<uint32_t>(start + 12);
       if (unused2 != 77)
         DEBUG("CSA2 \'unused2\' integer field contains " + str(unused2) + "; expected 77");
       next = start + 16;
@@ -63,7 +63,7 @@ public:
     memcpy(vr.data(), start + 68, 4);
     Raw::fetch_LE<uint32_t>(start + 72); // syngodt
     nitems = Raw::fetch_LE<uint32_t>(start + 76);
-    const int32_t xx = Raw::fetch_LE<int32_t>(start + 80);
+    const auto xx = Raw::fetch_LE<int32_t>(start + 80);
     if (!(xx == 77 || xx == 205))
       DEBUG("CSA tag \'xx\' integer field contains " + str(xx) + "; expected 77 or 205");
     if (print)
@@ -73,8 +73,8 @@ public:
       return false;
 
     for (uint32_t m = 0; m < nitems; m++) {
-      uint32_t length = Raw::fetch_LE<uint32_t>(next);
-      size_t size = 16 + 4 * ((length + 3) / 4);
+      const auto length = Raw::fetch_LE<uint32_t>(next);
+      const size_t size = 16 + 4 * ((length + 3) / 4);
       if (next + size > end)
         return false;
       if (print)
@@ -88,16 +88,16 @@ public:
     return true;
   }
 
-  std::string key() const { return name; }
+  [[nodiscard]] std::string key() const { return name; }
 
-  uint32_t num_items() const { return nitems; }
-  uint32_t size() const { return num; }
+  [[nodiscard]] uint32_t num_items() const { return nitems; }
+  [[nodiscard]] uint32_t size() const { return num; }
 
-  int get_int() const {
+  [[nodiscard]] int get_int() const {
     const std::byte *p = start + 84;
     for (uint32_t m = 0; m < nitems; m++) {
-      uint32_t length = Raw::fetch_LE<uint32_t>(p);
-      if (length)
+      const auto length = Raw::fetch_LE<uint32_t>(p);
+      if (length != 0U)
         return to<int>(
             std::string(reinterpret_cast<const char *>(p) + 16, static_cast<size_t>(4 * ((length + 3) / 4))));
       p += 16 + 4 * ((length + 3) / 4);
@@ -105,11 +105,11 @@ public:
     return 0;
   }
 
-  default_type get_float() const {
+  [[nodiscard]] default_type get_float() const {
     const std::byte *p = start + 84;
     for (uint32_t m = 0; m < nitems; m++) {
-      uint32_t length = Raw::fetch_LE<uint32_t>(p);
-      if (length)
+      const auto length = Raw::fetch_LE<uint32_t>(p);
+      if (length != 0U)
         return to<default_type>(
             std::string(reinterpret_cast<const char *>(p) + 16, static_cast<size_t>(4 * ((length + 3) / 4))));
       p += 16 + 4 * ((length + 3) / 4);
@@ -122,7 +122,7 @@ public:
     if (nitems < v.size())
       DEBUG("CSA entry contains fewer items than expected - trailing entries will be set to NaN");
     for (uint32_t m = 0; m < std::min<size_t>(nitems, v.size()); m++) {
-      uint32_t length = Raw::fetch_LE<uint32_t>(p);
+      const auto length = Raw::fetch_LE<uint32_t>(p);
       v[m] = length ? to<default_type>(std::string(reinterpret_cast<const char *>(p) + 16,
                                                    static_cast<size_t>(4 * ((length + 3) / 4))))
                     : NaN;
@@ -132,11 +132,11 @@ public:
       v[m] = NaN;
   }
 
-  std::vector<std::string> get_string() const {
+  [[nodiscard]] std::vector<std::string> get_string() const {
     std::vector<std::string> result;
     const std::byte *p = start + 84;
     for (uint32_t m = 0; m < nitems; m++) {
-      const uint32_t length = Raw::fetch_LE<uint32_t>(p);
+      const auto length = Raw::fetch_LE<uint32_t>(p);
       std::string s(reinterpret_cast<const char *>(p) + 16, length);
       result.push_back(std::move(s));
       p += 16 + 4 * ((length + 3) / 4);
@@ -149,8 +149,8 @@ public:
     const std::byte *next = item.start + 84;
 
     for (uint32_t m = 0; m < item.nitems; m++) {
-      uint32_t length = Raw::fetch_LE<uint32_t>(next);
-      size_t size = 16 + 4 * ((length + 3) / 4);
+      auto length = Raw::fetch_LE<uint32_t>(next);
+      const size_t size = 16 + 4 * ((length + 3) / 4);
       while (length > 0 && next[16 + length - 1] == std::byte{0})
         length--;
       stream << " ";
@@ -169,7 +169,7 @@ protected:
   bool print;
   std::string name;
   std::array<char, 4> vr;
-  uint32_t nitems, num, cnum;
+  uint32_t nitems, num, cnum{0};
 };
 
 } // namespace MR::File::Dicom

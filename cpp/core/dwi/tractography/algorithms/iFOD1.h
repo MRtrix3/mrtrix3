@@ -44,12 +44,7 @@ public:
                      {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite}),
           lmax(Math::SH::LforN(source.size(3))),
           max_trials(Defaults::max_trials_per_step),
-          sin_max_angle_1o(std::sin(max_angle_1o)),
-          fod_power(1.0f),
-          mean_samples(0.0),
-          mean_truncations(0.0),
-          max_max_truncation(0.0),
-          num_proc(0) {
+          sin_max_angle_1o(std::sin(max_angle_1o)) {
 
       try {
         Math::SH::check(source);
@@ -91,11 +86,11 @@ public:
       mean_samples /= static_cast<double>(num_proc);
       mean_truncations /= static_cast<double>(num_proc);
       INFO("mean number of samples per step = " + str(mean_samples));
-      if (mean_truncations) {
+      if (mean_truncations == 0.0) {
+        INFO("no rejection sampling truncations occurred");
+      } else {
         INFO("mean number of steps between rejection sampling truncations = " + str(1.0 / mean_truncations));
         INFO("maximum truncation error = " + str(max_max_truncation));
-      } else {
-        INFO("no rejection sampling truncations occurred");
       }
     }
 
@@ -108,24 +103,15 @@ public:
     }
 
     size_t lmax, max_trials;
-    float sin_max_angle_1o, fod_power;
+    float sin_max_angle_1o, fod_power{1.0F};
     Math::SH::PrecomputedAL<float> precomputer;
 
   private:
-    mutable double mean_samples, mean_truncations, max_max_truncation;
-    mutable int num_proc;
+    mutable double mean_samples{0.0}, mean_truncations{0.0}, max_max_truncation{0.0};
+    mutable int num_proc{0};
   };
 
-  iFOD1(const Shared &shared)
-      : MethodBase(shared),
-        S(shared),
-        source(S.source, S.source_mask),
-        mean_sample_num(0),
-        num_sample_runs(0),
-        num_truncations(0),
-        max_truncation(0.0) {
-    calibrate(*this);
-  }
+  iFOD1(const Shared &shared) : MethodBase(shared), S(shared), source(S.source, S.source_mask) { calibrate(*this); }
 
   ~iFOD1() {
     S.update_stats(calibrate_list.size() +
@@ -144,7 +130,7 @@ public:
 
       for (size_t n = 0; n < S.max_seed_attempts; n++) {
         dir = init_dir.allFinite() ? rand_dir(init_dir) : random_direction();
-        float val = FOD(dir);
+        const float val = FOD(dir);
         if (std::isfinite(val))
           if (val > S.init_threshold)
             return true;
@@ -152,7 +138,7 @@ public:
 
     } else {
       dir = S.init_dir;
-      float val = FOD(dir);
+      const float val = FOD(dir);
       if (std::isfinite(val))
         if (val > S.init_threshold)
           return true;
@@ -166,11 +152,11 @@ public:
       return term_t::EXIT_IMAGE;
 
     float max_val = 0.0;
-    for (size_t i = 0; i < calibrate_list.size(); ++i) {
-      float val = FOD(rotate_direction(dir, calibrate_list[i]));
+    for (const auto &i : calibrate_list) {
+      const float val = FOD(rotate_direction(dir, i));
       if (std::isnan(val))
         return term_t::EXIT_IMAGE;
-      else if (val > max_val)
+      if (val > max_val)
         max_val = val;
     }
 
@@ -182,7 +168,7 @@ public:
     num_sample_runs++;
 
     for (size_t n = 0; n < S.max_trials; n++) {
-      Eigen::Vector3f new_dir = rand_dir(dir);
+      const Eigen::Vector3f new_dir = rand_dir(dir);
       float val = FOD(new_dir);
 
       if (val > S.threshold) {
@@ -218,11 +204,11 @@ protected:
   const Shared &S;
   Interpolator<Image<float>>::type source;
   float calibrate_ratio;
-  size_t mean_sample_num, num_sample_runs, num_truncations;
-  float max_truncation;
+  size_t mean_sample_num{0}, num_sample_runs{0}, num_truncations{0};
+  float max_truncation{0.0};
   std::vector<Eigen::Vector3f> calibrate_list;
 
-  float FOD(const Eigen::Vector3f &d) const {
+  [[nodiscard]] float FOD(const Eigen::Vector3f &d) const {
     return (S.precomputer ? S.precomputer.value(values, d) : Math::SH::value(values, d, S.lmax));
   }
 

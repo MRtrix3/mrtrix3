@@ -66,7 +66,7 @@ void run() {
   Transform transform(header);
 
   auto func = [&transform](Image<float> &image) {
-    Eigen::Vector3d voxel_pos(
+    const Eigen::Vector3d voxel_pos(
         static_cast<double>(image.index(0)), static_cast<double>(image.index(1)), static_cast<double>(image.index(2)));
     Eigen::Vector3d scanner_pos = transform.voxel2scanner * voxel_pos;
     for (auto l = Loop(3)(image); l; ++l)

@@ -30,7 +30,7 @@ FixelUpdater::FixelUpdater(TckFactor &tckfactor)
       fixel_counts(tckfactor.fixels.size(), 0) {}
 
 FixelUpdater::~FixelUpdater() {
-  std::lock_guard<std::mutex> lock(master.mutex);
+  const std::lock_guard<std::mutex> lock(master.mutex);
   for (size_t i = 0; i != master.fixels.size(); ++i) {
     master.fixels[i].add_to_mean_coeff(fixel_coeff_sums[i]);
     master.fixels[i].add_TD(fixel_TDs[i], fixel_counts[i]);

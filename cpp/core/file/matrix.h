@@ -33,10 +33,9 @@ namespace MR::File::Matrix {
 inline char delimiter(const std::filesystem::path &path) {
   if (Path::has_suffix(path, ".tsv"))
     return '\t';
-  else if (Path::has_suffix(path, ".csv"))
+  if (Path::has_suffix(path, ".csv"))
     return ',';
-  else
-    return ' ';
+  return ' ';
 }
 
 namespace {
@@ -50,7 +49,7 @@ void save_matrix_text(const MatrixType &M,
   DEBUG("saving " + str(M.rows()) + "x" + str(M.cols()) + " matrix to text file \"" + filename.string() + "\"...");
   File::OFStream out(filename);
   File::KeyValue::write(out, keyvals, "# ", add_to_command_history);
-  Eigen::IOFormat fmt(
+  const Eigen::IOFormat fmt(
       Eigen::FullPrecision, Eigen::DontAlignCols, std::string(1, delimiter(filename)), "\n", "", "", "", "");
   out << M.format(fmt);
   out << "\n";
@@ -64,7 +63,8 @@ std::vector<std::vector<ValueType>> load_matrix_2D_vector(const std::filesystem:
   if (!stream)
     throw Exception("Unable to open numerical data text file \"" + filename.string() + "\": " + MR::C_strerror(errno));
   std::vector<std::vector<ValueType>> V;
-  std::string sbuf, cbuf;
+  std::string sbuf;
+  std::string cbuf;
   size_t hash;
 
   while (getline(stream, sbuf)) {
@@ -100,7 +100,7 @@ std::vector<std::vector<ValueType>> load_matrix_2D_vector(const std::filesystem:
   if (stream.bad())
     throw Exception(MR::C_strerror(errno));
 
-  if (!V.size())
+  if (V.empty())
     throw Exception("no data in matrix text file \"" + filename.string() + "\"");
 
   return V;
@@ -155,8 +155,7 @@ template <class ValueType = default_type>
 Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix(const std::filesystem::path &filename) {
   if (Path::has_suffix(filename, {"npy", ".NPY"}))
     return File::NPY::load_matrix<ValueType>(filename);
-  else
-    return load_matrix_text<ValueType>(filename);
+  return load_matrix_text<ValueType>(filename);
 }
 
 //! read matrix data from \a filename into an Eigen::Tranform class
@@ -227,7 +226,7 @@ inline void save_transform(const transform_type &M,
   File::OFStream out(filename);
   File::KeyValue::write(out, keyvals, "# ", add_to_command_history);
   const char d(delimiter(filename));
-  Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, std::string(1, d), "\n", "", "", "", "");
+  const Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, std::string(1, d), "\n", "", "", "", "");
   out << M.matrix().format(fmt);
   out << "\n0" << d << "0" << d << "0" << d << "1\n";
 }
@@ -241,7 +240,7 @@ inline void save_transform(const transform_type &M,
   if (centre.rows() != 3 or centre.cols() != 1)
     throw Exception("save_transform() requires 3x1 vector as centre");
   KeyValues local_keyvals = keyvals;
-  Eigen::IOFormat centrefmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "\n");
+  const Eigen::IOFormat centrefmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "\n");
   std::ostringstream os;
   os << centre.transpose().format(centrefmt);
   local_keyvals.insert(std::pair<std::string, std::string>("centre", os.str()));

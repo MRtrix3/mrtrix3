@@ -50,11 +50,7 @@ public:
   Voxel(const Eigen::Vector3i &v, const default_type l, const default_type f) : Base(v, l), VoxelAddon(f) {}
   Voxel() : Base(), VoxelAddon() {}
 
-  Voxel &operator=(const Voxel &V) {
-    Base::operator=(V);
-    VoxelAddon::operator=(V);
-    return *this;
-  }
+  Voxel &operator=(const Voxel &V) = default;
   void operator+=(const default_type l) const { Base::operator+=(l); }
   bool operator==(const Voxel &V) const { return Base::operator==(V); }
   bool operator<(const Voxel &V) const { return Base::operator<(V); }
@@ -82,11 +78,7 @@ public:
   VoxelDEC(const Eigen::Vector3i &V, const Streamline<>::tangent_type &d, const default_type l, const default_type f)
       : Base(V, d, l), VoxelAddon(f) {}
 
-  VoxelDEC &operator=(const VoxelDEC &V) {
-    Base::operator=(V);
-    VoxelAddon::operator=(V);
-    return (*this);
-  }
+  VoxelDEC &operator=(const VoxelDEC &V) = default;
   void operator+=(const default_type) const { assert(0); }
   void operator+=(const Streamline<>::tangent_type &) const { assert(0); }
   bool operator==(const VoxelDEC &V) const { return Base::operator==(V); }
@@ -117,11 +109,7 @@ public:
   Dixel(const Eigen::Vector3i &V, const dir_index_type b, const default_type l, const default_type f)
       : Base(V, b, l), VoxelAddon(f) {}
 
-  Dixel &operator=(const Dixel &V) {
-    Base::operator=(V);
-    VoxelAddon::operator=(V);
-    return *this;
-  }
+  Dixel &operator=(const Dixel &V) = default;
   bool operator==(const Dixel &V) const { return Base::operator==(V); }
   bool operator<(const Dixel &V) const { return Base::operator<(V); }
   void operator+=(const default_type) const { assert(0); }
@@ -150,11 +138,7 @@ public:
   VoxelTOD(const Eigen::Vector3i &V, const vector_type &t, const default_type l, const default_type f)
       : Base(V, t, l), VoxelAddon(f) {}
 
-  VoxelTOD &operator=(const VoxelTOD &V) {
-    Base::operator=(V);
-    VoxelAddon::operator=(V);
-    return (*this);
-  }
+  VoxelTOD &operator=(const VoxelTOD &V) = default;
   bool operator==(const VoxelTOD &V) const { return Base::operator==(V); }
   bool operator<(const VoxelTOD &V) const { return Base::operator<(V); }
   void operator+=(const vector_type &) const { assert(0); }
@@ -187,7 +171,7 @@ public:
 
   inline void insert(const Eigen::Vector3i &v, const default_type l, const default_type f) {
     const Voxel temp(v, l, f);
-    iterator existing = std::set<Voxel>::find(temp);
+    const auto existing = std::set<Voxel>::find(temp);
     if (existing == std::set<Voxel>::end())
       std::set<Voxel>::insert(temp);
     else
@@ -202,7 +186,7 @@ public:
   inline void
   insert(const Eigen::Vector3i &v, const Streamline<>::tangent_type &d, const default_type l, const default_type f) {
     const VoxelDEC temp(v, d, l, f);
-    iterator existing = std::set<VoxelDEC>::find(temp);
+    const auto existing = std::set<VoxelDEC>::find(temp);
     if (existing == std::set<VoxelDEC>::end())
       std::set<VoxelDEC>::insert(temp);
     else
@@ -217,7 +201,7 @@ public:
 
   inline void insert(const Eigen::Vector3i &v, const dir_index_type d, const default_type l, const default_type f) {
     const Dixel temp(v, d, l, f);
-    iterator existing = std::set<Dixel>::find(temp);
+    const auto existing = std::set<Dixel>::find(temp);
     if (existing == std::set<Dixel>::end())
       std::set<Dixel>::insert(temp);
     else
@@ -232,7 +216,7 @@ public:
 
   inline void insert(const Eigen::Vector3i &v, const vector_type &t, const default_type l, const default_type f) {
     const VoxelTOD temp(v, t, l, f);
-    iterator existing = std::set<VoxelTOD>::find(temp);
+    const auto existing = std::set<VoxelTOD>::find(temp);
     if (existing == std::set<VoxelTOD>::end())
       std::set<VoxelTOD>::insert(temp);
     else

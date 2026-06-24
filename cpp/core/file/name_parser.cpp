@@ -15,6 +15,7 @@
  */
 
 #include <algorithm>
+#include <memory>
 
 #include "file/name_parser.h"
 
@@ -23,12 +24,8 @@ namespace MR::File {
 namespace {
 
 inline bool in_seq(const std::vector<uint32_t> &seq, uint32_t val) {
-  if (seq.empty())
-    return true;
-  for (size_t i = 0; i < seq.size(); i++)
-    if (seq[i] == val)
-      return true;
-  return false;
+  // An empty sequence is a wildcard that matches any number
+  return seq.empty() || std::find(seq.begin(), seq.end(), val) != seq.end();
 }
 
 } // namespace
@@ -61,12 +58,12 @@ void NameParser::parse(std::string_view specifier, size_t max_num_sequences) {
 
     insert_str(basename);
 
-    for (size_t i = 0; i < array.size(); i++)
-      if (array[i].is_sequence())
-        if (!array[i].sequence().empty())
-          for (size_t n = 0; n < array[i].sequence().size() - 1; n++)
-            for (size_t m = n + 1; m < array[i].sequence().size(); m++)
-              if (array[i].sequence()[n] == array[i].sequence()[m])
+    for (const auto &i : array)
+      if (i.is_sequence())
+        if (!i.sequence().empty())
+          for (size_t n = 0; n < i.sequence().size() - 1; n++)
+            for (size_t m = n + 1; m < i.sequence().size(); m++)
+              if (i.sequence()[n] == i.sequence()[m])
                 throw Exception("malformed image sequence specifier for image \"" + specifier + "\"" + //
                                 " (duplicate indices)");
   } catch (...) {
@@ -100,19 +97,19 @@ bool NameParser::match(std::string_view file_name, std::vector<uint32_t> &indice
   size_t num = 0;
   indices.resize(seq_index.size());
 
-  for (size_t i = 0; i < array.size(); i++) {
-    if (array[i].is_string()) {
-      if (file_name.substr(current, array[i].string().size()) != array[i].string())
+  for (const auto &i : array) {
+    if (i.is_string()) {
+      if (file_name.substr(current, i.string().size()) != i.string())
         return false;
-      current += array[i].string().size();
+      current += i.string().size();
     } else {
       uint32_t x = current;
-      while (isdigit(file_name[current]))
+      while (isdigit(file_name[current]) != 0)
         current++;
       if (x == current)
         return false;
       x = to<uint32_t>(file_name.substr(x, current - x));
-      if (!in_seq(array[i].sequence(), x))
+      if (!in_seq(i.sequence(), x))
         return false;
       indices[num] = x;
       num++;
@@ -127,10 +124,10 @@ void NameParser::calculate_padding(const std::vector<uint32_t> &maxvals) {
     assert(maxvals[n] > 0);
 
   for (size_t n = 0; n < seq_index.size(); n++) {
-    size_t m = seq_index.size() - 1 - n;
+    const size_t m = seq_index.size() - 1 - n;
     Item &item(array[seq_index[n]]);
     if (!item.sequence().empty()) {
-      if (maxvals[m])
+      if (maxvals[m] != 0U)
         if (item.sequence().size() != static_cast<size_t>(maxvals[m]))
           throw Exception("dimensions requested in image specifier \"" + specification + "\"" + //
                           " do not match supplied header information");
@@ -145,12 +142,7 @@ void NameParser::calculate_padding(const std::vector<uint32_t> &maxvals) {
 }
 
 void NameParser::Item::calc_padding(size_t maxval) {
-  for (size_t i = 0; i < sequence().size(); i++) {
-    assert(sequence()[i] >= 0);
-    if (maxval < static_cast<size_t>(sequence()[i]))
-      maxval = sequence()[i];
-  }
-
+  maxval = std::max(maxval, static_cast<size_t>(*std::max_element(sequence().begin(), sequence().end())));
   seq_length = 1;
   for (size_t num = 10; maxval >= num; num *= 10)
     seq_length += 1;
@@ -164,11 +156,11 @@ std::filesystem::path NameParser::name(const std::vector<uint32_t> &indices) {
 
   std::string str;
   size_t n = seq_index.size() - 1;
-  for (size_t i = 0; i < array.size(); i++) {
-    if (array[i].is_string())
-      str += array[i].string();
+  for (const auto &i : array) {
+    if (i.is_string())
+      str += i.string();
     else {
-      str += printf("%*.*d", array[i].size(), array[i].size(), array[i].sequence()[indices[n]]);
+      str += printf("%*.*d", i.size(), i.size(), i.sequence()[indices[n]]);
       n--;
     }
   }
@@ -229,25 +221,24 @@ std::vector<uint32_t> ParsedName::List::parse_scan_check(std::string_view specif
 void ParsedName::List::scan(NameParser &parser) {
   std::vector<uint32_t> index;
   if (parser.ndim() == 0) {
-    list.push_back(std::shared_ptr<ParsedName>(new ParsedName(parser.name(index), index)));
+    list.push_back(std::make_shared<ParsedName>(parser.name(index), index));
     return;
   }
 
   std::filesystem::path entry;
 
   while (!(entry = parser.get_next_match(index, true)).empty())
-    list.push_back(std::shared_ptr<ParsedName>(new ParsedName(entry, index)));
+    list.push_back(std::make_shared<ParsedName>(entry, index));
 
-  if (!size())
+  if (size() == 0U)
     throw Exception("no matching files found for image specifier \"" + parser.spec() + "\"");
 }
 
 std::vector<uint32_t> ParsedName::List::count() const {
-  if (!list[0]->ndim()) {
+  if (list[0]->ndim() == 0U) {
     if (size() == 1)
       return (std::vector<uint32_t>());
-    else
-      throw Exception("image number mismatch");
+    throw Exception("image number mismatch");
   }
 
   std::vector<uint32_t> dim(list[0]->ndim(), 0);
@@ -261,7 +252,7 @@ std::vector<uint32_t> ParsedName::List::count() const {
 void ParsedName::List::count_dim(std::vector<uint32_t> &dim, size_t &current_entry, size_t current_dim) const {
   uint32_t n;
   bool stop = false;
-  std::shared_ptr<const ParsedName> first_entry(list[current_entry]);
+  const std::shared_ptr<const ParsedName> first_entry(list[current_entry]);
 
   for (n = 0; current_entry < size(); n++) {
     for (size_t d = 0; d < current_dim; d++)
@@ -276,7 +267,7 @@ void ParsedName::List::count_dim(std::vector<uint32_t> &dim, size_t &current_ent
       current_entry++;
   }
 
-  if (dim[current_dim] && dim[current_dim] != n)
+  if ((dim[current_dim] != 0U) && (dim[current_dim] != n))
     throw Exception("number mismatch between number of images along different dimensions");
 
   dim[current_dim] = n;

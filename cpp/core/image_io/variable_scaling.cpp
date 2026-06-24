@@ -32,7 +32,7 @@ void VariableScaling::load(const Header &header, size_t) {
   assert(files.size() == scale_factors.size());
   assert(header.intensity_offset() == 0 && header.intensity_scale() == 1.0);
 
-  size_t voxels_per_segment = segsize / files.size();
+  const size_t voxels_per_segment = segsize / files.size();
 
   DEBUG("loading variable-scaling DICOM image \"" + header.path().string() + "\"...");
   addresses.resize(1);
@@ -41,7 +41,7 @@ void VariableScaling::load(const Header &header, size_t) {
     throw Exception("failed to allocate memory for image \"" + header.path().string() + "\"");
 
   ProgressBar progress("rescaling DICOM images", files.size());
-  float32 *data = reinterpret_cast<float32 *>(addresses[0].get());
+  auto *data = reinterpret_cast<float32 *>(addresses[0].get());
   for (size_t n = 0; n < files.size(); n++) {
     const float offset = scale_factors[n].offset;
     const float scale = scale_factors[n].scale;

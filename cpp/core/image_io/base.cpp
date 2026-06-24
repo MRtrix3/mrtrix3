@@ -19,9 +19,9 @@
 
 namespace MR::ImageIO {
 
-Base::Base(const Header &header) : segsize(voxel_count(header)), is_new(false), writable(false) {}
+Base::Base(const Header &header) : segsize(voxel_count(header)) {}
 
-Base::~Base() {}
+Base::~Base() = default;
 
 bool Base::is_file_backed() const { return true; }
 

@@ -82,9 +82,9 @@ inline std::string hex(uint16_t value) {
   return hex.str();
 }
 
-inline uint16_t read_hex(const std::string m) {
+inline uint16_t read_hex(std::string_view m) {
   uint16_t value;
-  std::istringstream hex(m);
+  std::istringstream hex{std::string(m)};
   hex >> std::hex >> value;
   return value;
 }
@@ -94,47 +94,46 @@ void run() {
   std::vector<uint16_t> VRs;
 
   if (!get_options("anonymise").empty()) {
-    tags.push_back(Tag(0x0010U, 0x0030U, "")); // PatientBirthDate
+    tags.emplace_back(0x0010U, 0x0030U, ""); // PatientBirthDate
     VRs.push_back(File::Dicom::VR_PN);
   }
 
   auto opt = get_options("tag");
   if (!opt.empty())
-    for (size_t n = 0; n < opt.size(); ++n)
-      tags.push_back(Tag(read_hex(opt[n][0]), read_hex(opt[n][1]), opt[n][2]));
+    for (const auto &n : opt)
+      tags.emplace_back(read_hex(n[0]), read_hex(n[1]), n[2]);
 
   opt = get_options("id");
   if (!opt.empty()) {
-    std::string newid = opt[0][0];
-    tags.push_back(Tag(0x0010U, 0x0020U, newid)); // PatientID
-    tags.push_back(Tag(0x0010U, 0x1000U, newid)); // OtherPatientIDs
+    const std::string newid = opt[0][0];
+    tags.emplace_back(0x0010U, 0x0020U, newid); // PatientID
+    tags.emplace_back(0x0010U, 0x1000U, newid); // OtherPatientIDs
   }
 
-  for (size_t n = 0; n < VRs.size(); ++n) {
+  for (unsigned short n : VRs) {
     union {
       uint16_t i;
       char c[2]; // check_syntax off
     } VR;
-    VR.i = VRs[n];
+    VR.i = n;
     INFO(std::string("clearing entries with VR \"") + VR.c[1] + VR.c[0] + "\"");
   }
-  for (size_t n = 0; n < tags.size(); ++n)
-    INFO("replacing tag (" + hex(tags[n].group) + "," + hex(tags[n].element) + ") with value \"" + tags[n].newvalue +
-         "\"");
+  for (auto &tag : tags)
+    INFO("replacing tag (" + hex(tag.group) + "," + hex(tag.element) + ") with value \"" + tag.newvalue + "\"");
 
   File::Dicom::Element item;
   item.set(argument[0], true, true);
   while (item.read()) {
-    for (size_t n = 0; n < VRs.size(); ++n) {
-      if (item.VR == VRs[n]) {
+    for (unsigned short VR : VRs) {
+      if (item.VR == VR) {
         memset(item.data, 32, item.size);
         memcpy(item.data, "anonymous", std::min<int>(item.size, 9));
       }
     }
-    for (size_t n = 0; n < tags.size(); ++n) {
-      if (item.is(tags[n].group, tags[n].element)) {
+    for (const auto &tag : tags) {
+      if (item.is(tag.group, tag.element)) {
         memset(item.data, 32, item.size);
-        memcpy(item.data, tags[n].newvalue.c_str(), std::min<int>(item.size, tags[n].newvalue.size()));
+        memcpy(item.data, tag.newvalue.c_str(), std::min<int>(item.size, tag.newvalue.size()));
       }
     }
   }

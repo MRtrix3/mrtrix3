@@ -19,7 +19,7 @@
 namespace MR::GUI::MRView::Tool {
 
 void Image4D::load_image_buffer() {
-  size_t ndim = fixel_data->ndim();
+  const size_t ndim = fixel_data->ndim();
 
   if (ndim < 4)
     throw InvalidImageException("Vector image " + filepath.string() + " should contain 4 dimensions;" + //
@@ -27,7 +27,7 @@ void Image4D::load_image_buffer() {
 
   const size_t dim4_len = fixel_data->size(3);
 
-  if (dim4_len % 3)
+  if ((dim4_len % 3) != 0U)
     throw InvalidImageException("Expecting 4th-dimension size of vector image " + filepath.string() +
                                 " to be a multiple of 3; instead " + str(dim4_len) + " entries found");
 
@@ -84,7 +84,7 @@ void Image4D::reload_image_buffer() {
       dir_buffer_store.push_back(vector.normalized());
       fixel_val_store.add_value(length);
 
-      GLint point_index = pos_buffer_store.size() - 1;
+      const GLint point_index = pos_buffer_store.size() - 1;
 
       for (size_t axis = 0; axis < 3; ++axis) {
         slice_fixel_indices[axis][voxel[axis]].push_back(point_index);
@@ -106,7 +106,7 @@ void Image4D::update_image_buffers() {
   if (trackable()) {
     ssize_t target_volume = 0;
     if (tracking) {
-      if (Window::main->image()) {
+      if (Window::main->image() != nullptr) {
         const auto image = Window::main->image()->image;
         if (image.ndim() >= 4)
           target_volume = image.index(3);

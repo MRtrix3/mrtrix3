@@ -30,7 +30,7 @@ public:
 
   void set(T position) { (this->*(_internal_set))(position); }
 
-  T coef(size_t i) const { return (weights[i]); }
+  [[nodiscard]] T coef(size_t i) const { return (weights[i]); }
 
 protected:
   static const BasisMatrix cubic_poly_derivative_operator;

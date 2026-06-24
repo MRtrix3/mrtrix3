@@ -54,9 +54,9 @@ public:
     ImageType input(in);
 
     std::vector<size_t> outer_axes;
-    std::vector<size_t>::const_iterator it = inner_axes.begin();
+    auto it = inner_axes.cbegin();
     for (size_t axis = 0; axis != input.ndim(); ++axis) {
-      if (it != inner_axes.end() && *it == axis)
+      if (it != inner_axes.cend() && *it == axis)
         ++it;
       else
         outer_axes.push_back(axis);
@@ -107,9 +107,9 @@ public:
       }
 
       std::vector<ssize_t> index_of_max(kspace.ndim());
-      std::vector<size_t>::const_iterator it = axes.begin();
+      auto it = axes.cbegin();
       for (ssize_t axis = 0; axis != kspace.ndim(); ++axis) {
-        if (it != axes.end() && *it == axis) {
+        if (it != axes.cend() && *it == axis) {
           index_of_max[axis] = -1;
           ++it;
         } else {
@@ -158,12 +158,14 @@ public:
       max_magnitude = MR::abs(value_at_max);
 
       // Determine direction and frequency of harmonic
-      pos_type kspace_origin;
+      std::array<ssize_t, 3> kspace_origin;
       for (ssize_t axis = 0; axis != 3; ++axis)
-        kspace_origin[axis] = axis_mask[axis] ? static_cast<real_type>((kspace.size(axis) - 1) / 2) : real_type(0);
-      const pos_type kspace_offset({axis_mask[0] ? (pos[0] - kspace_origin[0]) : real_type(0),
-                                    axis_mask[1] ? (pos[1] - kspace_origin[1]) : real_type(0),
-                                    axis_mask[2] ? (pos[2] - kspace_origin[2]) : real_type(0)});
+        // Note: k-space centre positioning here tracks behaviour of MRtrix FFT::shift()
+        // NOLINTNEXTLINE(bugprone-integer-division)
+        kspace_origin[axis] = axis_mask[axis] ? static_cast<real_type>((kspace.size(axis) - 1) / 2) : 0;
+      const pos_type kspace_offset({axis_mask[0] ? (pos[0] - static_cast<real_type>(kspace_origin[0])) : real_type(0),
+                                    axis_mask[1] ? (pos[1] - static_cast<real_type>(kspace_origin[1])) : real_type(0),
+                                    axis_mask[2] ? (pos[2] - static_cast<real_type>(kspace_origin[2])) : real_type(0)});
       const pos_type cycle_voxel({axis_mask[0] ? (phase.size(0) / kspace_offset[0]) : real_type(0),
                                   axis_mask[1] ? (phase.size(1) / kspace_offset[1]) : real_type(0),
                                   axis_mask[2] ? (phase.size(2) / kspace_offset[2]) : real_type(0)});
@@ -199,7 +201,7 @@ public:
     }; // End of gen_nonlinear_phase()
 
     if (linear) {
-      if (outer_axes.size()) {
+      if (!outer_axes.empty()) {
         for (auto l_outer = Loop(outer_axes)(kspace, phase); l_outer; ++l_outer)
           gen_linear_phase(kspace, phase, inner_axes);
       } else {

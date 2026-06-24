@@ -29,7 +29,7 @@ void MHSampler::execute() {
 }
 
 void MHSampler::next() {
-  float p = rng_uniform();
+  const float p = rng_uniform();
   float s = props.p_birth;
   if (p < s)
     return birth();
@@ -58,10 +58,10 @@ void MHSampler::birth() {
   do {
     pos = getRandPosInMask();
   } while (!spatial_guard.try_lock(pos));
-  Point_t dir = getRandDir();
+  const Point_t dir = getRandDir();
 
-  double dE = E->stageAdd(pos, dir);
-  double R = std::exp(-dE) * props.density / (pGrid.getTotalCount() + 1) * props.p_death / props.p_birth;
+  const double dE = E->stageAdd(pos, dir);
+  const double R = std::exp(-dE) * props.density / (pGrid.getTotalCount() + 1) * props.p_death / props.p_birth;
   if (R > rng_uniform()) {
     E->acceptChanges();
     pGrid.add(pos, dir);
@@ -83,8 +83,8 @@ void MHSampler::death() {
       return;
   } while (!spatial_guard.try_lock(par->getPosition()));
 
-  double dE = E->stageRemove(par);
-  double R = std::exp(-dE) * pGrid.getTotalCount() / props.density * props.p_birth / props.p_death;
+  const double dE = E->stageRemove(par);
+  const double R = std::exp(-dE) * pGrid.getTotalCount() / props.density * props.p_birth / props.p_death;
   if (R > rng_uniform()) {
     E->acceptChanges();
     pGrid.remove(par);
@@ -106,14 +106,15 @@ void MHSampler::randshift() {
       return;
   } while (!spatial_guard.try_lock(par->getPosition()));
 
-  Point_t pos, dir;
+  Point_t pos;
+  Point_t dir;
   moveRandom(par, pos, dir);
 
   if (!inMask(T.scanner2voxel.cast<float>() * pos)) {
     return;
   }
-  double dE = E->stageShift(par, pos, dir);
-  double R = exp(-dE);
+  const double dE = E->stageShift(par, pos, dir);
+  const double R = exp(-dE);
   if (R > rng_uniform()) {
     E->acceptChanges();
     pGrid.shift(par, pos, dir);
@@ -135,15 +136,16 @@ void MHSampler::optshift() {
       return;
   } while (!spatial_guard.try_lock(par->getPosition()));
 
-  Point_t pos, dir;
-  bool moved = moveOptimal(par, pos, dir);
+  Point_t pos;
+  Point_t dir;
+  const bool moved = moveOptimal(par, pos, dir);
   if (!moved || !inMask(T.scanner2voxel.cast<float>() * pos)) {
     return;
   }
 
-  double dE = E->stageShift(par, pos, dir);
-  double p_prop = calcShiftProb(par, pos, dir);
-  double R = exp(-dE) * props.p_shift * p_prop / (props.p_shift * p_prop + props.p_optshift);
+  const double dE = E->stageShift(par, pos, dir);
+  const double p_prop = calcShiftProb(par, pos, dir);
+  const double R = exp(-dE) * props.p_shift * p_prop / (props.p_shift * p_prop + props.p_optshift);
   if (R > rng_uniform()) {
     E->acceptChanges();
     pGrid.shift(par, pos, dir);
@@ -166,18 +168,18 @@ void MHSampler::connect() {
       return;
   } while (!spatial_guard.try_lock(par->getPosition()));
 
-  int alpha0 = (rng_uniform() < 0.5) ? -1 : 1;
+  const int alpha0 = (rng_uniform() < 0.5) ? -1 : 1;
   ParticleEnd pe0;
   pe0.par = par;
   pe0.alpha = alpha0;
 
   ParticleEnd pe2;
   pe2.par = nullptr;
-  double dE = E->stageConnect(pe0, pe2);
-  double R = exp(-dE);
+  const double dE = E->stageConnect(pe0, pe2);
+  const double R = exp(-dE);
   if (R > rng_uniform()) {
     E->acceptChanges();
-    if (pe2.par) {
+    if (pe2.par != nullptr) {
       if (alpha0 == -1)
         par->connectPredecessor(pe2.par, pe2.alpha);
       else
@@ -234,25 +236,26 @@ void MHSampler::moveRandom(const Particle *par, Point_t &pos, Point_t &dir) {
 bool MHSampler::moveOptimal(const Particle *par, Point_t &pos, Point_t &dir) const {
   // assert(par != nullptr);
   if (par->hasPredecessor() && par->hasSuccessor()) {
-    int a1 = (par->getPredecessor()->getPredecessor() == par) ? -1 : 1;
-    int a3 = (par->getSuccessor()->getPredecessor() == par) ? -1 : 1;
+    const int a1 = (par->getPredecessor()->getPredecessor() == par) ? -1 : 1;
+    const int a3 = (par->getSuccessor()->getPredecessor() == par) ? -1 : 1;
     pos = (par->getPredecessor()->getEndPoint(a1) + par->getSuccessor()->getEndPoint(a3)) / 2;
     dir = par->getSuccessor()->getPosition() - par->getPredecessor()->getPosition();
     dir.normalize();
     return true;
-  } else if (par->hasPredecessor()) {
-    int a = (par->getPredecessor()->getPredecessor() == par) ? -1 : 1;
+  }
+  if (par->hasPredecessor()) {
+    const int a = (par->getPredecessor()->getPredecessor() == par) ? -1 : 1;
     pos = par->getPredecessor()->getEndPoint(2 * a);
     dir = par->getPredecessor()->getDirection() * a;
     return true;
-  } else if (par->hasSuccessor()) {
-    int a = (par->getSuccessor()->getPredecessor() == par) ? -1 : 1;
+  }
+  if (par->hasSuccessor()) {
+    const int a = (par->getSuccessor()->getPredecessor() == par) ? -1 : 1;
     pos = par->getSuccessor()->getEndPoint(2 * a);
     dir = par->getSuccessor()->getDirection() * (-a);
     return true;
-  } else {
-    return false;
   }
+  return false;
 }
 
 } // namespace MR::DWI::Tractography::GT

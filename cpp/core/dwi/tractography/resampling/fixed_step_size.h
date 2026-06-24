@@ -28,10 +28,10 @@ public:
   FixedStepSize(const float ss) : step_size(ss) {}
 
   bool operator()(const Streamline<> &, Streamline<> &) const override;
-  bool valid() const override { return step_size; }
+  [[nodiscard]] bool valid() const override { return step_size != 0.0F; }
 
   void set_step_size(const value_type ss) { step_size = ss; }
-  float get_step_size() const { return step_size; }
+  [[nodiscard]] float get_step_size() const { return step_size; }
 
 private:
   value_type step_size;

@@ -25,15 +25,15 @@ bool LightBox::show_volumes = false;
 ssize_t LightBox::n_rows = 3;
 ssize_t LightBox::n_cols = 5;
 ssize_t LightBox::volume_increment = 1;
-float LightBox::slice_focus_increment = 1.0f;
-float LightBox::slice_focus_inc_adjust_rate = 0.2f;
+float LightBox::slice_focus_increment = 1.0F;
+float LightBox::slice_focus_inc_adjust_rate = 0.2F;
 std::filesystem::path LightBox::prev_image_path;
 ssize_t LightBox::current_slice_index = 0;
 
-LightBox::LightBox() : frames_dirty(true) {
+LightBox::LightBox() {
   Image *img = image();
 
-  if (!img || prev_image_path != img->header().path())
+  if ((img == nullptr) || prev_image_path != img->header().path())
     LightBox::image_changed_event();
   else {
     set_volume_increment(volume_increment);
@@ -73,7 +73,7 @@ void LightBox::set_show_volumes(bool show_vol) {
   updateGL();
 }
 
-inline bool LightBox::render_volumes() { return show_volumes && image() && image()->image.ndim() == 4; }
+inline bool LightBox::render_volumes() { return show_volumes && (image() != nullptr) && image()->image.ndim() == 4; }
 
 void LightBox::draw_plane_primitive(int axis, Displayable::Shader &shader_program, Projection &with_projection) {
   GL::assert_context_is_current();
@@ -114,7 +114,8 @@ void LightBox::paint(Projection &) {
       current_slice_index = original_slice_index / volume_increment;
   }
 
-  float value_min = NaNF, value_max = NaNF;
+  float value_min = NaNF;
+  float value_max = NaNF;
 
   ssize_t slice_idx = 0;
   for (ssize_t row = 0; row < n_rows; ++row) {
@@ -130,13 +131,13 @@ void LightBox::paint(Projection &) {
       setup_projection(plane(), projection);
 
       if (render_volumes()) {
-        int vol_index = original_slice_index + volume_increment * (slice_idx - current_slice_index);
+        const int vol_index = original_slice_index + volume_increment * (slice_idx - current_slice_index);
         if (vol_index >= 0 && vol_index < image()->image.size(3))
           image()->image.index(3) = vol_index;
         else
           render_plane = false;
       } else {
-        float focus_delta = slice_focus_increment * (slice_idx - current_slice_index);
+        const float focus_delta = slice_focus_increment * (slice_idx - current_slice_index);
         auto move = get_through_plane_translation(focus_delta, projection);
         set_focus(orig_focus + move);
       }
@@ -181,10 +182,10 @@ void LightBox::draw_grid() {
   if (n_cols < 1 && n_rows < 1)
     return;
 
-  size_t num_points = ((n_rows - 1) + (n_cols - 1)) * 4;
+  const size_t num_points = ((n_rows - 1) + (n_cols - 1)) * 4;
 
-  GL::mat4 MV = GL::identity();
-  GL::mat4 P = GL::ortho(0, width(), 0, height(), -1.0, 1.0);
+  const GL::mat4 MV = GL::identity();
+  const GL::mat4 P = GL::ortho(0, width(), 0, height(), -1.0, 1.0);
   projection.set(MV, P);
 
   if (frames_dirty) {
@@ -200,26 +201,26 @@ void LightBox::draw_grid() {
     GLfloat data[num_points];
 
     // Grid line stride
-    float x_inc = 2.f / n_cols;
-    float y_inc = 2.f / n_rows;
+    const float x_inc = 2.F / n_cols;
+    const float y_inc = 2.F / n_rows;
 
     size_t pt_idx = 0;
     // Row grid lines
     for (ssize_t row = 1; row < n_rows; ++row, pt_idx += 4) {
-      float y_pos = (y_inc * row) - 1.f;
-      data[pt_idx] = -1.f;
+      const float y_pos = (y_inc * row) - 1.F;
+      data[pt_idx] = -1.F;
       data[pt_idx + 1] = y_pos;
-      data[pt_idx + 2] = 1.f;
+      data[pt_idx + 2] = 1.F;
       data[pt_idx + 3] = y_pos;
     }
 
     // Column grid lines
     for (ssize_t col = 1; col < n_cols; ++col, pt_idx += 4) {
-      float x_pos = (x_inc * col) - 1.f;
+      const float x_pos = (x_inc * col) - 1.F;
       data[pt_idx] = x_pos;
-      data[pt_idx + 1] = -1.f;
+      data[pt_idx + 1] = -1.F;
       data[pt_idx + 2] = x_pos;
-      data[pt_idx + 3] = 1.f;
+      data[pt_idx + 3] = 1.F;
     }
 
     gl::BufferData(gl::ARRAY_BUFFER, sizeof(data), data, gl::STATIC_DRAW);
@@ -228,15 +229,15 @@ void LightBox::draw_grid() {
   } else
     frame_VAO.bind();
 
-  if (!frame_program) {
-    GL::Shader::Vertex vertex_shader("layout(location=0) in vec2 pos;\n"
-                                     "void main () {\n"
-                                     "  gl_Position = vec4 (pos, 0.0, 1.0);\n"
-                                     "}\n");
-    GL::Shader::Fragment fragment_shader("out vec3 color;\n"
-                                         "void main () {\n"
-                                         "  color = vec3 (0.1);\n"
-                                         "}\n");
+  if (frame_program == 0U) {
+    const GL::Shader::Vertex vertex_shader("layout(location=0) in vec2 pos;\n"
+                                           "void main () {\n"
+                                           "  gl_Position = vec4 (pos, 0.0, 1.0);\n"
+                                           "}\n");
+    const GL::Shader::Fragment fragment_shader("out vec3 color;\n"
+                                               "void main () {\n"
+                                               "  color = vec3 (0.1);\n"
+                                               "}\n");
     frame_program.attach(vertex_shader);
     frame_program.attach(fragment_shader);
     frame_program.link();
@@ -249,10 +250,10 @@ void LightBox::draw_grid() {
 }
 
 ModelViewProjection LightBox::get_projection_at(int row, int col) const {
-  GLint x = projection.x_position();
-  GLint y = projection.y_position();
-  GLint dw = projection.width() / n_cols;
-  GLint dh = projection.height() / n_rows;
+  const GLint x = projection.x_position();
+  const GLint y = projection.y_position();
+  const GLint dw = projection.width() / n_cols;
+  const GLint dh = projection.height() / n_rows;
 
   ModelViewProjection proj;
   proj.set_viewport(x + dw * col, y + projection.height() - (dh * (row + 1)), dw, dh);
@@ -264,23 +265,23 @@ ModelViewProjection LightBox::get_projection_at(int row, int col) const {
 void LightBox::set_focus_event() {
   const auto &mouse_pos = window().mouse_position();
 
-  GLint dw = projection.width() / n_cols;
-  GLint dh = projection.height() / n_rows;
-  ssize_t col = (mouse_pos.x() - projection.x_position()) / dw;
-  ssize_t row = n_rows - 1 - (mouse_pos.y() - projection.y_position()) / dh;
+  const GLint dw = projection.width() / n_cols;
+  const GLint dh = projection.height() / n_rows;
+  const ssize_t col = (mouse_pos.x() - projection.x_position()) / dw;
+  const ssize_t row = n_rows - 1 - (mouse_pos.y() - projection.y_position()) / dh;
 
-  ssize_t new_slice_index = col + row * n_cols;
+  const ssize_t new_slice_index = col + row * n_cols;
 
-  ModelViewProjection proj = get_projection_at(row, col);
+  const ModelViewProjection proj = get_projection_at(row, col);
 
   Eigen::Vector3f slice_focus = focus();
   if (render_volumes()) {
-    ssize_t vol = image()->image.index(3) + volume_increment * (new_slice_index - current_slice_index);
+    const ssize_t vol = image()->image.index(3) + volume_increment * (new_slice_index - current_slice_index);
     if (vol < 0 || vol >= image()->image.size(3))
       return;
     window().set_image_volume(3, vol);
   } else {
-    float focus_delta = slice_focus_increment * (new_slice_index - current_slice_index);
+    const float focus_delta = slice_focus_increment * (new_slice_index - current_slice_index);
     slice_focus += get_through_plane_translation(focus_delta, proj);
   }
   set_focus(proj.screen_to_model(mouse_pos, slice_focus));
@@ -290,42 +291,42 @@ void LightBox::set_focus_event() {
 }
 
 void LightBox::slice_move_event(float x) {
-  int row = current_slice_index / n_cols;
-  int col = current_slice_index - row * n_cols;
-  ModelViewProjection proj = get_projection_at(row, col);
+  const int row = current_slice_index / n_cols;
+  const int col = current_slice_index - row * n_cols;
+  const ModelViewProjection proj = get_projection_at(row, col);
   Slice::slice_move_event(proj, x);
 }
 
 void LightBox::pan_event() {
-  int row = current_slice_index / n_cols;
-  int col = current_slice_index - row * n_cols;
-  ModelViewProjection proj = get_projection_at(row, col);
+  const int row = current_slice_index / n_cols;
+  const int col = current_slice_index - row * n_cols;
+  const ModelViewProjection proj = get_projection_at(row, col);
   Slice::pan_event(proj);
 }
 
 void LightBox::panthrough_event() {
-  int row = current_slice_index / n_cols;
-  int col = current_slice_index - row * n_cols;
-  ModelViewProjection proj = get_projection_at(row, col);
+  const int row = current_slice_index / n_cols;
+  const int col = current_slice_index - row * n_cols;
+  const ModelViewProjection proj = get_projection_at(row, col);
   Slice::panthrough_event(proj);
 }
 
 void LightBox::tilt_event() {
-  int row = current_slice_index / n_cols;
-  int col = current_slice_index - row * n_cols;
-  ModelViewProjection proj = get_projection_at(row, col);
+  const int row = current_slice_index / n_cols;
+  const int col = current_slice_index - row * n_cols;
+  const ModelViewProjection proj = get_projection_at(row, col);
   Slice::tilt_event(proj);
 }
 
 void LightBox::rotate_event() {
-  int row = current_slice_index / n_cols;
-  int col = current_slice_index - row * n_cols;
-  ModelViewProjection proj = get_projection_at(row, col);
+  const int row = current_slice_index / n_cols;
+  const int col = current_slice_index - row * n_cols;
+  const ModelViewProjection proj = get_projection_at(row, col);
   Slice::rotate_event(proj);
 }
 
 void LightBox::reset_windowing() {
-  if (image()) {
+  if (image() != nullptr) {
     image()->reset_windowing(plane(), false);
     emit window().on_scaling_changed();
     updateGL();
@@ -335,11 +336,11 @@ void LightBox::reset_windowing() {
 void LightBox::image_changed_event() {
   Base::image_changed_event();
 
-  if (image()) {
+  if (image() != nullptr) {
     const auto &header = image()->header();
     if (prev_image_path.empty()) {
-      float slice_inc = std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.f / 3.f);
-      slice_focus_inc_adjust_rate = slice_inc / 5.f;
+      const float slice_inc = std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.F / 3.F);
+      slice_focus_inc_adjust_rate = slice_inc / 5.F;
 
       set_slice_increment(slice_inc);
       emit slice_increment_reset();

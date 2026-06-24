@@ -26,18 +26,11 @@ BaseFixel::BaseFixel(const std::filesystem::path &filepath, Fixel &fixel_tool)
       slice_fixel_indices(3),
       slice_fixel_sizes(3),
       slice_fixel_counts(3),
-      colour_type(FixelColourType::Direction),
-      scale_type(FixelScaleType::Unity),
-      colour_type_index(0),
-      scale_type_index(0),
-      threshold_type_index(0),
-      fixel_tool(fixel_tool),
-      voxel_size_length_multipler(1.f),
-      user_line_length_multiplier(1.f),
-      line_thickness(0.0015f) {
+
+      fixel_tool(fixel_tool) {
   set_allowed_features(true, true, false);
   colourmap = 1;
-  alpha = 1.0f;
+  alpha = 1.0F;
   set_use_transparency(true);
   colour[0] = colour[1] = colour[2] = 1;
   value_min = std::numeric_limits<float>::infinity();
@@ -46,7 +39,7 @@ BaseFixel::BaseFixel(const std::filesystem::path &filepath, Fixel &fixel_tool)
 }
 
 BaseFixel::~BaseFixel() {
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   vertex_buffer.clear();
   direction_buffer.clear();
   vertex_array_object.clear();
@@ -81,7 +74,7 @@ std::string BaseFixel::Shader::vertex_shader_source(const Displayable &) {
 }
 
 std::string BaseFixel::Shader::geometry_shader_source(const Displayable &object) {
-  const BaseFixel &fixel(dynamic_cast<const BaseFixel &>(object));
+  const auto &fixel(dynamic_cast<const BaseFixel &>(object));
 
   std::string source = "layout(points) in;\n"
                        "layout(triangle_strip, max_vertices = 4) out;\n"
@@ -184,13 +177,13 @@ std::string BaseFixel::Shader::fragment_shader_source(const Displayable &) {
 }
 
 bool BaseFixel::Shader::need_update(const Displayable &object) const {
-  const BaseFixel &fixel(dynamic_cast<const BaseFixel &>(object));
+  const auto &fixel(dynamic_cast<const BaseFixel &>(object));
   return (color_type != fixel.colour_type) || (scale_type != fixel.scale_type) ||
          (bidirectional != fixel.fixel_tool.is_bidirectional()) || Displayable::Shader::need_update(object);
 }
 
 void BaseFixel::Shader::update(const Displayable &object) {
-  const BaseFixel &fixel(dynamic_cast<const BaseFixel &>(object));
+  const auto &fixel(dynamic_cast<const BaseFixel &>(object));
   color_type = fixel.colour_type;
   scale_type = fixel.scale_type;
   bidirectional = fixel.fixel_tool.is_bidirectional();
@@ -204,7 +197,7 @@ void BaseFixel::render(const Projection &projection) {
 
   update_image_buffers();
 
-  FixelValue &fixel_threshold = current_fixel_threshold_state();
+  const FixelValue &fixel_threshold = current_fixel_threshold_state();
 
   gl::Uniform1f(gl::GetUniformLocation(fixel_shader, "length_mult"),
                 voxel_size_length_multipler * user_line_length_multiplier);
@@ -217,9 +210,9 @@ void BaseFixel::render(const Projection &projection) {
 
   if (ColourMap::maps[colourmap].is_colour)
     gl::Uniform3f(gl::GetUniformLocation(fixel_shader, "colourmap_colour"),
-                  colour[0] / 255.0f,
-                  colour[1] / 255.0f,
-                  colour[2] / 255.0f);
+                  colour[0] / 255.0F,
+                  colour[1] / 255.0F,
+                  colour[2] / 255.0F);
 
   if (fixel_tool.line_opacity < 1.0) {
     gl::Enable(gl::BLEND);
@@ -243,7 +236,7 @@ void BaseFixel::render(const Projection &projection) {
       gl::DrawElements(gl::POINTS, static_cast<GLsizei>(element_indices.size()), gl::UNSIGNED_INT, nullptr);
   } else {
     request_update_interp_image_buffer(projection);
-    if (GLsizei points_count = regular_grid_buffer_pos.size())
+    if (const GLsizei points_count = regular_grid_buffer_pos.size())
       gl::DrawArrays(gl::POINTS, 0, points_count);
   }
 
@@ -290,7 +283,7 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
 
   p = transform.voxel2scanner.cast<float>() * p;
 
-  Eigen::Vector3f x_dir = projection.screen_to_model_direction(1.0f, 0.0f, projection.depth_of(p));
+  Eigen::Vector3f x_dir = projection.screen_to_model_direction(1.0F, 0.0F, projection.depth_of(p));
   x_dir.normalize();
   x_dir = transform.scanner2image.rotation().cast<float>() * x_dir;
   x_dir[0] *= fixel_header.spacing(0);
@@ -298,7 +291,7 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
   x_dir[2] *= fixel_header.spacing(2);
   x_dir = transform.image2scanner.rotation().cast<float>() * x_dir;
 
-  Eigen::Vector3f y_dir = projection.screen_to_model_direction(0.0f, 1.0f, projection.depth_of(p));
+  Eigen::Vector3f y_dir = projection.screen_to_model_direction(0.0F, 1.0F, projection.depth_of(p));
   y_dir.normalize();
   y_dir = transform.scanner2image.rotation().cast<float>() * y_dir;
   y_dir[0] *= fixel_header.spacing(0);
@@ -306,12 +299,12 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
   y_dir[2] *= fixel_header.spacing(2);
   y_dir = transform.image2scanner.rotation().cast<float>() * y_dir;
 
-  Eigen::Vector3f x_width =
-      projection.screen_to_model_direction(projection.width() / 2.0f, 0.0f, projection.depth_of(p));
-  int nx = std::ceil(x_width.norm() / x_dir.norm());
-  Eigen::Vector3f y_width =
-      projection.screen_to_model_direction(0.0f, projection.height() / 2.0f, projection.depth_of(p));
-  int ny = std::ceil(y_width.norm() / y_dir.norm());
+  const Eigen::Vector3f x_width =
+      projection.screen_to_model_direction(projection.width() / 2.0F, 0.0F, projection.depth_of(p));
+  const int nx = std::ceil(x_width.norm() / x_dir.norm());
+  const Eigen::Vector3f y_width =
+      projection.screen_to_model_direction(0.0F, projection.height() / 2.0F, projection.depth_of(p));
+  const int ny = std::ceil(y_width.norm() / y_dir.norm());
 
   regular_grid_buffer_pos.clear();
   regular_grid_buffer_dir.clear();
@@ -322,7 +315,7 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
   const auto &val_buffer = current_fixel_value_state().buffer_store;
   const auto &col_buffer = current_fixel_colour_state().buffer_store;
   const auto &threshold_buffer = current_fixel_threshold_state().buffer_store;
-  bool has_val = has_values();
+  const bool has_val = has_values();
 
   for (int y = -ny; y <= ny; ++y) {
     for (int x = -nx; x <= nx; ++x) {
@@ -354,7 +347,7 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
   if (regular_grid_buffer_pos.empty())
     return;
 
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
 
   regular_grid_vao.bind();
   regular_grid_vertex_buffer.bind(gl::ARRAY_BUFFER);
@@ -413,7 +406,7 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
 void BaseFixel::load_image(const std::filesystem::path &filepath) {
   // Make sure to set graphics context!
   // We're setting up vertex array objects
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
 
   load_image_buffer();
@@ -470,7 +463,7 @@ void BaseFixel::load_image(const std::filesystem::path &filepath) {
 }
 
 void BaseFixel::rebuild_element_index_buffer() {
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
 
   element_indices.clear();
@@ -483,13 +476,13 @@ void BaseFixel::rebuild_element_index_buffer() {
       const auto &starts = starts_by_slice[s];
       const auto &sizes = sizes_by_slice[s];
       const GLsizei draw_count = counts_by_slice[s];
-      if (!draw_count)
+      if (draw_count == 0)
         continue;
       assert(starts.size() == sizes.size());
       assert(static_cast<size_t>(draw_count) <= starts.size());
       for (GLsizei d = 0; d < draw_count; ++d) {
-        const uint32_t start = static_cast<uint32_t>(starts[d]);
-        const uint32_t len = static_cast<uint32_t>(sizes[d]);
+        const auto start = static_cast<uint32_t>(starts[d]);
+        const auto len = static_cast<uint32_t>(sizes[d]);
         for (uint32_t i = 0; i < len; ++i)
           element_indices.push_back(start + i);
       }
@@ -506,7 +499,7 @@ void BaseFixel::rebuild_element_index_buffer() {
 }
 
 void BaseFixel::reload_directions_buffer() {
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
 
   vertex_array_object.bind();
@@ -522,7 +515,7 @@ void BaseFixel::reload_directions_buffer() {
 }
 
 void BaseFixel::reload_values_buffer() {
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
 
   if (scale_type == FixelScaleType::Unity)
@@ -543,7 +536,7 @@ void BaseFixel::reload_values_buffer() {
 }
 
 void BaseFixel::reload_colours_buffer() {
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
 
   if (colour_type == FixelColourType::Direction)
@@ -564,7 +557,7 @@ void BaseFixel::reload_colours_buffer() {
 }
 
 void BaseFixel::reload_threshold_buffer() {
-  GL::Context::Grab context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
 
   const auto &fixel_val = current_fixel_threshold_state();

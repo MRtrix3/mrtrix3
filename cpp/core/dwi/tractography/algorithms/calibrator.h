@@ -30,20 +30,20 @@ using namespace MR::DWI::Tractography::Tracking;
 FORCE_INLINE std::vector<Eigen::Vector3f> direction_grid(float max_angle, float spacing) {
   const float maxR = Math::pow2(max_angle / spacing);
   std::vector<Eigen::Vector3f> list;
-  ssize_t extent = std::ceil(max_angle / spacing);
+  const ssize_t extent = std::ceil(max_angle / spacing);
 
   for (ssize_t i = -extent; i <= extent; ++i) {
     for (ssize_t j = -extent; j <= extent; ++j) {
-      float x = i + 0.5 * j;
-      float y = sqrt_3_over_2 * j;
+      const float x = i + 0.5 * j;
+      const float y = sqrt_3_over_2 * j;
       float n = Math::pow2(x) + Math::pow2(y);
       if (n > maxR)
         continue;
       n = spacing * std::sqrt(n);
-      float z = std::cos(n);
-      if (n)
+      const float z = std::cos(n);
+      if (n != 0.0F)
         n = spacing * std::sin(n) / n;
-      list.push_back({n * x, n * y, z});
+      list.emplace_back(n * x, n * y, z);
     }
   }
 
@@ -65,21 +65,21 @@ template <class Method> void calibrate(Method &method) {
 
   std::vector<Pair> amps;
   // for (float incl = 0.0; incl < max_angle; incl += 0.001) {
-  const size_t incl_maxindex = static_cast<size_t>(std::floor(1000.0F * max_angle));
+  const auto incl_maxindex = static_cast<size_t>(std::floor(1000.0F * max_angle));
   for (size_t incl_index = 0; incl_index <= incl_maxindex; ++incl_index) {
     const float incl = 0.001F * incl_index;
     amps.push_back(Pair(incl, calibrate_func(incl)));
     if (!std::isfinite(amps.back().amp) || amps.back().amp <= 0.0F)
       break;
   }
-  float zero = amps.back().incl;
+  const float zero = amps.back().incl;
 
   float N_min = InfF;
   float theta_min = NaNF;
   float ratio = NaNF;
   for (size_t i = 1; i < amps.size(); ++i) {
     float N = Math::pow2(max_angle);
-    float Ns = N * (1.0 + amps[0].amp / amps[i].amp) / (2.0 * Math::pow2(zero));
+    const float Ns = N * (1.0 + amps[0].amp / amps[i].amp) / (2.0 * Math::pow2(zero));
     auto dirs = direction_grid(max_angle + amps[i].incl, sqrt3 * amps[i].incl);
     N = Ns + dirs.size();
     // std::cout << amps[i].incl << " " << amps[i].amp << " " << Ns << " " << dirs.size() << " " << Ns+dirs.size() <<

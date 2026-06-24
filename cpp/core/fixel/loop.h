@@ -40,10 +40,10 @@ struct LoopFixelsInVoxel {
   template <class... DataType> struct Run {
     const index_type num_fixels;
     const index_type offset;
-    index_type fixel_index;
+    index_type fixel_index{0};
     const std::tuple<DataType &...> data;
     FORCE_INLINE Run(const index_type num_fixels, const index_type offset, const std::tuple<DataType &...> &data)
-        : num_fixels(num_fixels), offset(offset), fixel_index(0), data(data) {
+        : num_fixels(num_fixels), offset(offset), data(data) {
       MR::apply_for_each(set_offset(offset), data);
     }
     FORCE_INLINE operator bool() const { return fixel_index < num_fixels; }
@@ -61,9 +61,9 @@ struct LoopFixelsInVoxel {
 
 template <class IndexType> FORCE_INLINE LoopFixelsInVoxel Loop(IndexType &index) {
   index.index(3) = 0;
-  index_type num_fixels = index.value();
+  const index_type num_fixels = index.value();
   index.index(3) = 1;
-  index_type offset = index.value();
+  const index_type offset = index.value();
   return {num_fixels, offset};
 }
 } // namespace MR::Fixel

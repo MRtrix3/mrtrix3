@@ -46,7 +46,8 @@ void Exemplar::add(const Connectome::Streamline_nodelist &in) {
   // To try to make the exemplars sensible, find the two points along the streamline
   //   that are closest to the node COMs, and truncate the track to that range,
   //   before contributing to the exemplar
-  size_t index_closest_to_first_node = 0, index_closest_to_second_node = 0;
+  size_t index_closest_to_first_node = 0;
+  size_t index_closest_to_second_node = 0;
   float min_distance_to_first_node = (node_COMs.first - in[0]).squaredNorm();
   float min_distance_to_second_node = (node_COMs.second - in[0]).squaredNorm();
   for (size_t i = 1; i != in.size(); ++i) {
@@ -76,20 +77,20 @@ void Exemplar::add(const Connectome::Streamline_nodelist &in) {
 
 void Exemplar::add(const Tractography::Streamline<float> &in, const bool is_reversed) {
   assert(!is_finalized);
-  std::lock_guard<std::mutex> lock(mutex);
+  const std::lock_guard<std::mutex> lock(mutex);
 
   for (size_t i = 0; i != size(); ++i) {
     float interp_pos = (in.size() - 1) * i / static_cast<float>(size());
     if (is_reversed)
       interp_pos = in.size() - 1 - interp_pos;
-    const size_t lower = static_cast<size_t>(std::floor(interp_pos));
+    const auto lower = static_cast<size_t>(std::floor(interp_pos));
     const size_t upper(lower + 1);
     const float mu = interp_pos - lower;
     point_type pos;
     if (lower == in.size() - 1)
       pos = in.back();
     else
-      pos = ((1.0f - mu) * in[lower]) + (mu * in[upper]);
+      pos = ((1.0F - mu) * in[lower]) + (mu * in[upper]);
     (*this)[i] += (pos * in.weight);
   }
 
@@ -98,7 +99,7 @@ void Exemplar::add(const Tractography::Streamline<float> &in, const bool is_reve
 
 void Exemplar::finalize(const float step_size) {
   assert(!is_finalized);
-  std::lock_guard<std::mutex> lock(mutex);
+  const std::lock_guard<std::mutex> lock(mutex);
 
   // For diagonal matrix entries (self-connection), or if one of the two nodes
   //   does not have a defined position in space, don't write an exemplar
@@ -109,7 +110,7 @@ void Exemplar::finalize(const float step_size) {
   }
 
   // No streamlines assigned; generate a straight line between the two nodes
-  if (!weight) {
+  if (weight == 0.0F) {
     clear();
     push_back(node_COMs.first);
     push_back(node_COMs.second);
@@ -117,12 +118,12 @@ void Exemplar::finalize(const float step_size) {
     return;
   }
 
-  const float multiplier = 1.0f / weight;
-  for (auto i = begin(); i != end(); ++i)
-    *i *= multiplier;
+  const float multiplier = 1.0F / weight;
+  for (auto &i : *this)
+    i *= multiplier;
 
   // Constrain endpoints to the node centres of mass
-  size_t num_converging_points = endpoint_convergence_fraction * size();
+  const size_t num_converging_points = endpoint_convergence_fraction * size();
   for (size_t i = 0; i != num_converging_points; ++i) {
     const float mu = i / static_cast<float>(num_converging_points);
     (*this)[i] = (mu * (*this)[i]) + ((1.0F - mu) * node_COMs.first);
@@ -153,8 +154,10 @@ void Exemplar::finalize(const float step_size) {
       if (index == 0 || index == static_cast<int32_t>(size()) - 1) {
         vertices.push_back((*this)[index]);
       } else {
-        float lower = 0.0f, mu = 0.5f, upper = 1.0f;
-        point_type p(((*this)[index] + (*this)[index + step]) * 0.5f);
+        float lower = 0.0F;
+        float mu = 0.5F;
+        float upper = 1.0F;
+        point_type p(((*this)[index] + (*this)[index + step]) * 0.5F);
         for (uint32_t iter = 0; iter != 6; ++iter) {
           if ((p - vertices.back()).squaredNorm() > step_sq)
             upper = mu;

@@ -42,15 +42,15 @@ public:
 
   Mesh(const Mesh &that) = default;
 
-  Mesh(Mesh &&that)
+  Mesh(Mesh &&that) noexcept
       : vertices(std::move(that.vertices)),
         normals(std::move(that.normals)),
         triangles(std::move(that.triangles)),
         quads(std::move(that.quads)) {}
 
-  Mesh() {}
+  Mesh() = default;
 
-  Mesh &operator=(Mesh &&that) {
+  Mesh &operator=(Mesh &&that) noexcept {
     vertices = std::move(that.vertices);
     normals = std::move(that.normals);
     triangles = std::move(that.triangles);
@@ -127,38 +127,38 @@ public:
 
   void save(const std::filesystem::path &, const bool binary = false) const;
 
-  vertex_index_type num_vertices() const { return vertices.size(); }
-  size_t num_triangles() const { return triangles.size(); }
-  size_t num_quads() const { return quads.size(); }
-  size_t num_polygons() const { return triangles.size() + quads.size(); }
+  [[nodiscard]] vertex_index_type num_vertices() const { return vertices.size(); }
+  [[nodiscard]] size_t num_triangles() const { return triangles.size(); }
+  [[nodiscard]] size_t num_quads() const { return quads.size(); }
+  [[nodiscard]] size_t num_polygons() const { return triangles.size() + quads.size(); }
 
-  bool have_normals() const { return !normals.empty(); }
+  [[nodiscard]] bool have_normals() const { return !normals.empty(); }
   void calculate_normals();
 
-  std::string get_name() const { return name; }
+  [[nodiscard]] std::string get_name() const { return name; }
   void set_name(std::string_view n) { name = n; }
 
-  const Vertex &vert(const vertex_index_type i) const {
+  [[nodiscard]] const Vertex &vert(const vertex_index_type i) const {
     assert(i < vertices.size());
     return vertices[i];
   }
-  const Vertex &norm(const vertex_index_type i) const {
+  [[nodiscard]] const Vertex &norm(const vertex_index_type i) const {
     assert(i < normals.size());
     return normals[i];
   }
-  const Triangle &tri(const size_t i) const {
+  [[nodiscard]] const Triangle &tri(const size_t i) const {
     assert(i < triangles.size());
     return triangles[i];
   }
-  const Quad &quad(const size_t i) const {
+  [[nodiscard]] const Quad &quad(const size_t i) const {
     assert(i < quads.size());
     return quads[i];
   }
 
-  const VertexList &get_vertices() const { return vertices; }
-  const VertexList &get_normals() const { return normals; }
-  const TriangleList &get_triangles() const { return triangles; }
-  const QuadList &get_quads() const { return quads; }
+  [[nodiscard]] const VertexList &get_vertices() const { return vertices; }
+  [[nodiscard]] const VertexList &get_normals() const { return normals; }
+  [[nodiscard]] const TriangleList &get_triangles() const { return triangles; }
+  [[nodiscard]] const QuadList &get_quads() const { return quads; }
 
   void load_triangle_vertices(VertexList &, const size_t) const;
   void load_quad_vertices(VertexList &, const size_t) const;

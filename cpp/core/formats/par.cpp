@@ -34,27 +34,26 @@
 
 namespace MR::Formats {
 
-typedef struct {
+using ParCols = struct {
   int sl, ec, dyn, ph, ty, seq, ang, pos, b, grad, asl, ri, rs, ss, pix, size, vox, thick, gap;
-} ParCols;
+};
 
 inline const ParCols get_column_indices(const float version) {
-  if (version == 3.0f) {
+  if (version == 3.0F)
     return {0, 1, 2, 3, 4, 5, -1, -1, -1, -1, -1, 7, 8, 9, -1, -1, -1, -1, -1};
-  } else if (version == 4.0f) {
+  if (version == 4.0F)
     return {0, 1, 2, 3, 4, 5, -1, -1, -1, -1, -1, 11, 12, 13, 7, -1, -1, -1, -1};
-  } else if (version == 4.1f) {
+  if (version == 4.1F)
     return {0, 1, 2, 3, 4, 5, 16, 19, 33, 45, -1, 11, 12, 13, 7, -1, 28, 22, 23};
-  } else if (version == 4.2f) {
+  if (version == 4.2F)
     return {0, 1, 2, 3, 4, 5, 16, 19, 33, 45, 48, 11, 12, 13, 7, 9, 28, 22, 23};
-  } else
-    throw Exception("unsupported version of PAR/REC: V" + str(version));
+  throw Exception("unsupported version of PAR/REC: V" + str(version));
 }
 
-typedef struct {
+using SliceData = struct {
   int sl, ec, dyn, ph, ty, seq, asl, pix, size[2];
   float b, grad[3], ri, rs, ss, ang[3], pos[3], vox[2], thick, gap;
-} SliceData;
+};
 
 inline const SliceData parse_line(std::string_view line, const ParCols &cols) {
   auto token = split(line, " \t\n", true);
@@ -199,7 +198,7 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
       nslices = slice.sl;
   }
 
-  if (static_cast<size_t>(nvols * nslices) != slices.size())
+  if ((nvols * nslices) != slices.size())
     throw Exception("mismatch in dimensions when reading PAR/REC file \"" + H.path().string() + "\"");
 
   if (nvols > 1) {
@@ -257,7 +256,7 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
   }
 
   if (!G.empty()) {
-    if (G.size() != static_cast<size_t>(nvols))
+    if (G.size() != nvols)
       throw Exception(std::string("mismatch between number of volumes and number of b-values") + //
                       " in PAR/REC file \"" + H.path().string() + "\"");                         //
 
@@ -273,7 +272,7 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
   }
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(rec_file));
+  io_handler->files.emplace_back(rec_file);
 
   return io_handler;
 }

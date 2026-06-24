@@ -15,6 +15,7 @@
  */
 
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <string>
 #include <tcb/span.hpp>
@@ -155,7 +156,7 @@ public:
 
   SamplerBase(const SamplerBase &that) = default;
 
-  virtual ~SamplerBase() {}
+  virtual ~SamplerBase() = default;
 
   // Note: While these are shown as virtual,
   //   in the current implementation these are not executed using inheritance,
@@ -168,9 +169,9 @@ public:
   virtual bool operator()(const DWI::Tractography::Streamline<value_type> &tck, //
                           ManyPerStreamline &out) = 0;                          //
 
-  virtual size_t num_contrasts() const = 0;
-  contrast_type contrast() const { return _contrast; }
-  const std::optional<Statistic> &statistic() const { return _statistic; }
+  [[nodiscard]] virtual size_t num_contrasts() const = 0;
+  [[nodiscard]] contrast_type contrast() const { return _contrast; }
+  [[nodiscard]] const std::optional<Statistic> &statistic() const { return _statistic; }
 
 protected:
   const contrast_type _contrast;
@@ -222,22 +223,22 @@ protected:
 private:
   // Take distance between points into account in mean calculation
   //   (Should help down-weight endpoints)
-  std::vector<value_type> compute_weights(const DWI::Tractography::Streamline<value_type> &tck) const {
+  [[nodiscard]] std::vector<value_type> compute_weights(const DWI::Tractography::Streamline<value_type> &tck) const {
     std::vector<value_type> weights;
     weights.reserve(tck.size());
     for (size_t i = 0; i != tck.size(); ++i) {
-      value_type length = value_type(0);
+      value_type length = 0.0F;
       if (i > 0)
         length += (tck[i] - tck[i - 1]).norm();
       if (i < tck.size() - 1)
         length += (tck[i + 1] - tck[i]).norm();
-      weights.push_back(0.5 * length);
+      weights.push_back(0.5F * length);
     }
     return weights;
   }
 
   template <class VectorType>
-  value_type compute_statistic(const VectorType &data, const std::vector<value_type> &weights) const {
+  [[nodiscard]] value_type compute_statistic(const VectorType &data, const std::vector<value_type> &weights) const {
     if (!statistic().has_value()) {
       assert(false);
       return std::numeric_limits<value_type>::quiet_NaN();
@@ -245,8 +246,8 @@ private:
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     switch (statistic().value()) {
     case Statistic::MEAN: {
-      value_type integral = value_type(0);
-      value_type sum_weights = value_type(0);
+      value_type integral = 0.0F;
+      value_type sum_weights = 0.0F;
       for (size_t i = 0; i != data.size(); ++i) {
         if (!std::isnan(data[i])) {
           integral += data[i] * weights[i];
@@ -289,7 +290,7 @@ private:
     } break;
     default:
       assert(false);
-      return std::numeric_limits<value_type>::quiet_NaN();
+      return std::numeric_limits<value_type>::signaling_NaN();
     }
   }
 };
@@ -334,8 +335,8 @@ protected:
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     switch (statistic().value()) {
     case Statistic::MEAN: {
-      value_type integral = value_type(0);
-      value_type sum_lengths = value_type(0);
+      value_type integral = 0.0F;
+      value_type sum_lengths = 0.0F;
       for (const auto &v : data) {
         if (std::isfinite(v.value)) {
           integral += v.length * v.value;
@@ -346,7 +347,7 @@ protected:
     }
     case Statistic::MEDIAN: {
       std::sort(data.begin(), data.end());
-      value_type sum_lengths(value_type(0));
+      value_type sum_lengths = 0.0F;
       for (const auto &d : data) {
         if (std::isfinite(d.value))
           sum_lengths += d.length;
@@ -387,7 +388,7 @@ protected:
     }
     default:
       assert(false);
-      return std::numeric_limits<value_type>::quiet_NaN();
+      return std::numeric_limits<value_type>::signaling_NaN();
     }
   }
 };
@@ -432,7 +433,9 @@ public:
     return true;
   }
 
-  size_t num_contrasts() const override { return BaseType::image.ndim() == 4 ? BaseType::image.size(3) : 1; }
+  [[nodiscard]] size_t num_contrasts() const override {
+    return BaseType::image.ndim() == 4 ? BaseType::image.size(3) : 1;
+  }
 
 private:
   Image<value_type> tdi;
@@ -449,7 +452,7 @@ private:
     std::vector<ValueLength> data;
     for (const auto &v : voxels) {
       assign_pos_of(v, 0, 3).to(image);
-      data.emplace_back(ValueLength(image.value() * get_tdi_multiplier(v), v.get_length()));
+      data.emplace_back(image.value() * get_tdi_multiplier(v), v.get_length());
     }
     return data;
   }
@@ -484,7 +487,9 @@ public:
     return (*this).BaseType::operator()(tck, out);
   }
 
-  size_t num_contrasts() const override { return BaseType::interp.ndim() == 4 ? BaseType::interp.size(3) : 1; }
+  [[nodiscard]] size_t num_contrasts() const override {
+    return BaseType::interp.ndim() == 4 ? BaseType::interp.size(3) : 1;
+  }
 
 protected:
   bool operator()(const DWI::Tractography::Streamline<value_type> &tck, matrix_type &out) override {
@@ -550,7 +555,7 @@ public:
     return (*this).BaseType::operator()(tck, out);
   }
 
-  size_t num_contrasts() const override { return 1; }
+  [[nodiscard]] size_t num_contrasts() const override { return 1; }
 
 protected:
   bool operator()(const DWI::Tractography::Streamline<value_type> & /*tck*/, matrix_type & /*out*/) override {
@@ -599,7 +604,7 @@ public:
     return false;
   }
 
-  size_t num_contrasts() const override { return 1; }
+  [[nodiscard]] size_t num_contrasts() const override { return 1; }
 
 private:
   std::shared_ptr<Math::SH::PrecomputedAL<default_type>> sh_precomputer;
@@ -610,7 +615,7 @@ private:
     for (const auto &i : intersections) {
       assign_pos_of(i, 0, 3).to(image);
       sh_coeffs = image.row(3);
-      data.emplace_back(ValueLength(sh_precomputer->value(sh_coeffs, i.get_dir()), i.get_length()));
+      data.emplace_back(sh_precomputer->value(sh_coeffs, i.get_dir()), i.get_length());
     }
     return data;
   }
@@ -619,8 +624,7 @@ private:
 class ReceiverBase {
 public:
   ReceiverBase(const size_t num_tracks, const bool ordered, const std::filesystem::path &path)
-      : received(0),
-        path(path),
+      : path(path),
         expected(num_tracks),
         process_ordered(ordered),
         progress("Sampling values underlying streamlines", num_tracks) {}
@@ -632,7 +636,7 @@ public:
       WARN("Track file reports " + str(expected) + " tracks, but contains " + str(received));
   }
 
-  bool ordered() const { return process_ordered; }
+  [[nodiscard]] bool ordered() const { return process_ordered; }
 
 protected:
   void operator++() {
@@ -640,7 +644,7 @@ protected:
     ++progress;
   }
 
-  size_t received;
+  size_t received{0};
   const std::filesystem::path path;
 
 private:
@@ -700,9 +704,9 @@ public:
                      const std::filesystem::path &path)
       : ReceiverBase(num_tracks, true, path) {
     if (Path::has_suffix(path, ".tsf")) {
-      tsf.reset(new DWI::Tractography::ScalarWriter<value_type>(path, properties));
+      tsf = std::make_unique<DWI::Tractography::ScalarWriter<value_type>>(path, properties);
     } else {
-      ascii.reset(new File::OFStream(path));
+      ascii = std::make_unique<File::OFStream>(path);
       (*ascii) << "# " << App::command_history_string << "\n";
     }
   }

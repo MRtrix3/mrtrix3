@@ -48,7 +48,7 @@ public:
   };
 
   Bootstrap(const ImageType &Image, const Functor &functor)
-      : base_type(Image), func(functor), next_voxel(nullptr), last_voxel(nullptr), current_chunk(0) {
+      : base_type(Image), func(functor), next_voxel(nullptr), last_voxel(nullptr) {
     assert(ndim() == 4);
     voxel_buffer.push_back(std::vector<value_type>(NUM_VOX_PER_CHUNK * size(3)));
     clear();
@@ -80,7 +80,7 @@ protected:
   std::vector<std::vector<value_type>> voxel_buffer;
   value_type *next_voxel;
   value_type *last_voxel;
-  size_t current_chunk;
+  size_t current_chunk{0};
 
   value_type *allocate_voxel() {
     if (next_voxel == last_voxel) {
@@ -97,11 +97,11 @@ protected:
 
   value_type *get_voxel() {
     const Eigen::Vector3i voxel(index(0), index(1), index(2));
-    const typename std::map<Eigen::Vector3i, value_type *, IndexCompare>::const_iterator existing = voxels.find(voxel);
+    const auto existing = voxels.find(voxel);
     if (existing != voxels.end())
       return existing->second;
     value_type *const data = allocate_voxel();
-    ssize_t pos = index(3);
+    const ssize_t pos = index(3);
     for (auto l = Loop(3)(*this); l; ++l)
       data[index(3)] = base_type::value();
     index(3) = pos;

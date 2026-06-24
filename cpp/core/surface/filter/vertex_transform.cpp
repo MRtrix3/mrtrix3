@@ -23,7 +23,8 @@
 namespace MR::Surface::Filter {
 
 void VertexTransform::operator()(const Mesh &in, Mesh &out) const {
-  VertexList vertices, normals;
+  VertexList vertices;
+  VertexList normals;
   const size_t V = in.num_vertices();
   vertices.reserve(V);
   if (in.have_normals())
@@ -43,7 +44,7 @@ void VertexTransform::operator()(const Mesh &in, Mesh &out) const {
       for (size_t i = 0; i != V; ++i) {
         Vertex n = in.norm(i);
         n[0] = -n[0];
-        normals.push_back(transform.image2scanner.rotation() * n);
+        normals.emplace_back(transform.image2scanner.rotation() * n);
       }
     }
     break;
@@ -69,7 +70,7 @@ void VertexTransform::operator()(const Mesh &in, Mesh &out) const {
       vertices.push_back(transform.voxel2scanner * in.vert(i));
     if (in.have_normals()) {
       for (size_t i = 0; i != V; ++i)
-        normals.push_back(transform.voxel2scanner.rotation() * in.norm(i));
+        normals.emplace_back(transform.voxel2scanner.rotation() * in.norm(i));
     }
     break;
 
@@ -78,7 +79,7 @@ void VertexTransform::operator()(const Mesh &in, Mesh &out) const {
       vertices.push_back(transform.scanner2voxel * in.vert(i));
     if (in.have_normals()) {
       for (size_t i = 0; i != V; ++i)
-        normals.push_back(transform.scanner2voxel.rotation() * in.norm(i));
+        normals.emplace_back(transform.scanner2voxel.rotation() * in.norm(i));
     }
     break;
 
@@ -92,7 +93,7 @@ void VertexTransform::operator()(const Mesh &in, Mesh &out) const {
         cras[i] += 0.5 * header.size(axes[j]) * header.spacing(axes[j]) * M(i, j);
     }
     for (size_t i = 0; i != V; ++i)
-      vertices.push_back(in.vert(i) + cras);
+      vertices.emplace_back(in.vert(i) + cras);
     break;
   }
 

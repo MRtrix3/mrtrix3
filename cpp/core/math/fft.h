@@ -30,12 +30,12 @@ namespace MR::Math {
 class FFT1D {
 public:
   FFT1D(size_t N, int direction) : _data(N), direction(direction) {
-    fftw_complex *p = reinterpret_cast<fftw_complex *>(_data.data());
+    auto *p = reinterpret_cast<fftw_complex *>(_data.data());
     _plan = fftw_plan_dft_1d(static_cast<int>(N), p, p, direction, FFTW_MEASURE);
   }
 
   FFT1D(const FFT1D &other) : _data(other._data.size()), direction(other.direction) {
-    fftw_complex *p = reinterpret_cast<fftw_complex *>(_data.data());
+    auto *p = reinterpret_cast<fftw_complex *>(_data.data());
     _plan = fftw_plan_dft_1d(static_cast<int>(_data.size()), p, p, direction, FFTW_MEASURE);
   }
 
@@ -43,7 +43,7 @@ public:
     fftw_destroy_plan(_plan);
     _data.resize(other._data.size());
     direction = other.direction;
-    fftw_complex *p = reinterpret_cast<fftw_complex *>(_data.data());
+    auto *p = reinterpret_cast<fftw_complex *>(_data.data());
     _plan = fftw_plan_dft_1d(static_cast<int>(_data.size()), p, p, direction, FFTW_MEASURE);
     return *this;
   }
@@ -53,7 +53,7 @@ public:
   FFT1D(FFT1D &&other) = delete;
   FFT1D &operator=(FFT1D &&other) = delete;
 
-  const size_t size() const { return _data.size(); }
+  [[nodiscard]] const size_t size() const { return _data.size(); }
 
   const cdouble &operator[](size_t n) const { return _data[n]; }
   cdouble &operator[](size_t n) { return _data[n]; }
@@ -71,7 +71,7 @@ inline std::string direction_str(int direction) { return (direction == FFTW_FORW
 
 inline size_t shift(size_t pos, const size_t size, const bool centre_FFT, const bool inverse) {
   if (centre_FFT) {
-    pos += (size + 1 + (!inverse)) / 2;
+    pos += (size + 1 + static_cast<size_t>(!inverse)) / 2;
     if (pos >= size)
       pos -= size;
   }

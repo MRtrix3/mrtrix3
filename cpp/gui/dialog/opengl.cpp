@@ -21,7 +21,7 @@
 namespace MR::GUI::Dialog {
 
 OpenGL::OpenGL(QWidget *parent, const GL::Format &format) : QDialog(parent) {
-  TreeModel *model = new TreeModel(this);
+  auto *model = new TreeModel(this);
 
   TreeItem *root = model->rootItem;
 
@@ -36,7 +36,7 @@ OpenGL::OpenGL(QWidget *parent, const GL::Format &format) : QDialog(parent) {
   root->appendChild(new TreeItem("Vendor", (const char *)gl::GetString(gl::VENDOR), root));
   root->appendChild(new TreeItem("Version", (const char *)gl::GetString(gl::VERSION), root));
 
-  TreeItem *bit_depths = new TreeItem("Bit depths", std::string(), root);
+  auto *bit_depths = new TreeItem("Bit depths", std::string(), root);
   root->appendChild(bit_depths);
 
   bit_depths->appendChild(new TreeItem("red", str(format.redBufferSize()), bit_depths));
@@ -51,9 +51,9 @@ OpenGL::OpenGL(QWidget *parent, const GL::Format &format) : QDialog(parent) {
                                      ? "single"
                                      : (format.swapBehavior() == QSurfaceFormat::DoubleBuffer ? "double" : "triple"),
                                  root));
-  root->appendChild(new TreeItem("VSync", format.swapInterval() ? "on" : "off", root));
+  root->appendChild(new TreeItem("VSync", (format.swapInterval() == 0) ? "off" : "on", root));
   root->appendChild(
-      new TreeItem("Multisample anti-aliasing", format.samples() ? str(format.samples()).c_str() : "off", root));
+      new TreeItem("Multisample anti-aliasing", (format.samples() == 0) ? "off" : str(format.samples()).c_str(), root));
 
   gl::GetIntegerv(gl::MAX_TEXTURE_SIZE, &i);
   root->appendChild(new TreeItem("Maximum 2D texture size", str(i), root));
@@ -61,16 +61,16 @@ OpenGL::OpenGL(QWidget *parent, const GL::Format &format) : QDialog(parent) {
   gl::GetIntegerv(gl::MAX_3D_TEXTURE_SIZE, &i);
   root->appendChild(new TreeItem("Maximum 3D texture size", str(i), root));
 
-  QTreeView *view = new QTreeView;
+  auto *view = new QTreeView;
   view->setModel(model);
   view->resizeColumnToContents(0);
   view->resizeColumnToContents(1);
   view->setMinimumSize(500, 200);
 
-  QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
+  auto *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
   connect(buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
 
-  QVBoxLayout *layout = new QVBoxLayout(this);
+  auto *layout = new QVBoxLayout(this);
   layout->addWidget(view);
   layout->addWidget(buttonBox);
   setLayout(layout);

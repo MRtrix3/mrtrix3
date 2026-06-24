@@ -47,7 +47,7 @@ void usage() {
 
 class Volume_loop {
 public:
-  Volume_loop(Image<float> &in) : image(in), is_4D(in.ndim() == 4), status(true) {
+  Volume_loop(Image<float> &in) : image(in), is_4D(in.ndim() == 4) {
     if (is_4D)
       image.index(3) = 0;
   }
@@ -63,14 +63,13 @@ public:
   operator bool() const {
     if (is_4D)
       return (image.index(3) >= 0 && image.index(3) < image.size(3));
-    else
-      return status;
+    return status;
   }
 
 private:
   Image<float> &image;
   const bool is_4D;
-  bool status;
+  bool status{true};
 };
 
 template <class Functor> void run_volume(Functor &functor, Image<float> &data, Image<bool> &mask) {

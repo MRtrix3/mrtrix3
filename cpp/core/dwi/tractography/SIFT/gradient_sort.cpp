@@ -42,8 +42,8 @@ MT_gradient_vector_sorter::VecItType MT_gradient_vector_sorter::get() {
 }
 
 bool MT_gradient_vector_sorter::Sorter::operator()(const TrackIndexRange &in, VecItType &out) const {
-  VecItType start(data.begin() + in.first);
-  VecItType from_end(data.begin() + in.second);
+  const auto start(data.begin() + in.first);
+  auto from_end(data.begin() + in.second);
   VecItType from_start(start);
   for (; from_start < from_end; ++from_start) {
     if (from_start->get_gradient_per_unit_length() >= 0.0) {

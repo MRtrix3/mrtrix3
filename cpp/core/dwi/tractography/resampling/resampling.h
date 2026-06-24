@@ -38,11 +38,11 @@ protected:
   Base() {}
 
 public:
-  virtual ~Base() {}
+  virtual ~Base() = default;
 
-  virtual Base *clone() const = 0;
+  [[nodiscard]] virtual Base *clone() const = 0;
   virtual bool operator()(const Streamline<> &, Streamline<> &) const = 0;
-  virtual bool valid() const = 0;
+  [[nodiscard]] virtual bool valid() const = 0;
 };
 
 template <class Derived> class BaseCRTP : public Base {
@@ -51,7 +51,7 @@ protected:
   BaseCRTP() = default;
 
 public:
-  virtual Base *clone() const { return new Derived(static_cast<Derived const &>(*this)); }
+  [[nodiscard]] virtual Base *clone() const { return new Derived(static_cast<Derived const &>(*this)); }
 };
 
 } // namespace MR::DWI::Tractography::Resampling

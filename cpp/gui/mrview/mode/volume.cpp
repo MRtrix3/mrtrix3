@@ -50,7 +50,7 @@ std::string Volume::Shader::vertex_shader_source(const Displayable &) {
 }
 
 std::string Volume::Shader::fragment_shader_source(const Displayable &object) {
-  std::vector<std::pair<GL::vec4, bool>> clip = mode.get_active_clip_planes();
+  const std::vector<std::pair<GL::vec4, bool>> clip = mode.get_active_clip_planes();
   const bool AND = mode.get_clipintersectionmodestate();
   const auto clip_color_spec = File::Config::get("MRViewClipPlaneColour");
   std::vector<float> clip_color = {1.0, 0.0, 0.0, 0.1};
@@ -255,7 +255,7 @@ clip_real2tex(const GL::mat4 &T2S, const GL::mat4 &S2T, const Eigen::Vector3f &r
   GL::vec4 normal = T2S * GL::vec4(plane[0], plane[1], plane[2], 0.0);
   GL::vec4 on_plane = S2T * GL::vec4(plane[3] * plane[0], plane[3] * plane[1], plane[3] * plane[2], 1.0);
   normal[3] = on_plane[0] * normal[0] + on_plane[1] * normal[1] + on_plane[2] * normal[2];
-  float off_axis_thickness = std::fabs(ray[0] * plane[0] + ray[1] * plane[1] + ray[2] * plane[2]);
+  const float off_axis_thickness = std::fabs(ray[0] * plane[0] + ray[1] * plane[1] + ray[2] * plane[2]);
   normal[0] /= off_axis_thickness;
   normal[1] /= off_axis_thickness;
   normal[2] /= off_axis_thickness;
@@ -286,8 +286,8 @@ inline GL::mat4 get_tex_to_scanner_matrix(const ImageBase &image) {
   T2S(1, 3) = pos[1];
   T2S(2, 3) = pos[2];
 
-  T2S(3, 0) = T2S(3, 1) = T2S(3, 2) = 0.0f;
-  T2S(3, 3) = 1.0f;
+  T2S(3, 0) = T2S(3, 1) = T2S(3, 2) = 0.0F;
+  T2S(3, 3) = 1.0F;
 
   return T2S;
 }
@@ -325,21 +325,21 @@ void Volume::paint(Projection &projection) {
   }
 
   GL_CHECK_ERROR;
-  GL::mat4 T2S = get_tex_to_scanner_matrix(*image());
+  const GL::mat4 T2S = get_tex_to_scanner_matrix(*image());
   GL::mat4 M = projection.modelview_projection() * T2S;
-  GL::mat4 S2T = GL::inv(T2S);
+  const GL::mat4 S2T = GL::inv(T2S);
 
-  float step_size =
+  const float step_size =
       0.5F * static_cast<float>(
                  std::min({image()->header().spacing(0), image()->header().spacing(1), image()->header().spacing(2)}));
   Eigen::Vector3f ray = image()->scanner2voxel().linear() * projection.screen_normal();
-  Eigen::Vector3f ray_real_space = ray;
+  const Eigen::Vector3f ray_real_space = ray;
   ray *= step_size;
   ray[0] /= image()->header().size(0);
   ray[1] /= image()->header().size(1);
   ray[2] /= image()->header().size(2);
 
-  if (!volume_VB || !volume_VAO || !volume_VI) {
+  if ((volume_VB == 0U) || (volume_VAO == 0U) || (volume_VI == 0U)) {
     volume_VB.gen();
     volume_VI.gen();
     volume_VAO.gen();
@@ -412,15 +412,15 @@ void Volume::paint(Projection &projection) {
 
   if (ColourMap::maps[image()->colourmap].is_colour)
     gl::Uniform3f(gl::GetUniformLocation(volume_shader, "colourmap_colour"),
-                  image()->colour[0] / 255.0f,
-                  image()->colour[1] / 255.0f,
-                  image()->colour[2] / 255.0f);
+                  image()->colour[0] / 255.0F,
+                  image()->colour[1] / 255.0F,
+                  image()->colour[2] / 255.0F);
 
   gl::ActiveTexture(gl::TEXTURE0);
   gl::BindTexture(gl::TEXTURE_3D, image()->texture());
 
   gl::ActiveTexture(gl::TEXTURE1);
-  if (!depth_texture) {
+  if (depth_texture == 0U) {
     depth_texture.gen(gl::TEXTURE_2D);
     depth_texture.bind();
     depth_texture.set_interp(gl::NEAREST);
@@ -428,7 +428,7 @@ void Volume::paint(Projection &projection) {
     depth_texture.bind();
 
   GL_CHECK_ERROR;
-  int m = window().windowHandle()->devicePixelRatio();
+  const int m = window().windowHandle()->devicePixelRatio();
   gl::CopyTexImage2D(gl::TEXTURE_2D, 0, gl::DEPTH_COMPONENT, 0, 0, m * projection.width(), m * projection.height(), 0);
 
   GL_CHECK_ERROR;
@@ -441,7 +441,8 @@ void Volume::paint(Projection &projection) {
     gl::Uniform4fv(gl::GetUniformLocation(volume_shader, ("clip" + str(n)).c_str()),
                    1,
                    clip_real2tex(T2S, S2T, ray_real_space, clip[n].first));
-    gl::Uniform1i(gl::GetUniformLocation(volume_shader, ("clip" + str(n) + "_selected").c_str()), clip[n].second);
+    gl::Uniform1i(gl::GetUniformLocation(volume_shader, ("clip" + str(n) + "_selected").c_str()),
+                  static_cast<GLint>(clip[n].second));
   }
   GL_CHECK_ERROR;
 
@@ -491,29 +492,29 @@ void Volume::paint(Projection &projection) {
 
 inline Tool::View *Volume::get_view_tool() const {
   Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(window().tools()->actions()[0])->dock;
-  if (!dock)
+  if (dock == nullptr)
     return nullptr;
   return dynamic_cast<Tool::View *>(dock->tool);
 }
 
 inline std::vector<std::pair<GL::vec4, bool>> Volume::get_active_clip_planes() const {
   Tool::View *view = get_view_tool();
-  return view ? view->get_active_clip_planes() : std::vector<std::pair<GL::vec4, bool>>();
+  return (view == nullptr) ? std::vector<std::pair<GL::vec4, bool>>() : view->get_active_clip_planes();
 }
 
 inline std::vector<GL::vec4 *> Volume::get_clip_planes_to_be_edited() const {
   Tool::View *view = get_view_tool();
-  return view ? view->get_clip_planes_to_be_edited() : std::vector<GL::vec4 *>();
+  return (view == nullptr) ? std::vector<GL::vec4 *>() : view->get_clip_planes_to_be_edited();
 }
 
 inline bool Volume::get_cliphighlightstate() const {
   Tool::View *view = get_view_tool();
-  return view ? view->get_cliphighlightstate() : true;
+  return (view == nullptr) ? true : view->get_cliphighlightstate();
 }
 
 inline bool Volume::get_clipintersectionmodestate() const {
   Tool::View *view = get_view_tool();
-  return view ? view->get_clipintersectionmodestate() : false;
+  return (view == nullptr) ? false : view->get_clipintersectionmodestate();
 }
 
 } // namespace MR::GUI::MRView::Mode

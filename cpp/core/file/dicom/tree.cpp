@@ -17,6 +17,7 @@
 #include "file/dicom/tree.h"
 
 #include <cerrno>
+#include <memory>
 
 #include "exception.h"
 #include "file/dicom/element.h"
@@ -43,7 +44,7 @@ Tree::find(std::string_view patient_name, std::string_view patient_ID, std::stri
     }
   }
 
-  push_back(std::shared_ptr<Patient>(new Patient(patient_name, patient_ID, patient_DOB)));
+  push_back(std::make_shared<Patient>(patient_name, patient_ID, patient_DOB));
   return back();
 }
 
@@ -73,24 +74,24 @@ void Tree::read_file(const std::filesystem::path &filepath) {
     return;
   }
 
-  if (!(reader.dim[0] && reader.dim[1] && reader.bits_alloc && reader.data)) {
+  if ((reader.dim[0] != 0U) || (reader.dim[1] == 0U) || (reader.bits_alloc == 0U) || (reader.data == 0U)) {
     INFO("DICOM file \"" + filepath.string() + "\" does not seem to contain image data - ignored");
     return;
   }
 
-  std::shared_ptr<Patient> patient = find(reader.patient, reader.patient_ID, reader.patient_DOB);
-  std::shared_ptr<Study> study =
+  const std::shared_ptr<Patient> patient = find(reader.patient, reader.patient_ID, reader.patient_DOB);
+  const std::shared_ptr<Study> study =
       patient->find(reader.study, reader.study_ID, reader.study_UID, reader.study_date, reader.study_time);
   for (const auto &image_type : reader.image_type) {
-    std::shared_ptr<Series> series = study->find(reader.series,
-                                                 reader.series_number,
-                                                 image_type.first,
-                                                 reader.series_ref_UID,
-                                                 reader.modality,
-                                                 reader.series_date,
-                                                 reader.series_time);
+    const std::shared_ptr<Series> series = study->find(reader.series,
+                                                       reader.series_number,
+                                                       image_type.first,
+                                                       reader.series_ref_UID,
+                                                       reader.modality,
+                                                       reader.series_date,
+                                                       reader.series_time);
 
-    std::shared_ptr<Image> image(new Image);
+    const std::shared_ptr<Image> image(new Image);
     image->filepath = filepath;
     image->series = series.get();
     image->sequence_name = reader.sequence;
@@ -119,8 +120,8 @@ void Tree::read(const std::filesystem::path &path) {
 
 std::ostream &operator<<(std::ostream &stream, const Tree &item) {
   stream << "FileSet " << item.description << ":\n";
-  for (size_t n = 0; n < item.size(); n++)
-    stream << *item[n];
+  for (const auto &n : item)
+    stream << *n;
   return stream;
 }
 

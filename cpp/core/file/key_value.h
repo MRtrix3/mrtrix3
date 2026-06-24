@@ -31,16 +31,16 @@ namespace KeyValue {
 
 class Reader {
 public:
-  Reader() {}
+  Reader() = default;
   Reader(const std::filesystem::path &file, std::string_view first_line = "") { open(file, first_line); }
   void open(const std::filesystem::path &file, std::string_view first_line = "");
 
   bool next();
   void close() { in.close(); }
 
-  std::string key() const throw() { return (K); }
-  std::string value() const throw() { return (V); }
-  const std::filesystem::path &path() const throw() { return (filepath); }
+  [[nodiscard]] std::string key() const throw() { return (K); }
+  [[nodiscard]] std::string value() const throw() { return (V); }
+  [[nodiscard]] const std::filesystem::path &path() const throw() { return (filepath); }
 
 protected:
   std::string K, V;

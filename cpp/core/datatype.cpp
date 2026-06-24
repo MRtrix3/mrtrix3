@@ -70,7 +70,7 @@ constexpr uint8_t DataType::CFloat64BE;
 constexpr uint8_t DataType::Native;
 
 DataType DataType::parse(std::string_view spec) {
-  std::string str(lowercase(spec));
+  const std::string str(lowercase(spec));
 
   if (str == "float16")
     return Float16;

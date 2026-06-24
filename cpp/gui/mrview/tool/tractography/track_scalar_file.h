@@ -33,7 +33,7 @@ class TrackScalarFileOptions : public QGroupBox, public ColourMapButtonObserver,
 
 public:
   TrackScalarFileOptions(Tractography *);
-  virtual ~TrackScalarFileOptions() {}
+  virtual ~TrackScalarFileOptions() = default;
 
   void set_tractogram(Tractogram *selected_tractogram);
 
@@ -64,7 +64,7 @@ private slots:
 
 protected:
   Tractography *tool;
-  Tractogram *tractogram;
+  Tractogram *tractogram{nullptr};
   Tool::Base::VBoxLayout *main_box;
   QGroupBox *colour_groupbox;
   QAction *show_colour_bar;
@@ -78,7 +78,7 @@ protected:
 
 private:
   // Required since this no longer derives from Tool::Base
-  Window &window() const { return *Window::main; }
+  [[nodiscard]] Window &window() const { return *Window::main; }
 };
 
 } // namespace MR::GUI::MRView::Tool

@@ -26,7 +26,7 @@ namespace MR::Registration::Transform {
 
 class RigidLinearNonSymmetricUpdate {
 public:
-  RigidLinearNonSymmetricUpdate() : use_convergence_check(false) {}
+  RigidLinearNonSymmetricUpdate() = default;
 
   bool operator()(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &newx,
                   const Eigen::Matrix<default_type, Eigen::Dynamic, 1> &x,
@@ -50,7 +50,7 @@ public:
   }
 
 private:
-  bool use_convergence_check;
+  bool use_convergence_check{false};
   Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
   Eigen::Vector3d coherence_distance;
   Eigen::Matrix<default_type, 4, 1> stop_len, recip_spacing;
@@ -80,15 +80,15 @@ public:
   using has_robust_estimator = int;
 
   Rigid() : Base(12) {
-    default_type w1(MR::File::Config::get_float("RegGdWeightMatrix", 0.0003f));
-    default_type w2(MR::File::Config::get_float("RegGdWeightTranslation", 1.0f));
+    const default_type w1(MR::File::Config::get_float("RegGdWeightMatrix", 0.0003F));
+    const default_type w2(MR::File::Config::get_float("RegGdWeightTranslation", 1.0F));
     const Eigen::Vector4d weights(w1, w1, w1, w2);
     this->optimiser_weights << weights, weights, weights;
   }
 
-  Eigen::Matrix<default_type, 4, 1> get_jacobian_vector_wrt_params(const Eigen::Vector3d &p) const;
+  [[nodiscard]] Eigen::Matrix<default_type, 4, 1> get_jacobian_vector_wrt_params(const Eigen::Vector3d &p) const;
 
-  Eigen::MatrixXd get_jacobian_wrt_params(const Eigen::Vector3d &p) const;
+  [[nodiscard]] Eigen::MatrixXd get_jacobian_wrt_params(const Eigen::Vector3d &p) const;
 
   void set_parameter_vector(const Eigen::Matrix<ParameterType, Eigen::Dynamic, 1> &param_vector);
 

@@ -419,11 +419,11 @@ void run() {
     axes = parse_ints<int32_t>(opt[0][0]);
     transform_type flip;
     flip.setIdentity();
-    for (size_t i = 0; i < axes.size(); ++i) {
-      if (axes[i] < 0 || axes[i] > 2)
+    for (int axis : axes) {
+      if (axis < 0 || axis > 2)
         throw Exception("axes supplied to -flip are out of bounds (" + std::string(opt[0][0]) + ")");
-      flip(axes[i], 3) += flip(axes[i], axes[i]) * input_header.spacing(axes[i]) * (input_header.size(axes[i]) - 1);
-      flip(axes[i], axes[i]) *= -1.0;
+      flip(axis, 3) += flip(axis, axis) * input_header.spacing(axis) * (input_header.size(axis) - 1);
+      flip(axis, axis) *= -1.0;
     }
     if (!replace)
       flip = input_header.transform() * flip * input_header.transform().inverse();
@@ -451,7 +451,7 @@ void run() {
   if (is_possible_fod_image && opt.empty())
     throw Exception("-reorient_fod yes/no needs to be explicitly specified for images with " +
                     str(input_header.size(3)) + " volumes");
-  else if (!is_possible_fod_image && fod_reorientation)
+  if (!is_possible_fod_image && fod_reorientation)
     throw Exception("Apodised PSF reorientation requires SH series images");
 
   Eigen::MatrixXd directions_cartesian;
@@ -509,16 +509,16 @@ void run() {
       rotation = linear_transform.linear() * input_header.transform().linear().inverse();
 
     // Diffusion gradient table
-    Eigen::MatrixXd grad;
+    std::optional<Eigen::MatrixXd> grad;
     try {
-      grad = DWI::get_DW_scheme(input_header);
+      grad.emplace(DWI::get_DW_scheme(input_header));
     } catch (Exception &) {
       DEBUG("No valid diffusion gradient table found");
     }
-    if (grad.rows()) {
+    if (grad.has_value()) {
       try {
-        if (input_header.size(3) != static_cast<ssize_t>(grad.rows())) {
-          throw Exception("DW gradient table of different length (" + str(grad.rows()) + ")" +
+        if (input_header.size(3) != static_cast<ssize_t>(grad->rows())) {
+          throw Exception("DW gradient table of different length (" + str(grad->rows()) + ")" +
                           " to number of image volumes (" + str(input_header.size(3)) + ")");
         }
         INFO("DW gradients detected and will be reoriented");
@@ -526,11 +526,11 @@ void run() {
           WARN("the input linear transform contains shear or anisotropic scaling"
                " and therefore should not be used to reorient directions / diffusion gradients");
         }
-        for (ssize_t n = 0; n < grad.rows(); ++n) {
-          Eigen::Vector3d grad_vector = grad.block<1, 3>(n, 0);
-          grad.block<1, 3>(n, 0) = rotation * grad_vector;
+        for (ssize_t n = 0; n < grad->rows(); ++n) {
+          const Eigen::Vector3d grad_vector = grad->block<1, 3>(n, 0);
+          grad->block<1, 3>(n, 0) = rotation * grad_vector;
         }
-        DWI::set_DW_scheme(output_header, grad);
+        DWI::set_DW_scheme(output_header, grad.value());
       } catch (Exception &e) {
         e.display(2);
         WARN("DW gradients not correctly reoriented");
@@ -553,7 +553,7 @@ void run() {
         Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> result;
         for (size_t l = 0; l != lines.size(); ++l) {
           const auto v = parse_floats(lines[l]);
-          if (!result.cols()) {
+          if (result.cols() == 0) {
             if (!(v.size() == 2 || v.size() == 3))
               throw Exception(std::string("Malformed \"directions\" field") + //
                               " (expected matrix with 2 or 3 columns;" +      //
@@ -574,7 +574,7 @@ void run() {
             result.row(l) = dir;
           }
           std::stringstream s;
-          Eigen::IOFormat format(6, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
+          const Eigen::IOFormat format(6, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
           s << result.format(format);
           output_header.keyval()["directions"] = s.str();
         }
@@ -586,7 +586,7 @@ void run() {
   }
 
   // Interpolator
-  const MR::Interp::interp_type interp = get_option_choice<MR::Interp::interp_type>("interp", default_interp);
+  const auto interp = get_option_choice<MR::Interp::interp_type>("interp", default_interp);
   if (!get_options("interp").empty() && !warp && !template_header)
     WARN("interpolator choice ignored since the input image will not be regridded");
 
@@ -731,7 +731,7 @@ void run() {
 
     INFO("image will not be regridded");
     Eigen::MatrixXd rotation = linear_transform.linear();
-    Eigen::MatrixXd temp = rotation.transpose() * rotation;
+    const Eigen::MatrixXd temp = rotation.transpose() * rotation;
     if (!temp.isIdentity(0.001))
       WARN("The input linear transform is not orthonormal and therefore"
            " applying this without the -template option will mean"

@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <memory>
 #include <vector>
 
 #include "header.h"
@@ -48,8 +49,8 @@ void TckFactor::set_reg_lambdas(const double lambda_tikhonov, const double lambd
 }
 
 void TckFactor::store_orig_TDs() {
-  for (std::vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i)
-    i->store_orig_TD();
+  for (auto &fixel : fixels)
+    fixel.store_orig_TD();
 }
 
 void TckFactor::remove_excluded_fixels(const float min_td_frac) {
@@ -62,11 +63,13 @@ void TckFactor::remove_excluded_fixels(const float min_td_frac) {
   // Would prefer not to actually modify the streamline visitations; just exclude fixels from optimisation
   const double fixed_mu = mu();
   const double cf = calc_cost_function();
-  SIFT::track_t excluded_count = 0, zero_TD_count = 0;
-  double zero_TD_cf_sum = 0.0, excluded_cf_sum = 0.0;
-  std::vector<Fixel>::iterator i = fixels.begin(); // SKip first fixel, which is an intentional null in DWI::Fixel_map<>
+  SIFT::track_t excluded_count = 0;
+  SIFT::track_t zero_TD_count = 0;
+  double zero_TD_cf_sum = 0.0;
+  double excluded_cf_sum = 0.0;
+  auto i = fixels.begin(); // SKip first fixel, which is an intentional null in DWI::Fixel_map<>
   for (++i; i != fixels.end(); ++i) {
-    if (!i->get_orig_TD()) {
+    if (i->get_orig_TD() == 0.0) {
       ++zero_TD_count;
       zero_TD_cf_sum += i->get_cost(fixed_mu);
     } else if ((fixed_mu * i->get_orig_TD() < min_td_frac * i->get_FOD()) || (i->get_count() == 1)) {
@@ -77,11 +80,11 @@ void TckFactor::remove_excluded_fixels(const float min_td_frac) {
   }
   INFO(str(zero_TD_count) + " fixels have no attributed streamlines; these account for " +
        str(100.0 * zero_TD_cf_sum / cf) + "\% of the initial cost function");
-  if (excluded_count) {
+  if (excluded_count != 0U) {
     INFO(str(excluded_count) + " of " + str(fixels.size()) +
          " fixels were tracked, but have been excluded from optimisation due to inadequate reconstruction;");
     INFO("these contribute " + str(100.0 * excluded_cf_sum / cf) + "\% of the initial cost function");
-  } else if (min_td_frac) {
+  } else if (min_td_frac != 0.0F) {
     INFO("No fixels were excluded from optimisation due to poor reconstruction");
   }
 }
@@ -89,8 +92,8 @@ void TckFactor::remove_excluded_fixels(const float min_td_frac) {
 void TckFactor::test_streamline_length_scaling() {
   VAR(calc_cost_function());
 
-  for (std::vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i)
-    i->clear_TD();
+  for (auto &fixel : fixels)
+    fixel.clear_TD();
 
   coefficients.resize(num_tracks(), 0.0);
   TD_sum = 0.0;
@@ -144,7 +147,7 @@ void TckFactor::calc_afcsa() {
           const float length = tckcont[f].get_length();
           sum_afd += fixel.get_weight() * fixel.get_FOD() * (length / fixel.get_orig_TD());
         }
-        if (sum_afd && tckcont.get_total_contribution()) {
+        if ((sum_afd != 0.0) && (tckcont.get_total_contribution() != 0.0F)) {
           const double afcsa = sum_afd / tckcont.get_total_contribution();
           master.coefficients[track_index] = std::max(master.min_coeff, std::log(afcsa / fixed_mu));
         } else {
@@ -164,9 +167,9 @@ void TckFactor::calc_afcsa() {
     Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(functor));
   }
 
-  for (std::vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i) {
-    i->clear_TD();
-    i->clear_mean_coeff();
+  for (auto &fixel : fixels) {
+    fixel.clear_TD();
+    fixel.clear_mean_coeff();
   }
   {
     SIFT::TrackIndexRangeWriter writer(SIFT::TrackIndexRangeWriter::default_batch_size, num_tracks());
@@ -194,7 +197,7 @@ void TckFactor::estimate_factors() {
 
   unsigned int nonzero_streamlines = 0;
   for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
-    if (contributions[i] && contributions[i]->dim())
+    if ((contributions[i] != nullptr) && (contributions[i]->dim() != 0U))
       ++nonzero_streamlines;
   }
 
@@ -219,7 +222,7 @@ void TckFactor::estimate_factors() {
 
   std::unique_ptr<std::ofstream> csv_out;
   if (!csv_path.empty()) {
-    csv_out.reset(new std::ofstream());
+    csv_out = std::make_unique<std::ofstream>();
     csv_out->open(csv_path, std::ios_base::trunc);
     (*csv_out)
         << "Iteration,Cost_data,Cost_reg_tik,Cost_reg_tv,Cost_reg,Cost_total,Streamlines,Fixels_excluded,Step_min,Step_"
@@ -244,7 +247,8 @@ void TckFactor::estimate_factors() {
     prev_cf = new_cf;
 
     // Line search to optimise each coefficient
-    StreamlineStats step_stats, coefficient_stats;
+    StreamlineStats step_stats;
+    StreamlineStats coefficient_stats;
     nonzero_streamlines = 0;
     fixels_to_exclude.setZero();
     double sum_costs = 0.0;
@@ -263,7 +267,7 @@ void TckFactor::estimate_factors() {
 
     // Perform fixel exclusion
     const size_t excluded_count = fixels_to_exclude.count();
-    if (excluded_count) {
+    if (excluded_count != 0U) {
       DEBUG(str(excluded_count) + " fixels excluded this iteration");
       for (size_t f = 0; f != fixels.size(); ++f) {
         if (fixels_to_exclude[f])
@@ -273,9 +277,9 @@ void TckFactor::estimate_factors() {
     }
 
     // Multi-threaded calculation of updated streamline density, and mean weighting coefficient, in each fixel
-    for (std::vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i) {
-      i->clear_TD();
-      i->clear_mean_coeff();
+    for (auto &fixel : fixels) {
+      fixel.clear_TD();
+      fixel.clear_mean_coeff();
     }
     {
       SIFT::TrackIndexRangeWriter writer(SIFT::TrackIndexRangeWriter::default_batch_size, num_tracks());
@@ -283,8 +287,8 @@ void TckFactor::estimate_factors() {
       Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(worker));
     }
     // Scale the fixel mean coefficient terms (each streamline in the fixel is weighted by its length)
-    for (std::vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i)
-      i->normalise_mean_coeff();
+    for (auto &fixel : fixels)
+      fixel.normalise_mean_coeff();
     indicate_progress();
 
     cf_data = calc_cost_function();
@@ -292,7 +296,8 @@ void TckFactor::estimate_factors() {
     // Calculate the cost of regularisation, given the updates to both the
     //   streamline weighting coefficients and the new fixel mean coefficients
     // Log different regularisation costs separately
-    double cf_reg_tik = 0.0, cf_reg_tv = 0.0;
+    double cf_reg_tik = 0.0;
+    double cf_reg_tv = 0.0;
     {
       SIFT::TrackIndexRangeWriter writer(SIFT::TrackIndexRangeWriter::default_batch_size, num_tracks());
       RegularisationCalculator worker(*this, cf_reg_tik, cf_reg_tv);
@@ -361,7 +366,7 @@ void TckFactor::output_coefficients(const std::filesystem::path &path) const {
 void TckFactor::output_TD_images(const std::filesystem::path &dirpath,
                                  const std::filesystem::path &origTD_path,
                                  const std::filesystem::path &count_path) const {
-  Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
+  const Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Header H_count;
   H_count.datatype() = DataType::native(DataType::UInt32);
   Image<float> origTD_image(Image<float>::create(dirpath / origTD_path, H));
@@ -377,7 +382,7 @@ void TckFactor::output_all_debug_images(const std::filesystem::path &dirpath, st
 
   Model<Fixel>::output_all_debug_images(dirpath, prefix);
 
-  if (!coefficients.size())
+  if (coefficients.size() == 0)
     return;
 
   std::vector<double> mins(fixels.size(), std::numeric_limits<double>::infinity());
@@ -415,7 +420,7 @@ void TckFactor::output_all_debug_images(const std::filesystem::path &dirpath, st
       maxs[i] = std::numeric_limits<double>::quiet_NaN();
   }
 
-  Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
+  const Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Header H_excluded(H);
   H_excluded.datatype() = DataType::Bit;
   Image<float> min_image(Image<float>::create(dirpath / (prefix + "_coeff_min.mif"), H));

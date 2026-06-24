@@ -45,7 +45,7 @@ public:
 
   template <class C> Min_mem_array(const C &data) : n(data.size()), d(new T[data.size()]) {
     size_t index = 0;
-    for (typename C::const_iterator i = data.begin(); i != data.end(); ++i, ++index)
+    for (auto i = data.cbegin(); i != data.cend(); ++i, ++index)
       d[index] = *i;
   }
 
@@ -103,16 +103,16 @@ public:
       data.push_back(d[i]);
   }
 
-  size_t dim() const { return n; }
+  [[nodiscard]] size_t dim() const { return n; }
 
   bool operator==(const Min_mem_array<T> &that) const { return ((n == that.n) && !memcmp(d, that.d, n * sizeof(T))); }
 
   bool operator<(const Min_mem_array<T> &that) const {
     // If one is empty and the other is not, one is 'less than' the other; but if both are empty, then '<' should return
     // false
-    if (!n)
-      return that.n;
-    if (!that.n)
+    if (n == 0U)
+      return that.n > 0U;
+    if (that.n == 0U)
       return false;
     for (size_t i = 0; i != std::min(n, that.n); ++i) {
       if (d[i] < that.d[i])

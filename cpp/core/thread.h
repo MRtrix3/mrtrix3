@@ -62,14 +62,14 @@ public:
   ~Backend();
 
   static void register_thread() {
-    std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     if (!backend)
       backend = std::make_unique<Backend>();
     ++backend->refcount;
   }
   static void unregister_thread() {
     assert(backend);
-    std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     if (--backend->refcount == 0)
       backend.reset();
   }
@@ -83,7 +83,7 @@ public:
   static void (*previous_report_to_user_func)(std::string_view msg, int type);
 
 protected:
-  size_t refcount;
+  size_t refcount{0};
 
   static std::unique_ptr<Backend> backend;
   static std::mutex mutex;
@@ -120,7 +120,9 @@ public:
     thread = std::async(std::launch::async, &F::execute, &functor);
   }
 
-  bool finished() const { return thread.wait_for(std::chrono::microseconds(0)) == std::future_status::ready; }
+  [[nodiscard]] bool finished() const {
+    return thread.wait_for(std::chrono::microseconds(0)) == std::future_status::ready;
+  }
 
   void wait() noexcept(false) {
     DEBUG("waiting for completion of thread \"" + name + "\"...");
@@ -175,14 +177,14 @@ public:
     DEBUG("threads \"" + name + "\" completed OK");
   }
 
-  bool finished() const {
+  [[nodiscard]] bool finished() const {
     for (auto &t : threads)
       if (t.wait_for(std::chrono::microseconds(0)) != std::future_status::ready)
         return false;
     return true;
   }
 
-  bool any_valid() const {
+  [[nodiscard]] bool any_valid() const {
     for (auto &t : threads)
       if (t.valid())
         return true;

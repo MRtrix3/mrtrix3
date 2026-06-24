@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <cmath>
+
 #include "command.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
@@ -52,18 +54,18 @@ void run() {
   DWI::Tractography::ScalarReader<value_type> reader(argument[0], properties);
   DWI::Tractography::ScalarWriter<value_type> writer(argument[1], properties);
 
-  float stdev = get_option_value("stdev", default_smoothing);
+  const float stdev = get_option_value("stdev", default_smoothing);
 
   std::vector<float> kernel(2 * ceil(2.5 * stdev) + 1, 0);
   float norm_factor = 0.0;
   const float radius = (kernel.size() - 1.0) / 2.0;
   const int floor_radius = static_cast<int>(std::floor(radius));
   for (size_t c = 0; c < kernel.size(); ++c) {
-    kernel[c] = exp(-(c - radius) * (c - radius) / (2 * stdev * stdev));
+    kernel[c] = std::exp(-(c - radius) * (c - radius) / (2 * stdev * stdev));
     norm_factor += kernel[c];
   }
-  for (size_t c = 0; c < kernel.size(); c++)
-    kernel[c] /= norm_factor;
+  for (float &c : kernel)
+    c /= norm_factor;
 
   DWI::Tractography::TrackScalar<value_type> tck_scalar;
   while (reader(tck_scalar)) {

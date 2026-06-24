@@ -31,20 +31,12 @@
 
 namespace MR::File::PNG {
 
-Reader::Reader(const std::filesystem::path &filepath)
-    : infile(fopen(filepath.string().c_str(), "rb")),
-      png_ptr(nullptr),
-      info_ptr(nullptr),
-      width(0),
-      height(0),
-      bit_depth(0),
-      color_type(0),
-      channels(0) {
+Reader::Reader(const std::filesystem::path &filepath) : infile(fopen(filepath.string().c_str(), "rb")) {
   std::array<unsigned char, 8> sig;
   if (fread(sig.data(), 1, 8, infile) < 8)
     throw Exception("error reading from PNG file \"" + filepath.string() + "\"");
   const int sigcmp = png_sig_cmp(sig.data(), 0, 8);
-  if (sigcmp) {
+  if (sigcmp != 0) {
     fclose(infile);
     std::stringstream s;
     for (size_t i = 0; i != 8; ++i) {
@@ -99,8 +91,8 @@ Reader::Reader(const std::filesystem::path &filepath)
   output_bitdepth = bit_depth;
 
   if ((color_type == PNG_COLOR_TYPE_PALETTE) ||
-      (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8 && !(bit_depth == 1 && !(width % 8))) ||
-      (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))) {
+      (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8 && !(bit_depth == 1 && ((width % 8) == 0U))) ||
+      (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS) != 0U)) {
     set_expand();
   }
   png_set_interlace_handling(png_ptr);
@@ -113,12 +105,12 @@ Reader::Reader(const std::filesystem::path &filepath)
 }
 
 Reader::~Reader() {
-  if (png_ptr && info_ptr) {
+  if ((png_ptr != nullptr) && (info_ptr != nullptr)) {
     png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
     png_ptr = nullptr;
     info_ptr = nullptr;
   }
-  if (infile) {
+  if (infile != nullptr) {
     fclose(infile);
     infile = nullptr;
   }
@@ -134,8 +126,8 @@ void Reader::load(std::byte *image_data) {
     png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
     throw Exception("Fatal error reading PNG image");
   }
-  const size_t row_bytes = static_cast<size_t>(png_get_rowbytes(png_ptr, info_ptr));
-  png_bytepp row_pointers = new png_bytep[height];
+  const size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
+  auto row_pointers = new png_bytep[height];
   for (size_t i = 0; i != static_cast<size_t>(height); ++i)
     row_pointers[i] = reinterpret_cast<png_bytep>(image_data + i * row_bytes);
   png_read_image(png_ptr, row_pointers);
@@ -145,15 +137,7 @@ void Reader::load(std::byte *image_data) {
 
 jmp_buf Writer::jmpbuf;
 
-Writer::Writer(const Header &H, const std::filesystem::path &path)
-    : png_ptr(nullptr),
-      info_ptr(nullptr),
-      color_type(0),
-      bit_depth(0),
-      filepath(path),
-      data_type(H.datatype()),
-      multiplier(1.0),
-      outfile(nullptr) {
+Writer::Writer(const Header &H, const std::filesystem::path &path) : filepath(path), data_type(H.datatype()) {
   if (std::filesystem::exists(path) && !App::overwrite_files)
     throw Exception("output file \"" + path.string() + "\" already exists (use -force option to force overwrite)");
   png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, this, &error_handler, nullptr);
@@ -167,7 +151,7 @@ Writer::Writer(const Header &H, const std::filesystem::path &path)
     throw Exception("Unable to set jump buffer for PNG structure for image \"" + path.string() + "\"");
   }
   outfile = fopen(Writer::filepath.string().c_str(), "wb");
-  if (!outfile)
+  if (outfile == nullptr)
     throw Exception("Unable to open PNG file for writing for image \"" + path.string() + "\": " //
                     + MR::C_strerror(errno));                                                   //
   png_init_io(png_ptr, outfile);
@@ -240,7 +224,8 @@ Writer::Writer(const Header &H, const std::filesystem::path &path)
   //   being set via selection of a single slice rather than axis permutation
   // Note that H may be 3D or 4D, all with non-unity size, in which case
   //   axis 2 forms the image plane
-  size_t width_axis = 0, height_axis = 1;
+  size_t width_axis = 0;
+  size_t height_axis = 1;
   if (H.ndim() > 2 && H.size(2) != 1) {
     if (H.size(0) == 1 && H.size(1) != 1) {
       width_axis = 1;
@@ -293,12 +278,12 @@ Writer::Writer(const Header &H, const std::filesystem::path &path)
 }
 
 Writer::~Writer() {
-  if (png_ptr && info_ptr) {
+  if ((png_ptr != nullptr) && (info_ptr != nullptr)) {
     png_destroy_write_struct(&png_ptr, &info_ptr);
     png_ptr = nullptr;
     info_ptr = nullptr;
   }
-  if (outfile) {
+  if (outfile != nullptr) {
     fclose(outfile);
     outfile = nullptr;
   }
@@ -314,7 +299,7 @@ void Writer::save(std::byte *data) {
   const size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
 
   auto finish = [&](std::byte *to_write) {
-    std::unique_ptr<png_bytep[]> row_pointers(new png_bytep[height]);
+    const std::unique_ptr<png_bytep[]> row_pointers(new png_bytep[height]);
     for (size_t row = 0; row != height; ++row)
       row_pointers[row] = reinterpret_cast<png_bytep>(to_write + row * row_bytes);
     png_write_image(png_ptr, row_pointers.get());

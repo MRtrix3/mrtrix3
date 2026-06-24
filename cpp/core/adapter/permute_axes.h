@@ -30,10 +30,10 @@ public:
 
   PermuteAxes(const ImageType &original, const std::vector<int> &axes) : base_type(original), axes_(axes) {
     for (int i = 0; i < static_cast<int>(parent().ndim()); ++i) {
-      for (size_t a = 0; a < axes_.size(); ++a) {
-        if (axes_[a] >= static_cast<int>(parent().ndim()))
-          throw Exception("axis " + str(axes_[a]) + " exceeds image dimensionality");
-        if (axes_[a] == i)
+      for (int axis : axes_) {
+        if (axis >= static_cast<int>(parent().ndim()))
+          throw Exception("axis " + str(axis) + " exceeds image dimensionality");
+        if (axis == i)
           goto next_axis;
       }
       if (parent().size(i) != 1)
@@ -51,16 +51,16 @@ public:
     }
   }
 
-  size_t ndim() const { return axes_.size(); }
-  ssize_t size(size_t axis) const { return axes_[axis] < 0 ? 1 : parent().size(axes_[axis]); }
-  default_type spacing(size_t axis) const {
+  [[nodiscard]] size_t ndim() const { return axes_.size(); }
+  [[nodiscard]] ssize_t size(size_t axis) const { return axes_[axis] < 0 ? 1 : parent().size(axes_[axis]); }
+  [[nodiscard]] default_type spacing(size_t axis) const {
     return axes_[axis] < 0 ? std::numeric_limits<default_type>::quiet_NaN() : parent().spacing(axes_[axis]);
   }
-  ssize_t stride(size_t axis) const { return axes_[axis] < 0 ? 0 : parent().stride(axes_[axis]); }
+  [[nodiscard]] ssize_t stride(size_t axis) const { return axes_[axis] < 0 ? 0 : parent().stride(axes_[axis]); }
 
   void reset() { parent().reset(); }
 
-  ssize_t get_index(size_t axis) const {
+  [[nodiscard]] ssize_t get_index(size_t axis) const {
     const auto a = axes_[axis];
     return a < 0 ? non_existent_axes[-1 - a] : parent().index(a);
   }

@@ -40,11 +40,14 @@ void QColorButton::paintEvent(QPaintEvent *p) {
   QStyleOptionButton option;
   option.initFrom(this);
 
-  int x, y, w, h;
-  QRect r = style()->subElementRect(QStyle::SE_PushButtonContents, &option, this);
+  int x;
+  int y;
+  int w;
+  int h;
+  const QRect r = style()->subElementRect(QStyle::SE_PushButtonContents, &option, this);
   r.getRect(&x, &y, &w, &h);
 
-  int margin = style()->pixelMetric(QStyle::PM_ButtonMargin, &option, this);
+  const int margin = style()->pixelMetric(QStyle::PM_ButtonMargin, &option, this);
   x += margin;
   y += margin;
   w -= 2 * margin;
@@ -56,7 +59,7 @@ void QColorButton::paintEvent(QPaintEvent *p) {
   }
 
   QPainter painter(this);
-  QColor fillCol = isEnabled() ? col : palette().brush(QPalette::Window).color();
+  const QColor fillCol = isEnabled() ? col : palette().brush(QPalette::Window).color();
   qDrawShadePanel(&painter, x, y, w, h, palette(), true, 1, nullptr);
   if (fillCol.isValid())
     painter.fillRect(x + 1, y + 1, w - 2, h - 2, fillCol);
@@ -74,7 +77,7 @@ QSize QColorButton::sizeHint() const {
 }
 
 void QColorButton::chooseColor() {
-  QColor c = QColorDialog::getColor(color(), this);
+  const QColor c = QColorDialog::getColor(color(), this);
   if (c.isValid())
     setColor(c);
 }

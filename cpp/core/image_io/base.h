@@ -48,7 +48,7 @@ public:
 
   virtual ~Base();
 
-  virtual bool is_file_backed() const;
+  [[nodiscard]] virtual bool is_file_backed() const;
 
   // buffer_size is only used for scratch data; it is ignored in all
   // other (file-backed) handlers, where the buffer size is determined
@@ -56,8 +56,8 @@ public:
   void open(const Header &header, size_t buffer_size = 0);
   void close(const Header &header);
 
-  bool is_image_new() const { return is_new; }
-  bool is_image_readwrite() const { return writable; }
+  [[nodiscard]] bool is_image_new() const { return is_new; }
+  [[nodiscard]] bool is_image_readwrite() const { return writable; }
 
   void set_readwrite(bool readwrite) { writable = readwrite; }
   void set_image_is_new(bool image_is_new) { is_new = image_is_new; }
@@ -66,12 +66,12 @@ public:
       writable = readwrite;
   }
 
-  std::byte *segment(size_t n) const {
+  [[nodiscard]] std::byte *segment(size_t n) const {
     assert(n < addresses.size());
     return addresses[n].get();
   }
-  size_t nsegments() const { return addresses.size(); }
-  size_t segment_size() const {
+  [[nodiscard]] size_t nsegments() const { return addresses.size(); }
+  [[nodiscard]] size_t segment_size() const {
     check();
     return segsize;
   }
@@ -80,8 +80,8 @@ public:
 
   void merge(const Base &B) {
     assert(addresses.empty());
-    for (size_t n = 0; n < B.files.size(); ++n)
-      files.push_back(B.files[n]);
+    for (const auto &file : B.files)
+      files.push_back(file);
     segsize += B.segsize;
   }
 
@@ -94,9 +94,9 @@ public:
 protected:
   size_t segsize;
   std::vector<std::unique_ptr<std::byte[]>> addresses;
-  bool is_new, writable;
+  bool is_new{false}, writable{false};
 
-  void check() const { assert(addresses.size()); }
+  void check() const { assert(!addresses.empty()); }
   virtual void load(const Header &header, size_t buffer_size) = 0;
   virtual void unload(const Header &header) = 0;
 };

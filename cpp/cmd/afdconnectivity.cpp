@@ -15,6 +15,7 @@
  */
 
 #include <filesystem>
+#include <memory>
 #include <optional>
 
 #include "command.h"
@@ -115,13 +116,17 @@ class AFDConnFixel : public FixelBase {
 public:
   AFDConnFixel() : FixelBase(), length(0.0) {}
   AFDConnFixel(const FMLS::FOD_lobe &lobe) : FixelBase(lobe), length(0.0) {}
-  AFDConnFixel(const AFDConnFixel &that) : FixelBase(that), length(that.length) {}
+  AFDConnFixel(const AFDConnFixel &that) = default;
 
   void add_to_selection(const value_type l) { length += l; }
-  value_type get_selected_volume(const value_type l) const { return get_TD() ? (get_FOD() * (l / get_TD())) : 0.0; }
-  value_type get_selected_volume() const { return get_TD() ? (get_FOD() * (length / get_TD())) : 0.0; }
-  value_type get_selected_length() const { return length; }
-  bool is_selected() const { return length; }
+  [[nodiscard]] value_type get_selected_volume(const value_type l) const {
+    return (get_TD() != 0.0) ? (get_FOD() * (l / get_TD())) : 0.0;
+  }
+  [[nodiscard]] value_type get_selected_volume() const {
+    return (get_TD() != 0.0) ? (get_FOD() * (length / get_TD())) : 0.0;
+  }
+  [[nodiscard]] value_type get_selected_length() const { return length; }
+  [[nodiscard]] bool is_selected() const { return length != 0.0F; }
 
 private:
   value_type length;
@@ -135,14 +140,14 @@ public:
                   const std::optional<std::filesystem::path> &wbft_path)
       : DWI::Tractography::SIFT::ModelBase<AFDConnFixel>(fod_buffer, dirs),
         have_wbft(wbft_path.has_value()),
-        all_fixels(false),
+
         mapper(fod_buffer, dirs),
         v_fod(fod_buffer) {
     if (have_wbft) {
       perform_FOD_segmentation(fod_buffer);
       map_streamlines(wbft_path.value());
     } else {
-      fmls.reset(new DWI::FMLS::Segmenter(dirs, Math::SH::LforN(fod_buffer.size(3))));
+      fmls = std::make_unique<DWI::FMLS::Segmenter>(dirs, Math::SH::LforN(fod_buffer.size(3)));
     }
     mapper.set_upsample_ratio(DWI::Tractography::Mapping::determine_upsample_ratio(fod_buffer, tck_path, 0.1));
     mapper.set_use_precise_mapping(true);
@@ -155,7 +160,7 @@ public:
 
 private:
   const bool have_wbft;
-  bool all_fixels;
+  bool all_fixels{false};
   DWI::Tractography::Mapping::TrackMapperBase mapper;
   Image<value_type> v_fod;
   std::unique_ptr<DWI::FMLS::Segmenter> fmls;
@@ -182,10 +187,11 @@ value_type AFDConnectivity::get(const std::filesystem::path &path) {
 
     SetDixel dixels;
     mapper(tck, dixels);
-    double this_length = 0.0, this_volume = 0.0;
+    double this_length = 0.0;
+    double this_volume = 0.0;
 
-    for (SetDixel::const_iterator i = dixels.begin(); i != dixels.end(); ++i) {
-      this_length += i->get_length();
+    for (const auto &dixel : dixels) {
+      this_length += dixel.get_length();
 
       // If wbft has not been provided (i.e. FODs have not been pre-segmented), need to
       //   check to see if any data have been provided for this voxel; and if not yet,
@@ -193,10 +199,10 @@ value_type AFDConnectivity::get(const std::filesystem::path &path) {
       if (!have_wbft) {
 
         VoxelAccessor v(accessor());
-        assign_pos_of(*i, 0, 3).to(v);
-        if (!v.value()) {
+        assign_pos_of(dixel, 0, 3).to(v);
+        if (v.value() == nullptr) {
 
-          assign_pos_of(*i, 0, 3).to(v_fod);
+          assign_pos_of(dixel, 0, 3).to(v_fod);
           DWI::FMLS::SH_coefs fod_data;
           DWI::FMLS::FOD_lobes fod_lobes;
 
@@ -212,11 +218,11 @@ value_type AFDConnectivity::get(const std::filesystem::path &path) {
         }
       }
 
-      const size_t fixel_index = dixel2fixel(*i);
+      const size_t fixel_index = dixel2fixel(dixel);
       AFDConnFixel &fixel = fixels[fixel_index];
-      fixel.add_to_selection(i->get_length());
+      fixel.add_to_selection(dixel.get_length());
       if (have_wbft)
-        this_volume += fixel.get_selected_volume(i->get_length());
+        this_volume += fixel.get_selected_volume(dixel.get_length());
     }
 
     if (have_wbft)
@@ -233,9 +239,9 @@ value_type AFDConnectivity::get(const std::filesystem::path &path) {
     if (all_fixels) {
 
       // All fixels contribute to the result
-      for (std::vector<AFDConnFixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
-        if (i->is_selected())
-          sum_volumes += i->get_FOD();
+      for (const auto &fixel : fixels) {
+        if (fixel.is_selected())
+          sum_volumes += fixel.get_FOD();
       }
 
     } else {
@@ -243,8 +249,9 @@ value_type AFDConnectivity::get(const std::filesystem::path &path) {
       // Only allow one fixel per voxel to contribute to the result
       VoxelAccessor v(accessor());
       for (auto l = Loop(v)(v); l; ++l) {
-        if (v.value()) {
-          value_type voxel_afd = 0.0, max_td = 0.0;
+        if (v.value() != nullptr) {
+          value_type voxel_afd = 0.0;
+          value_type max_td = 0.0;
           for (Fixel_map<AFDConnFixel>::Iterator i = begin(v); i; ++i) {
             if (i().get_selected_length() > max_td) {
               max_td = i().get_selected_length();
@@ -294,7 +301,7 @@ void run() {
   const std::filesystem::path input_tracks_path{argument[1]};
   auto wbft_path = get_optional<std::filesystem::path>("wbft");
 
-  DWI::Directions::FastLookupSet dirs(1281);
+  const DWI::Directions::FastLookupSet dirs(1281);
   auto fod = Image<value_type>::open(input_image_path);
   Math::SH::check(fod);
   check_3D_nonunity(fod);
@@ -306,7 +313,7 @@ void run() {
   const value_type connectivity_value = model.get(input_tracks_path);
 
   // output the AFD sum using std::cout. This enables output to be redirected to a file without the console output.
-  std::cout << connectivity_value << std::endl;
+  std::cout << connectivity_value << '\n';
 
   opt = get_options("afd_map");
   if (!opt.empty())

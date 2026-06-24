@@ -17,6 +17,7 @@
 #include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Dense>
 #include <filesystem>
+#include <memory>
 
 #include "command.h"
 #include "dwi/directions/validate.h"
@@ -125,19 +126,18 @@ public:
           dirs(dirs),
           volumes(volumes),
           M(Eigen::MatrixXd::Zero(Math::ZSH::NforL(lmax), Math::ZSH::NforL(lmax))),
-          b(Eigen::VectorXd::Zero(M.rows())),
-          count(0) {}
+          b(Eigen::VectorXd::Zero(M.rows())) {}
 
     const int lmax;
     const Eigen::MatrixXd &dirs;
     const std::vector<size_t> &volumes;
     Eigen::MatrixXd M;
     Eigen::VectorXd b;
-    size_t count;
+    size_t count{0};
   };
 
   Accumulator(Shared &shared)
-      : S(shared), amplitudes(S.volumes.size()), b(S.b), M(S.M), count(0), rotated_dirs_cartesian(S.dirs.rows(), 3) {}
+      : S(shared), amplitudes(S.volumes.size()), b(S.b), M(S.M), rotated_dirs_cartesian(S.dirs.rows(), 3) {}
 
   ~Accumulator() {
     // accumulate results from all threads:
@@ -194,7 +194,7 @@ protected:
   Shared &S;
   Eigen::VectorXd amplitudes, b;
   Eigen::MatrixXd M, transform;
-  size_t count;
+  size_t count{0};
   Eigen::Matrix<default_type, Eigen::Dynamic, 3> rotated_dirs_cartesian;
 };
 
@@ -229,7 +229,7 @@ void run() {
     auto hit = header.keyval().find("directions");
     if (hit != header.keyval().end()) {
       std::vector<default_type> dir_vector;
-      for (auto line : split_lines(hit->second)) {
+      for (const auto &line : split_lines(hit->second)) {
         auto v = parse_floats(line);
         dir_vector.insert(dir_vector.end(), v.begin(), v.end());
       }
@@ -242,7 +242,7 @@ void run() {
       volumes.push_back(all_volumes(dirs_azin.size()));
     } else {
       auto grad = DWI::get_DW_scheme(header);
-      shells.reset(new DWI::Shells(grad));
+      shells = std::make_unique<DWI::Shells>(grad);
       shells->select_shells(false, false, false);
       for (size_t i = 0; i != shells->count(); ++i) {
         volumes.push_back((*shells)[i].get_volumes());
@@ -264,11 +264,11 @@ void run() {
       throw Exception("Number of lmax\'s specified (" + str(lmax.size()) + ")" +                   //
                       " does not match number of b-value shells (" + str(dirs_azin.size()) + ")"); //
     for (auto i : lmax) {
-      if (i % 2)
+      if ((i % 2) != 0U)
         throw Exception("Values specified for lmax must be even");
       max_lmax = std::max(max_lmax, i);
     }
-    if ((*shells)[0].is_bzero() && lmax.front()) {
+    if ((*shells)[0].is_bzero() && (lmax.front() != 0U)) {
       WARN("Non-zero lmax requested for " +
            ((*shells)[0].get_mean()
                 ? "first shell (mean b=" + str((*shells)[0].get_mean()) + "), which MRtrix3 has classified as b=0;"
@@ -282,7 +282,7 @@ void run() {
     //   lmax=10 regardless of number of input volumes.
     // - UNLESS it's b=0, in which case force lmax=0
     for (size_t i = 0; i != dirs_azin.size(); ++i) {
-      if (!i && shells && shells->smallest().is_bzero())
+      if ((i == 0U) && shells && shells->smallest().is_bzero())
         lmax.push_back(0);
       else
         lmax.push_back(10);
@@ -306,7 +306,7 @@ void run() {
     if (mask.value())
       ++num_voxels;
   }
-  if (!num_voxels)
+  if (num_voxels == 0U)
     throw Exception("input mask does not contain any voxels");
 
   const bool use_ols = !get_options("noconstraint").empty();
@@ -325,7 +325,7 @@ void run() {
         Exception e("Unable to construct A2SH transformation for shell b=" +
                     str(static_cast<ssize_t>(std::round((*shells)[shell_index].get_mean()))) + ";");
         e.push_back("  lmax (" + str(lmax[shell_index]) + ") may be too large for this shell");
-        if (!shell_index && (*shells)[0].is_bzero())
+        if ((shell_index == 0U) && (*shells)[0].is_bzero())
           e.push_back("  (this appears to be a b=0 shell, and therefore lmax should be set to 0 for this shell)");
         throw e;
       }
@@ -339,7 +339,7 @@ void run() {
     Eigen::VectorXd rf;
     // Is this anything other than an isotropic response?
 
-    if (!lmax[shell_index] || use_ols) {
+    if ((lmax[shell_index] == 0U) || use_ols) {
 
       rf = shared.M.llt().solve(shared.b);
 

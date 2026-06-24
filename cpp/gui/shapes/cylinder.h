@@ -27,11 +27,11 @@ namespace MR::GUI::Shapes {
 
 class Cylinder {
 public:
-  Cylinder() : num_indices(0) {}
+  Cylinder() = default;
 
   void LOD(const size_t);
 
-  size_t num_indices;
+  size_t num_indices{0};
   GL::VertexBuffer vertex_buffer, normal_buffer;
   GL::IndexBuffer index_buffer;
 };

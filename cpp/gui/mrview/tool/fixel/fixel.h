@@ -31,7 +31,7 @@ public:
 
   Fixel(Dock *parent);
 
-  virtual ~Fixel() {}
+  virtual ~Fixel() = default;
 
   void draw(const Projection &transform, bool is_3D, int, int) override;
   void draw_colourbars() override;
@@ -47,13 +47,13 @@ public:
   void toggle_invert_colourmap(bool, const ColourMapButton &) override;
   void reset_colourmap(const ColourMapButton &) override;
 
-  bool is_locked_to_grid() const { return lock_to_grid->isChecked(); }
-  bool is_cropped_to_slab() const { return crop_to_slice->isChecked(); }
-  bool is_bidirectional() const { return bidirectional->isChecked(); }
+  [[nodiscard]] bool is_locked_to_grid() const { return lock_to_grid->isChecked(); }
+  [[nodiscard]] bool is_cropped_to_slab() const { return crop_to_slice->isChecked(); }
+  [[nodiscard]] bool is_bidirectional() const { return bidirectional->isChecked(); }
 
   QPushButton *hide_all_button;
-  bool not_3D;
-  float line_opacity;
+  bool not_3D{true};
+  float line_opacity{1.0};
   Model *fixel_list_model;
   QListView *fixel_list_view;
 

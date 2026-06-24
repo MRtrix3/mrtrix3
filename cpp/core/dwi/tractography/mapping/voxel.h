@@ -39,22 +39,18 @@ inline Streamline<>::tangent_type vec2DEC(const Streamline<>::tangent_type &d) {
 
 class Voxel : public Eigen::Vector3i {
 public:
-  Voxel(const int x, const int y, const int z) : Eigen::Vector3i(x, y, z), length(1.0f) {}
-  Voxel(const Eigen::Vector3i &that) : Eigen::Vector3i(that), length(1.0f) {}
+  Voxel(const int x, const int y, const int z) : Eigen::Vector3i(x, y, z), length(1.0F) {}
+  Voxel(const Eigen::Vector3i &that) : Eigen::Vector3i(that), length(1.0F) {}
   Voxel(const Eigen::Vector3i &v, const default_type l) : Eigen::Vector3i(v), length(l) {}
   Voxel() : length(0.0) { setZero(); }
   bool operator<(const Voxel &V) const {
     return (((*this)[2] == V[2]) ? (((*this)[1] == V[1]) ? ((*this)[0] < V[0]) : ((*this)[1] < V[1]))
                                  : ((*this)[2] < V[2]));
   }
-  Voxel &operator=(const Voxel &V) {
-    Eigen::Vector3i::operator=(V);
-    length = V.length;
-    return *this;
-  }
+  Voxel &operator=(const Voxel &V) = default;
   void operator+=(const default_type l) const { length += l; }
   void normalize() const { length = 1.0; }
-  default_type get_length() const { return length; }
+  [[nodiscard]] default_type get_length() const { return length; }
 
 private:
   mutable default_type length;
@@ -72,11 +68,7 @@ public:
   VoxelDEC(const Eigen::Vector3i &V, const Streamline<>::tangent_type &d, const float l)
       : Voxel(V, l), colour(vec2DEC(d)) {}
 
-  VoxelDEC &operator=(const VoxelDEC &V) {
-    Voxel::operator=(V);
-    colour = V.colour;
-    return *this;
-  }
+  VoxelDEC &operator=(const VoxelDEC &V) = default;
   VoxelDEC &operator=(const Eigen::Vector3i &V) {
     Voxel::operator=(V);
     colour.setZero();
@@ -100,7 +92,7 @@ public:
     Voxel::operator+=(1.0);
     colour += vec2DEC(d);
   }
-  const Streamline<>::tangent_type &get_colour() const { return colour; }
+  [[nodiscard]] const Streamline<>::tangent_type &get_colour() const { return colour; }
 
 private:
   mutable Streamline<>::tangent_type colour;
@@ -119,11 +111,7 @@ public:
 
   VoxelDir(const Eigen::Vector3i &V, const Streamline<>::tangent_type &d, const default_type l) : Voxel(V, l), dir(d) {}
 
-  VoxelDir &operator=(const VoxelDir &V) {
-    Voxel::operator=(V);
-    dir = V.dir;
-    return *this;
-  }
+  VoxelDir &operator=(const VoxelDir &V) = default;
   VoxelDir &operator=(const Eigen::Vector3i &V) {
     Voxel::operator=(V);
     dir.setZero();
@@ -146,7 +134,7 @@ public:
     Voxel::operator+=(1.0);
     dir += d * (dir.dot(d) < 0.0 ? -1.0 : 1.0);
   }
-  const Streamline<>::tangent_type &get_dir() const { return dir; }
+  [[nodiscard]] const Streamline<>::tangent_type &get_dir() const { return dir; }
 
 private:
   mutable Streamline<>::tangent_type dir;
@@ -168,14 +156,10 @@ public:
 
   void set_dir(const size_t b) { dir = b; }
 
-  bool valid() const { return (dir != invalid); }
-  dir_index_type get_dir() const { return dir; }
+  [[nodiscard]] bool valid() const { return (dir != invalid); }
+  [[nodiscard]] dir_index_type get_dir() const { return dir; }
 
-  Dixel &operator=(const Dixel &V) {
-    Voxel::operator=(V);
-    dir = V.dir;
-    return *this;
-  }
+  Dixel &operator=(const Dixel &V) = default;
   Dixel &operator=(const Eigen::Vector3i &V) {
     Voxel::operator=(V);
     dir = invalid;
@@ -206,11 +190,7 @@ public:
 
   VoxelTOD(const Eigen::Vector3i &V, const vector_type &t, const default_type l) : Voxel(V, l), sh_coefs(t) {}
 
-  VoxelTOD &operator=(const VoxelTOD &V) {
-    Voxel::operator=(V);
-    sh_coefs = V.sh_coefs;
-    return (*this);
-  }
+  VoxelTOD &operator=(const VoxelTOD &V) = default;
   VoxelTOD &operator=(const Eigen::Vector3i &V) {
     Voxel::operator=(V);
     sh_coefs.resize(0);
@@ -238,7 +218,7 @@ public:
     sh_coefs += i;
     Voxel::operator+=(1.0);
   }
-  const vector_type &get_tod() const { return sh_coefs; }
+  [[nodiscard]] const vector_type &get_tod() const { return sh_coefs; }
 
 private:
   mutable vector_type sh_coefs;
@@ -263,7 +243,7 @@ class SetVoxel : public std::set<Voxel>, public SetVoxelExtras {
 public:
   using VoxType = Voxel;
   inline void insert(const Voxel &v) {
-    iterator existing = std::set<Voxel>::find(v);
+    const auto existing = std::set<Voxel>::find(v);
     if (existing == std::set<Voxel>::end())
       std::set<Voxel>::insert(v);
     else
@@ -279,7 +259,7 @@ class SetVoxelDEC : public std::set<VoxelDEC>, public SetVoxelExtras {
 public:
   using VoxType = VoxelDEC;
   inline void insert(const VoxelDEC &v) {
-    iterator existing = std::set<VoxelDEC>::find(v);
+    const auto existing = std::set<VoxelDEC>::find(v);
     if (existing == std::set<VoxelDEC>::end())
       std::set<VoxelDEC>::insert(v);
     else
@@ -299,7 +279,7 @@ class SetVoxelDir : public std::set<VoxelDir>, public SetVoxelExtras {
 public:
   using VoxType = VoxelDir;
   inline void insert(const VoxelDir &v) {
-    iterator existing = std::set<VoxelDir>::find(v);
+    const auto existing = std::set<VoxelDir>::find(v);
     if (existing == std::set<VoxelDir>::end())
       std::set<VoxelDir>::insert(v);
     else
@@ -321,7 +301,7 @@ public:
   using dir_index_type = Dixel::dir_index_type;
 
   inline void insert(const Dixel &v) {
-    iterator existing = std::set<Dixel>::find(v);
+    const auto existing = std::set<Dixel>::find(v);
     if (existing == std::set<Dixel>::end())
       std::set<Dixel>::insert(v);
     else
@@ -343,7 +323,7 @@ public:
   using vector_type = VoxelTOD::vector_type;
 
   inline void insert(const VoxelTOD &v) {
-    iterator existing = std::set<VoxelTOD>::find(v);
+    const auto existing = std::set<VoxelTOD>::find(v);
     if (existing == std::set<VoxelTOD>::end())
       std::set<VoxelTOD>::insert(v);
     else

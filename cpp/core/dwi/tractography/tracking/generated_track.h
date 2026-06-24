@@ -29,14 +29,14 @@ public:
 
   enum class status_t { INVALID, SEED_REJECTED, TRACK_REJECTED, ACCEPTED };
 
-  GeneratedTrack() : seed_index(0), status(status_t::INVALID) {}
+  GeneratedTrack() = default;
   void clear() {
     BaseType::clear();
     seed_index = 0;
     status = status_t::INVALID;
   }
-  size_t get_seed_index() const { return seed_index; }
-  status_t get_status() const { return status; }
+  [[nodiscard]] size_t get_seed_index() const { return seed_index; }
+  [[nodiscard]] status_t get_status() const { return status; }
   void reverse() {
     std::reverse(begin(), end());
     seed_index = (size() - 1) - seed_index;
@@ -44,7 +44,7 @@ public:
   void set_seed_index(const size_t i) { seed_index = i; }
   void set_status(const status_t i) { status = i; }
 
-  float length(const float step_size) const {
+  [[nodiscard]] float length(const float step_size) const {
     // Only in the context of a track being generated is it safe to
     //   exploit knowledge of the step size in order to calculate
     //   streamline length more efficiently; however we must consider
@@ -83,8 +83,8 @@ public:
   }
 
 private:
-  size_t seed_index;
-  status_t status;
+  size_t seed_index{0};
+  status_t status{status_t::INVALID};
 };
 
 } // namespace MR::DWI::Tractography::Tracking

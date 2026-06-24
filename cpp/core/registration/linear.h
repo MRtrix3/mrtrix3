@@ -63,16 +63,7 @@ enum class init_translation_t { mass, geometric, none };
 enum class init_rotation_t { search, moments, none };
 
 struct StageSetting {
-  StageSetting()
-      : stage_iterations(1),
-        gd_max_iter(500),
-        scale_factor(1.0),
-        optimisers(1, OptimiserAlgoType::BBGD),
-        optimiser_default(OptimiserAlgoType::BBGD),
-        optimiser_first(OptimiserAlgoType::BBGD),
-        optimiser_last(OptimiserAlgoType::GD),
-        loop_density(1.0),
-        fod_lmax(-1) {}
+  StageSetting() = default;
 
   std::string info(const bool &do_reorientation = true) {
     std::string st;
@@ -89,12 +80,13 @@ struct StageSetting {
       st += magic_enum::enum_name(optim) + " ";
     return st;
   }
-  size_t stage_iterations, gd_max_iter;
-  default_type scale_factor;
-  std::vector<OptimiserAlgoType> optimisers;
-  OptimiserAlgoType optimiser_default, optimiser_first, optimiser_last;
-  default_type loop_density;
-  ssize_t fod_lmax;
+  size_t stage_iterations{1}, gd_max_iter{500};
+  default_type scale_factor{1.0};
+  std::vector<OptimiserAlgoType> optimisers{1, OptimiserAlgoType::BBGD};
+  OptimiserAlgoType optimiser_default{OptimiserAlgoType::BBGD}, optimiser_first{OptimiserAlgoType::BBGD},
+      optimiser_last{OptimiserAlgoType::GD};
+  default_type loop_density{1.0};
+  ssize_t fod_lmax{-1};
   std::vector<std::filesystem::path> diagnostics_image_paths;
 };
 
@@ -104,20 +96,11 @@ public:
   Transform::Init::LinearInitialisationParams init;
 
   Linear()
-      : stages(3),
-        kernel_extent(3, 1),
-        grad_tolerance(1.0e-6),
-        step_tolerance(1.0e-10),
-        log_stream(nullptr),
-        init_translation_type(Transform::Init::mass),
-        init_rotation_type(Transform::Init::none),
-        robust_estimate(false),
-        do_reorientation(false),
-        // CONF option: RegAnalyseDescent
-        // CONF default: 0 (false)
-        // CONF Linear registration: write comma separated gradient descent parameters and gradients
-        // CONF to stdout and verbose gradient descent output to stderr.
-        analyse_descent(File::Config::get_bool("RegAnalyseDescent", false)) {
+      // CONF option: RegAnalyseDescent
+      // CONF default: 0 (false)
+      // CONF Linear registration: write comma separated gradient descent parameters and gradients
+      // CONF to stdout and verbose gradient descent output to stderr.
+      : analyse_descent(File::Config::get_bool("RegAnalyseDescent", false)) {
     stages[0].scale_factor = 0.25;
     stages[0].fod_lmax = 0;
     stages[1].scale_factor = 0.5;
@@ -155,18 +138,18 @@ public:
   }
 
   void set_stage_iterations(const std::vector<uint32_t> &it) {
-    for (size_t i = 0; i < it.size(); ++i)
-      if (!it[i])
-        throw Exception("the number of stage iterations must be positive");
+    if (std::find(it.begin(), it.end(), 0U) != it.end())
+      throw Exception("the number of stage iterations must be positive");
     if (it.size() == stages.size()) {
       for (size_t i = 0; i < stages.size(); ++i)
         stages[i].stage_iterations = it[i];
     } else if (it.size() == 1) {
-      for (size_t i = 0; i < stages.size(); ++i)
-        stages[i].stage_iterations = it[0];
+      for (auto &stage : stages)
+        stage.stage_iterations = it[0];
     } else
-      throw Exception("the number of stage iterations must be defined for all stages (1 or " + str(stages.size()) +
-                      ")");
+      throw Exception("the number of stage iterations must be defined for all stages" //
+                      " (1 or " +
+                      str(stages.size()) + ")"); //
     for (auto &stage : stages) {
       stage.optimisers.resize(stage.stage_iterations, stage.optimiser_default);
       stage.optimisers[0] = stage.optimiser_first;
@@ -180,11 +163,12 @@ public:
       for (size_t i = 0; i < stages.size(); ++i)
         stages[i].gd_max_iter = maxiter[i];
     } else if (maxiter.size() == 1) {
-      for (size_t i = 0; i < stages.size(); ++i)
-        stages[i].gd_max_iter = maxiter[0];
+      for (auto &stage : stages)
+        stage.gd_max_iter = maxiter[0];
     } else
-      throw Exception("the number of gradient descent iterations must be defined for all stages (1 or " +
-                      str(stages.size()) + ")");
+      throw Exception("the number of gradient descent iterations must be defined for all stages" //
+                      " (1 or " +
+                      str(stages.size()) + ")"); //
   }
 
   // needs to be set before set_lmax
@@ -194,15 +178,14 @@ public:
   }
 
   void set_lmax(const std::vector<uint32_t> &lmax) {
-    for (size_t i = 0; i < lmax.size(); ++i)
-      if (lmax[i] % 2)
-        throw Exception("the input lmax must be even");
+    if (std::any_of(lmax.begin(), lmax.end(), [](uint32_t l) { return (l % 2) != 0U; }))
+      throw Exception("the input lmax must be even");
     if (lmax.size() == stages.size()) {
       for (size_t i = 0; i < stages.size(); ++i)
         stages[i].fod_lmax = lmax[i];
     } else if (lmax.size() == 1) {
-      for (size_t i = 0; i < stages.size(); ++i)
-        stages[i].fod_lmax = lmax[0];
+      for (auto &stage : stages)
+        stage.fod_lmax = lmax[0];
     } else
       throw Exception("the lmax must be defined for all stages (1 or " + str(stages.size()) + ")");
   }
@@ -211,15 +194,14 @@ public:
   void set_mc_parameters(const std::vector<MultiContrastSetting> &mcs) { contrasts = mcs; }
 
   void set_loop_density(const std::vector<default_type> &loop_density_) {
-    for (size_t d = 0; d < loop_density_.size(); ++d)
-      if (loop_density_[d] < 0.0 or loop_density_[d] > 1.0)
-        throw Exception("loop density must be between 0.0 and 1.0");
+    if (std::any_of(loop_density_.begin(), loop_density_.end(), [](double d) { return d < 0.0 || d > 1.0; }))
+      throw Exception("loop density must be between 0.0 and 1.0");
     if (loop_density_.size() == stages.size()) {
       for (size_t i = 0; i < stages.size(); ++i)
         stages[i].loop_density = loop_density_[i];
     } else if (loop_density_.size() == 1) {
-      for (size_t i = 0; i < stages.size(); ++i)
-        stages[i].loop_density = loop_density_[0];
+      for (auto &stage : stages)
+        stage.loop_density = loop_density_[0];
     } else
       throw Exception("the lmax must be defined for all stages (1 or " + str(stages.size()) + ")");
   }
@@ -238,11 +220,9 @@ public:
     }
   }
 
-  void set_extent(const std::vector<size_t> extent) {
-    for (size_t d = 0; d < extent.size(); ++d) {
-      if (extent[d] < 1)
-        throw Exception("the neighborhood kernel extent must be at least 1 voxel");
-    }
+  void set_extent(const std::vector<size_t> &extent) {
+    if (std::any_of(extent.begin(), extent.end(), [](size_t e) { return e < 1; }))
+      throw Exception("the neighborhood kernel extent must be at least 1 voxel");
     kernel_extent = extent;
   }
 
@@ -386,7 +366,7 @@ public:
                                      ProcessedMaskType,
                                      Interp::Nearest<ProcessedMaskType>>;
 
-    Eigen::Matrix<typename TransformType::ParameterType, Eigen::Dynamic, 1> optimiser_weights =
+    const Eigen::Matrix<typename TransformType::ParameterType, Eigen::Dynamic, 1> optimiser_weights =
         transform.get_optimiser_weights();
 
     // calculate midway (affine average) space which will be constant for each resolution level
@@ -404,7 +384,7 @@ public:
           mc.lower_lmax(stage.fod_lmax);
         }
       } else {
-        MultiContrastSetting mc(im1_image.ndim() < 4 ? 1 : im1_image.size(3), do_reorientation, stage.fod_lmax);
+        const MultiContrastSetting mc(im1_image.ndim() < 4 ? 1 : im1_image.size(3), do_reorientation, stage.fod_lmax);
         stage_contrasts.push_back(mc);
       }
 
@@ -447,20 +427,20 @@ public:
       }
       DEBUG("neighbourhood kernel extent: " + str(kernel_extent));
       parameters.set_extent(kernel_extent);
-      Eigen::Vector3d spacing(
+      const Eigen::Vector3d spacing(
           midway_image_header.spacing(0), midway_image_header.spacing(1), midway_image_header.spacing(2));
       Eigen::Vector3d coherence(spacing);
       Eigen::Vector3d stop(spacing);
       // CONF option: RegCoherenceLen
       // CONF default: 3.0
       // CONF Linear registration: estimated spatial coherence length in voxels.
-      default_type reg_coherence_len = File::Config::get_float("RegCoherenceLen", 3.0); // = 3 stdev blur
+      const default_type reg_coherence_len = File::Config::get_float("RegCoherenceLen", 3.0); // = 3 stdev blur
       coherence *= reg_coherence_len * 1.0 / (2.0 * stage.scale_factor);
       // CONF option: RegStopLen
       // CONF default: 0.0001
       // CONF Linear registration: smallest gradient descent step measured in fraction of a voxel at which to stop
       // CONF registration.
-      default_type reg_stop_len = File::Config::get_float("RegStopLen", 0.0001);
+      const default_type reg_stop_len = File::Config::get_float("RegStopLen", 0.0001);
       stop.array() *= reg_stop_len;
       DEBUG("coherence length: " + str(coherence));
       DEBUG("stop length:      " + str(stop));
@@ -472,30 +452,30 @@ public:
       // CONF default: 5e-3
       // CONF Linear registration: threshold for convergence check using the smoothed control point trajectories
       // CONF measured in fraction of a voxel.
-      slope_threshold.fill(spacing.mean() * File::Config::get_float("RegGdConvergenceThresh", 5e-3f));
+      slope_threshold.fill(spacing.mean() * File::Config::get_float("RegGdConvergenceThresh", 5e-3F));
       DEBUG("convergence slope threshold: " + str(slope_threshold[0]));
       // CONF option: RegGdConvergenceDataSmooth
       // CONF default: 0.8
       // CONF Linear registration: control point trajectory smoothing value used in convergence check
       // CONF parameter range: [0...1].
       const default_type alpha(MR::File::Config::get_float("RegGdConvergenceDataSmooth", 0.8));
-      if ((alpha < 0.0f) || (alpha > 1.0f))
+      if ((alpha < 0.0F) || (alpha > 1.0F))
         throw Exception("config file option RegGdConvergenceDataSmooth has to be in the range: [0...1]");
       // CONF option: RegGdConvergenceSlopeSmooth
       // CONF default: 0.1
       // CONF Linear registration: control point trajectory slope smoothing value used in convergence check
       // CONF parameter range: [0...1].
       const default_type beta(MR::File::Config::get_float("RegGdConvergenceSlopeSmooth", 0.1));
-      if ((beta < 0.0f) || (beta > 1.0f))
+      if ((beta < 0.0F) || (beta > 1.0F))
         throw Exception("config file option RegGdConvergenceSlopeSmooth has to be in the range: [0...1]");
       // CONF option: RegGdConvergenceBufferLen
       // CONF default: 4
       // CONF Linear registration: gradient descent convergence buffer length.
-      size_t buffer_len(MR::File::Config::get_int("RegGdConvergenceBufferLen", 4));
+      const size_t buffer_len(MR::File::Config::get_int("RegGdConvergenceBufferLen", 4));
       // CONF option: RegGdConvergenceMinIter
       // CONF default: 10
       // CONF Linear registration: minimum number of iterations until convergence check is activated.
-      size_t min_iter(MR::File::Config::get_int("RegGdConvergenceMinIter", 10));
+      const size_t min_iter(MR::File::Config::get_int("RegGdConvergenceMinIter", 10));
       transform.get_gradient_descent_updator()->set_convergence_check(
           slope_threshold, alpha, beta, buffer_len, min_iter);
 
@@ -581,15 +561,15 @@ public:
   // }
 
 protected:
-  std::vector<StageSetting> stages;
+  std::vector<StageSetting> stages{3};
   std::vector<MultiContrastSetting> contrasts, stage_contrasts;
-  std::vector<size_t> kernel_extent;
-  default_type grad_tolerance;
-  default_type step_tolerance;
-  std::streambuf *log_stream;
-  Transform::Init::InitType init_translation_type, init_rotation_type;
-  bool robust_estimate;
-  bool do_reorientation;
+  std::vector<size_t> kernel_extent{3, 1};
+  default_type grad_tolerance{1.0e-6};
+  default_type step_tolerance{1.0e-10};
+  std::streambuf *log_stream{nullptr};
+  Transform::Init::InitType init_translation_type{Transform::Init::mass}, init_rotation_type{Transform::Init::none};
+  bool robust_estimate{false};
+  bool do_reorientation{false};
   Eigen::MatrixXd aPSF_directions;
   const bool analyse_descent;
 

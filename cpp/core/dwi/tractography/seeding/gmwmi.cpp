@@ -39,7 +39,7 @@ bool GMWMI::get_seed(Eigen::Vector3f &p) const {
       if (perturb(p, interp))
         return true;
     }
-  } while (1);
+  } while (true);
   return false;
 }
 
@@ -47,13 +47,13 @@ bool GMWMI::perturb(Eigen::Vector3f &p, Interp &interp) const {
   const auto normal = get_normal(p, interp);
   if (!normal.allFinite())
     return false;
-  Eigen::Vector3f plane_one(normal.cross(Eigen::Vector3f(0.0f, 0.0f, 1.0f)).normalized());
+  Eigen::Vector3f plane_one(normal.cross(Eigen::Vector3f(0.0F, 0.0F, 1.0F)).normalized());
   if (!plane_one.allFinite())
-    plane_one = (normal.cross(Eigen::Vector3f(0.0f, 1.0f, 0.0f))).normalized();
+    plane_one = (normal.cross(Eigen::Vector3f(0.0F, 1.0F, 0.0F))).normalized();
   const Eigen::Vector3f plane_two((normal.cross(plane_one)).normalized());
   std::uniform_real_distribution<float> uniform;
-  p += ((uniform(rng()) - 0.5f) * perturb_max_step * plane_one) +
-       ((uniform(rng()) - 0.5f) * perturb_max_step * plane_two);
+  p += ((uniform(rng()) - 0.5F) * perturb_max_step * plane_one) +
+       ((uniform(rng()) - 0.5F) * perturb_max_step * plane_two);
   return find_interface(p, interp);
 }
 

@@ -15,6 +15,9 @@
  */
 
 #include "file/dicom/study.h"
+
+#include <memory>
+
 #include "file/dicom/patient.h"
 #include "file/dicom/series.h"
 
@@ -79,8 +82,8 @@ std::shared_ptr<Series> Study::find(std::string_view series_name,
     }
   }
 
-  push_back(std::shared_ptr<Series>(new Series(
-      this, series_name, series_number, image_type, series_ref_UID, series_modality, series_date, series_time)));
+  push_back(std::make_shared<Series>(
+      this, series_name, series_number, image_type, series_ref_UID, series_modality, series_date, series_time));
   return back();
 }
 
@@ -91,8 +94,8 @@ std::ostream &operator<<(std::ostream &stream, const Study &item) {
                        format_date(item.date).c_str(),
                        format_time(item.time).c_str());
 
-  for (size_t n = 0; n < item.size(); n++)
-    stream << *item[n];
+  for (const auto &n : item)
+    stream << *n;
 
   return stream;
 }

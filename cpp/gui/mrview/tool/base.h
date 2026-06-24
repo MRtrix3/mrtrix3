@@ -36,8 +36,8 @@ constexpr ssize_t layout_spacing = 3;
 
 class CameraInteractor {
 public:
-  CameraInteractor() : _active(false) {}
-  bool active() const { return _active; }
+  CameraInteractor() = default;
+  [[nodiscard]] bool active() const { return _active; }
   virtual void deactivate();
   virtual bool slice_move_event(const ModelViewProjection &projection, float inc);
   virtual bool pan_event(const ModelViewProjection &projection);
@@ -46,13 +46,13 @@ public:
   virtual bool rotate_event(const ModelViewProjection &projection);
 
 protected:
-  bool _active;
+  bool _active{false};
   void set_active(bool onoff) { _active = onoff; }
 };
 
 class Dock : public QDockWidget {
 public:
-  Dock(const QString &name, bool floating) : QDockWidget(name, Window::main), tool(nullptr) {
+  Dock(const QString &name, bool floating) : QDockWidget(name, Window::main) {
     Window::main->addDockWidget(Qt::RightDockWidgetArea, this);
     setFloating(floating);
   }
@@ -60,20 +60,20 @@ public:
 
   void closeEvent(QCloseEvent *) override;
 
-  Base *tool;
+  Base *tool{nullptr};
 };
 
 class Base : public QFrame {
 public:
   Base(Dock *parent);
-  Window &window() const { return *Window::main; }
+  [[nodiscard]] Window &window() const { return *Window::main; }
 
   std::filesystem::path current_folder;
 
   static void add_commandline_options(MR::App::OptionList &options);
   virtual bool process_commandline_option(const MR::App::ParsedOption &opt);
 
-  virtual QSize sizeHint() const override;
+  [[nodiscard]] virtual QSize sizeHint() const override;
 
   void grab_focus() {
     window().tool_has_focus = this;
@@ -137,7 +137,7 @@ public:
   virtual void draw(const Projection &transform, bool is_3D, int axis, int slice);
   virtual void draw_colourbars();
   virtual size_t visible_number_colourbars() { return 0; }
-  virtual int draw_tool_labels(int, int, const Projection &) const { return 0; }
+  [[nodiscard]] virtual int draw_tool_labels(int, int, const Projection &) const { return 0; }
   virtual bool mouse_press_event();
   virtual bool mouse_move_event();
   virtual bool mouse_release_event();
@@ -159,7 +159,7 @@ class ActionWrapper : public QAction {
   Q_OBJECT
 public:
   ActionWrapper(QActionGroup *parent, std::string_view name, std::string_view description, int index)
-      : QAction(std::string(name).c_str(), parent), dock(nullptr) {
+      : QAction(std::string(name).c_str(), parent) {
     setCheckable(true);
     setShortcut(tr(std::string("Ctrl+F" + str(index)).c_str()));
     setStatusTip(tr(std::string(description).c_str()));
@@ -171,7 +171,7 @@ public:
   }
 
   virtual Dock *create(bool floating) = 0;
-  Dock *dock;
+  Dock *dock{nullptr};
 
 public slots:
   void visibility_slot(bool);

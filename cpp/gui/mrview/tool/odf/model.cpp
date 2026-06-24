@@ -26,9 +26,9 @@ size_t ODF_Model::add_items(const std::vector<std::filesystem::path> &list,
                             const bool hide_negative_lobes,
                             const float scale) {
   std::vector<std::unique_ptr<MR::Header>> hlist;
-  for (size_t i = 0; i < list.size(); ++i) {
+  for (const auto &i : list) {
     try {
-      auto header = std::make_unique<MR::Header>(MR::Header::open(list[i]));
+      auto header = std::make_unique<MR::Header>(MR::Header::open(i));
       const auto header_basename = header->path().filename().string();
       switch (type) {
       case odf_type_t::SH:
@@ -53,9 +53,8 @@ size_t ODF_Model::add_items(const std::vector<std::filesystem::path> &list,
 
   if (!hlist.empty()) {
     beginInsertRows(QModelIndex(), items.size(), items.size() + hlist.size());
-    for (size_t i = 0; i < hlist.size(); ++i)
-      items.push_back(
-          std::make_unique<ODF_Item>(std::move(*hlist[i]), type, scale, hide_negative_lobes, colour_by_direction));
+    for (const auto &i : hlist)
+      items.push_back(std::make_unique<ODF_Item>(std::move(*i), type, scale, hide_negative_lobes, colour_by_direction));
     endInsertRows();
   }
 

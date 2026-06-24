@@ -30,8 +30,7 @@ public:
   Cost_fn_gradient_sort(const track_t i, const double g, const double gpul)
       : tck_index(i), cost_gradient(g), grad_per_unit_length(gpul) {}
 
-  Cost_fn_gradient_sort(const Cost_fn_gradient_sort &that)
-      : tck_index(that.tck_index), cost_gradient(that.cost_gradient), grad_per_unit_length(that.grad_per_unit_length) {}
+  Cost_fn_gradient_sort(const Cost_fn_gradient_sort &that) = default;
 
   void set(const track_t i, const double g, const double gpul) {
     tck_index = i;
@@ -41,9 +40,9 @@ public:
 
   bool operator<(const Cost_fn_gradient_sort &that) const { return grad_per_unit_length < that.grad_per_unit_length; }
 
-  track_t get_tck_index() const { return tck_index; }
-  double get_cost_gradient() const { return cost_gradient; }
-  double get_gradient_per_unit_length() const { return grad_per_unit_length; }
+  [[nodiscard]] track_t get_tck_index() const { return tck_index; }
+  [[nodiscard]] double get_cost_gradient() const { return cost_gradient; }
+  [[nodiscard]] double get_gradient_per_unit_length() const { return grad_per_unit_length; }
 
 private:
   track_t tck_index;
@@ -92,7 +91,7 @@ private:
 
   class BlockSender {
   public:
-    BlockSender(const track_t count, const track_t size) : num_tracks(count), block_size(size), counter(0) {}
+    BlockSender(const track_t count, const track_t size) : num_tracks(count), block_size(size) {}
     bool operator()(TrackIndexRange &out) {
       if (counter == num_tracks) {
         out.first = out.second = 0;
@@ -106,13 +105,13 @@ private:
 
   private:
     const track_t num_tracks, block_size;
-    track_t counter;
+    track_t counter{0};
   };
 
   class Sorter {
   public:
     Sorter(VecType &in) : data(in) {}
-    Sorter(const Sorter &that) : data(that.data) {}
+    Sorter(const Sorter &that) = default;
     bool operator()(const TrackIndexRange &, VecItType &) const;
 
   private:

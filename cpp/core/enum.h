@@ -93,8 +93,8 @@ template <typename EnumType> class AtomicCounters {
   // The atomic is marked mutable so that thread-safe accumulation can be
   // exposed through const member functions of the enclosing helper.
   struct Counter {
-    mutable std::atomic<size_t> value;
-    Counter() noexcept : value(0) {}
+    mutable std::atomic<size_t> value{0};
+    Counter() noexcept = default;
   };
 
   static constexpr size_t N = magic_enum::enum_count<EnumType>();
@@ -124,7 +124,7 @@ public:
     return size_t(-1);
   }
 
-  size_t total() const noexcept {
+  [[nodiscard]] size_t total() const noexcept {
     size_t sum = 0;
     for (const auto &counter : counters)
       sum += counter.value.load(std::memory_order_seq_cst);

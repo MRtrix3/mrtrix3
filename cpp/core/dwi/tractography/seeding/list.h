@@ -25,7 +25,7 @@ namespace MR::DWI::Tractography::Seeding {
 class List {
 
 public:
-  List() : total_volume(0.0), total_count(0) {}
+  List() = default;
 
   List(const List &) = delete;
 
@@ -33,11 +33,11 @@ public:
   void clear();
   bool get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d);
 
-  bool empty() const { return seeders.empty(); }
-  size_t num_seeds() const { return seeders.size(); }
+  [[nodiscard]] bool empty() const { return seeders.empty(); }
+  [[nodiscard]] size_t num_seeds() const { return seeders.size(); }
   const Base *operator[](const size_t n) const { return seeders[n].get(); }
-  bool is_finite() const { return total_count; }
-  uint32_t get_total_count() const { return total_count; }
+  [[nodiscard]] bool is_finite() const { return total_count != 0U; }
+  [[nodiscard]] uint32_t get_total_count() const { return total_count; }
 
   friend inline std::ostream &operator<<(std::ostream &stream, const List &S) {
     if (S.seeders.empty())
@@ -51,8 +51,8 @@ public:
 
 private:
   std::vector<std::unique_ptr<Base>> seeders;
-  float total_volume;
-  uint32_t total_count;
+  float total_volume{0.0};
+  uint32_t total_count{0};
 };
 
 } // namespace MR::DWI::Tractography::Seeding

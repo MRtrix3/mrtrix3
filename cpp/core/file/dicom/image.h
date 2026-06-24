@@ -84,7 +84,7 @@ public:
       return acq < frame.acq;
     if (std::isfinite(distance) && std::isfinite(frame.distance) && distance != frame.distance)
       return distance < frame.distance;
-    for (size_t n = index.size(); n--;)
+    for (size_t n = index.size(); (n--) != 0U;)
       if (index[n] != frame.index[n])
         return index[n] < frame.index[n];
     if (echo_index != frame.echo_index)
@@ -106,7 +106,7 @@ public:
     else {
       if (!orientation_x.allFinite() || !orientation_y.allFinite())
         throw Exception("slice orientation information missing from DICOM header!");
-      Eigen::Vector3d normal = orientation_x.cross(orientation_y);
+      const Eigen::Vector3d normal = orientation_x.cross(orientation_y);
       if (normal.dot(orientation_z) < 0.0)
         orientation_z = -normal;
       else
@@ -120,7 +120,7 @@ public:
     distance = orientation_z.dot(position_vector);
   }
 
-  bool is_philips_iso() const {
+  [[nodiscard]] bool is_philips_iso() const {
     if (philips_orientation == '\0')
       return false;
     return (philips_orientation == 'I' && bvalue > 0.0);
@@ -138,12 +138,12 @@ public:
 class Image : public Frame {
 
 public:
-  Image(Series *parent = nullptr) : series(parent), images_in_mosaic(0), is_BE(false), in_frames(false) {}
+  Image(Series *parent = nullptr) : series(parent) {}
 
   Series *series;
-  size_t images_in_mosaic;
+  size_t images_in_mosaic{0};
   std::string sequence_name, manufacturer;
-  bool is_BE, in_frames;
+  bool is_BE{false}, in_frames{false};
   std::vector<float> mosaic_slices_timing;
 
   std::vector<uint32_t> frame_dim;

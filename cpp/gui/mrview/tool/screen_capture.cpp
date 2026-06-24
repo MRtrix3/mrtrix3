@@ -28,12 +28,11 @@
 
 namespace MR::GUI::MRView::Tool {
 
-Capture::Capture(Dock *parent)
-    : Base(parent), rotation_type(RotationType::World), translation_type(TranslationType::Voxel), is_playing(false) {
-  VBoxLayout *main_box = new VBoxLayout(this);
+Capture::Capture(Dock *parent) : Base(parent) {
+  auto *main_box = new VBoxLayout(this);
 
-  QGroupBox *rotate_group_box = new QGroupBox(tr("Rotate"));
-  GridLayout *rotate_layout = new GridLayout;
+  auto *rotate_group_box = new QGroupBox(tr("Rotate"));
+  auto *rotate_layout = new GridLayout;
   rotate_layout->setContentsMargins(5, 5, 5, 5);
   rotate_layout->setSpacing(5);
   main_box->addWidget(rotate_group_box);
@@ -69,8 +68,8 @@ Capture::Capture(Dock *parent)
   degrees_button->setValue(0.0);
   degrees_button->setRate(0.1);
 
-  QGroupBox *translate_group_box = new QGroupBox(tr("Translate"));
-  GridLayout *translate_layout = new GridLayout;
+  auto *translate_group_box = new QGroupBox(tr("Translate"));
+  auto *translate_layout = new GridLayout;
   translate_layout->setContentsMargins(5, 5, 5, 5);
   translate_layout->setSpacing(5);
   main_box->addWidget(translate_group_box);
@@ -100,8 +99,8 @@ Capture::Capture(Dock *parent)
   translate_z->setValue(0.0);
   translate_z->setRate(0.1);
 
-  QGroupBox *volume_group_box = new QGroupBox(tr("Volume"));
-  GridLayout *volume_layout = new GridLayout;
+  auto *volume_group_box = new QGroupBox(tr("Volume"));
+  auto *volume_layout = new GridLayout;
   volume_layout->setContentsMargins(5, 5, 5, 5);
   volume_layout->setSpacing(5);
   main_box->addWidget(volume_group_box);
@@ -120,8 +119,8 @@ Capture::Capture(Dock *parent)
   target_volume->setMaximum(std::numeric_limits<int>::max());
   target_volume->setValue(0);
 
-  QGroupBox *FOV_group_box = new QGroupBox(tr("FOV"));
-  GridLayout *FOV_layout = new GridLayout;
+  auto *FOV_group_box = new QGroupBox(tr("FOV"));
+  auto *FOV_layout = new GridLayout;
   FOV_layout->setContentsMargins(5, 5, 5, 5);
   FOV_layout->setSpacing(5);
   main_box->addWidget(FOV_group_box);
@@ -133,9 +132,9 @@ Capture::Capture(Dock *parent)
   FOV_multipler->setValue(1.0);
   FOV_multipler->setRate(0.01);
 
-  QGroupBox *output_group_box = new QGroupBox(tr("Output"));
+  auto *output_group_box = new QGroupBox(tr("Output"));
   main_box->addWidget(output_group_box);
-  GridLayout *output_grid_layout = new GridLayout;
+  auto *output_grid_layout = new GridLayout;
   output_group_box->setLayout(output_grid_layout);
 
   output_grid_layout->addWidget(new QLabel(tr("Prefix: ")), 0, 0);
@@ -148,9 +147,9 @@ Capture::Capture(Dock *parent)
   connect(folder_button, SIGNAL(clicked()), this, SLOT(select_output_folder_slot()));
   output_grid_layout->addWidget(folder_button, 1, 0, 1, 2);
 
-  QGroupBox *capture_group_box = new QGroupBox(tr("Capture"));
+  auto *capture_group_box = new QGroupBox(tr("Capture"));
   main_box->addWidget(capture_group_box);
-  GridLayout *capture_grid_layout = new GridLayout;
+  auto *capture_grid_layout = new GridLayout;
   capture_group_box->setLayout(capture_grid_layout);
 
   capture_grid_layout->addWidget(new QLabel(tr("Start Index: ")), 0, 0);
@@ -169,25 +168,25 @@ Capture::Capture(Dock *parent)
   frames->setValue(1);
   capture_grid_layout->addWidget(frames, 0, 3);
 
-  QPushButton *preview = new QPushButton(this);
+  auto *preview = new QPushButton(this);
   preview->setToolTip(tr("Play preview"));
   preview->setIcon(QIcon(":/start.svg"));
   connect(preview, SIGNAL(clicked()), this, SLOT(on_screen_preview()));
   capture_grid_layout->addWidget(preview, 2, 0);
 
-  QPushButton *stop = new QPushButton(this);
+  auto *stop = new QPushButton(this);
   stop->setToolTip(tr("Stop preview"));
   stop->setIcon(QIcon(":/stop.svg"));
   connect(stop, SIGNAL(clicked()), this, SLOT(on_screen_stop()));
   capture_grid_layout->addWidget(stop, 2, 1);
 
-  QPushButton *restore = new QPushButton(this);
+  auto *restore = new QPushButton(this);
   restore->setToolTip(tr("Restore"));
   restore->setIcon(QIcon(":/restore.svg"));
   connect(restore, SIGNAL(clicked()), this, SLOT(on_restore_capture_state()));
   capture_grid_layout->addWidget(restore, 2, 2);
 
-  QPushButton *capture = new QPushButton(this);
+  auto *capture = new QPushButton(this);
   capture->setToolTip(tr("Record"));
   capture->setIcon(QIcon(":/record.svg"));
   connect(capture, SIGNAL(clicked()), this, SLOT(on_screen_capture()));
@@ -204,7 +203,7 @@ Capture::Capture(Dock *parent)
 void Capture::on_image_changed() {
   cached_state.clear();
   const auto image = window().image();
-  if (!image)
+  if (image == nullptr)
     return;
 
   const int max_axis = std::max(static_cast<int>(image->header().ndim() - 1), 0);
@@ -233,7 +232,7 @@ void Capture::on_screen_capture() {
 void Capture::on_screen_stop() { is_playing = false; }
 
 void Capture::cache_capture_state() {
-  if (!window().image())
+  if (window().image() == nullptr)
     return;
   auto &image(window().image()->image);
 
@@ -253,7 +252,7 @@ void Capture::cache_capture_state() {
 }
 
 void Capture::on_restore_capture_state() {
-  if (!window().image() || cached_state.empty())
+  if ((window().image() == nullptr) || cached_state.empty())
     return;
 
   const CaptureState &state = cached_state.back();
@@ -273,7 +272,7 @@ void Capture::run(bool with_capture) {
   Window &win(window());
   MRView::Image *img(win.image());
 
-  if (!img)
+  if (img == nullptr)
     return;
 
   is_playing = true;
@@ -307,13 +306,14 @@ void Capture::run(bool with_capture) {
   if (window().snap_to_image() && degrees_button->value() > 0.0)
     window().set_snap_to_image(false);
 
-  size_t frames_value = frames->value();
+  const size_t frames_value = frames->value();
 
-  std::string prefix(prefix_textbox->text().toUtf8().constData());
-  float radians = degrees_button->value() * (Math::pi / 180.0) / frames_value;
-  size_t first_index = start_index->value();
+  const std::string prefix(prefix_textbox->text().toUtf8().constData());
+  const float radians = degrees_button->value() * (Math::pi / 180.0) / frames_value;
+  const size_t first_index = start_index->value();
 
-  float volume = 0.0F, volume_inc = 0.0F;
+  float volume = 0.0F;
+  float volume_inc = 0.0F;
   if (volume_axis->value() < static_cast<ssize_t>(image.ndim())) {
     if (target_volume->value() >= image.size(volume_axis->value()))
       target_volume->setValue(image.size(volume_axis->value()) - 1);
@@ -364,9 +364,9 @@ void Capture::run(bool with_capture) {
       break;
     case TranslationType::Camera: {
       const Mode::Base *mode = window().get_current_mode();
-      if (mode) {
+      if (mode != nullptr) {
         const GL::vec4 trans_gl_vec = mode->get_current_projection()->modelview_inverse() *
-                                      GL::vec4(trans_vec[0], trans_vec[1], trans_vec[2], 0.0f);
+                                      GL::vec4(trans_vec[0], trans_vec[1], trans_vec[2], 0.0F);
         trans_vec[0] = trans_gl_vec[0];
         trans_vec[1] = trans_gl_vec[1];
         trans_vec[2] = trans_gl_vec[2];
@@ -379,12 +379,12 @@ void Capture::run(bool with_capture) {
       break;
     }
 
-    Eigen::Vector3f focus_delta(trans_vec);
+    const Eigen::Vector3f focus_delta(trans_vec);
 
     // If rotating image we need to offset the translation so that the rotation is relative to
     // the center (i.e. target) of the image
     if (rotation_type == RotationType::Image) {
-      GL::vec4 target_after = GL::mat4(rotation) * GL::vec4(target[0], target[1], target[2], 1.0f);
+      GL::vec4 target_after = GL::mat4(rotation) * GL::vec4(target[0], target[1], target[2], 1.0F);
       trans_vec += Eigen::Vector3f{target_after[0], target_after[1], target_after[2]} - target;
     }
 
@@ -444,7 +444,7 @@ void Capture::add_commandline_options(MR::App::OptionList &options) {
 bool Capture::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("capture.folder")) {
     current_folder = static_cast<std::filesystem::path>(opt[0]);
-    QString path(qstr(shorten(current_folder.filename().string(), 20, 0)));
+    const QString path(qstr(shorten(current_folder.filename().string(), 20, 0)));
     folder_button->setText(path);
     folder_button->setToolTip(qstr(current_folder.string()));
     on_output_update();

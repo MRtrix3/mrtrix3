@@ -17,6 +17,7 @@
 #include "math/stats/glm.h"
 
 #include <filesystem>
+#include <memory>
 
 #include "debug.h"
 #include "file/matrix.h"
@@ -146,13 +147,13 @@ index_array_type load_variance_groups(const index_type num_inputs) {
       return index_array_type();
     }
     std::vector<index_type> count_per_group(max_coeff + 1, 0);
-    for (Eigen::Index i = 0; i != data.size(); ++i)
-      count_per_group[data[i]]++;
+    for (unsigned int i : data)
+      count_per_group[i]++;
     for (Eigen::Index vg_index = min_coeff; vg_index <= max_coeff; ++vg_index) {
-      if (!count_per_group[vg_index])
+      if (count_per_group[vg_index] == 0U)
         throw Exception("No entries found for variance group " + str(vg_index));
     }
-    if (min_coeff)
+    if (min_coeff != 0U)
       data.array() -= 1;
     return data.array();
   } catch (Exception &e) {
@@ -170,7 +171,7 @@ std::vector<Hypothesis> load_hypotheses(const ssize_t num_factors) {
                       " (" + str(contrast_matrix.cols()) + ")" +                                  //
                       " does not match number of model factors (" + str(num_factors) + ")");      //
     for (Eigen::Index row = 0; row != contrast_matrix.rows(); ++row)
-      hypotheses.emplace_back(Hypothesis(contrast_matrix.row(row), static_cast<index_type>(row)));
+      hypotheses.emplace_back(contrast_matrix.row(row), static_cast<index_type>(row));
   }
   opt = App::get_options("ftest");
   for (size_t i = 0; i != opt.size(); ++i) {
@@ -179,7 +180,7 @@ std::vector<Hypothesis> load_hypotheses(const ssize_t num_factors) {
       throw Exception("Number of columns in F-test matrix \"" + opt[i][0] + "\"" +           //
                       " (" + str(ftest_matrix.cols()) + ")" +                                //
                       " does not match number of model factors (" + str(num_factors) + ")"); //
-    hypotheses.emplace_back(Hypothesis(ftest_matrix, i));
+    hypotheses.emplace_back(ftest_matrix, i);
   }
   if (hypotheses.empty())
     throw Exception("No hypotheses specified; must use at least one of the -ttests or -ftest options");
@@ -195,8 +196,7 @@ vector_type abs_effect_size(const measurements_matrix_type &measurements,
                             const Hypothesis &hypothesis) {
   if (hypothesis.is_F())
     return vector_type::Constant(measurements.rows(), std::numeric_limits<vector_type::Scalar>::quiet_NaN());
-  else
-    return hypothesis.matrix() * solve_betas(measurements, design);
+  return hypothesis.matrix() * solve_betas(measurements, design);
 }
 
 matrix_type abs_effect_size(
@@ -217,7 +217,7 @@ matrix_type stdev(const measurements_matrix_type &measurements,
                   const matrix_type &design,
                   const index_array_type &variance_groups) {
   assert(measurements.rows() == design.rows());
-  if (!variance_groups.size())
+  if (variance_groups.size() == 0)
     return stdev(measurements, design);
   assert(measurements.rows() == variance_groups.rows());
   // Residual-forming matrix
@@ -275,7 +275,7 @@ void all_stats(const measurements_matrix_type &measurements,
   //   that's being displayed by that outer looping function
   std::unique_ptr<ProgressBar> progress;
   if (measurements.cols() > 1)
-    progress.reset(new ProgressBar("Calculating basic properties of default permutation", 5));
+    progress = std::make_unique<ProgressBar>("Calculating basic properties of default permutation", 5);
 #endif
   betas = solve_betas(measurements, design);
 #ifdef GLM_ALL_STATS_DEBUG
@@ -316,11 +316,12 @@ void all_stats(const measurements_matrix_type &measurements,
   if (progress)
     ++*progress;
 #endif
-  if (variance_groups.size())
-    std_effect_size = matrix_type::Constant(
-        measurements.cols(), hypotheses.size(), std::numeric_limits<matrix_type::Scalar>::quiet_NaN());
-  else
+  if (variance_groups.size() == 0)
     std_effect_size = abs_effect_size.array().colwise() / stdev.transpose().array().col(0);
+  else
+    std_effect_size = matrix_type::Constant(measurements.cols(),                                    //
+                                            hypotheses.size(),                                      //
+                                            std::numeric_limits<matrix_type::Scalar>::quiet_NaN()); //
 #ifdef GLM_ALL_STATS_DEBUG
   std::cerr << "std_effect_size: " << std_effect_size.rows() << " x " << std_effect_size.cols() << ", max "
             << std_effect_size.array().maxCoeff() << "\n";
@@ -347,7 +348,7 @@ void all_stats(const measurements_matrix_type &measurements,
   public:
     Source(const index_type num_elements)
         : num_elements(num_elements),
-          counter(0),
+
           progress(new ProgressBar("Calculating basic properties of default permutation", num_elements)) {}
     bool operator()(index_type &element_index) {
       element_index = counter++;
@@ -362,7 +363,7 @@ void all_stats(const measurements_matrix_type &measurements,
 
   private:
     const index_type num_elements;
-    index_type counter;
+    index_type counter{0};
     std::unique_ptr<ProgressBar> progress;
   };
 
@@ -388,7 +389,7 @@ void all_stats(const measurements_matrix_type &measurements,
           global_abs_effect_size(abs_effect_size),
           global_std_effect_size(std_effect_size),
           global_stdev(stdev),
-          num_vgs(variance_groups.size() ? variance_groups.maxCoeff() + 1 : 1) {
+          num_vgs((variance_groups.size() == 0) ? 1 : (variance_groups.maxCoeff() + 1)) {
       assert(design_fixed.cols() + extra_columns.size() == hypotheses[0].cols());
     }
     bool operator()(const index_type &element_index) {
@@ -425,13 +426,13 @@ void all_stats(const measurements_matrix_type &measurements,
         // Need to reduce the data and design matrices to contain only finite data
         measurements_matrix_type element_data_finite(valid_rows, 1);
         matrix_type element_design_finite(valid_rows, element_design.cols());
-        index_array_type variance_groups_finite(variance_groups.size() ? valid_rows : 0);
+        index_array_type variance_groups_finite((variance_groups.size() == 0) ? 0 : valid_rows);
         index_type output_row = 0;
         for (Eigen::Index row = 0; row != data.rows(); ++row) {
           if (std::isfinite(element_data(row)) && element_design.row(row).allFinite()) {
             element_data_finite(output_row, 0) = element_data(row);
             element_design_finite.row(output_row) = element_design.row(row);
-            if (variance_groups.size())
+            if (variance_groups.size() != 0)
               variance_groups_finite[output_row] = variance_groups[row];
             ++output_row;
           }
@@ -533,7 +534,7 @@ matrix_type Hypothesis::check_rank(const matrix_type &in, const index_type index
   //   here we want the row-space (since it's degeneracy in contrast matrix rows
   //   that has led to the rank-deficiency, whereas we can't exclude factor columns).
   //   Hence the transposing.
-  Eigen::FullPivLU<matrix_type> decomp(in.transpose());
+  const Eigen::FullPivLU<matrix_type> decomp(in.transpose());
   if (decomp.rank() == in.rows())
     return in;
   WARN("F-test " + str(index + 1) + " is rank-deficient; row-space matrix decomposition will instead be used");
@@ -607,12 +608,12 @@ TestFixedHomoscedastic::TestFixedHomoscedastic(
 #endif
 {
   shared = std::make_shared<const Shared>(measurements, design, hypotheses);
-  for (index_type ih = 0; ih != hypotheses.size(); ++ih)
+  for (const auto &hypothesis : hypotheses)
 #ifdef NDEBUG
-    betas.emplace_back(matrix_type(hypotheses[ih].matrix().rows(), 1));
+    betas.emplace_back(hypothesis.matrix().rows(), 1);
 #else
     betas.emplace_back(
-        matrix_type::Constant(hypotheses[ih].matrix().rows(), 1, std::numeric_limits<default_type>::signaling_NaN()));
+        matrix_type::Constant(hypothesis.matrix().rows(), 1, std::numeric_limits<default_type>::signaling_NaN()));
 #endif
 }
 
@@ -636,7 +637,7 @@ TestFixedHomoscedastic::TestFixedHomoscedastic(const TestFixedHomoscedastic &tha
 {
   for (index_type ih = 0; ih != num_hypotheses(); ++ih)
 #ifdef NDEBUG
-    betas.emplace_back(matrix_type(c[ih].matrix().rows(), 1));
+    betas.emplace_back(c[ih].matrix().rows(), 1);
 #else
     betas.emplace_back(
         matrix_type::Constant(c[ih].matrix().rows(), 1, std::numeric_limits<default_type>::signaling_NaN()));
@@ -1153,16 +1154,16 @@ TestVariableHomoscedastic::TestVariableHomoscedastic(const measurements_matrix_t
                                                       const bool nans_in_columns)
     : TestVariableBase(measurements, design, hypotheses, importers) {
   shared = std::make_shared<const Shared>(importers, nans_in_data, nans_in_columns);
-  for (index_type ih = 0; ih != hypotheses.size(); ++ih) {
+  for (const auto &hypothesis : hypotheses) {
 #ifdef NDEBUG
-    XtX.emplace_back(hypotheses[ih].matrix().rows(), hypotheses[ih].matrix().rows());
-    beta.emplace_back(hypotheses[ih].matrix().rows(), 1);
+    XtX.emplace_back(hypothesis.matrix().rows(), hypothesis.matrix().rows());
+    beta.emplace_back(hypothesis.matrix().rows(), 1);
 #else
-    XtX.emplace_back(matrix_type::Constant(hypotheses[ih].matrix().rows(),
-                                            hypotheses[ih].matrix().rows(),
+    XtX.emplace_back(matrix_type::Constant(hypothesis.matrix().rows(),
+                                            hypothesis.matrix().rows(),
                                             std::numeric_limits<default_type>::signaling_NaN()));
     beta.emplace_back(
-        matrix_type::Constant(hypotheses[ih].matrix().rows(), 1, std::numeric_limits<default_type>::signaling_NaN()));
+        matrix_type::Constant(hypothesis.matrix().rows(), 1, std::numeric_limits<default_type>::signaling_NaN()));
 #endif
   }
 }

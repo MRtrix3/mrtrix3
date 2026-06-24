@@ -68,7 +68,7 @@ using rotation_transform_type = Eigen::Transform<default_type, 3, Eigen::Isometr
 
 class Shared {
 public:
-  Shared(const std::shared_ptr<const cartesian_matrix_type> directions, size_t total_num_rotations)
+  Shared(const std::shared_ptr<const cartesian_matrix_type> &directions, size_t total_num_rotations)
       : directions(directions),                                                         //
         protected_content(total_num_rotations, directions->array().abs().maxCoeff()) {} //
 
@@ -77,11 +77,11 @@ public:
     return (*guard)(peak, rotation);
   }
 
-  default_type peak(const rotation_type &rotation) const {
+  [[nodiscard]] default_type peak(const rotation_type &rotation) const {
     return (rotation_transform_type(rotation).linear() * directions->transpose()).array().abs().maxCoeff();
   }
 
-  rotation_type get_best_rotation() {
+  [[nodiscard]] rotation_type get_best_rotation() {
     auto guard = protected_content.lock();
     return guard->best();
   }
@@ -97,9 +97,8 @@ private:
           progress(total_num_rotations == 1 ? "randomising direction set orientation"
                                             : "optimising directions for peak gradient load",
                    total_num_rotations),
-          count(0),
-          best_rotation(0.0, axis_type{0.0, 0.0, 0.0}),
-          min_peak(1.0) {}
+
+          best_rotation(0.0, axis_type{0.0, 0.0, 0.0}) {}
     bool operator()(default_type peak, const rotation_type &rotation) {
       if (peak < min_peak) {
         min_peak = peak;
@@ -113,22 +112,22 @@ private:
       ++progress;
       return count < total_num_rotations;
     }
-    rotation_type best() const { return best_rotation; }
+    [[nodiscard]] rotation_type best() const { return best_rotation; }
 
   private:
     const size_t total_num_rotations;
     const default_type original_peak;
     ProgressBar progress;
-    size_t count;
+    size_t count{0};
     rotation_type best_rotation;
-    default_type min_peak;
+    default_type min_peak{1.0};
   };
   MutexProtected<ProtectedContent> protected_content;
 };
 
 class Processor {
 public:
-  Processor(const std::shared_ptr<Shared> shared)
+  Processor(const std::shared_ptr<Shared> &shared)
       : shared(shared),
         rotation(0.0, axis_type{0.0, 0.0, 0.0}),
         angle_distribution(-Math::pi, Math::pi),
@@ -166,7 +165,7 @@ void run() {
   const auto directions = std::make_shared<const cartesian_matrix_type>(
       Eigen::Ref<const cartesian_matrix_type>(Math::Sphere::as_cartesian(directions_in)));
 
-  const size_t total_num_rotations = get_option_value<size_t>("number", default_number);
+  const size_t total_num_rotations = get_option_value("number", default_number);
 
   rotation_type rotation;
   {

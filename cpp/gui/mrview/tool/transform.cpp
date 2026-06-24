@@ -19,9 +19,9 @@
 namespace MR::GUI::MRView::Tool {
 
 Transform::Transform(Dock *parent) : Base(parent) {
-  VBoxLayout *main_box = new VBoxLayout(this);
-  QLabel *label = new QLabel("When active, all camera view manipulations will apply "
-                             "to the main image, rather than to the camera");
+  auto *main_box = new VBoxLayout(this);
+  auto *label = new QLabel("When active, all camera view manipulations will apply "
+                           "to the main image, rather than to the camera");
   label->setWordWrap(true);
   label->setAlignment(Qt::AlignHCenter);
   main_box->addWidget(label);
@@ -58,9 +58,9 @@ void Transform::hideEvent(QHideEvent *) { setActive(false); }
 
 bool Transform::slice_move_event(const ModelViewProjection &projection, float x) {
   const auto &header = window().image()->header();
-  float increment = window().snap_to_image()
-                        ? x * header.spacing(window().plane())
-                        : x * std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.0f / 3.0f);
+  const float increment = window().snap_to_image()
+                              ? x * header.spacing(window().plane())
+                              : x * std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.0F / 3.0F);
   auto move = window().get_current_mode()->get_through_plane_translation(increment, projection);
 
   transform_type M = header.transform();
@@ -108,7 +108,7 @@ bool Transform::tilt_event(const ModelViewProjection &projection) {
     return true;
 
   const Eigen::Vector3d origin = window().focus().cast<double>();
-  transform_type M =
+  const transform_type M =
       transform_type(rot).pretranslate(origin).translate(-origin) * window().image()->header().transform();
 
   window().image()->header().transform() = M;
@@ -127,7 +127,7 @@ bool Transform::rotate_event(const ModelViewProjection &projection) {
     return true;
 
   const Eigen::Vector3d origin = window().target().cast<double>();
-  transform_type M =
+  const transform_type M =
       transform_type(rot).inverse().pretranslate(origin).translate(-origin) * window().image()->header().transform();
 
   window().image()->header().transform() = M;

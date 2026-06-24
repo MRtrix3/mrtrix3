@@ -34,6 +34,7 @@
 #include "stats/tfce.h"
 
 #include <filesystem>
+#include <memory>
 
 using namespace MR;
 using namespace App;
@@ -149,7 +150,7 @@ public:
   SubjectVoxelImport(const std::filesystem::path &path)
       : SubjectDataImportBase(path), H(Header::open(path)), data(H.get_image<measurements_value_type>()) {}
 
-  virtual ~SubjectVoxelImport() {}
+  virtual ~SubjectVoxelImport() = default;
 
   void operator()(measurements_matrix_type::RowXpr row) const override {
     assert(v2v);
@@ -168,12 +169,12 @@ public:
     return temp.value();
   }
 
-  index_type size() const override {
+  [[nodiscard]] index_type size() const override {
     assert(v2v);
     return v2v->size();
   }
 
-  const Header &header() const { return H; }
+  [[nodiscard]] const Header &header() const { return H; }
 
   static void set_mapping(std::shared_ptr<Voxel2Vector> &ptr) { v2v = ptr; }
 
@@ -270,7 +271,7 @@ void run() {
   bool nans_in_columns = false;
   opt = get_options("column");
   for (size_t i = 0; i != opt.size(); ++i) {
-    extra_columns.push_back(CohortDataImport());
+    extra_columns.emplace_back();
     extra_columns[i].initialise<SubjectVoxelImport>(opt[i][0]);
     if (!extra_columns[i].allFinite())
       nans_in_columns = true;
@@ -397,11 +398,11 @@ void run() {
 
   std::shared_ptr<Stats::EnhancerBase> enhancer;
   if (use_tfce) {
-    std::shared_ptr<Stats::TFCE::EnhancerBase> base(
+    const std::shared_ptr<Stats::TFCE::EnhancerBase> base(
         new Stats::Cluster::ClusterSize(connector, cluster_forming_threshold));
-    enhancer.reset(new Stats::TFCE::Wrapper(base, tfce_dh, tfce_E, tfce_H));
+    enhancer = std::make_shared<Stats::TFCE::Wrapper>(base, tfce_dh, tfce_E, tfce_H);
   } else {
-    enhancer.reset(new Stats::Cluster::ClusterSize(connector, cluster_forming_threshold));
+    enhancer = std::make_shared<Stats::Cluster::ClusterSize>(connector, cluster_forming_threshold);
   }
 
   matrix_type empirical_enhanced_statistic;
@@ -415,7 +416,9 @@ void run() {
   }
 
   // Precompute statistic value and enhanced statistic for the default permutation
-  matrix_type default_statistic, default_zstat, default_enhanced;
+  matrix_type default_statistic;
+  matrix_type default_zstat;
+  matrix_type default_enhanced;
   Stats::PermTest::precompute_default_permutation(
       glm_test, enhancer, empirical_enhanced_statistic, default_statistic, default_zstat, default_enhanced);
   for (index_type i = 0; i != num_hypotheses; ++i) {
@@ -438,7 +441,8 @@ void run() {
       WARN("Option -strong has no effect when testing a single hypothesis only");
     }
 
-    matrix_type null_distribution, uncorrected_pvalue;
+    matrix_type null_distribution;
+    matrix_type uncorrected_pvalue;
     count_matrix_type null_contributions;
 
     Stats::PermTest::run_permutations(glm_test,

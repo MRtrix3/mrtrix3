@@ -28,7 +28,7 @@ std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier) {
 
   size_t sub = 0;
   size_t lim = 0;
-  size_t end = specifier.size();
+  const size_t end = specifier.size();
   size_t current = 0;
 
   try {
@@ -40,12 +40,12 @@ std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier) {
       } else if (specifier[sub] == '-') {
         pos = false;
         sub++;
-      } else if (!isdigit(specifier[sub]))
+      } else if (isdigit(specifier[sub]) == 0)
         throw 0;
 
       lim = sub;
 
-      while (lim < end && std::isdigit(static_cast<unsigned char>(specifier[lim])))
+      while ((lim < end) && (std::isdigit(static_cast<unsigned char>(specifier[lim])) != 0))
         lim++;
 
       // we require at least one digit
@@ -77,7 +77,7 @@ std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier) {
     throw Exception("incorrect number of dimensions for axes specifier");
 
   for (size_t n = 0; n < parsed.size(); n++) {
-    if (!parsed[n] || static_cast<size_t>(MR::abs(parsed[n])) > ndim)
+    if ((parsed[n] == 0) || (static_cast<size_t>(MR::abs(parsed[n])) > ndim))
       throw Exception("axis ordering " + str(parsed[n]) + " out of range");
 
     for (size_t i = 0; i < n; i++)
@@ -106,7 +106,7 @@ bool next_keyvalue(File::GZ &gz, std::string &key, std::string &value) {
   if (line.empty() || line == "END")
     return false;
 
-  size_t colon = line.find_first_of(':');
+  const size_t colon = line.find_first_of(':');
   if (colon == std::string::npos) {
     INFO("malformed key/value entry (\"" + line + "\") in file \"" + gz.name().string() + "\" - ignored");
   } else {
@@ -154,12 +154,15 @@ void get_mrtrix_file_path(Header &H, std::string_view flag, std::filesystem::pat
 }
 
 template <class SourceType> void read_mrtrix_header(Header &H, SourceType &kv) {
-  std::string dtype, layout;
+  std::string dtype;
+  std::string layout;
   std::vector<uint64_t> dim;
-  std::vector<default_type> vox, scaling;
+  std::vector<default_type> vox;
+  std::vector<default_type> scaling;
   std::vector<std::vector<default_type>> transform;
 
-  std::string key, value;
+  std::string key;
+  std::string value;
   while (next_keyvalue(kv, key, value)) {
     const std::string lkey = lowercase(key);
     if (lkey == "dim")
@@ -212,7 +215,7 @@ template <class SourceType> void read_mrtrix_header(Header &H, SourceType &kv) {
     auto check_transform = [&transform]() {
       if (transform.size() < 3)
         return false;
-      for (auto row : transform)
+      for (const auto &row : transform)
         if (row.size() != 4)
           return false;
       return true;
@@ -254,7 +257,8 @@ template <class StreamType> void write_mrtrix_header(const Header &H, StreamType
   dt.set_byte_order_native();
   out << "\ndatatype: " << dt.specifier();
 
-  Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\ntransform: ", "", "", "\ntransform: ", "");
+  const Eigen::IOFormat fmt(
+      Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\ntransform: ", "", "", "\ntransform: ", "");
   out << H.transform().matrix().topLeftCorner(3, 4).format(fmt);
 
   if (H.intensity_offset() != 0.0 || H.intensity_scale() != 1.0)

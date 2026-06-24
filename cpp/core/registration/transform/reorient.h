@@ -27,7 +27,7 @@ namespace MR::Registration::Transform {
 FORCE_INLINE Eigen::MatrixXd aPSF_weights_to_FOD_transform(const int num_SH, const Eigen::MatrixXd &directions) {
   const size_t lmax = Math::SH::LforN(num_SH);
   Eigen::MatrixXd delta_matrix = Math::SH::init_transform_cart(directions.transpose(), lmax);
-  Math::SH::aPSF<default_type> aPSF(lmax);
+  const Math::SH::aPSF<default_type> aPSF(lmax);
   Math::SH::sconv_mat(delta_matrix, aPSF.RH_coefs());
   return delta_matrix.transpose();
 }
@@ -46,7 +46,7 @@ multiContrastSetting2start_nvols(const std::vector<MultiContrastSetting> &mcsett
     }
   }
   assert(max_n_SH > 1);
-  assert(start_nvols.size());
+  assert(!start_nvols.empty());
   return start_nvols;
 }
 
@@ -61,11 +61,11 @@ public:
                             const bool modulate)
       : fod(n_vol), max_n_SH(max_n_SH), start_nvols(vstart_nvols) {
     assert(n_vol > max_n_SH);
-    assert(start_nvols.size());
+    assert(!start_nvols.empty());
     Eigen::MatrixXd transformed_directions = linear_transform.linear().inverse() * directions;
     // precompute projection for maximum requested lmax
     if (modulate) {
-      Eigen::VectorXd modulation_factors =
+      const Eigen::VectorXd modulation_factors =
           transformed_directions.colwise().norm() / linear_transform.linear().inverse().determinant();
       transformed_directions.colwise().normalize();
       transform.noalias() = aPSF_weights_to_FOD_transform(max_n_SH, transformed_directions) *
@@ -82,7 +82,7 @@ public:
     in.index(3) = 0; // TODO do we need this?
     // TODO is it faster to check whether any voxel contains an FOD before copying the row?
     fod = in.row(3);
-    for (auto const &sn : start_nvols) {
+    for (const auto &sn : start_nvols) {
       if (fod[sn[0]] > 0.0) { // only reorient voxels that contain an FOD
         fod.segment(sn[0], sn[1]) = transform.block(0, 0, sn[1], sn[1]) * fod.segment(sn[0], sn[1]);
       }
@@ -109,7 +109,7 @@ public:
     Eigen::MatrixXd transformed_directions = linear_transform.linear().inverse() * directions;
 
     if (modulate) {
-      Eigen::VectorXd modulation_factors =
+      const Eigen::VectorXd modulation_factors =
           transformed_directions.colwise().norm() / linear_transform.linear().inverse().determinant();
       transformed_directions.colwise().normalize();
       transform.noalias() = aPSF_weights_to_FOD_transform(n_SH, transformed_directions) *
@@ -217,16 +217,16 @@ public:
         modulate(modulate),
         start_nvols(vstart_nvols),
         fod(n_vol) {
-    for (auto const &sn : start_nvols)
+    for (const auto &sn : start_nvols)
       map_FOD_to_aPSF_transform[sn[1]] = Math::pinv(aPSF_weights_to_FOD_transform(sn[1], directions));
     assert(n_vol > 0);
-    assert(start_nvols.size());
+    assert(!start_nvols.empty());
   }
 
   void operator()(FODImageType &image) {
     // get highest n_SH for compartments that contain a non-zero FOD in this voxel
     ssize_t max_n_SHvox = 0;
-    for (auto const &sn : start_nvols) {
+    for (const auto &sn : start_nvols) {
       image.index(3) = sn[0];
       if (image.value() > 0.0) {
         max_n_SHvox = std::max(max_n_SHvox, sn[1]);
@@ -240,7 +240,7 @@ public:
 
     for (size_t dim = 0; dim < 3; ++dim)
       jacobian_adapter.index(dim) = image.index(dim);
-    Eigen::MatrixXd jacobian = jacobian_adapter.value().inverse().template cast<default_type>();
+    const Eigen::MatrixXd jacobian = jacobian_adapter.value().inverse().template cast<default_type>();
     Eigen::MatrixXd transformed_directions = jacobian * directions;
 
     if (modulate)
@@ -263,7 +263,7 @@ public:
     }
 
     // reorient voxels that contain an FOD
-    for (auto const &sn : start_nvols)
+    for (const auto &sn : start_nvols)
       if (fod[sn[0]] > 0.0)
         fod.segment(sn[0], sn[1]) = transform.block(0, 0, sn[1], sn[1]) * fod.segment(sn[0], sn[1]);
 
@@ -300,7 +300,7 @@ public:
     if (image.value() > 0) { // only reorient voxels that contain a FOD
       for (size_t dim = 0; dim < 3; ++dim)
         jacobian_adapter.index(dim) = image.index(dim);
-      Eigen::MatrixXd jacobian = jacobian_adapter.value().inverse().template cast<default_type>();
+      const Eigen::MatrixXd jacobian = jacobian_adapter.value().inverse().template cast<default_type>();
       Eigen::MatrixXd transformed_directions = jacobian * directions;
 
       if (modulate) {

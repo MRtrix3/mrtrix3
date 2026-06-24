@@ -78,7 +78,7 @@ public:
     if (std::isnan(im2_value))
       return 0.0;
 
-    default_type diff = static_cast<default_type>(im1_value) - static_cast<default_type>(im2_value);
+    const default_type diff = static_cast<default_type>(im1_value) - static_cast<default_type>(im2_value);
 
     return diff * diff;
   }
@@ -185,7 +185,7 @@ private:
 
 template <class Im1Type, class Im2Type> class MeanSquaredNoGradient4D : public LinearBase {
 public:
-  MeanSquaredNoGradient4D() {}
+  MeanSquaredNoGradient4D() = default;
 
   template <class Params>
   default_type operator()(Params &params,

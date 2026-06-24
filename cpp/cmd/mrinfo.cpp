@@ -168,7 +168,7 @@ void usage() {
 void print_dimensions(const Header &header) {
   std::string buffer;
   for (size_t i = 0; i < header.ndim(); ++i) {
-    if (i)
+    if (i != 0U)
       buffer += " ";
     buffer += str(header.size(i));
   }
@@ -178,7 +178,7 @@ void print_dimensions(const Header &header) {
 void print_spacing(const Header &header) {
   std::string buffer;
   for (size_t i = 0; i < header.ndim(); ++i) {
-    if (i)
+    if (i != 0U)
       buffer += " ";
     buffer += str(header.spacing(i));
   }
@@ -190,7 +190,7 @@ void print_strides(const Header &header) {
   std::vector<ssize_t> strides = Stride::get(header);
   Stride::symbolise(strides);
   for (size_t i = 0; i < header.ndim(); ++i) {
-    if (i)
+    if (i != 0U)
       buffer += " ";
     buffer += strides[i] == 0 ? "?" : str(strides[i]);
   }
@@ -201,7 +201,7 @@ void print_shells(const Eigen::MatrixXd &grad,
                   const bool shell_bvalues,
                   const bool shell_sizes,
                   const bool shell_indices) {
-  DWI::Shells dwshells(grad);
+  const DWI::Shells dwshells(grad);
   if (shell_bvalues) {
     for (size_t i = 0; i < dwshells.count(); i++)
       std::cout << dwshells[i].get_mean() << " ";
@@ -220,7 +220,7 @@ void print_shells(const Eigen::MatrixXd &grad,
 }
 
 void print_transform(const Header &header) {
-  Eigen::IOFormat fmt(Eigen::FullPrecision, 0, " ", "\n", "", "", "", "\n");
+  const Eigen::IOFormat fmt(Eigen::FullPrecision, 0, " ", "\n", "", "", "", "\n");
   Eigen::Matrix<default_type, 4, 4> matrix;
   matrix.topLeftCorner<3, 4>() = header.transform().matrix();
   matrix.row(3) << 0.0, 0.0, 0.0, 1.0;
@@ -310,7 +310,7 @@ void header2json(const Header &header, nlohmann::json &json) {
 
 void run() {
   auto check_option_group = [](const App::OptionGroup &g) {
-    for (auto o : g)
+    for (const auto &o : g)
       if (!get_options(o.id).empty())
         return true;
     return false;
@@ -399,8 +399,8 @@ void run() {
     if (petable)
       std::cout << Metadata::PhaseEncoding::get_scheme(header) << "\n";
 
-    for (size_t n = 0; n < properties.size(); ++n)
-      print_properties(header, properties[n][0]);
+    for (const auto &property : properties)
+      print_properties(header, property[0]);
 
     Eigen::MatrixXd grad;
     if (export_grad || check_option_group(GradImportOptions) || dwgrad || shell_bvalues || shell_sizes ||
@@ -408,7 +408,7 @@ void run() {
       grad = DWI::get_DW_scheme(header, DWI::get_cmdline_bvalue_scaling_behaviour());
 
       if (dwgrad) {
-        Eigen::IOFormat fmt(Eigen::FullPrecision, 0, " ", "\n", "", "", "", "");
+        const Eigen::IOFormat fmt(Eigen::FullPrecision, 0, " ", "\n", "", "", "", "");
         std::cout << grad.format(fmt) << "\n";
       }
       if (shell_bvalues || shell_sizes || shell_indices)
@@ -430,14 +430,14 @@ void run() {
 
   if (json_keyval) {
     auto opt = get_options("json_keyval");
-    assert(opt.size());
+    assert(!opt.empty());
     File::OFStream out{opt[0][0]};
     out << json_keyval->dump(4) << "\n";
   }
 
   if (json_all) {
     auto opt = get_options("json_all");
-    assert(opt.size());
+    assert(!opt.empty());
     File::OFStream out{opt[0][0]};
     out << json_all->dump(4) << "\n";
   }

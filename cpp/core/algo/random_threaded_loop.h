@@ -45,7 +45,7 @@ template <int N, class Functor, class... ImageType> struct RandomThreadedLoopRun
                              const std::vector<size_t> &inner_axes,
                              const Functor &functor,
                              const double voxel_density,
-                             const std::vector<size_t> dimensions,
+                             const std::vector<size_t> &dimensions,
                              ImageType &...voxels)
       : outer_axes(outer_axes),
         loop(Loop(inner_axes)),
@@ -103,8 +103,8 @@ template <class Functor, class... ImageType> struct RandomThreadedLoopRunInner<0
     assert(inner_axes.size() == 1);
     // VAR(inner_axes);
     // VAR(outer_axes);
-    Math::RNG rng;
-    typename std::default_random_engine::result_type seed = rng.get_seed();
+    const Math::RNG rng;
+    const typename std::default_random_engine::result_type seed = rng.get_seed();
     random_engine = std::default_random_engine{static_cast<std::default_random_engine::result_type>(seed)};
     idx = std::vector<size_t>(dims[inner_axes[0]]);
     std::iota(std::begin(idx), std::end(idx), 0);
@@ -161,8 +161,8 @@ template <class OuterLoopType> struct RandomThreadedLoopRunOuter {
           assign_pos_of(iterator, loop.axes).to(pos);
           ++loop;
           return true;
-        } else
-          return false;
+        }
+        return false;
       }
     } shared = {iterator, outer_loop(iterator)};
 

@@ -30,21 +30,17 @@ public:
 
   Scalar(const Scalar &that) = default;
 
-  Scalar(Scalar &&that) : Base(std::move(static_cast<Base &&>(that))), name(std::move(that.name)) {}
+  Scalar(Scalar &&that) noexcept : Base(std::move(static_cast<Base &&>(that))), name(std::move(that.name)) {}
 
-  Scalar() {}
+  Scalar() = default;
 
-  Scalar &operator=(Scalar &&that) {
+  Scalar &operator=(Scalar &&that) noexcept {
     Base::operator=(std::move(static_cast<Base &&>(that)));
     name = std::move(that.name);
     return *this;
   }
 
-  Scalar &operator=(const Scalar &that) {
-    Base::operator=(that);
-    name = that.name;
-    return *this;
-  }
+  Scalar &operator=(const Scalar &that) = default;
 
   void clear() {
     Base::resize(0);
@@ -53,7 +49,7 @@ public:
 
   void save(const std::filesystem::path &) const;
 
-  std::string get_name() const { return name; }
+  [[nodiscard]] std::string get_name() const { return name; }
   void set_name(std::string_view s) { name = s; }
 
 private:

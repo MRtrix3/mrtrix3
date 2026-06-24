@@ -32,8 +32,7 @@
 namespace {
 
 inline float get_alpha_from_slider(float slider_value) {
-  return MR::GUI::MRView::Tool::min_opacity *
-         std::exp(MR::GUI::MRView::Tool::opacity_exponent * static_cast<float>(slider_value));
+  return MR::GUI::MRView::Tool::min_opacity * std::exp(MR::GUI::MRView::Tool::opacity_exponent * slider_value);
 }
 
 inline float get_slider_value_from_alpha(float alpha) {
@@ -48,7 +47,7 @@ class View::ClipPlaneModel : public QAbstractItemModel {
 public:
   ClipPlaneModel(QObject *parent) : QAbstractItemModel(parent) {}
 
-  QVariant data(const QModelIndex &index, int role) const {
+  [[nodiscard]] QVariant data(const QModelIndex &index, int role) const {
     if (!index.isValid())
       return {};
     if (role == Qt::CheckStateRole) {
@@ -68,25 +67,25 @@ public:
     return QAbstractItemModel::setData(idx, value, role);
   }
 
-  Qt::ItemFlags flags(const QModelIndex &index) const {
+  [[nodiscard]] Qt::ItemFlags flags(const QModelIndex &index) const {
     if (!index.isValid())
       return {};
     return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable;
   }
 
-  QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const {
+  [[nodiscard]] QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const {
     (void)parent; // to suppress warnings about unused parameters
     return createIndex(row, column);
   }
 
-  QModelIndex parent(const QModelIndex &) const { return {}; }
+  [[nodiscard]] QModelIndex parent(const QModelIndex &) const { return {}; }
 
-  int rowCount(const QModelIndex &parent = QModelIndex()) const {
+  [[nodiscard]] int rowCount(const QModelIndex &parent = QModelIndex()) const {
     (void)parent;
     return planes.size();
   }
 
-  int columnCount(const QModelIndex &parent = QModelIndex()) const {
+  [[nodiscard]] int columnCount(const QModelIndex &parent = QModelIndex()) const {
     (void)parent;
     return 1;
   }
@@ -118,7 +117,7 @@ public:
 
     const Eigen::Vector3f centre =
         image.voxel2scanner() *
-        Eigen::Vector3f{image.header().size(0) / 2.0f, image.header().size(1) / 2.0f, image.header().size(2) / 2.0f};
+        Eigen::Vector3f{image.header().size(0) / 2.0F, image.header().size(1) / 2.0F, image.header().size(2) / 2.0F};
     p.plane[3] = centre[0] * p.plane[0] + centre[1] * p.plane[1] + centre[2] * p.plane[2];
     p.active = true;
 
@@ -143,9 +142,9 @@ public:
 };
 
 View::View(Dock *parent) : Base(parent) {
-  VBoxLayout *main_box = new VBoxLayout(this);
+  auto *main_box = new VBoxLayout(this);
 
-  HBoxLayout *hlayout = new HBoxLayout;
+  auto *hlayout = new HBoxLayout;
   hlayout->setContentsMargins(0, 0, 0, 0);
   hlayout->setSpacing(0);
 
@@ -160,7 +159,7 @@ View::View(Dock *parent) : Base(parent) {
   main_box->addLayout(hlayout, 0);
 
   // FoV
-  QGroupBox *group_box = new QGroupBox("FOV");
+  auto *group_box = new QGroupBox("FOV");
   main_box->addWidget(group_box);
   hlayout = new HBoxLayout;
   group_box->setLayout(hlayout);
@@ -179,7 +178,7 @@ View::View(Dock *parent) : Base(parent) {
   // Focus
   group_box = new QGroupBox("Focus");
   main_box->addWidget(group_box);
-  GridLayout *layout = new GridLayout;
+  auto *layout = new GridLayout;
   group_box->setLayout(layout);
 
   const int focus_button_width = 80;
@@ -264,7 +263,7 @@ View::View(Dock *parent) : Base(parent) {
   // volume render options
   transparency_box = new QGroupBox("Transparency");
   main_box->addWidget(transparency_box);
-  VBoxLayout *vlayout = new VBoxLayout;
+  auto *vlayout = new VBoxLayout;
   transparency_box->setLayout(vlayout);
 
   hlayout = new HBoxLayout;
@@ -296,7 +295,7 @@ View::View(Dock *parent) : Base(parent) {
   lower_threshold_check_box = new QCheckBox(this);
   hlayout->addWidget(lower_threshold_check_box);
   lower_threshold = new AdjustButton(this);
-  lower_threshold->setValue(window().image() ? window().image()->intensity_min() : 0.0);
+  lower_threshold->setValue((window().image() != nullptr) ? window().image()->intensity_min() : 0.0);
   connect(lower_threshold_check_box, SIGNAL(clicked(bool)), this, SLOT(onCheckThreshold(bool)));
   connect(lower_threshold, SIGNAL(valueChanged()), this, SLOT(onSetTransparency()));
   hlayout->addWidget(lower_threshold);
@@ -304,7 +303,7 @@ View::View(Dock *parent) : Base(parent) {
   upper_threshold_check_box = new QCheckBox(this);
   hlayout->addWidget(upper_threshold_check_box);
   upper_threshold = new AdjustButton(this);
-  upper_threshold->setValue(window().image() ? window().image()->intensity_max() : 1.0);
+  upper_threshold->setValue((window().image() != nullptr) ? window().image()->intensity_max() : 1.0);
   connect(upper_threshold_check_box, SIGNAL(clicked(bool)), this, SLOT(onCheckThreshold(bool)));
   connect(upper_threshold, SIGNAL(valueChanged()), this, SLOT(onSetTransparency()));
   hlayout->addWidget(upper_threshold);
@@ -349,7 +348,7 @@ View::View(Dock *parent) : Base(parent) {
           SLOT(clip_planes_selection_changed_slot()));
   hlayout->addWidget(clip_planes_list_view, 1);
 
-  QToolBar *toolbar = new QToolBar(this);
+  auto *toolbar = new QToolBar(this);
   toolbar->setOrientation(Qt::Vertical);
   toolbar->setFloatable(false);
   toolbar->setMovable(false);
@@ -375,7 +374,7 @@ View::View(Dock *parent) : Base(parent) {
   clip_planes_option_menu = new QMenu();
   QMenu *submenu = clip_planes_option_menu->addMenu("&New");
 
-  QToolButton *button = new QToolButton(this);
+  auto *button = new QToolButton(this);
   button->setMenu(submenu);
   button->setPopupMode(QToolButton::InstantPopup);
   button->setToolTip("Add new clip planes");
@@ -498,18 +497,18 @@ void View::closeEvent(QCloseEvent *) { window().disconnect(this); }
 void View::onImageChanged() {
   const auto image = window().image();
 
-  setEnabled(image);
+  setEnabled(image != nullptr);
 
   reset_light_box_gui_controls();
 
-  if (!image)
+  if (image == nullptr)
     return;
 
   onScalingChanged();
 
   onImageVisibilityChanged(window().get_image_visibility());
 
-  float rate = image->focus_rate();
+  const float rate = image->focus_rate();
   focus_x->setRate(rate);
   focus_y->setRate(rate);
   focus_z->setRate(rate);
@@ -517,11 +516,11 @@ void View::onImageChanged() {
   const int dim = image->image.ndim();
   volume_box->setVisible(dim > 3);
 
-  while (volume_index_layout->count())
+  while (volume_index_layout->count() != 0)
     delete volume_index_layout->takeAt(volume_index_layout->count() - 1)->widget();
 
   for (size_t d = 3; d < image->image.ndim(); ++d) {
-    SpinBox *vol_index = new SpinBox(this);
+    auto *vol_index = new SpinBox(this);
     vol_index->setMinimum(0);
     vol_index->setPrefix(qstr(str(d + 1) + ": "));
     vol_index->setValue(image->image.index(d));
@@ -538,40 +537,40 @@ void View::onImageChanged() {
 void View::onImageVisibilityChanged(bool visible) { hide_button->setChecked(!visible); }
 
 void View::hide_image_slot(bool flag) {
-  if (!window().image())
+  if (window().image() == nullptr)
     return;
 
   window().set_image_visibility(!flag);
 }
 
 void View::copy_focus_slot() {
-  if (!window().image())
+  if (window().image() == nullptr)
     return;
 
   Eigen::VectorXf focus(window().focus());
-  Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
+  const Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
   std::cout << focus.transpose().format(fmt) << "\n";
 
   QClipboard *clip = QApplication::clipboard();
-  QString input = QString::fromStdString(str(focus.transpose().format(fmt)));
+  const QString input = QString::fromStdString(str(focus.transpose().format(fmt)));
   clip->setText(input);
 }
 
 void View::copy_voxel_slot() {
-  if (!window().image())
+  if (window().image() == nullptr)
     return;
 
   Eigen::VectorXf focus = window().image()->scanner2voxel() * window().focus();
-  Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
+  const Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
   std::cout << focus.transpose().format(fmt) << "\n";
 
   QClipboard *clip = QApplication::clipboard();
-  QString input = QString::fromStdString(str(focus.transpose().format(fmt)));
+  const QString input = QString::fromStdString(str(focus.transpose().format(fmt)));
   clip->setText(input);
 }
 
 void View::onFocusChanged() {
-  if (!window().image())
+  if (window().image() == nullptr)
     return;
 
   auto focus(window().focus());
@@ -611,7 +610,7 @@ void View::onSetVoxel() {
 }
 
 void View::onSetVolumeIndex() {
-  if (window().image()) {
+  if (window().image() != nullptr) {
     const auto &image(window().image()->image);
     assert(image.ndim() == static_cast<size_t>(volume_index_layout->count() + 3));
 
@@ -626,10 +625,10 @@ void View::onSetVolumeIndex() {
 
 void View::onModeChanged() {
   const Mode::Base *mode = window().get_current_mode();
-  transparency_box->setVisible(mode->features & Mode::ShaderTransparency);
-  threshold_box->setVisible(mode->features & Mode::ShaderTransparency);
-  clip_box->setVisible(mode->features & Mode::ShaderClipping);
-  if (mode->features & Mode::ShaderClipping)
+  transparency_box->setVisible((mode->features & Mode::ShaderTransparency) != 0);
+  threshold_box->setVisible((mode->features & Mode::ShaderTransparency) != 0);
+  clip_box->setVisible((mode->features & Mode::ShaderClipping) != 0);
+  if ((mode->features & Mode::ShaderClipping) != 0)
     clip_planes_selection_changed_slot();
   else
     window().register_camera_interactor();
@@ -697,7 +696,7 @@ void View::set_transparency_from_image() {
   lower_threshold_check_box->setChecked(window().image()->use_discard_lower());
   upper_threshold_check_box->setChecked(window().image()->use_discard_upper());
 
-  float rate = window().image() ? window().image()->scaling_rate() : 0.0;
+  const float rate = (window().image() != nullptr) ? window().image()->scaling_rate() : 0.0;
   transparent_intensity->setRate(rate);
   opaque_intensity->setRate(rate);
   lower_threshold->setRate(rate);
@@ -705,14 +704,14 @@ void View::set_transparency_from_image() {
 }
 
 void View::onSetScaling() {
-  if (window().image()) {
+  if (window().image() != nullptr) {
     window().image()->set_windowing(min_entry->value(), max_entry->value());
     window().updateGL();
   }
 }
 
 void View::onSetFOV() {
-  if (window().image()) {
+  if (window().image() != nullptr) {
     window().set_FOV(fov->value());
     fov->setRate(fovrate_multipler * fov->value());
     window().updateGL();
@@ -720,10 +719,10 @@ void View::onSetFOV() {
 }
 
 void View::onScalingChanged() {
-  if (window().image()) {
+  if (window().image() != nullptr) {
     min_entry->setValue(window().image()->scaling_min());
     max_entry->setValue(window().image()->scaling_max());
-    float rate = window().image()->scaling_rate();
+    const float rate = window().image()->scaling_rate();
     min_entry->setRate(rate);
     max_entry->setRate(rate);
 
@@ -732,8 +731,8 @@ void View::onScalingChanged() {
 }
 
 void View::clip_planes_right_click_menu_slot(const QPoint &pos) {
-  QPoint globalPos = clip_planes_list_view->mapToGlobal(pos);
-  QModelIndex index = clip_planes_list_view->indexAt(pos);
+  const QPoint globalPos = clip_planes_list_view->mapToGlobal(pos);
+  const QModelIndex index = clip_planes_list_view->indexAt(pos);
   clip_planes_list_view->selectionModel()->select(index, QItemSelectionModel::Select);
 
   clip_planes_option_menu->popup(globalPos);
@@ -756,29 +755,29 @@ void View::clip_planes_add_coronal_slot() {
 
 void View::clip_planes_reset_axial_slot() {
   QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i)
-    clip_planes_model->reset(indices[i], *(window().image()), 2);
+  for (auto index : indices)
+    clip_planes_model->reset(index, *(window().image()), 2);
   window().updateGL();
 }
 
 void View::clip_planes_reset_sagittal_slot() {
   QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i)
-    clip_planes_model->reset(indices[i], *(window().image()), 0);
+  for (auto index : indices)
+    clip_planes_model->reset(index, *(window().image()), 0);
   window().updateGL();
 }
 
 void View::clip_planes_reset_coronal_slot() {
   QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i)
-    clip_planes_model->reset(indices[i], *(window().image()), 1);
+  for (auto index : indices)
+    clip_planes_model->reset(index, *(window().image()), 1);
   window().updateGL();
 }
 
 void View::clip_planes_invert_slot() {
   QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i)
-    clip_planes_model->invert(indices[i]);
+  for (auto index : indices)
+    clip_planes_model->invert(index);
   window().updateGL();
 }
 
@@ -817,9 +816,9 @@ std::vector<GL::vec4 *> View::get_clip_planes_to_be_edited() const {
   std::vector<GL::vec4 *> ret;
   if (clip_box->isChecked()) {
     QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-    for (int i = 0; i < indices.size(); ++i)
-      if (clip_planes_model->planes[indices[i].row()].active)
-        ret.push_back(&clip_planes_model->planes[indices[i].row()].plane);
+    for (const auto &index : indices)
+      if (clip_planes_model->planes[index.row()].active)
+        ret.push_back(&clip_planes_model->planes[index.row()].plane);
   }
   return ret;
 }
@@ -833,7 +832,7 @@ void View::clip_planes_selection_changed_slot() {
   clip_planes_reset_submenu->setEnabled(selected);
   clip_planes_invert_action->setEnabled(selected);
   clip_planes_remove_action->setEnabled(selected);
-  clip_planes_clear_action->setEnabled(clip_planes_model->rowCount());
+  clip_planes_clear_action->setEnabled(clip_planes_model->rowCount() != 0);
   window().register_camera_interactor(selected ? this : nullptr);
   window().updateGL();
 }
@@ -862,7 +861,7 @@ void View::init_lightbox_gui(QLayout *parent) {
 
   lightbox_box = new QGroupBox("Light box");
   parent->addWidget(lightbox_box);
-  GridLayout *grid_layout = new GridLayout;
+  auto *grid_layout = new GridLayout;
   lightbox_box->setLayout(grid_layout);
 
   light_box_slice_inc_label = new QLabel(tr("Slice increment (mm):"));
@@ -887,12 +886,12 @@ void View::init_lightbox_gui(QLayout *parent) {
 }
 
 void View::reset_light_box_gui_controls() {
-  if (!lightbox_box)
+  if (lightbox_box == nullptr)
     return;
 
-  bool img_4d = window().image() && window().image()->image.ndim() == 4;
-  bool show_volumes = Mode::LightBox::get_show_volumes();
-  bool can_show_vol = img_4d && show_volumes;
+  const bool img_4d = (window().image() != nullptr) && window().image()->image.ndim() == 4;
+  const bool show_volumes = Mode::LightBox::get_show_volumes();
+  const bool can_show_vol = img_4d && show_volumes;
 
   light_box_rows->setValue(static_cast<int>(Mode::LightBox::get_rows()));
   light_box_cols->setValue(static_cast<int>(Mode::LightBox::get_cols()));
@@ -938,8 +937,8 @@ void View::move_clip_planes_in_out(const ModelViewProjection &projection,
                                    std::vector<GL::vec4 *> &clip,
                                    float distance) {
   Eigen::Vector3f d = projection.screen_normal();
-  for (size_t n = 0; n < clip.size(); ++n) {
-    GL::vec4 &p(*clip[n]);
+  for (auto &n : clip) {
+    GL::vec4 &p(*n);
     p[3] += distance * (p[0] * d[0] + p[1] * d[1] + p[2] * d[2]);
   }
   window().updateGL();
@@ -947,10 +946,10 @@ void View::move_clip_planes_in_out(const ModelViewProjection &projection,
 
 void View::rotate_clip_planes(std::vector<GL::vec4 *> &clip, const Eigen::Quaternionf &rot) {
   const auto &focus(window().focus());
-  for (size_t n = 0; n < clip.size(); ++n) {
-    GL::vec4 &p(*clip[n]);
-    float distance_to_focus = p[0] * focus[0] + p[1] * focus[1] + p[2] * focus[2] - p[3];
-    const Eigen::Quaternionf norm(0.0f, p[0], p[1], p[2]);
+  for (auto &n : clip) {
+    GL::vec4 &p(*n);
+    const float distance_to_focus = p[0] * focus[0] + p[1] * focus[1] + p[2] * focus[2] - p[3];
+    const Eigen::Quaternionf norm(0.0F, p[0], p[1], p[2]);
     const Eigen::Quaternionf rotated = norm * rot;
     p[0] = rotated.x();
     p[1] = rotated.y();
@@ -967,7 +966,7 @@ bool View::slice_move_event(const ModelViewProjection &projection, float x) {
   if (clip.empty())
     return false;
   const auto &header = window().image()->header();
-  float increment = x * std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.0f / 3.0f);
+  const float increment = x * std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.0F / 3.0F);
   move_clip_planes_in_out(projection, clip, increment);
   return true;
 }
@@ -977,8 +976,8 @@ bool View::pan_event(const ModelViewProjection &projection) {
   if (clip.empty())
     return false;
   Eigen::Vector3f move = projection.screen_to_model_direction(window().mouse_displacement(), window().target());
-  for (size_t n = 0; n < clip.size(); ++n) {
-    GL::vec4 &p(*clip[n]);
+  for (auto &n : clip) {
+    GL::vec4 &p(*n);
     p[3] += (p[0] * move[0] + p[1] * move[1] + p[2] * move[2]);
   }
   window().updateGL();

@@ -65,10 +65,8 @@ public:
         midway_image(midway_image),
         im1_mask(im1_mask),
         im2_mask(im2_mask),
-        loop_density(1.0),
-        control_point_exent(10.0, 10.0, 10.0),
-        robust_estimate_subset(false),
-        robust_estimate_use_score(false) {
+
+        control_point_exent(10.0, 10.0, 10.0) {
     im1_image_interp.reset(new Im1ImageInterpType(im1_image));
     im2_image_interp.reset(new Im2ImageInterpType(im2_image));
     if (im1_mask.valid())
@@ -102,7 +100,7 @@ public:
       mc_weights = Eigen::Matrix<default_type, Eigen::Dynamic, 1>();
   }
 
-  Eigen::VectorXd get_weights() const { return mc_weights; }
+  [[nodiscard]] Eigen::VectorXd get_weights() const { return mc_weights; }
 
   template <class VectorType> void set_control_points_extent(const VectorType &extent) {
     control_point_exent = extent;
@@ -122,7 +120,7 @@ public:
     control_points.block<3, 4>(0, 0).colwise() += centre;
   }
 
-  const std::vector<size_t> &get_extent() const { return extent; }
+  [[nodiscard]] const std::vector<size_t> &get_extent() const { return extent; }
 
   template <class OptimiserType> void optimiser_update(OptimiserType &optim, const ssize_t overlap_count) {
     DEBUG("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
@@ -152,14 +150,17 @@ public:
     header.keyval()["trafo2"] = str(trafo2.matrix());
     auto check = Image<default_type>::create(image_path, header);
 
-    std::vector<uint32_t> no_oversampling(3, 1);
+    const std::vector<uint32_t> no_oversampling(3, 1);
     Adapter::Reslice<Interp::Linear, Im1ImageType> im1_reslicer(
         im1_image, midway_image, trafo1, no_oversampling, std::numeric_limits<Im1ValueType>::quiet_NaN());
     Adapter::Reslice<Interp::Linear, Im2ImageType> im2_reslicer(
         im2_image, midway_image, trafo2, no_oversampling, std::numeric_limits<Im2ValueType>::quiet_NaN());
 
     auto T = MR::Transform(midway_image).voxel2scanner;
-    Eigen::Vector3d midway_point, voxel_pos, im1_point, im2_point;
+    Eigen::Vector3d midway_point;
+    Eigen::Vector3d voxel_pos;
+    Eigen::Vector3d im1_point;
+    Eigen::Vector3d im2_point;
 
     for (auto i = Loop(midway_image)(check, im1_reslicer, im2_reslicer); i; ++i) {
       voxel_pos = {static_cast<default_type>(check.index(0)),
@@ -217,11 +218,11 @@ public:
   Im2MaskType im2_mask;
   MR::copy_ptr<Im1MaskInterpolatorType> im1_mask_interp;
   MR::copy_ptr<Im2MaskInterpolatorType> im2_mask_interp;
-  default_type loop_density;
+  default_type loop_density{1.0};
   Eigen::Vector3d control_point_exent;
 
-  bool robust_estimate_subset;
-  bool robust_estimate_use_score;
+  bool robust_estimate_subset{false};
+  bool robust_estimate_use_score{false};
   std::vector<int> robust_estimate_subset_from;
   std::vector<int> robust_estimate_subset_size;
   Image<float> robust_estimate_score1, robust_estimate_score2;

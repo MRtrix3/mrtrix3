@@ -27,14 +27,14 @@
 
 namespace MR::GUI::MRView::Tool {
 
-ROI::ROI(Dock *parent) : Base(parent), in_insert_mode(false) {
+ROI::ROI(Dock *parent) : Base(parent) {
 
-  VBoxLayout *main_box = new VBoxLayout(this);
-  HBoxLayout *layout = new HBoxLayout;
+  auto *main_box = new VBoxLayout(this);
+  auto *layout = new HBoxLayout;
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(0);
 
-  QPushButton *button = new QPushButton(this);
+  auto *button = new QPushButton(this);
   button->setToolTip(tr("New ROI"));
   button->setIcon(QIcon(":/new.svg"));
   connect(button, SIGNAL(clicked()), this, SLOT(new_slot()));
@@ -85,11 +85,11 @@ ROI::ROI(Dock *parent) : Base(parent), in_insert_mode(false) {
 
   main_box->addWidget(list_view, 1);
 
-  GridLayout *grid_layout = new GridLayout;
+  auto *grid_layout = new GridLayout;
 
   draw_button = new QToolButton(this);
   draw_button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-  QAction *action = new QAction(QIcon(":/draw.svg"), tr("Edit"), this);
+  auto *action = new QAction(QIcon(":/draw.svg"), tr("Edit"), this);
   action->setShortcut(tr("E"));
   action->setToolTip(
       tr("Add/remove voxels to/from ROI\n\nUse left mouse button to add voxels,\nright mouse button to erase"));
@@ -123,7 +123,7 @@ ROI::ROI(Dock *parent) : Base(parent), in_insert_mode(false) {
 
   main_box->addLayout(grid_layout, 0);
 
-  QGroupBox *group_box = new QGroupBox("Edit mode");
+  auto *group_box = new QGroupBox("Edit mode");
 
   grid_layout = new GridLayout;
   group_box->setLayout(grid_layout);
@@ -145,7 +145,7 @@ ROI::ROI(Dock *parent) : Base(parent), in_insert_mode(false) {
   brush_button->setDefaultAction(action);
   grid_layout->addWidget(brush_button, 0, 0, 1, 2);
 
-  QLabel *label = new QLabel(tr("size:"));
+  auto *label = new QLabel(tr("size:"));
   grid_layout->addWidget(label, 1, 0, Qt::AlignRight);
 
   brush_size_button = new AdjustButton(this);
@@ -224,7 +224,7 @@ ROI::ROI(Dock *parent) : Base(parent), in_insert_mode(false) {
   opacity_slider = new QSlider(Qt::Horizontal);
   opacity_slider->setToolTip(tr("ROI opacity"));
   opacity_slider->setRange(1, 1000);
-  opacity_slider->setSliderPosition(int(1000));
+  opacity_slider->setSliderPosition(1000);
   connect(opacity_slider, SIGNAL(valueChanged(int)), this, SLOT(opacity_changed(int)));
   opacity_slider->setEnabled(false);
   layout->addWidget(opacity_slider, 1);
@@ -277,6 +277,7 @@ void ROI::open_slot() {
     return;
   current_folder = load_paths.last_directory;
   std::vector<std::unique_ptr<MR::Header>> list;
+  list.reserve(load_paths.multi_selection.size());
   for (const auto &path : load_paths.multi_selection)
     list.push_back(std::make_unique<MR::Header>(MR::Header::open(path)));
   load(list);
@@ -289,7 +290,7 @@ void ROI::dropEvent(QDropEvent *event) {
   const QMimeData *mimeData = event->mimeData();
   if (mimeData->hasUrls()) {
     std::vector<std::unique_ptr<MR::Header>> list;
-    QList<QUrl> urlList = mimeData->urls();
+    const QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < max_files; ++i) {
       try {
         list.push_back(std::make_unique<MR::Header>(MR::Header::open(QtHelpers::url_to_fspath(urlList.at(i)))));
@@ -308,7 +309,7 @@ void ROI::dropEvent(QDropEvent *event) {
 void ROI::save(ROI_Item *roi) {
   std::vector<GLubyte> data(roi->header().size(0) * roi->header().size(1) * roi->header().size(2));
   {
-    GL::Context::Grab context;
+    const GL::Context::Grab context;
     GL::assert_context_is_current();
     roi->texture().bind();
     gl::PixelStorei(gl::PACK_ALIGNMENT, 1);
@@ -334,22 +335,21 @@ void ROI::save(ROI_Item *roi) {
 }
 
 int ROI::normal2axis(const Eigen::Vector3f &normal, const ROI_Item &roi) const {
-  float x_dot_n =
-      std::fabs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{1.0f, 0.0f, 0.0f}).dot(normal));
-  float y_dot_n =
-      std::fabs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{0.0f, 1.0f, 0.0f}).dot(normal));
-  float z_dot_n =
-      std::fabs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{0.0f, 0.0f, 1.0f}).dot(normal));
+  const float x_dot_n =
+      std::fabs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{1.0F, 0.0F, 0.0F}).dot(normal));
+  const float y_dot_n =
+      std::fabs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{0.0F, 1.0F, 0.0F}).dot(normal));
+  const float z_dot_n =
+      std::fabs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{0.0F, 0.0F, 1.0F}).dot(normal));
   if (x_dot_n > y_dot_n)
     return x_dot_n > z_dot_n ? 0 : 2;
-  else
-    return y_dot_n > z_dot_n ? 1 : 2;
+  return y_dot_n > z_dot_n ? 1 : 2;
 }
 
 void ROI::save_slot() {
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
   assert(indices.size() == 1);
-  ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
+  ROI_Item *roi = list_model->get(indices[0]);
   save(roi);
 }
 
@@ -364,9 +364,9 @@ void ROI::load(std::vector<std::unique_ptr<MR::Header>> &list) {
 void ROI::close_slot() {
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
   assert(indices.size() == 1);
-  ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
+  ROI_Item *roi = list_model->get(indices[0]);
   if (!roi->saved) {
-    size_t ret = QMessageBox::warning(
+    const size_t ret = QMessageBox::warning(
         this,
         tr("ROI not saved"),
         qstr("ROI " + roi->get_filepath().string() + " has been modified. Do you want to save it?"),
@@ -374,7 +374,7 @@ void ROI::close_slot() {
         QMessageBox::Save);
     if (ret == QMessageBox::Cancel)
       return;
-    else if (ret == QMessageBox::Save)
+    if (ret == QMessageBox::Save)
       save_slot();
   }
 
@@ -396,7 +396,7 @@ void ROI::undo_slot() {
     WARN("FIXME: shouldn't be here!");
     return;
   }
-  ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
+  ROI_Item *roi = list_model->get(indices[0]);
 
   roi->undo();
   update_undo_redo();
@@ -410,7 +410,7 @@ void ROI::redo_slot() {
     WARN("FIXME: shouldn't be here!");
     return;
   }
-  ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
+  ROI_Item *roi = list_model->get(indices[0]);
 
   roi->redo();
   update_undo_redo();
@@ -425,10 +425,10 @@ void ROI::slice_copy_slot(QAction *action) {
     return;
   }
 
-  ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
+  ROI_Item *roi = list_model->get(indices[0]);
 
   const Projection *proj = window().get_current_mode()->get_current_projection();
-  if (!proj)
+  if (proj == nullptr)
     return;
   const Eigen::Vector3f current_origin = proj->screen_to_model(window().mouse_position(), window().focus());
   current_axis = normal2axis(proj->screen_normal(), *roi);
@@ -470,7 +470,7 @@ void ROI::draw(const Projection &projection, bool is_3D, int, int) {
 
   for (int i = 0; i < list_model->rowCount(); ++i) {
     if (list_model->items[i]->show && !hide_all_button->isChecked()) {
-      ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->items[i].get());
+      auto *roi = dynamic_cast<ROI_Item *>(list_model->items[i].get());
       // if (is_3D)
       // window.get_current_mode()->overlays_for_3D.push_back (image);
       // else
@@ -506,9 +506,9 @@ void ROI::update_slot() { updateGL(); }
 
 void ROI::colour_changed() {
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i) {
-    ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[i]));
-    QColor c = colour_button->color();
+  for (auto index : indices) {
+    ROI_Item *roi = list_model->get(index);
+    const QColor c = colour_button->color();
     roi->colour = {{GLubyte(c.red()), GLubyte(c.green()), GLubyte(c.blue())}};
   }
   updateGL();
@@ -516,9 +516,9 @@ void ROI::colour_changed() {
 
 void ROI::opacity_changed(int) {
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i) {
-    ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[i]));
-    roi->alpha = opacity_slider->value() / 1.0e3f;
+  for (auto index : indices) {
+    ROI_Item *roi = list_model->get(index);
+    roi->alpha = opacity_slider->value() / 1.0e3F;
   }
   window().updateGL();
   in_insert_mode = false;
@@ -530,7 +530,7 @@ void ROI::update_undo_redo() {
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
 
   if (!indices.empty()) {
-    ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
+    ROI_Item *roi = list_model->get(indices[0]);
     undo_button->defaultAction()->setEnabled(roi->has_undo());
     redo_button->defaultAction()->setEnabled(roi->has_redo());
   } else {
@@ -540,14 +540,14 @@ void ROI::update_undo_redo() {
 }
 
 void ROI::update_selection() {
-  if (!window().image()) {
+  if (window().image() == nullptr) {
     setEnabled(false);
     return;
-  } else
-    setEnabled(true);
+  }
+  setEnabled(true);
 
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-  bool enable = window().image() && !indices.empty();
+  const bool enable = (window().image() != nullptr) && !indices.empty();
 
   opacity_slider->setEnabled(enable);
   save_button->setEnabled(enable);
@@ -565,13 +565,13 @@ void ROI::update_selection() {
     return;
   }
 
-  ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
+  ROI_Item *roi = list_model->get(indices[0]);
   colour_button->setColor(QColor(roi->colour[0], roi->colour[1], roi->colour[2]));
-  opacity_slider->setValue(1.0e3f * roi->alpha);
+  opacity_slider->setValue(1.0e3F * roi->alpha);
 
   brush_size_button->setMin(roi->min_brush_size);
   brush_size_button->setMax(roi->max_brush_size);
-  brush_size_button->setRate(0.1f * roi->min_brush_size);
+  brush_size_button->setRate(0.1F * roi->min_brush_size);
   brush_size_button->setValue(roi->brush_size);
 }
 
@@ -593,14 +593,14 @@ bool ROI::mouse_press_event() {
   }
 
   const Projection *proj = window().get_current_mode()->get_current_projection();
-  if (!proj)
+  if (proj == nullptr)
     return false;
   current_origin = proj->screen_to_model(window().mouse_position(), window().focus());
   window().set_focus(current_origin);
   prev_pos = current_origin;
 
   // figure out the closest ROI axis, and lock to it:
-  ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
+  ROI_Item *roi = list_model->get(indices[0]);
   current_axis = normal2axis(proj->screen_normal(), *roi);
 
   // figure out current slice in ROI:
@@ -645,17 +645,17 @@ bool ROI::mouse_move_event() {
     WARN("FIXME: shouldn't be here!");
     return false;
   }
-  ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
+  ROI_Item *roi = list_model->get(indices[0]);
 
   const Projection *proj = window().get_current_mode()->get_current_projection();
-  if (!proj)
+  if (proj == nullptr)
     return false;
 
-  Eigen::Vector3f pos = proj->screen_to_model(window().mouse_position(), window().focus());
+  const Eigen::Vector3f pos = proj->screen_to_model(window().mouse_position(), window().focus());
   Eigen::Vector3f slice_axis(0.0, 0.0, 0.0);
   slice_axis[current_axis] = current_axis == 2 ? 1.0 : -1.0;
   slice_axis = roi->image2scanner().rotation().cast<float>() * slice_axis;
-  float l = (current_slice_loc - pos.dot(slice_axis)) / proj->screen_normal().dot(slice_axis);
+  const float l = (current_slice_loc - pos.dot(slice_axis)) / proj->screen_normal().dot(slice_axis);
   window().set_focus(window().focus() + l * proj->screen_normal());
   const Eigen::Vector3f pos_adj = pos + l * proj->screen_normal();
 
@@ -720,7 +720,7 @@ bool ROI::process_commandline_option(const MR::App::ParsedOption &opt) {
 
   if (opt.opt->is("roi.opacity")) {
     try {
-      float value = opt[0];
+      const float value = opt[0];
       opacity_slider->setSliderPosition(static_cast<int>(1.e3F * value));
     } catch (Exception &e) {
       e.display();
@@ -737,9 +737,9 @@ bool ROI::process_commandline_option(const MR::App::ParsedOption &opt) {
       if (std::min({values[0], values[1], values[2]}) < 0.0 || max_value > 255)
         throw Exception("values provided to -roi.colour must be either between 0.0 and 1.0, or between 0 and 255");
       const float multiplier = max_value <= 1.0 ? 255.0 : 1.0;
-      QColor colour(static_cast<int>(values[0] * multiplier),
-                    static_cast<int>(values[1] * multiplier),
-                    static_cast<int>(values[2] * multiplier));
+      const QColor colour(static_cast<int>(values[0] * multiplier),
+                          static_cast<int>(values[1] * multiplier),
+                          static_cast<int>(values[2] * multiplier));
       colour_button->setColor(colour);
       colour_changed();
     } catch (Exception &e) {

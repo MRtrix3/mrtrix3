@@ -40,16 +40,14 @@ namespace MR::DWI::Tractography::Connectome {
 class Metric {
 
 public:
-  Metric() : scale_by_length(false), scale_by_invlength(false), scale_by_invnodevol(false), scale_by_file(false) {}
+  Metric() = default;
 
   double operator()(const Streamline<> &tck, const NodePair &nodes) const {
     if (scale_by_invnodevol) {
       assert(nodes.first < node_volumes.size());
       assert(nodes.second < node_volumes.size());
       const double sum_volumes = (node_volumes[nodes.first] + node_volumes[nodes.second]);
-      if (!sum_volumes)
-        return 0.0;
-      return (*this)(tck)*2.0 / sum_volumes;
+      return (sum_volumes == 0.0) ? 0.0 : ((*this)(tck)*2.0 / sum_volumes);
     }
     return (*this)(tck);
   }
@@ -57,13 +55,11 @@ public:
   double operator()(const Streamline<> &tck, const std::vector<node_t> &nodes) const {
     if (scale_by_invnodevol) {
       double sum_volumes = 0.0;
-      for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
-        assert(*n < node_volumes.size());
-        sum_volumes += node_volumes[*n];
+      for (unsigned int node : nodes) {
+        assert(node < node_volumes.size());
+        sum_volumes += node_volumes[node];
       }
-      if (!sum_volumes)
-        return 0.0;
-      return (*this)(tck)*nodes.size() / sum_volumes;
+      return (sum_volumes == 0.0) ? 0.0 : ((*this)(tck)*nodes.size() / sum_volumes);
     }
     return (*this)(tck);
   }
@@ -120,7 +116,7 @@ public:
   }
 
 private:
-  bool scale_by_length, scale_by_invlength, scale_by_invnodevol, scale_by_file;
+  bool scale_by_length{false}, scale_by_invlength{false}, scale_by_invnodevol{false}, scale_by_file{false};
   Eigen::VectorXd node_volumes;
 
   struct ByFile {

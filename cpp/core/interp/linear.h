@@ -92,7 +92,7 @@ protected:
   const coef_type zero, eps;
   Eigen::Vector3d P;
 
-  ssize_t clamp(ssize_t x, ssize_t dim) const {
+  [[nodiscard]] ssize_t clamp(ssize_t x, ssize_t dim) const {
     if (x < 0)
       return 0;
     if (x >= dim)
@@ -145,7 +145,7 @@ public:
     size_t i(0);
     for (ssize_t z = 0; z < 2; ++z) {
       for (ssize_t y = 0; y < 2; ++y) {
-        coef_type partial_weight = y_weights[y] * z_weights[z];
+        const coef_type partial_weight = y_weights[y] * z_weights[z];
         for (ssize_t x = 0; x < 2; ++x) {
           factors[i] = x_weights[x] * partial_weight;
 
@@ -444,9 +444,9 @@ public:
     size_t i(0);
     for (ssize_t z = 0; z < 2; ++z) {
       for (ssize_t y = 0; y < 2; ++y) {
-        coef_type partial_weight = y_weights[y] * z_weights[z];
-        coef_type partial_weight_dy = diff_weights[y] * z_weights[z];
-        coef_type partial_weight_dz = y_weights[y] * diff_weights[z];
+        const coef_type partial_weight = y_weights[y] * z_weights[z];
+        const coef_type partial_weight_dy = diff_weights[y] * z_weights[z];
+        const coef_type partial_weight_dz = y_weights[y] * diff_weights[z];
 
         for (ssize_t x = 0; x < 2; ++x) {
           // Gradient

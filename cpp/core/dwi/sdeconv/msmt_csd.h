@@ -103,7 +103,7 @@ public:
           throw Exception("Number of lmaxes specified (" + str(lmax.size()) + ") does not match number of tissues (" +
                           str(num_tissues()) + ")");
         for (const auto i : lmax) {
-          if (i % 2)
+          if ((i % 2) != 0U)
             throw Exception("Each value of lmax must be a non-negative even integer");
         }
       }
@@ -138,7 +138,7 @@ public:
       for (size_t i = 0; i != static_cast<size_t>(grad.rows()); i++)
         dwilist.push_back(i);
 
-      Eigen::MatrixXd directions = DWI::gen_direction_matrix(grad, dwilist);
+      const Eigen::MatrixXd directions = DWI::gen_direction_matrix(grad, dwilist);
       Eigen::MatrixXd SHT = Math::SH::init_transform(directions, maxlmax);
       for (ssize_t i = 0; i < SHT.rows(); i++)
         for (ssize_t j = 0; j < SHT.cols(); j++)
@@ -151,9 +151,9 @@ public:
       Eigen::VectorXd DSH_ = Math::SH::init_transform(delta, maxlmax).row(0);
       Eigen::VectorXd DSH(maxlmax / 2 + 1);
       size_t j = 0;
-      for (ssize_t i = 0; i < DSH_.size(); i++)
-        if (DSH_[i] != 0.0) {
-          DSH[j] = DSH_[i];
+      for (double i : DSH_)
+        if (i != 0.0) {
+          DSH[j] = i;
           j++;
         }
 
@@ -177,10 +177,10 @@ public:
             li++;
           }
           std::vector<size_t> vols = shells[shell_idx].get_volumes();
-          for (size_t idx = 0; idx < vols.size(); idx++) {
-            Eigen::VectorXd SHT_(SHT.row(vols[idx]).head(tissue_n));
+          for (unsigned long vol : vols) {
+            Eigen::VectorXd SHT_(SHT.row(vol).head(tissue_n));
             SHT_ = (SHT_.array() * fconv.array()).matrix();
-            C.row(vols[idx]).segment(pbegin, tissue_n) = SHT_;
+            C.row(vol).segment(pbegin, tissue_n) = SHT_;
           }
         }
         pbegin += tissue_n;
@@ -217,8 +217,8 @@ public:
       INFO("Multi-shell, multi-tissue CSD initialised successfully");
     }
 
-    size_t num_shells() const { return shells.count(); }
-    size_t num_tissues() const { return responses.size(); }
+    [[nodiscard]] size_t num_shells() const { return shells.count(); }
+    [[nodiscard]] size_t num_tissues() const { return responses.size(); }
 
     const Eigen::MatrixXd grad;
     DWI::Shells shells;
@@ -236,7 +236,7 @@ public:
         size_t n = 0;
         for (Eigen::Index row = 0; row < r.rows(); row++) {
           for (Eigen::Index col = 0; col < r.cols(); col++) {
-            if (r(row, col))
+            if (r(row, col) != 0.0)
               n = std::max(n, static_cast<size_t>(col + 1));
           }
         }
@@ -251,11 +251,11 @@ public:
     }
   };
 
-  MSMT_CSD(const Shared &shared_data) : niter(0), shared(shared_data), solver(shared.problem) {}
+  MSMT_CSD(const Shared &shared_data) : shared(shared_data), solver(shared.problem) {}
 
   void operator()(const Eigen::VectorXd &data, Eigen::VectorXd &output) { niter = solver(output, data); }
 
-  size_t niter;
+  size_t niter{0};
   const Shared &shared;
 
 private:

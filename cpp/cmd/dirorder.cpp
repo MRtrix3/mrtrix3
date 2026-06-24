@@ -81,9 +81,8 @@ optimise(const Eigen::MatrixXd &directions, const index_type preserve, const siz
 
     for (index_type n = 0; n < remaining.size(); ++n) {
       value_type E = 0.0;
-      index_type a = remaining[n];
-      for (index_type i = 0; i < indices.size(); ++i) {
-        index_type b = indices[i];
+      const index_type a = remaining[n];
+      for (unsigned int b : indices) {
         E += 1.0 / (directions.row(a) - directions.row(b)).norm();
         E += 1.0 / (directions.row(a) + directions.row(b)).norm();
       }
@@ -107,7 +106,7 @@ value_type calc_cost(const Eigen::MatrixXd &directions, const std::vector<index_
   Eigen::MatrixXd subset(start, 3);
   for (ssize_t i = 0; i != start; ++i)
     subset.row(i) = directions.row(order[i]);
-  value_type cost = value_type(0);
+  double cost = 0.0;
   for (ssize_t N = start + 1; N < directions.rows(); ++N) {
     // Don't include condition numbers where precisely the number of coefficients
     //   for that spherical harmonic degree are included, as these tend to
@@ -126,14 +125,14 @@ void run() {
   DWI::Directions::validate(directions, argument[0], false);
   directions = Math::Sphere::as_cartesian(directions);
 
-  const index_type preserve = get_option_value<index_type>("preserve", 0);
+  const index_type preserve = get_option_value("preserve", index_type(0));
 
-  index_type last_candidate_first_volume = static_cast<index_type>(directions.rows());
+  index_type last_candidate_first_volume = directions.rows();
   if (static_cast<size_t>(directions.rows()) <= Math::SH::NforL(2)) {
     // clang-format off
     WARN("Very few directions in input (" + str(directions.rows()) + ";" +
          " selection of first direction cannot be optimised" +
-         (preserve ?
+         (preserve > 0 ?
               " (direction #" + str(preserve + 1) + " will be first direction in output "
               "as that is the first direction after those to be preserved)" :
               " (first direction in input will be first direction in output)"));

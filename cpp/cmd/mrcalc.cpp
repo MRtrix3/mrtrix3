@@ -326,6 +326,7 @@ UNARY_OP(
 #include <Eigen/Dense>
 
 #include <filesystem>
+#include <memory>
 #include <optional>
 
 #include "algo/threaded_copy.h"
@@ -344,7 +345,7 @@ using real_type = float;
 using complex_type = cfloat;
 static bool transform_mis_match_reported(false);
 
-inline bool is_true(const complex_type &z) { return z.real() || z.imag(); }
+inline bool is_true(const complex_type &z) { return (z.real() != 0.0F) || (z.imag() != 0.0F); }
 
 // Per-voxel coordinate generators (the "pos" and "index" special keyword operands);
 //   these yield a value derived from each voxel's location,
@@ -597,22 +598,22 @@ public:
       try {
         auto header = Header::open(std::filesystem::path{arg});
         image_is_complex = header.datatype().is_complex();
-        image.reset(new Image<complex_type>(header.get_image<complex_type>()));
+        image = std::make_shared<Image<complex_type>>(header.get_image<complex_type>());
         image_list.insert(std::make_pair(arg, LoadedImage(image, image_is_complex)));
       } catch (Exception &e_image) {
         try {
-          std::string a = lowercase(arg);
+          const std::string a = lowercase(arg);
           if (a == "pi") {
             value = Math::pi;
           } else if (a == "e") {
             value = Math::e;
           } else if (a == "rand") {
             value = 0.0;
-            rng.reset(new Math::RNG());
+            rng = make_copyptr<Math::RNG>();
             rng_gaussian = false;
           } else if (a == "randn") {
             value = 0.0;
-            rng.reset(new Math::RNG());
+            rng = make_copyptr<Math::RNG>();
             rng_gaussian = true;
           } else if (a == "pos.x" || a == "pos.y" || a == "pos.z") {
             value = 0.0;
@@ -649,7 +650,7 @@ public:
   bool rng_gaussian;
   bool image_is_complex;
 
-  bool is_complex() const;
+  [[nodiscard]] bool is_complex() const;
 
   static std::map<std::string, LoadedImage> image_list;
 
@@ -662,7 +663,7 @@ class Evaluator {
 public:
   Evaluator(std::string_view name, std::string_view format_string, bool Z2R = false, bool R2Z = false)
       : id(name), format(format_string), ZtoR(Z2R), RtoZ(R2Z) {}
-  virtual ~Evaluator() {}
+  virtual ~Evaluator() = default;
   const std::string id;
   const std::string format;
   bool ZtoR, RtoZ;
@@ -691,13 +692,13 @@ public:
     return a;
   }
 
-  virtual bool is_complex() const {
-    for (size_t n = 0; n < operands.size(); ++n)
-      if (operands[n].is_complex())
+  [[nodiscard]] virtual bool is_complex() const {
+    for (const auto &operand : operands)
+      if (operand.is_complex())
         return !ZtoR;
     return RtoZ;
   }
-  size_t num_args() const { return operands.size(); }
+  [[nodiscard]] size_t num_args() const { return operands.size(); }
 };
 
 inline bool StackEntry::is_complex() const {
@@ -719,12 +720,12 @@ inline Chunk &StackEntry::evaluate(ThreadLocalStorage &storage) const {
     Chunk &chunk = storage.next();
     if (rng_gaussian) {
       std::normal_distribution<real_type> dis(0.0, 1.0);
-      for (size_t n = 0; n < chunk.size(); ++n)
-        chunk[n] = dis(*rng);
+      for (auto &n : chunk)
+        n = dis(*rng);
     } else {
       std::uniform_real_distribution<real_type> dis(0.0, 1.0);
-      for (size_t n = 0; n < chunk.size(); ++n)
-        chunk[n] = dis(*rng);
+      for (auto &n : chunk)
+        n = dis(*rng);
     }
     return chunk;
   }
@@ -738,14 +739,14 @@ inline Chunk &StackEntry::evaluate(ThreadLocalStorage &storage) const {
 
 inline void replace(std::string &orig, size_t n, std::string_view value) {
   if (orig[0] == '(' && orig[orig.size() - 1] == ')') {
-    size_t pos = orig.find("(%" + str(n + 1) + ")");
+    const size_t pos = orig.find("(%" + str(n + 1) + ")");
     if (pos != orig.npos) {
       orig.replace(pos, 4, value);
       return;
     }
   }
 
-  size_t pos = orig.find("%" + str(n + 1));
+  const size_t pos = orig.find("%" + str(n + 1));
   if (pos != orig.npos)
     orig.replace(pos, 2, value);
 }
@@ -757,19 +758,19 @@ inline void replace(std::string &orig, size_t n, std::string_view value) {
 std::string operation_string(const StackEntry &entry) {
   if (entry.image)
     return std::string(entry.image->name());
-  else if (entry.rng)
+  if (entry.rng)
     return entry.rng_gaussian ? "randn()" : "rand()";
-  else if (entry.coordinate)
+  if (entry.coordinate)
     return entry.coordinate->type == coordinate_t::scanner
                ? std::string("pos.") + static_cast<char>('x' + entry.coordinate->axis)
                : std::string("index.") + str(entry.coordinate->axis);
-  else if (entry.evaluator) {
+  if (entry.evaluator) {
     std::string s = entry.evaluator->format;
     for (size_t n = 0; n < entry.evaluator->operands.size(); ++n)
       replace(s, n, operation_string(entry.evaluator->operands[n]));
     return s;
-  } else
-    return str(entry.value);
+  }
+  return str(entry.value);
 }
 
 template <class Operation> class UnaryEvaluator : public Evaluator {
@@ -783,11 +784,11 @@ public:
 
   virtual Chunk &evaluate(Chunk &in) const {
     if (operands[0].is_complex())
-      for (size_t n = 0; n < in.size(); ++n)
-        in[n] = op.Z(in[n]);
+      for (auto &n : in)
+        n = op.Z(n);
     else
-      for (size_t n = 0; n < in.size(); ++n)
-        in[n] = op.R(in[n].real());
+      for (auto &n : in)
+        n = op.R(n.real());
 
     return in;
   }
@@ -853,7 +854,7 @@ void unary_operation(std::string_view operation_name, std::vector<StackEntry> &s
   StackEntry &a(stack[stack.size() - 1]);
   a.load();
   if (a.evaluator || a.image || a.rng || a.coordinate) {
-    StackEntry entry(new UnaryEvaluator<Operation>(operation_name, operation, a));
+    const StackEntry entry(new UnaryEvaluator<Operation>(operation_name, operation, a));
     stack.back() = entry;
   } else {
     try {
@@ -874,7 +875,7 @@ void binary_operation(std::string_view operation_name, std::vector<StackEntry> &
   b.load();
   if (a.evaluator || a.image || a.rng || a.coordinate || //
       b.evaluator || b.image || b.rng || b.coordinate) {
-    StackEntry entry(new BinaryEvaluator<Operation>(operation_name, operation, a, b));
+    const StackEntry entry(new BinaryEvaluator<Operation>(operation_name, operation, a, b));
     stack.pop_back();
     stack.back() = entry;
   } else {
@@ -897,7 +898,7 @@ void ternary_operation(std::string_view operation_name, std::vector<StackEntry> 
   if (a.evaluator || a.image || a.rng || a.coordinate || //
       b.evaluator || b.image || b.rng || b.coordinate || //
       c.evaluator || c.image || c.rng || c.coordinate) {
-    StackEntry entry(new TernaryEvaluator<Operation>(operation_name, operation, a, b, c));
+    const StackEntry entry(new TernaryEvaluator<Operation>(operation_name, operation, a, b, c));
     stack.pop_back();
     stack.pop_back();
     stack.back() = entry;
@@ -916,8 +917,8 @@ void ternary_operation(std::string_view operation_name, std::vector<StackEntry> 
 
 void get_header(const StackEntry &entry, Header &header) {
   if (entry.evaluator) {
-    for (size_t n = 0; n < entry.evaluator->operands.size(); ++n)
-      get_header(entry.evaluator->operands[n], header);
+    for (const auto &operand : entry.evaluator->operands)
+      get_header(operand, header);
     return;
   }
 
@@ -963,19 +964,20 @@ public:
 
   void allocate_storage(const StackEntry &entry) {
     if (entry.evaluator) {
-      for (size_t n = 0; n < entry.evaluator->operands.size(); ++n)
-        allocate_storage(entry.evaluator->operands[n]);
+      for (const auto &operand : entry.evaluator->operands)
+        allocate_storage(operand);
       return;
     }
 
     storage.push_back(ThreadLocalStorageItem());
     if (entry.image) {
-      storage.back().image.reset(new Image<complex_type>(*entry.image));
+      storage.back().image = make_copyptr<Image<complex_type>>(*entry.image);
       storage.back().chunk.resize(chunk_size);
       return;
-    } else if (entry.rng || entry.coordinate) {
+    }
+    if (entry.rng || entry.coordinate)
       storage.back().chunk.resize(chunk_size);
-    } else
+    else
       storage.back().chunk.value = entry.value;
   }
 
@@ -983,7 +985,7 @@ public:
     storage.reset(iter);
     assign_pos_of(iter).to(image);
 
-    Chunk &chunk = top_entry.evaluate(storage);
+    const Chunk &chunk = top_entry.evaluate(storage);
 
     auto value = chunk.cbegin();
     for (auto l = loop(image); l; ++l)
@@ -1092,11 +1094,11 @@ public:
 class OpUnary : public OpBase {
 public:
   OpUnary(std::string_view format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
-  complex_type R(real_type v) const {
+  [[nodiscard]] complex_type R(real_type v) const {
     throw Exception("operation not supported!");
     return v;
   }
-  complex_type Z(complex_type v) const {
+  [[nodiscard]] complex_type Z(complex_type v) const {
     throw Exception("operation not supported!");
     return v;
   }
@@ -1105,11 +1107,11 @@ public:
 class OpBinary : public OpBase {
 public:
   OpBinary(std::string_view format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
-  complex_type R(real_type a, real_type b) const {
+  [[nodiscard]] complex_type R(real_type a, real_type b) const {
     throw Exception("operation not supported!");
     return a;
   }
-  complex_type Z(complex_type a, complex_type b) const {
+  [[nodiscard]] complex_type Z(complex_type a, complex_type b) const {
     throw Exception("operation not supported!");
     return a;
   }
@@ -1118,11 +1120,11 @@ public:
 class OpTernary : public OpBase {
 public:
   OpTernary(std::string_view format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
-  complex_type R(real_type a, real_type b, real_type c) const {
+  [[nodiscard]] complex_type R(real_type a, real_type b, real_type c) const {
     throw Exception("operation not supported!");
     return a;
   }
-  complex_type Z(complex_type a, complex_type b, complex_type c) const {
+  [[nodiscard]] complex_type Z(complex_type a, complex_type b, complex_type c) const {
     throw Exception("operation not supported!");
     return a;
   }
@@ -1146,7 +1148,7 @@ void run() {
   for (size_t n = 0; n < raw_arguments_list.size(); ++n) {
     const auto &argument = raw_arguments_list[n];
     const Option *opt = match_option(argument);
-    if (opt) {
+    if (opt != nullptr) {
 
       if (opt->is("datatype") || opt->is("nthreads"))
         ++n;
@@ -1164,7 +1166,7 @@ void run() {
         throw Exception(std::string("operation \"") + opt->id + "\" not yet implemented!");
 
     } else {
-      stack.push_back(argument);
+      stack.emplace_back(argument);
     }
   }
 

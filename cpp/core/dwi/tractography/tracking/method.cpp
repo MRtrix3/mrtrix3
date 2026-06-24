@@ -42,8 +42,9 @@ bool MethodBase::check_seed() {
   if (!pos.allFinite())
     return false;
 
-  if ((S.properties.mask.size() && !S.properties.mask.contains(pos)) || (S.properties.exclude.contains(pos)) ||
-      (S.is_act() && !act().check_seed(pos))) {
+  if ((!S.properties.mask.empty() && !S.properties.mask.contains(pos)) || //
+      S.properties.exclude.contains(pos) ||                               //
+      (S.is_act() && !act().check_seed(pos))) {                           //
     pos.fill(NaNF);
     return false;
   }
@@ -63,7 +64,7 @@ Eigen::Vector3f MethodBase::random_direction() {
 }
 
 Eigen::Vector3f MethodBase::random_direction(const float max_angle, const float sin_max_angle) {
-  float phi = 2.0 * Math::pi * uniform(rng());
+  const float phi = 2.0 * Math::pi * uniform(rng());
   float theta;
   do {
     theta = max_angle * uniform(rng());
@@ -72,23 +73,19 @@ Eigen::Vector3f MethodBase::random_direction(const float max_angle, const float 
 }
 
 Eigen::Vector3f MethodBase::rotate_direction(const Eigen::Vector3f &reference, const Eigen::Vector3f &direction) {
-  float n = std::sqrt(Math::pow2(reference[0]) + Math::pow2(reference[1]));
-  if (n == 0.0) {
-    if (reference[2] < 0.0)
-      return -direction;
-    else
-      return direction;
-  }
+  const float n = std::sqrt(Math::pow2(reference[0]) + Math::pow2(reference[1]));
+  if (n == 0.0)
+    return (reference[2] < 0.0) ? -direction : direction;
 
-  Eigen::Vector3f m(reference[0] / n, reference[1] / n, 0.0f);
+  Eigen::Vector3f m(reference[0] / n, reference[1] / n, 0.0F);
   Eigen::Vector3f mp(reference[2] * m[0], reference[2] * m[1], -n);
 
-  float alpha = direction[2];
-  float beta = direction[0] * m[0] + direction[1] * m[1];
+  const float alpha = direction[2];
+  const float beta = direction[0] * m[0] + direction[1] * m[1];
 
   return {direction[0] + alpha * reference[0] + beta * (mp[0] - m[0]),
           direction[1] + alpha * reference[1] + beta * (mp[1] - m[1]),
-          direction[2] + alpha * (reference[2] - 1.0f) + beta * (mp[2] - m[2])};
+          direction[2] + alpha * (reference[2] - 1.0F) + beta * (mp[2] - m[2])};
 }
 
 } // namespace MR::DWI::Tractography::Tracking

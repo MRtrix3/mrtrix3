@@ -40,7 +40,7 @@ public:
     if (!in.is_open())
       return false;
     do {
-      value_type val = get_next_scalar();
+      const value_type val = get_next_scalar();
       if (std::isinf(val)) {
         in.close();
         return false;
@@ -129,8 +129,7 @@ public:
   ScalarWriter(const std::filesystem::path &path, const Properties &properties)
       : WriterBase<T>(path),
         buffer_capacity(File::Config::get_int("TrackWriterBufferSize", 16777216) / sizeof(value_type)),
-        buffer(new value_type[buffer_capacity + 1]),
-        buffer_size(0) {
+        buffer(new value_type[buffer_capacity + 1]) {
     File::OFStream out;
     try {
       out.open(path, std::ios::out | std::ios::binary | std::ios::trunc);
@@ -158,9 +157,9 @@ public:
     if (buffer_size + tck_scalar.size() > buffer_capacity)
       commit();
 
-    for (typename std::vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i) {
-      assert(std::isfinite(*i));
-      add_scalar(*i);
+    for (const auto i : tck_scalar) {
+      assert(std::isfinite(i));
+      add_scalar(i);
     }
     add_scalar(delimiter());
     ++count;
@@ -171,12 +170,12 @@ public:
 protected:
   const size_t buffer_capacity;
   std::unique_ptr<value_type[]> buffer;
-  size_t buffer_size;
+  size_t buffer_size{0};
   int64_t current_offset;
 
   void add_scalar(const value_type &s) { format_scalar(s, buffer[buffer_size++]); }
 
-  value_type delimiter() const { return std::numeric_limits<value_type>::quiet_NaN(); }
+  [[nodiscard]] value_type delimiter() const { return std::numeric_limits<value_type>::quiet_NaN(); }
 
   void format_scalar(const value_type &s, value_type &destination) {
     using namespace ByteOrder;

@@ -17,6 +17,7 @@
 #include <array>
 #include <cstdio>
 #include <filesystem>
+#include <memory>
 #include <sstream>
 
 #include "command.h"
@@ -137,9 +138,9 @@ public:
 
   bool operator()(const Streamline<float> &tck) {
     // write out points, and build index of tracks:
-    size_t start_index = current_index;
+    const size_t start_index = current_index;
     current_index += tck.size();
-    track_list.push_back(std::pair<size_t, size_t>(start_index, current_index));
+    track_list.emplace_back(start_index, current_index);
     if (write_ascii) {
       for (const auto &pos : tck) {
         VTKout << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
@@ -158,7 +159,7 @@ public:
   ~VTKWriter() {
     try {
       // write out list of tracks:
-      if (write_ascii == false) {
+      if (!write_ascii) {
         // Need to include an extra new line when writing binary
         VTKout << "\n";
       }
@@ -183,7 +184,7 @@ public:
           }
         }
       }
-      if (write_ascii == false) {
+      if (!write_ascii) {
         // Need to include an extra new line when writing binary
         VTKout << "\n";
       }
@@ -241,16 +242,15 @@ public:
           points[i] = ByteOrder::BE(points[i]);
 
         continue;
-      } else {
-        if (sscanf(line.c_str(), "LINES %d %d", &number_of_lines, &number_of_line_indices) == 2) {
-          if (line.find("vtktypeint64") != std::string::npos) {
-            loadLines<int64_t>(lines, input, number_of_line_indices);
-          } else {
-            loadLines<int32_t>(lines, input, number_of_line_indices);
-          }
-          // We can safely break
-          break;
+      }
+      if (sscanf(line.c_str(), "LINES %d %d", &number_of_lines, &number_of_line_indices) == 2) {
+        if (line.find("vtktypeint64") != std::string::npos) {
+          loadLines<int64_t>(lines, input, number_of_line_indices);
+        } else {
+          loadLines<int32_t>(lines, input, number_of_line_indices);
         }
+        // We can safely break
+        break;
       }
     }
     input.close();
@@ -260,13 +260,13 @@ public:
   bool operator()(Streamline<float> &tck) {
     tck.clear();
     if (lineIdx < number_of_line_indices) {
-      int count = lines[lineIdx];
+      const int count = lines[lineIdx];
       lineIdx++;
       for (int i = 0; i < count; i++) {
-        int idx = lines[lineIdx];
-        Eigen::Vector3f f(points[static_cast<size_t>(idx) * 3],
-                          points[static_cast<size_t>(idx) * 3 + 1],
-                          points[static_cast<size_t>(idx) * 3 + 2]);
+        const int idx = lines[lineIdx];
+        const Eigen::Vector3f f(points[static_cast<size_t>(idx) * 3],
+                                points[static_cast<size_t>(idx) * 3 + 1],
+                                points[static_cast<size_t>(idx) * 3 + 2]);
         tck.push_back(f);
         lineIdx++;
       }
@@ -299,7 +299,7 @@ public:
     return false;
   }
 
-  ~ASCIIReader() {}
+  ~ASCIIReader() = default;
 
 private:
   File::ParsedName::List list;
@@ -318,14 +318,14 @@ public:
 
   bool operator()(const Streamline<float> &tck) {
     File::OFStream out(parser.name(count));
-    for (auto i = tck.begin(); i != tck.end(); ++i)
-      out << (*i)[0] << " " << (*i)[1] << " " << (*i)[2] << "\n";
+    for (const auto &i : tck)
+      out << i[0] << " " << i[1] << " " << i[2] << "\n";
     out.close();
     count[0]++;
     return true;
   }
 
-  ~ASCIIWriter() {}
+  ~ASCIIWriter() = default;
 
 private:
   File::NameParser parser;
@@ -350,7 +350,7 @@ public:
 
   Eigen::Vector3f computeNormal(const Streamline<float> &tck) {
     // copy coordinates to  matrix in Eigen format
-    size_t num_atoms = tck.size();
+    const size_t num_atoms = tck.size();
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> coord(3, num_atoms);
     for (size_t i = 0; i < num_atoms; ++i) {
       coord.col(i) = tck[i];
@@ -471,23 +471,21 @@ public:
       auto isLast = idx == tck.size() - 2;
 
       // vtkTubeFilter.cxx:386
-      Eigen::Vector3f p = tck[idx];
-      Eigen::Vector3f pNext = tck[idx + 1];
-      Eigen::Vector3f sPrev = sNext;
+      const Eigen::Vector3f &p = tck[idx];
+      const Eigen::Vector3f &pNext = tck[idx + 1];
+      const Eigen::Vector3f sPrev = sNext;
       sNext = pNext - p;
-      Eigen::Vector3f n = normals[idx];
+      const Eigen::Vector3f &n = normals[idx];
 
       sNext.normalize();
-      if (sNext.norm() == 0.0) {
+      if (sNext.norm() == 0.0)
         continue;
-      }
 
       // Average vectors
       Eigen::Vector3f s = (sPrev + sNext) / 2.0;
       s.normalize();
-      if (s.norm() == 0.0) {
+      if (s.norm() == 0.0)
         s = sPrev.cross(n).normalized();
-      }
 
       auto T = s;
       auto N = T.cross(globalNormal).normalized();
@@ -592,7 +590,7 @@ private:
 class RibWriter : public WriterInterface<float> {
 public:
   RibWriter(const std::filesystem::path &path, float radius = 0.1, bool dec = false)
-      : out(path), writeDEC(dec), radius(radius), hasPoints(false), wroteHeader(false) {
+      : out(path), writeDEC(dec), radius(radius) {
     pointsFilepath = File::create_tempfile(0, ".points");
     pointsOF.open(pointsFilepath);
     pointsOF << "\"P\" [";
@@ -647,7 +645,7 @@ public:
       if (hasPoints) {
         out << "] \"nonperiodic\" ";
 
-        std::ifstream pointsIF(pointsFilepath);
+        const std::ifstream pointsIF(pointsFilepath);
         out << pointsIF.rdbuf();
 
         if (writeDEC) {
@@ -678,22 +676,22 @@ private:
   File::OFStream decOF;
   bool writeDEC;
   float radius;
-  bool hasPoints;
-  bool wroteHeader;
+  bool hasPoints{false};
+  bool wroteHeader{false};
 };
 
 void run() {
-  std::filesystem::path input_path{argument[0]};
-  std::filesystem::path output_path{argument[1]};
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[1]};
   // Reader
   Properties properties;
   std::unique_ptr<ReaderInterface<float>> reader;
   if (input_path.extension() == ".tck") {
-    reader.reset(new Reader<float>(input_path, properties));
+    reader = std::make_unique<Reader<float>>(input_path, properties);
   } else if (input_path.extension() == ".txt") {
-    reader.reset(new ASCIIReader(input_path.string()));
+    reader = std::make_unique<ASCIIReader>(input_path.string());
   } else if (input_path.extension() == ".vtk") {
-    reader.reset(new VTKReader(input_path));
+    reader = std::make_unique<VTKReader>(input_path);
   } else {
     throw Exception("Unsupported input file type.");
   }
@@ -701,19 +699,19 @@ void run() {
   // Writer
   std::unique_ptr<WriterInterface<float>> writer;
   if (output_path.extension() == ".tck") {
-    writer.reset(new Writer<float>(output_path, properties));
+    writer = std::make_unique<Writer<float>>(output_path, properties);
   } else if (output_path.extension() == ".vtk") {
-    auto write_ascii = get_options("ascii").size();
-    writer.reset(new VTKWriter(output_path, write_ascii));
+    const bool write_ascii = !get_options("ascii").empty();
+    writer = std::make_unique<VTKWriter>(output_path, write_ascii);
   } else if (output_path.extension() == ".ply") {
     const int increment = get_option_value("increment", default_ply_increment);
     const float radius = get_option_value("radius", default_ply_radius);
     const int sides = get_option_value("sides", default_ply_sides);
-    writer.reset(new PLYWriter(output_path, increment, radius, sides));
+    writer = std::make_unique<PLYWriter>(output_path, increment, radius, sides);
   } else if (output_path.extension() == ".rib") {
-    writer.reset(new RibWriter(output_path));
+    writer = std::make_unique<RibWriter>(output_path);
   } else if (output_path.extension() == ".txt") {
-    writer.reset(new ASCIIWriter(output_path.string()));
+    writer = std::make_unique<ASCIIWriter>(output_path.string());
   } else {
     throw Exception("Unsupported output file type.");
   }

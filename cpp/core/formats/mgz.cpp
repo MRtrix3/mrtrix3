@@ -51,7 +51,7 @@ std::unique_ptr<ImageIO::Base> MGZ::read(Header &H) const {
   memcpy(gz_handler->tailer(), mgh_tailer.str().c_str(), mgh_tailer.str().size());
 
   std::unique_ptr<ImageIO::Base> io_handler(gz_handler);
-  io_handler->files.push_back(File::Entry(H.path(), File::MGH::data_offset));
+  io_handler->files.emplace_back(H.path(), File::MGH::data_offset);
 
   return io_handler;
 }
@@ -63,7 +63,8 @@ bool MGZ::check(Header &H, size_t num_axes) const {
 }
 
 std::unique_ptr<ImageIO::Base> MGZ::create(Header &H) const {
-  std::ostringstream mgh_header, mgh_tailer;
+  std::ostringstream mgh_header;
+  std::ostringstream mgh_tailer;
   File::MGH::write_header(H, mgh_header);
   File::MGH::write_other(H, mgh_tailer);
 
@@ -76,7 +77,7 @@ std::unique_ptr<ImageIO::Base> MGZ::create(Header &H) const {
   memcpy(gz_handler->tailer(), mgh_tailer.str().c_str(), mgh_tailer.str().size());
 
   std::unique_ptr<ImageIO::Base> io_handler(gz_handler);
-  io_handler->files.push_back(File::Entry(H.path(), File::MGH::data_offset));
+  io_handler->files.emplace_back(H.path(), File::MGH::data_offset);
 
   return io_handler;
 }

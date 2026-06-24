@@ -119,7 +119,7 @@ inline const std::byte *next(const std::byte *current_pos, bool is_BE) {
 }
 
 inline void write_tag(std::ostream &out, uint32_t Type, uint32_t Size, bool is_BE) {
-  Type = ByteOrder::swap<uint32_t>(static_cast<uint32_t>(Type), is_BE);
+  Type = ByteOrder::swap<uint32_t>(Type, is_BE);
   out.write(reinterpret_cast<const char *>(&Type), sizeof(uint32_t));
   Size = ByteOrder::swap<uint32_t>(Size, is_BE);
   out.write(reinterpret_cast<const char *>(&Size), sizeof(uint32_t));
@@ -133,7 +133,7 @@ template <typename T> inline void write(std::ostream &out, T val, bool is_BE) {
 // needed to get around changes in hard-coded enum types in datatype.h:
 DataType fetch_datatype(uint8_t c) {
   uint8_t d = c & 0x07U;
-  uint8_t t = c & ~(0x07U);
+  const uint8_t t = c & ~(0x07U);
   if (d >= 0x05U)
     ++d;
   return DataType(d | t);
@@ -141,7 +141,7 @@ DataType fetch_datatype(uint8_t c) {
 
 uint8_t store_datatype(const DataType &dt) {
   uint8_t d = dt() & 0x07U;
-  uint8_t t = dt() & ~(0x07U);
+  const uint8_t t = dt() & ~(0x07U);
   if (d >= 0x05U)
     --d;
   return (d | t);
@@ -224,17 +224,17 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
       break;
     }
 
-    if (data_offset)
+    if (data_offset != 0U)
       break;
 
     current = next(current, is_BE);
   }
 
-  if (!data_offset)
+  if (data_offset == 0U)
     throw Exception("no data field found in MRI image \"" + H.path().string() + "\"");
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(H.path(), data_offset));
+  io_handler->files.emplace_back(H.path(), data_offset);
 
   return io_handler;
 }
@@ -258,7 +258,7 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
 #ifdef MRTRIX_BYTE_ORDER_BIG_ENDIAN
   bool is_BE = true;
 #else
-  bool is_BE = false;
+  const bool is_BE = false;
 #endif
 
   out.write("MRI#", 4);
@@ -281,14 +281,14 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
 
   write_tag(out, mriformat_index_voxelsize, 3 * sizeof(float32), is_BE);
   write<float>(out, H.spacing(0), is_BE);
-  write<float>(out, (H.ndim() > 1 ? H.spacing(1) : 2.0f), is_BE);
-  write<float>(out, (H.ndim() > 2 ? H.spacing(2) : 2.0f), is_BE);
+  write<float>(out, (H.ndim() > 1 ? H.spacing(1) : 2.0F), is_BE);
+  write<float>(out, (H.ndim() > 2 ? H.spacing(2) : 2.0F), is_BE);
 
   const auto comments = H.keyval().find("comments");
   if (comments != H.keyval().end()) {
     for (const auto &comment : split_lines(comments->second)) {
-      size_t l = comment.size();
-      if (l) {
+      const size_t l = comment.size();
+      if (l != 0U) {
         write_tag(out, mriformat_index_comment, l, is_BE);
         out.write(comment.c_str(), l);
       }
@@ -299,10 +299,10 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
   for (size_t i = 0; i < 3; ++i)
     for (size_t j = 0; j < 4; ++j)
       write<float>(out, H.transform()(i, j), is_BE);
-  write<float>(out, 0.0f, is_BE);
-  write<float>(out, 0.0f, is_BE);
-  write<float>(out, 0.0f, is_BE);
-  write<float>(out, 1.0f, is_BE);
+  write<float>(out, 0.0F, is_BE);
+  write<float>(out, 0.0F, is_BE);
+  write<float>(out, 0.0F, is_BE);
+  write<float>(out, 1.0F, is_BE);
 
   const auto dw_scheme = H.keyval().find("dw_scheme");
   if (dw_scheme != H.keyval().end()) {
@@ -316,12 +316,12 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
   write_tag(out, mriformat_index_data, 1, is_BE);
   out.put(store_datatype(H.datatype()));
 
-  size_t data_offset = static_cast<size_t>(out.tellp());
+  const size_t data_offset = static_cast<size_t>(out.tellp());
   out.close();
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
   std::filesystem::resize_file(hpath, data_offset + footprint(H));
-  io_handler->files.push_back(File::Entry(hpath, data_offset));
+  io_handler->files.emplace_back(hpath, data_offset);
 
   return io_handler;
 }

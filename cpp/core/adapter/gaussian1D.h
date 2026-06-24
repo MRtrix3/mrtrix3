@@ -32,11 +32,11 @@ public:
 
   Gaussian1D(const ImageType &parent,
              default_type stdev_in = 1.0,
-             size_t axis_in = 0,
-             size_t extent = 0,
+             size_t axis_in = 0U,
+             size_t extent = 0U,
              bool zero_boundary = false)
       : base_type(parent), stdev(stdev_in), axis(axis_in), zero_boundary(zero_boundary) {
-    if (!extent)
+    if (extent == 0U)
       radius = ceil(2 * stdev / spacing(axis));
     else if (extent == 1)
       radius = 0;
@@ -63,7 +63,7 @@ public:
     ssize_t c = (pos < radius) ? radius - pos : 0;
     for (ssize_t k = from; k <= to; ++k, ++c) {
       index(axis) = k;
-      value_type neighbour_value = base_type::value();
+      const value_type neighbour_value = base_type::value();
       if (std::isfinite(neighbour_value)) {
         av_weights += kernel[c];
         result += static_cast<value_type>(base_type::value()) * kernel[c];
@@ -85,8 +85,8 @@ protected:
       kernel[c] = exp(-((c - radius) * (c - radius) * spacing(axis) * spacing(axis)) / (2 * stdev * stdev));
       norm_factor += kernel[c];
     }
-    for (size_t c = 0; c < kernel.size(); c++) {
-      kernel[c] /= norm_factor;
+    for (double &c : kernel) {
+      c /= norm_factor;
     }
   }
 

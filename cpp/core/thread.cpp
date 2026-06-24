@@ -15,9 +15,9 @@
  */
 
 #include <atomic>
+#include <cstddef>
 #include <memory>
 #include <optional>
-#include <stddef.h>
 #include <string>
 #include <thread>
 
@@ -83,7 +83,7 @@ size_t threads_to_execute() { return (Backend::valid() ? 0 : number_of_threads()
 void (*Backend::previous_print_func)(std::string_view msg) = nullptr;
 void (*Backend::previous_report_to_user_func)(std::string_view msg, int type) = nullptr;
 
-Backend::Backend() : refcount(0) {
+Backend::Backend() {
   DEBUG("initialising threads...");
 
   std::atomic<uint8_t> a;
@@ -106,12 +106,12 @@ Backend::~Backend() {
 }
 
 void Backend::thread_print_func(std::string_view msg) {
-  std::lock_guard<std::mutex> lock(mutex);
+  const std::lock_guard<std::mutex> lock(mutex);
   previous_print_func(msg);
 }
 
 void Backend::thread_report_to_user_func(std::string_view msg, int type) {
-  std::lock_guard<std::mutex> lock(mutex);
+  const std::lock_guard<std::mutex> lock(mutex);
   previous_report_to_user_func(msg, type);
 }
 

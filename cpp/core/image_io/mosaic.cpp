@@ -29,7 +29,7 @@ void Mosaic::load(const Header &header, size_t) {
 
   assert(header.datatype().bits() > 1);
 
-  size_t bytes_per_segment = header.datatype().bytes() * segsize;
+  const size_t bytes_per_segment = header.datatype().bytes() * segsize;
   if (files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
     throw Exception("image \"" + header.path().string() + "\" is larger than maximum accessible memory");
 
@@ -41,12 +41,13 @@ void Mosaic::load(const Header &header, size_t) {
 
   ProgressBar progress("reformatting DICOM mosaic images", slices * files.size());
   std::byte *data = addresses[0].get();
-  for (size_t n = 0; n < files.size(); n++) {
-    File::MMap file(files[n], false, false, m_xdim * m_ydim * header.datatype().bytes());
-    size_t nx = 0, ny = 0;
+  for (const auto &n : files) {
+    File::MMap file(n, false, false, m_xdim * m_ydim * header.datatype().bytes());
+    size_t nx = 0;
+    size_t ny = 0;
     for (size_t z = 0; z < slices; z++) {
-      size_t ox = nx * xdim;
-      size_t oy = ny * ydim;
+      const size_t ox = nx * xdim;
+      const size_t oy = ny * ydim;
       for (size_t y = 0; y < ydim; y++) {
         memcpy(data,
                file.address() + header.datatype().bytes() * (ox + m_xdim * (y + oy)),

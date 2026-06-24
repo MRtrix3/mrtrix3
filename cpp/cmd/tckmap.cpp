@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <memory>
 #include <set>
 
 #include "app.h"
@@ -233,7 +234,7 @@ void usage () {
 MapWriterBase *
 make_writer(Header &H, const std::filesystem::path &name, const vox_stat_t stat_vox, const writer_dim dim) {
   MapWriterBase *writer = nullptr;
-  const uint8_t dt = static_cast<uint8_t>(H.datatype()()) & DataType::Type;
+  const uint8_t dt = H.datatype()() & DataType::Type;
   if (dt == DataType::Bit)
     writer = new MapWriter<bool>(H, name, stat_vox, dim);
   else if (dt == DataType::UInt8)
@@ -253,15 +254,14 @@ DataType determine_datatype(const DataType current_dt,
                             const contrast_t contrast,
                             const DataType default_dt,
                             const bool precise) {
-  if (current_dt == DataType::Undefined) {
+  if (current_dt == DataType::Undefined)
     return default_dt;
-  } else if ((default_dt.is_floating_point() || precise) && !current_dt.is_floating_point()) {
+  if ((default_dt.is_floating_point() || precise) && !current_dt.is_floating_point()) {
     WARN("Cannot use non-floating-point datatype with " + str(Mapping::contrast_names.at(contrast).description) +
          " contrast" + (precise ? " and precise mapping" : "") + "; defaulting to " + str(default_dt.specifier()));
     return default_dt;
-  } else {
-    return current_dt;
   }
+  return current_dt;
 }
 
 void run() {
@@ -283,8 +283,9 @@ void run() {
         "voxel size must either be a single isotropic value, or a list of 3 comma-separated voxel dimensions");
 
   if (!voxel_size.empty())
-    INFO("creating image with voxel dimensions [ " + str(voxel_size[0]) + " " + str(voxel_size[1]) + " " +
-         str(voxel_size[2]) + " ]");
+    INFO("creating image with voxel dimensions" //
+         " [ " +
+         str(voxel_size[0]) + " " + str(voxel_size[1]) + " " + str(voxel_size[2]) + " ]"); //
 
   Header header;
   auto opt = get_options("template");
@@ -309,13 +310,13 @@ void run() {
   add_line(header.keyval()["comments"], "track-weighted image");
   header.keyval()["tck_source"] = input_tracks_path.filename().string();
 
-  const contrast_t contrast = get_option_choice<contrast_t>("contrast", contrast_t::TDI);
+  const auto contrast = get_option_choice<contrast_t>("contrast", contrast_t::TDI);
 
-  vox_stat_t stat_vox = get_option_choice<vox_stat_t>("stat_vox", vox_stat_t::SUM);
+  auto stat_vox = get_option_choice<vox_stat_t>("stat_vox", vox_stat_t::SUM);
 
   // ENDS_CORR is excluded from tck_stat_t's magic_enum reflection (see twi_stats.h),
   // so get_option_choice() (via from_name) rejects it as an unsupported value.
-  tck_stat_t stat_tck = get_option_choice<tck_stat_t>("stat_tck", tck_stat_t::MEAN);
+  auto stat_tck = get_option_choice<tck_stat_t>("stat_tck", tck_stat_t::MEAN);
 
   float gaussian_fwhm_tck = 0.0;
   opt = get_options("fwhm_tck");
@@ -326,8 +327,8 @@ void run() {
     }
     gaussian_fwhm_tck = opt[0][0];
   } else if (stat_tck == tck_stat_t::GAUSSIAN) {
-    throw Exception("If using Gaussian per-streamline statistic, need to provide a full-width half-maximum for the "
-                    "Gaussian kernel using the -fwhm option");
+    throw Exception("If using Gaussian per-streamline statistic,"                                                 //
+                    " need to provide a full-width half-maximum for the Gaussian kernel using the -fwhm option"); //
   }
 
   bool backtrack = false;
@@ -358,9 +359,9 @@ void run() {
       throw Exception("Options for setting output image dimensionality are mutually exclusive");
     writer_type = writer_dim::DIXEL;
     if (std::filesystem::exists(opt[0][0]))
-      dirs.reset(new Directions::FastLookupSet(static_cast<std::filesystem::path>(opt[0][0])));
+      dirs = std::make_unique<Directions::FastLookupSet>(static_cast<std::filesystem::path>(opt[0][0]));
     else
-      dirs.reset(new Directions::FastLookupSet(to<size_t>(opt[0][0])));
+      dirs = std::make_unique<Directions::FastLookupSet>(static_cast<size_t>(opt[0][0]));
     header.ndim() = 4;
     header.size(3) = dirs->size();
     header.sanitise();
@@ -371,7 +372,7 @@ void run() {
       grad(row, 0) = ((*dirs)[row])[0];
       grad(row, 1) = ((*dirs)[row])[1];
       grad(row, 2) = ((*dirs)[row])[2];
-      grad(row, 3) = 1.0f;
+      grad(row, 3) = 1.0F;
     }
     set_DW_scheme(header, grad);
   }
@@ -382,7 +383,7 @@ void run() {
       throw Exception("Options for setting output image dimensionality are mutually exclusive");
     writer_type = writer_dim::TOD;
     const size_t lmax = opt[0][0];
-    if (lmax % 2)
+    if ((lmax % 2) != 0U)
       throw Exception("lmax for TODI must be an even number");
     header.ndim() = 4;
     header.size(3) = Math::SH::NforL(lmax);
@@ -481,9 +482,10 @@ void run() {
   opt = get_options("datatype");
   if (!opt.empty()) {
     if (writer_type == writer_dim::DEC || writer_type == writer_dim::TOD) {
-      WARN("Can't manually set datatype for " + str(Mapping::output_dimension_names.at(writer_type)) +
-           " processing;" + //
-           " overriding to Float32");
+      WARN("Can't manually set datatype" //
+           " for " +
+           str(Mapping::output_dimension_names.at(writer_type)) + " processing;" + //
+           " overriding to Float32");                                              //
     } else {
       header.datatype() = DataType::parse(opt[0][0]);
     }
@@ -542,11 +544,10 @@ void run() {
     opt = get_options("image");
     if (opt.empty()) {
       if (contrast == contrast_t::SCALAR_MAP || contrast == contrast_t::SCALAR_MAP_COUNT)
-        throw Exception("If using 'scalar_map' or 'scalar_map_count' contrast, must provide the relevant scalar image "
-                        "using -image option");
-      else
-        throw Exception(
-            "If using 'fod_amp' contrast, must provide the relevant spherical harmonic image using -image option");
+        throw Exception("If using 'scalar_map' or 'scalar_map_count' contrast,"                   //
+                        " must provide the relevant scalar image using -image option");           //
+      throw Exception("If using 'fod_amp' contrast,"                                              //
+                      " must provide the relevant spherical harmonic image using -image option"); //
     }
     const std::filesystem::path assoc_image(opt[0][0]);
     if (contrast == contrast_t::SCALAR_MAP || contrast == contrast_t::SCALAR_MAP_COUNT) {
@@ -560,8 +561,8 @@ void run() {
   } else if (contrast == contrast_t::VECTOR_FILE) {
     opt = get_options("vector_file");
     if (opt.empty())
-      throw Exception(
-          "If using 'vector_file' contrast, must provide the relevant data file using the -vector_file option");
+      throw Exception("If using 'vector_file' contrast,"                                     //
+                      " must provide the relevant data file using the -vector_file option"); //
     const std::filesystem::path path(opt[0][0]);
     mapper->add_vector_data(path);
     header.keyval()["twi_vector_file"] = path.filename().string();
@@ -589,7 +590,7 @@ void run() {
   // Complete branch here for Gaussian track-wise statistic; it's a nightmare to manage, so am
   //   keeping the code as separate as possible
   if (stat_tck == tck_stat_t::GAUSSIAN) {
-    Gaussian::TrackMapper *const mapper_ptr = dynamic_cast<Gaussian::TrackMapper *>(mapper.get());
+    auto *const mapper_ptr = dynamic_cast<Gaussian::TrackMapper *>(mapper.get());
     mapper_ptr->set_gaussian_FWHM(gaussian_fwhm_tck);
     switch (writer_type) {
     case writer_dim::UNDEFINED:

@@ -26,6 +26,7 @@
 #include "surface/validate.h"
 
 #include <filesystem>
+#include <memory>
 
 using namespace MR;
 using namespace App;
@@ -83,7 +84,7 @@ void run() {
 
   // Read in the mesh data
   try {
-    Mesh mesh(input_path);
+    const Mesh mesh(input_path);
     in.push_back(mesh);
   } catch (...) {
     in.load(input_path);
@@ -94,12 +95,12 @@ void run() {
 
   // Apply the relevant filter
   std::unique_ptr<Filter::Base> filter;
-  const FilterType selected_filter = MR::Enum::from_name<FilterType>(argument[1]);
+  const auto selected_filter = MR::Enum::from_name<FilterType>(argument[1]);
   if (selected_filter == FilterType::SMOOTH) {
     const default_type spatial = get_option_value("smooth_spatial", Filter::default_smoothing_spatial_factor);
     const default_type influence = get_option_value("smooth_influence", Filter::default_smoothing_influence_factor);
     const std::string msg = in.size() > 1 ? "Applying smoothing filter to multiple meshes" : "";
-    filter.reset(new Filter::Smooth(msg, spatial, influence));
+    filter = std::make_unique<Filter::Smooth>(msg, spatial, influence);
   } else {
     assert(0);
   }

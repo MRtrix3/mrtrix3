@@ -36,7 +36,7 @@ protected slots:
 
 protected:
   const QString error_message;
-  int error_index;
+  int error_index{-1};
 };
 
 } // namespace MR::GUI::MRView

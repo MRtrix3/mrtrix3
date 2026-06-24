@@ -26,8 +26,7 @@
 
 namespace MR::GUI::DWI {
 
-Renderer::Renderer(QOpenGLWidget *widget)
-    : mode(mode_t::SH), reverse_ID(0), origin_ID(0), sh(*this), tensor(*this), dixel(*this), context_(widget) {
+Renderer::Renderer(QOpenGLWidget *widget) : sh(*this), tensor(*this), dixel(*this), context_(widget) {
   // CONF option: ObjectColor
   // CONF default: 1,1,0 (yellow)
   // CONF The default colour to use for objects (i.e. SH glyphs) when not
@@ -56,13 +55,14 @@ void Renderer::start(const Projection &projection,
   }
 
   if (mode == mode_t::TENSOR)
-    scale *= 1000.0f;
+    scale *= 1000.0F;
 
-  shader.start(mode, use_lighting, colour_by_direction, hide_neg_values, orthographic, colour_relative_to_projection);
+  shader.start(
+      mode, use_lighting, colour_by_direction, hide_neg_values, orthographic, colour_relative_to_projection != nullptr);
 
   gl::UniformMatrix4fv(gl::GetUniformLocation(shader, "MV"), 1, gl::FALSE_, projection.modelview());
   gl::UniformMatrix4fv(gl::GetUniformLocation(shader, "MVP"), 1, gl::FALSE_, projection.modelview_projection());
-  if (colour_relative_to_projection)
+  if (colour_relative_to_projection != nullptr)
     gl::UniformMatrix4fv(gl::GetUniformLocation(shader, "rotation"), 1, gl::FALSE_, *colour_relative_to_projection);
   gl::Uniform3fv(gl::GetUniformLocation(shader, "light_pos"), 1, lighting.lightpos.data());
   gl::Uniform1f(gl::GetUniformLocation(shader, "ambient"), lighting.ambient);
@@ -90,22 +90,22 @@ void Renderer::Shader::start(mode_t mode,
                              bool orthographic,
                              bool colour_relative_to_projection) {
   GL_CHECK_ERROR;
-  if (!(*this) || mode != mode_ || use_lighting != use_lighting_ || colour_by_direction != colour_by_direction_ ||
-      hide_neg_values != hide_neg_values_ || orthographic != orthographic_ ||
-      colour_relative_to_projection != colour_relative_to_projection_) {
+  if (((*this) == 0U) || mode != mode_ || use_lighting != use_lighting_ ||
+      colour_by_direction != colour_by_direction_ || hide_neg_values != hide_neg_values_ ||
+      orthographic != orthographic_ || colour_relative_to_projection != colour_relative_to_projection_) {
     mode_ = mode;
     use_lighting_ = use_lighting;
     colour_by_direction_ = colour_by_direction;
     hide_neg_values_ = hide_neg_values;
     orthographic_ = orthographic;
     colour_relative_to_projection_ = colour_relative_to_projection;
-    if (*this)
+    if (*this != 0U)
       clear();
-    GL::Shader::Vertex vertex_shader(vertex_shader_source());
-    GL::Shader::Geometry geometry_shader(geometry_shader_source());
-    GL::Shader::Fragment fragment_shader(fragment_shader_source());
+    const GL::Shader::Vertex vertex_shader(vertex_shader_source());
+    const GL::Shader::Geometry geometry_shader(geometry_shader_source());
+    const GL::Shader::Fragment fragment_shader(fragment_shader_source());
     attach(vertex_shader);
-    if (static_cast<GLuint>(geometry_shader))
+    if (static_cast<GLuint>(geometry_shader) != 0U)
       attach(geometry_shader);
     attach(fragment_shader);
     link();
@@ -296,7 +296,7 @@ std::string Renderer::Shader::fragment_shader_source() const {
 }
 
 Renderer::SH::~SH() {
-  GL::Context::Grab context(parent.context_);
+  const GL::Context::Grab context(parent.context_);
   half_sphere.vertex_buffer.clear();
   half_sphere.index_buffer.clear();
   surface_buffer.clear();
@@ -305,7 +305,7 @@ Renderer::SH::~SH() {
 
 void Renderer::SH::initGL() {
   GL_CHECK_ERROR;
-  GL::Context::Grab context(parent.context_);
+  const GL::Context::Grab context(parent.context_);
   half_sphere.vertex_buffer.gen();
   surface_buffer.gen();
   half_sphere.index_buffer.gen();
@@ -340,7 +340,7 @@ void Renderer::SH::update_mesh(const size_t lod, const int lmax) {
   INFO("updating ODF SH renderer transform...");
   QApplication::setOverrideCursor(Qt::BusyCursor);
   {
-    GL::Context::Grab context(parent.context_);
+    const GL::Context::Grab context(parent.context_);
     LOD = lod;
     half_sphere.LOD(LOD);
   }
@@ -358,12 +358,12 @@ void Renderer::SH::update_transform(const std::vector<Shapes::HalfSphere::Vertex
       for (int m = 0; m <= l; m++) {
         const int idx(Math::SH::index(l, m));
         transform(3 * n, idx) = transform(3 * n, idx - 2 * m) =
-            (m ? Math::sqrt2 : 1.0) * Math::Legendre::Plm_sph<float>(l, m, vertices[n][2]);
+            ((m != 0) ? Math::sqrt2 : 1.0) * Math::Legendre::Plm_sph<float>(l, m, vertices[n][2]);
       }
     }
 
-    bool atpole(vertices[n][0] == 0.0 && vertices[n][1] == 0.0);
-    float az = atpole ? 0.0 : atan2(vertices[n][1], vertices[n][0]);
+    const bool atpole(vertices[n][0] == 0.0 && vertices[n][1] == 0.0);
+    const float az = atpole ? 0.0 : atan2(vertices[n][1], vertices[n][0]);
 
     for (int l = 2; l <= lmax; l += 2) {
       const int idx(Math::SH::index(l, 0));
@@ -371,8 +371,8 @@ void Renderer::SH::update_transform(const std::vector<Shapes::HalfSphere::Vertex
     }
 
     for (int m = 1; m <= lmax; m++) {
-      float caz = cos(m * az);
-      float saz = sin(m * az);
+      const float caz = cos(m * az);
+      const float saz = sin(m * az);
       for (int l = 2 * ((m + 1) / 2); l <= lmax; l += 2) {
         const int idx(Math::SH::index(l, m));
         transform(3 * n + 1, idx) = -transform(3 * n, idx - 1) * sqrt(static_cast<float>((l + m) * (l - m + 1)));
@@ -385,7 +385,7 @@ void Renderer::SH::update_transform(const std::vector<Shapes::HalfSphere::Vertex
           transform(3 * n + 2, idx) = -transform(3 * n + 1, idx) * saz;
           transform(3 * n + 2, idx2) = transform(3 * n + 1, idx) * caz;
         } else {
-          float tmp(m * transform(3 * n, idx));
+          const float tmp(m * transform(3 * n, idx));
           transform(3 * n + 2, idx) = -tmp * saz;
           transform(3 * n + 2, idx2) = tmp * caz;
         }
@@ -396,8 +396,8 @@ void Renderer::SH::update_transform(const std::vector<Shapes::HalfSphere::Vertex
     }
 
     for (int m = 1; m <= lmax; m++) {
-      float caz = cos(m * az);
-      float saz = sin(m * az);
+      const float caz = cos(m * az);
+      const float saz = sin(m * az);
       for (int l = 2 * ((m + 1) / 2); l <= lmax; l += 2) {
         const int idx(Math::SH::index(l, m));
         transform(3 * n, idx) *= caz;
@@ -408,7 +408,7 @@ void Renderer::SH::update_transform(const std::vector<Shapes::HalfSphere::Vertex
 }
 
 Renderer::Tensor::~Tensor() {
-  GL::Context::Grab context(parent.context_);
+  const GL::Context::Grab context(parent.context_);
   half_sphere.vertex_buffer.clear();
   half_sphere.index_buffer.clear();
   VAO.clear();
@@ -416,7 +416,7 @@ Renderer::Tensor::~Tensor() {
 
 void Renderer::Tensor::initGL() {
   GL_CHECK_ERROR;
-  GL::Context::Grab context(parent.context_);
+  const GL::Context::Grab context(parent.context_);
   half_sphere.vertex_buffer.gen();
   half_sphere.index_buffer.gen();
   VAO.gen();
@@ -440,7 +440,7 @@ void Renderer::Tensor::update_mesh(const size_t lod) {
   INFO("updating tensor renderer...");
   QApplication::setOverrideCursor(Qt::BusyCursor);
   {
-    GL::Context::Grab context(parent.context_);
+    const GL::Context::Grab context(parent.context_);
     LOD = lod;
     half_sphere.LOD(LOD);
   }
@@ -457,9 +457,9 @@ void Renderer::Tensor::set_data(const vector_t &data, int /*buffer_ID*/) const {
   D(0, 1) = D(1, 0) = data[3];
   D(0, 2) = D(2, 0) = data[4];
   D(1, 2) = D(2, 1) = data[5];
-  Eigen::FullPivLU<tensor_t> lu_decomp(D);
+  const Eigen::FullPivLU<tensor_t> lu_decomp(D);
   const tensor_t Dinv = lu_decomp.inverse();
-  if (data[0] <= 0.0f || data[1] <= 0.0f || data[2] <= 0.0f || Dinv.diagonal().minCoeff() < 0.0f) {
+  if (data[0] <= 0.0F || data[1] <= 0.0F || data[2] <= 0.0F || Dinv.diagonal().minCoeff() < 0.0F) {
     gl::UniformMatrix3fv(gl::GetUniformLocation(parent.shader, "tensor"), 1, gl::FALSE_, D.data());
     const tensor_t Dinv = tensor_t::Zero();
     gl::UniformMatrix3fv(gl::GetUniformLocation(parent.shader, "inv_tensor"), 1, gl::FALSE_, Dinv.data());
@@ -475,7 +475,7 @@ void Renderer::Tensor::set_data(const vector_t &data, int /*buffer_ID*/) const {
 }
 
 Renderer::Dixel::~Dixel() {
-  GL::Context::Grab context(parent.context_);
+  const GL::Context::Grab context(parent.context_);
   vertex_buffer.clear();
   value_buffer.clear();
   index_buffer.clear();
@@ -484,7 +484,7 @@ Renderer::Dixel::~Dixel() {
 
 void Renderer::Dixel::initGL() {
   GL_CHECK_ERROR;
-  GL::Context::Grab context(parent.context_);
+  const GL::Context::Grab context(parent.context_);
   vertex_buffer.gen();
   value_buffer.gen();
   index_buffer.gen();
@@ -510,7 +510,7 @@ void Renderer::Dixel::set_data(const vector_t &data, int /*buffer_ID*/) const {
   assert(data.size() == vertex_count);
 
   GL_CHECK_ERROR;
-  GL::Context::Grab context(parent.context_);
+  const GL::Context::Grab context(parent.context_);
   VAO.bind();
   value_buffer.bind(gl::ARRAY_BUFFER);
   gl::BufferData(gl::ARRAY_BUFFER, vertex_count * sizeof(GLfloat), &data[0], gl::STREAM_DRAW);
@@ -530,7 +530,7 @@ void Renderer::Dixel::update_dixels(const MR::DWI::Directions::Set &dirs) {
   std::vector<std::array<GLint, 3>> indices_data;
 
   for (size_t i = 0; i != dirs.size(); ++i) {
-    directions_data.push_back(dirs[i].cast<float>());
+    directions_data.emplace_back(dirs[i].cast<float>());
     for (auto j : dirs.get_adj_dirs(i)) {
       if (j > i) {
         for (auto k : dirs.get_adj_dirs(j)) {
@@ -562,7 +562,7 @@ void Renderer::Dixel::update_dixels(const MR::DWI::Directions::Set &dirs) {
   }
 
   GL_CHECK_ERROR;
-  GL::Context::Grab context(parent.context_);
+  const GL::Context::Grab context(parent.context_);
   VAO.bind();
   vertex_buffer.bind(gl::ARRAY_BUFFER);
   gl::BufferData(gl::ARRAY_BUFFER, dirs.size() * sizeof(Eigen::Vector3f), &directions_data[0], gl::STATIC_DRAW);

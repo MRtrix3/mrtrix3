@@ -25,7 +25,7 @@ class EnergyComputer {
 public:
   EnergyComputer(Stats &s) : stats(s) {}
 
-  virtual ~EnergyComputer() {}
+  virtual ~EnergyComputer() = default;
 
   virtual double stageAdd(const Point_t &pos, const Point_t &dir) { return 0.0; }
 
@@ -39,7 +39,7 @@ public:
 
   virtual void clearChanges() {}
 
-  virtual EnergyComputer *clone() const = 0;
+  [[nodiscard]] virtual EnergyComputer *clone() const = 0;
 
 protected:
   Stats &stats;
@@ -68,8 +68,8 @@ public:
   double stageRemove(const Particle *par) { return l1 * _e1->stageRemove(par) + l2 * _e2->stageRemove(par); }
 
   double stageConnect(const ParticleEnd &pe1, ParticleEnd &pe2) {
-    double eint = _e1->stageConnect(pe1, pe2); // Warning: not symmetric due to output variable!
-    double eext = _e2->stageConnect(pe1, pe2);
+    const double eint = _e1->stageConnect(pe1, pe2); // Warning: not symmetric due to output variable!
+    const double eext = _e2->stageConnect(pe1, pe2);
     return l1 * eint + l2 * eext;
   }
 
@@ -83,7 +83,9 @@ public:
     _e2->clearChanges();
   }
 
-  EnergyComputer *clone() const { return new EnergySumComputer(stats, _e1->clone(), l1, _e2->clone(), l2); }
+  [[nodiscard]] EnergyComputer *clone() const {
+    return new EnergySumComputer(stats, _e1->clone(), l1, _e2->clone(), l2);
+  }
 
 protected:
   EnergyComputer *_e1;

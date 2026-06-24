@@ -35,18 +35,16 @@ public:
       : writer(path, properties),
         number(n),
         skip(s),
-        // Need to use local counts instead of writer class members due to track cropping
-        count(0),
-        total_count(0),
-        crop(properties.mask.size()),
-        segments(0),
+
+        crop(!properties.mask.empty()),
+
         progress(std::string("       0 read,        0 written") + (crop ? ",        0 segments" : "")) {}
 
   ~Receiver() {
     // Use set_text() rather than update() here to force update of the text before progress goes out of scope
     progress.set_text(std::string(printf("%8" PRIu64 " read, %8" PRIu64 " written", total_count, count)) +
                       (crop ? printf(", %8" PRIu64 " segments", segments) : ""));
-    if (number && (count != number))
+    if ((number != 0U) && (count != number))
       WARN("User requested " + str(number) + " streamlines, but only " + str(count) + " were written to file");
   }
 
@@ -56,9 +54,9 @@ private:
   Writer<> writer;
   const uint64_t number;
   uint64_t skip;
-  uint64_t count, total_count;
+  uint64_t count{0}, total_count{0};
   bool crop;
-  uint64_t segments;
+  uint64_t segments{0};
   ProgressBar progress;
 };
 

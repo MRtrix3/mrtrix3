@@ -23,10 +23,10 @@ namespace MR::DWI::Tractography::Resampling {
 class Endpoints : public BaseCRTP<Endpoints> {
 
 public:
-  Endpoints() {}
+  Endpoints() = default;
 
   bool operator()(const Streamline<> &, Streamline<> &) const override;
-  bool valid() const override { return true; }
+  [[nodiscard]] bool valid() const override { return true; }
 };
 
 } // namespace MR::DWI::Tractography::Resampling

@@ -35,7 +35,7 @@ private:
       n.normalize();
       d = n.dot(pos);
     }
-    value_type dist(const point_type &pos) const { return n.dot(pos) - d; }
+    [[nodiscard]] value_type dist(const point_type &pos) const { return n.dot(pos) - d; }
 
   private:
     point_type n;
@@ -56,7 +56,7 @@ public:
   }
 
   bool operator()(const Streamline<> &, Streamline<> &) const override;
-  bool valid() const override { return nsamples; }
+  [[nodiscard]] bool valid() const override { return nsamples != 0U; }
 
 private:
   const size_t nsamples;
@@ -68,7 +68,7 @@ private:
   void init_line();
   void init_arc();
 
-  state_t state(const point_type &) const;
+  [[nodiscard]] state_t state(const point_type &) const;
 };
 
 } // namespace MR::DWI::Tractography::Resampling

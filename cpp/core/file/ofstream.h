@@ -31,7 +31,7 @@ namespace MR::File {
  * c-style string. */
 class OFStream : public std::ofstream {
 public:
-  OFStream() {}
+  OFStream() = default;
   OFStream(const std::filesystem::path &path,
            const std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary) {
     open(path, mode);

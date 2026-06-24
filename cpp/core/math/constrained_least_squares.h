@@ -69,7 +69,7 @@ public:
   using matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
   using vector_type = Eigen::Matrix<value_type, Eigen::Dynamic, 1>;
 
-  Problem() {}
+  Problem() = default;
   //! set up constrained least-squares problem
   /*! With this constructor, equality constraints (if present) are
    * assumed to have been included as the last \e N rows of the
@@ -93,7 +93,7 @@ public:
         t(inequality_constraint_vector),
         lambda_min_norm(constraint_min_norm_regularisation),
         tol(tolerance),
-        max_niter(max_iterations ? max_iterations : 10 * problem_matrix.cols()),
+        max_niter((max_iterations != 0U) ? max_iterations : 10 * problem_matrix.cols()),
         num_eq(num_equalities) {
 
     if (H.cols() != inequality_constraint_matrix.cols())
@@ -136,7 +136,7 @@ public:
     B.noalias() = chol_HtH.template triangularView<Eigen::Lower>().transpose().template solve<Eigen::OnTheRight>(
         inequality_constraint_matrix);
     for (ssize_t n = 0; n < B.rows(); ++n) {
-      double norm = B.row(n).norm();
+      const double norm = B.row(n).norm();
       B.row(n) /= norm;
       if (t.size())
         t[n] /= norm;
@@ -177,10 +177,10 @@ public:
     }
   }
 
-  size_t num_parameters() const { return H.cols(); }
-  size_t num_measurements() const { return H.rows(); }
-  size_t num_constraints() const { return B.rows(); }
-  size_t num_equalities() const { return num_eq; }
+  [[nodiscard]] size_t num_parameters() const { return H.cols(); }
+  [[nodiscard]] size_t num_measurements() const { return H.rows(); }
+  [[nodiscard]] size_t num_constraints() const { return B.rows(); }
+  [[nodiscard]] size_t num_equalities() const { return num_eq; }
 
   matrix_type H, chol_HtH, B, b2d;
   vector_type t;
@@ -257,7 +257,7 @@ public:
       bool active_set_changed = !active[min_c_index];
       active[min_c_index] = true;
 
-      while (1) {
+      while (true) {
         // form submatrix of active constraints:
         size_t num_active = 0;
         for (size_t n = 0; n < active.size(); ++n) {
@@ -286,7 +286,7 @@ public:
         for (size_t n = 0; n < num_ineq; ++n) {
           if (active[n]) {
             if (l_active[a] < 0.0) {
-              value_type s = lambda_prev[n] / (lambda_prev[n] - l_active[a]);
+              const value_type s = lambda_prev[n] / (lambda_prev[n] - l_active[a]);
               if (s < s_min) {
                 s_min = s;
                 s_min_index = n;
@@ -338,7 +338,7 @@ public:
     return niter;
   }
 
-  const Problem<value_type> &problem() const { return P; }
+  [[nodiscard]] const Problem<value_type> &problem() const { return P; }
 
 protected:
   const Problem<value_type> &P;

@@ -45,7 +45,7 @@ const std::string Config::default_sys_config_file("/etc/" + file_basename);
 void Config::init() {
   const std::string sysconf_location = MR::get_env("MRTRIX_CONFIGFILE", default_sys_config_file);
 
-  std::filesystem::path sysconf_path(sysconf_location);
+  const std::filesystem::path sysconf_path(sysconf_location);
   if (std::filesystem::is_regular_file(sysconf_path)) {
     INFO("reading config file \"" + sysconf_path.string() + "\"...");
     try {
@@ -59,7 +59,7 @@ void Config::init() {
   } else {
     DEBUG(std::string("No config file found at \"") + sysconf_path.string() + "\"");
   }
-  std::filesystem::path home_path = Path::home() / ("." + file_basename);
+  const std::filesystem::path home_path = Path::home() / ("." + file_basename);
   if (std::filesystem::is_regular_file(home_path)) {
     INFO("reading config file \"" + home_path.string() + "\"...");
     try {
@@ -86,12 +86,12 @@ void Config::init() {
 }
 
 std::optional<std::string> Config::get(std::string_view key) {
-  const KeyValues::const_iterator i = config.find(std::string(key));
+  const auto i = config.find(std::string(key));
   return (i != config.end() ? std::optional<std::string>(i->second) : std::nullopt);
 }
 
 std::string Config::get(std::string_view key, std::string_view default_value) {
-  const KeyValues::const_iterator i = config.find(std::string(key));
+  const auto i = config.find(std::string(key));
   return (i != config.end() ? i->second : std::string(default_value));
 }
 

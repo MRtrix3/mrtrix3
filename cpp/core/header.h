@@ -51,16 +51,13 @@ public:
   //! a class to hold attributes about each axis
   class Axis {
   public:
-    Axis() noexcept : size(1), spacing(std::numeric_limits<default_type>::quiet_NaN()), stride(0) {}
-    ssize_t size;
-    default_type spacing;
-    ssize_t stride;
+    Axis() noexcept = default;
+    ssize_t size{1};
+    default_type spacing{std::numeric_limits<default_type>::quiet_NaN()};
+    ssize_t stride{0};
   };
 
-  Header()
-      : transform_(Eigen::Matrix<default_type, 3, 4>::Constant(NaN)), //
-        offset_(0.0),                                                 //
-        scale_(1.0) {}                                                //
+  Header() = default;
 
   explicit Header(Header &&H) noexcept
       : axes_(std::move(H.axes_)),
@@ -70,7 +67,7 @@ public:
         keyval_(std::move(H.keyval_)),
         format_(H.format_),
         io(std::move(H.io)),
-        datatype_(std::move(H.datatype_)),
+        datatype_(H.datatype_),
         offset_(H.offset_),
         scale_(H.scale_),
         realignment_(H.realignment_) {}
@@ -83,7 +80,7 @@ public:
     keyval_ = std::move(H.keyval_);
     format_ = H.format_;
     io = std::move(H.io);
-    datatype_ = std::move(H.datatype_);
+    datatype_ = H.datatype_;
     offset_ = H.offset_;
     scale_ = H.scale_;
     realignment_ = H.realignment_;
@@ -121,9 +118,7 @@ public:
       : transform_(original.transform()),
         name_(original.name()),
         keyval_(original.keyval()),
-        datatype_(DataType::from<typename HeaderType::value_type>()),
-        offset_(0.0),
-        scale_(1.0) {
+        datatype_(DataType::from<typename HeaderType::value_type>()) {
     axes_.resize(original.ndim());
     for (size_t n = 0; n < original.ndim(); ++n) {
       size(n) = original.size(n);
@@ -192,19 +187,19 @@ public:
     }
   }
 
-  bool valid() const { return bool(io); }
+  [[nodiscard]] bool valid() const { return bool(io); }
   bool operator!() const { return !valid(); }
 
   //! get the name of the image
-  std::string name() const { return name_; }
+  [[nodiscard]] std::string name() const { return name_; }
   //! get/set the name of the image
   std::string &name() { return name_; }
 
   //! return the format of the image
-  std::string format() const { return format_; }
+  [[nodiscard]] std::string format() const { return format_; }
 
   //! get the 4x4 affine transformation matrix mapping image to world coordinates
-  const transform_type &transform() const { return transform_; }
+  [[nodiscard]] const transform_type &transform() const { return transform_; }
   //! get/set the 4x4 affine transformation matrix mapping image to world coordinates
   transform_type &transform() { return transform_; }
 
@@ -234,44 +229,44 @@ public:
     //   transformation is in voxel count,
     //   therefore can store as integer
     using applied_transform_type = Eigen::Matrix<int, 3, 3>;
-    Realignment();
-    State state() const { return state_; }
-    bool applied() const { return state_ == State::Applied; }
-    bool valid() const {
+    Realignment() = default;
+    [[nodiscard]] State state() const { return state_; }
+    [[nodiscard]] bool applied() const { return state_ == State::Applied; }
+    [[nodiscard]] bool valid() const {
       assert((state_ != State::Unknown) == shuffle_.valid());
       return state_ != State::Unknown;
     }
-    const Axes::permutations_type &permutations() const { return shuffle_.permutations; }
-    size_t permutation(const size_t axis) const {
+    [[nodiscard]] const Axes::permutations_type &permutations() const { return shuffle_.permutations; }
+    [[nodiscard]] size_t permutation(const size_t axis) const {
       assert(axis < 3);
       return shuffle_.permutations[axis];
     }
-    const Axes::flips_type &flips() const { return shuffle_.flips; }
-    bool flip(const size_t axis) const {
+    [[nodiscard]] const Axes::flips_type &flips() const { return shuffle_.flips; }
+    [[nodiscard]] bool flip(const size_t axis) const {
       assert(axis < 3);
       return shuffle_.flips[axis];
     }
-    const transform_type &orig_transform() const { return orig_transform_; }
-    const Stride::List &orig_strides() const { return orig_strides_; }
-    const applied_transform_type &applied_transform() const { return applied_transform_; }
-    KeyValues &orig_keyval() { return orig_keyval_; }
-    const KeyValues &orig_keyval() const { return orig_keyval_; }
+    [[nodiscard]] const transform_type &orig_transform() const { return orig_transform_; }
+    [[nodiscard]] const Stride::List &orig_strides() const { return orig_strides_; }
+    [[nodiscard]] const applied_transform_type &applied_transform() const { return applied_transform_; }
+    [[nodiscard]] KeyValues &orig_keyval() { return orig_keyval_; }
+    [[nodiscard]] const KeyValues &orig_keyval() const { return orig_keyval_; }
 
     //! Human-readable per-output-axis enumeration of the shuffle.
     //!  Returns 3 lines (~R, ~A, ~S); empty if is_identity().
-    std::vector<std::string> describe_axis_mapping() const;
+    [[nodiscard]] std::vector<std::string> describe_axis_mapping() const;
 
   private:
     State state_{State::Unknown};
     Axes::Shuffle shuffle_;
-    transform_type orig_transform_;
+    transform_type orig_transform_{Eigen::Matrix<default_type, 3, 4>::Constant(NaN)};
     Stride::List orig_strides_;
-    applied_transform_type applied_transform_;
+    applied_transform_type applied_transform_{applied_transform_type::Identity()};
     KeyValues orig_keyval_;
     friend class Header;
   };
   //! get information on how the transform was modified on image load
-  const Realignment &realignment() const { return realignment_; }
+  [[nodiscard]] const Realignment &realignment() const { return realignment_; }
   //! non-const accessor; used by external metadata importers (JSON, etc.)
   //!   to populate Realignment::orig_keyval() with the pre-transformation
   //!   view of axis-dependent fields.
@@ -300,7 +295,7 @@ public:
   };
 
   //! return the number of dimensions (axes) of image
-  size_t ndim() const { return axes_.size(); }
+  [[nodiscard]] size_t ndim() const { return axes_.size(); }
   //! set the number of dimensions (axes) of image
   NDimProxy ndim() { return {axes_}; }
 
@@ -320,9 +315,9 @@ public:
     }
 
     void clear() { path.clear(); }
-    bool empty() const { return path.string().empty(); }
-    std::filesystem::path filename() const { return path.filename(); }
-    std::string string() const { return empty() ? name : path.string(); }
+    [[nodiscard]] bool empty() const { return path.string().empty(); }
+    [[nodiscard]] std::filesystem::path filename() const { return path.filename(); }
+    [[nodiscard]] std::string string() const { return empty() ? name : path.string(); }
 
   private:
     std::string &name;
@@ -330,22 +325,22 @@ public:
   };
 
   //! get the path of the image
-  const std::filesystem::path &path() const { return path_; }
+  [[nodiscard]] const std::filesystem::path &path() const { return path_; }
   //! get/set the path of the image
   PathProxy path() { return {name_, path_}; }
 
   //! get the number of voxels across axis
-  const ssize_t &size(size_t axis) const;
+  [[nodiscard]] const ssize_t &size(size_t axis) const;
   //! get/set the number of voxels across axis
   ssize_t &size(size_t axis);
 
   //! get the voxel size along axis
-  const default_type &spacing(size_t axis) const;
+  [[nodiscard]] const default_type &spacing(size_t axis) const;
   //! get/set the voxel size along axis
   default_type &spacing(size_t axis);
 
   //! get the stride between adjacent voxels along axis
-  const ssize_t &stride(size_t axis) const;
+  [[nodiscard]] const ssize_t &stride(size_t axis) const;
   //! get/set the stride between adjacent voxels along axis
   ssize_t &stride(size_t axis);
 
@@ -388,14 +383,14 @@ public:
   //! get the datatype of the data as stored on file
   DataTypeProxy datatype() { return {*this}; }
   //! get/set the datatype of the data as stored on file
-  DataType datatype() const { return datatype_; }
+  [[nodiscard]] DataType datatype() const { return datatype_; }
 
   //! get the offset applied to raw intensities
-  default_type intensity_offset() const { return offset_; }
+  [[nodiscard]] default_type intensity_offset() const { return offset_; }
   //! get/set the offset applied to raw intensities
   default_type &intensity_offset() { return offset_; }
   //! get the scaling applied to raw intensities
-  default_type intensity_scale() const { return scale_; }
+  [[nodiscard]] default_type intensity_scale() const { return scale_; }
   //! get/set the scaling applied to raw intensities
   default_type &intensity_scale() { return scale_; }
 
@@ -417,7 +412,7 @@ public:
   //! reset intensity offset to zero and scaling to one
   void reset_intensity_scaling() { set_intensity_scaling(); }
 
-  bool is_file_backed() const { return valid() ? io->is_file_backed() : false; }
+  [[nodiscard]] bool is_file_backed() const { return valid() ? io->is_file_backed() : false; }
 
   //! make header self-consistent
   void sanitise() {
@@ -451,7 +446,7 @@ public:
   Image<ValueType> get_image(std::optional<DirectIO> direct_io = std::nullopt, bool read_write_if_existing = false);
 
   //! get generic key/value text attributes
-  const KeyValues &keyval() const { return keyval_; }
+  [[nodiscard]] const KeyValues &keyval() const { return keyval_; }
   //! get/set generic key/value text attributes
   KeyValues &keyval() { return keyval_; }
   //! merge key/value entries from another dictionary
@@ -468,13 +463,13 @@ public:
   static bool do_realign_transform;
 
   //! return a string with the full description of the header
-  std::string description(bool print_all = false) const;
+  [[nodiscard]] std::string description(bool print_all = false) const;
   //! print out debugging information
   friend std::ostream &operator<<(std::ostream &stream, const Header &H);
 
 protected:
   std::vector<Axis> axes_;
-  transform_type transform_;
+  transform_type transform_{Eigen::Matrix<default_type, 3, 4>::Constant(NaN)};
   std::string name_;
   std::filesystem::path path_;
   KeyValues keyval_;
@@ -485,7 +480,7 @@ protected:
   //! the type of the data as stored on file
   DataType datatype_;
   //! the values by which to scale the intensities
-  default_type offset_, scale_;
+  default_type offset_{0.0}, scale_{1.0};
 
   void acquire_io(Header &H) { io = std::move(H.io); }
   void check(const Header &H) const;

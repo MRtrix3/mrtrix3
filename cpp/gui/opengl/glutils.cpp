@@ -27,7 +27,7 @@ Area *glwidget = nullptr;
 #ifndef NDEBUG
 void _assert_context_is_current(QWidget *glarea) {
   auto _current_context = Context::current();
-  auto _expected_context = Context::get(glarea ? glarea : glwidget);
+  auto _expected_context = Context::get((glarea == nullptr) ? glwidget : glarea);
   assert(_current_context == _expected_context);
 }
 #endif
@@ -64,10 +64,10 @@ void set_default_context() {
   f.setBlueBufferSize(8);
   f.setAlphaBufferSize(0);
 
-  int swap_interval = MR::File::Config::get_int("VSync", 0);
+  const int swap_interval = MR::File::Config::get_int("VSync", 0);
   f.setSwapInterval(swap_interval);
 
-  int nsamples = File::Config::get_int("MSAA", 0);
+  const int nsamples = File::Config::get_int("MSAA", 0);
   if (nsamples > 1)
     f.setSamples(nsamples);
 
@@ -79,7 +79,8 @@ void init() {
   INFO("GL version:   " + std::string((const char *)gl::GetString(gl::VERSION)));
   INFO("GL vendor:    " + std::string((const char *)gl::GetString(gl::VENDOR)));
 
-  GLint gl_version(0), gl_version_major(0);
+  GLint gl_version(0);
+  GLint gl_version_major(0);
   gl::GetIntegerv(gl::MAJOR_VERSION, &gl_version_major);
   gl::GetIntegerv(gl::MINOR_VERSION, &gl_version);
   GL_CHECK_ERROR;

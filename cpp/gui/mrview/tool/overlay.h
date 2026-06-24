@@ -32,7 +32,7 @@ public:
 
   void draw(const Projection &projection, bool is_3D, int axis, int slice) override;
   void draw_colourbars() override;
-  int draw_tool_labels(int position, int start_line_num, const Projection &transform) const override;
+  [[nodiscard]] int draw_tool_labels(int position, int start_line_num, const Projection &transform) const override;
 
   void selected_colourmap(size_t index, const ColourMapButton &) override;
   void selected_custom_colour(const QColor &colour, const ColourMapButton &) override;

@@ -23,14 +23,14 @@ namespace MR::DWI::Tractography::Connectome {
 
 class Streamline_nodepair : public Tractography::Streamline<> {
 public:
-  Streamline_nodepair() : Tractography::Streamline<>(), nodes(std::make_pair(0, 0)) {}
-  Streamline_nodepair(const size_t i) : Tractography::Streamline<>(i), nodes(std::make_pair(0, 0)) {}
+  Streamline_nodepair() = default;
+  Streamline_nodepair(const size_t i) : Tractography::Streamline<>(i) {}
 
   void set_nodes(const NodePair &i) { nodes = i; }
-  const NodePair &get_nodes() const { return nodes; }
+  [[nodiscard]] const NodePair &get_nodes() const { return nodes; }
 
 private:
-  NodePair nodes;
+  NodePair nodes{0, 0};
 };
 
 class Streamline_nodelist : public Tractography::Streamline<> {
@@ -39,7 +39,7 @@ public:
   Streamline_nodelist(const size_t i) : Tractography::Streamline<>(i), nodes() {}
 
   void set_nodes(const std::vector<node_t> &i) { nodes = i; }
-  const std::vector<node_t> &get_nodes() const { return nodes; }
+  [[nodiscard]] const std::vector<node_t> &get_nodes() const { return nodes; }
 
 private:
   std::vector<node_t> nodes;

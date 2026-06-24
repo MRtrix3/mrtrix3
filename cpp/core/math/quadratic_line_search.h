@@ -72,8 +72,7 @@ public:
         init_upper(upper_bound),
         value_tolerance(0.001 * (upper_bound - lower_bound)),
         function_tolerance(0.0),
-        exit_outside_bounds(true),
-        max_iters(50),
+
         status(SUCCESS) {}
 
   void set_lower_bound(const ValueType i) { init_lower = i; }
@@ -93,8 +92,12 @@ public:
 
     std::unique_ptr<ProgressBar> progress(!message.empty() ? new ProgressBar(message) : nullptr);
 
-    ValueType l = init_lower, m = init_mid, u = init_upper;
-    ValueType fl = functor(l), fm = functor(m), fu = functor(u);
+    ValueType l = init_lower;
+    ValueType m = init_mid;
+    ValueType u = init_upper;
+    ValueType fl = functor(l);
+    ValueType fm = functor(m);
+    ValueType fu = functor(u);
     // TODO Need to test if these bounds are producing a NaN CF
     size_t iters = 0;
 
@@ -187,8 +190,12 @@ public:
 
     status = EXECUTING;
 
-    ValueType l = init_lower, m = init_mid, u = init_upper;
-    ValueType fl = functor(l), fm = functor(m), fu = functor(u);
+    ValueType l = init_lower;
+    ValueType m = init_mid;
+    ValueType u = init_upper;
+    ValueType fl = functor(l);
+    ValueType fm = functor(m);
+    ValueType fu = functor(u);
     std::cerr << "Initialising quadratic line search\n";
     std::cerr << "        Lower        Mid         Upper\n";
     std::cerr << "Pos     " << str(l) << "           " << str(m) << "        " << str(u) << "\n";
@@ -281,8 +288,8 @@ public:
 
 private:
   ValueType init_lower, init_mid, init_upper, value_tolerance, function_tolerance;
-  bool exit_outside_bounds;
-  size_t max_iters;
+  bool exit_outside_bounds{true};
+  size_t max_iters{50};
   std::string message;
 
   mutable return_t status;

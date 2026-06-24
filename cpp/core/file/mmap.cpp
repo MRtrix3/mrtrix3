@@ -45,7 +45,7 @@
 namespace MR::File {
 
 MMap::MMap(const Entry &entry, bool readwrite, bool preload, std::optional<int64_t> mapped_size)
-    : Entry(entry), addr(nullptr), first(nullptr), msize(0), readwrite(readwrite) {
+    : Entry(entry), readwrite(readwrite) {
 
   DEBUG("memory-mapping file \"" + Entry::path.string() + "\"...");
 
@@ -112,7 +112,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, std::optional<int64
     }
 #else
     struct statfs fsbuf;
-    if (statfs(Entry::path.string().c_str(), &fsbuf)) {
+    if (statfs(Entry::path.string().c_str(), &fsbuf) != 0) {
       DEBUG("cannot get filesystem information on file \"" + Entry::path.string() + "\": " + MR::C_strerror(errno));
       DEBUG("  defaulting to delayed write-back");
       delayed_writeback = true;
@@ -134,7 +134,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, std::optional<int64
     if (delayed_writeback) {
       try {
         first = new std::byte[msize];
-        if (!first)
+        if (first == nullptr)
           throw 1;
       } catch (...) {
         throw Exception("error allocating memory to hold mmap buffer contents");
@@ -192,14 +192,14 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, std::optional<int64
 }
 
 MMap::~MMap() {
-  if (!first)
+  if (first == nullptr)
     return;
-  if (addr) {
+  if (addr != nullptr) {
     DEBUG("unmapping file \"" + Entry::path.string() + "\"");
 #ifdef MRTRIX_WINDOWS
     if (!UnmapViewOfFile(static_cast<LPVOID>(addr)))
 #else
-    if (munmap(addr, msize))
+    if (munmap(addr, msize) != 0)
 #endif
       WARN("error unmapping file \"" + Entry::path.string() + "\": " + MR::C_strerror(errno));
     close(fd);

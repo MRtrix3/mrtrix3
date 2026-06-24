@@ -32,8 +32,7 @@ ExternalEnergyComputer::ExternalEnergyComputer(Stats &stat, Header &dwiheader, c
       ncols(Math::SH::NforL(lmax)),
       nf(props.resp_ISO.size()),
       beta(props.beta),
-      mu(props.ppot * M_sqrt4PI),
-      dE(0.0) {
+      mu(props.ppot * M_sqrt4PI) {
   DEBUG("Initialise computation of external energy.");
 
   // Create images --------------------------------------------------------------
@@ -55,11 +54,11 @@ ExternalEnergyComputer::ExternalEnergyComputer(Stats &stat, Header &dwiheader, c
   // Set kernel matrices --------------------------------------------------------
   auto grad = DWI::get_DW_scheme(dwiheader);
   nrows = grad.rows();
-  DWI::Shells shells(grad);
+  const DWI::Shells shells(grad);
 
   if (static_cast<size_t>(props.resp_WM.rows()) != shells.count())
     FAIL("WM kernel size does not match the no. b-values in the image.");
-  for (auto r : props.resp_ISO) {
+  for (const auto &r : props.resp_ISO) {
     if (static_cast<size_t>(r.size()) != shells.count())
       FAIL("Isotropic kernel size does not match the no. b-values in the image.");
   }
@@ -70,7 +69,8 @@ ExternalEnergyComputer::ExternalEnergyComputer(Stats &stat, Header &dwiheader, c
   Ak.setZero();
 
   Eigen::VectorXd delta_vec(ncols);
-  Eigen::VectorXd wmr_zsh(Math::ZSH::NforL(lmax)), wmr_rh(Math::ZSH::NforL(lmax));
+  Eigen::VectorXd wmr_zsh(Math::ZSH::NforL(lmax));
+  Eigen::VectorXd wmr_rh(Math::ZSH::NforL(lmax));
   wmr_zsh.setZero();
   Eigen::Vector3d unit_dir;
   double wmr0;
@@ -81,10 +81,10 @@ ExternalEnergyComputer::ExternalEnergyComputer(Stats &stat, Header &dwiheader, c
     wmr_rh = Math::ZSH::ZSH2RH(wmr_zsh);
     wmr0 = props.resp_WM(s, 0) / std::sqrt(M_4PI);
 
-    for (size_t r : shells[s].get_volumes()) {
+    for (const size_t r : shells[s].get_volumes()) {
       // K
       unit_dir << grad(r, 0), grad(r, 1), grad(r, 2);
-      double n = unit_dir.norm();
+      const double n = unit_dir.norm();
       if (n > 0.0)
         unit_dir /= n;
       Math::SH::delta(delta_vec, unit_dir, lmax);
@@ -211,7 +211,7 @@ double ExternalEnergyComputer::eval() {
     y = dwi.row(3);
     t = changes_tod[k];
     e = calcEnergy();
-    changes_fiso.push_back(fk.tail(nf));
+    changes_fiso.emplace_back(fk.tail(nf));
     dE += e;
     dE -= eext.value();
     changes_eext.push_back(e);

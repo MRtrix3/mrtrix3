@@ -79,12 +79,12 @@ private:
   static float slice_focus_inc_adjust_rate;
   static ssize_t current_slice_index;
 
-  ModelViewProjection get_projection_at(int row, int col) const;
+  [[nodiscard]] ModelViewProjection get_projection_at(int row, int col) const;
 
   GL::VertexBuffer frame_VB;
   GL::VertexArrayObject frame_VAO;
   GL::Shader::Program frame_program;
-  bool frames_dirty;
+  bool frames_dirty{true};
 signals:
   void slice_increment_reset();
 };

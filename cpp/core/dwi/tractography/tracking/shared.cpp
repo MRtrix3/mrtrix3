@@ -15,7 +15,9 @@
  */
 
 #include "dwi/tractography/tracking/shared.h"
+
 #include "algo/implicit_mask.h"
+#include <memory>
 
 namespace MR::DWI::Tractography::Tracking {
 
@@ -27,10 +29,7 @@ SharedBase::SharedBase(const std::filesystem::path &diff_path,
       source_mask(make_implicit_mask(source, source_mask_config)),
       properties(property_set),
       init_dir(Eigen::Vector3f::Constant(NaN)),
-      min_num_points_preds(0),
-      max_num_points_preds(0),
-      min_num_points_postds(0),
-      max_num_points_postds(0),
+
       min_dist(NaNF),
       max_dist(NaNF),
       max_angle_1o(NaNF),
@@ -41,11 +40,9 @@ SharedBase::SharedBase(const std::filesystem::path &diff_path,
       min_radius(NaNF),
       threshold(NaNF),
       init_threshold(NaNF),
-      unidirectional(false),
-      rk4(false),
-      stop_on_all_include(false),
+
       implicit_max_num_seeds(properties.find("max_num_seeds") == properties.end()),
-      curvature_constraint(curvature_constraint_t::POSTHOC_THRESHOLD),
+
       downsampler(1)
 #ifdef DEBUG_TERMINATIONS
       ,
@@ -81,7 +78,7 @@ SharedBase::SharedBase(const std::filesystem::path &diff_path,
   }
 
   if (properties.find("act") != properties.end()) {
-    act_shared_additions.reset(new ACT::ACT_Shared_additions(properties["act"], property_set));
+    act_shared_additions = std::make_unique<ACT::ACT_Shared_additions>(properties["act"], property_set);
     if (act().backtrack() && stop_on_all_include)
       throw Exception("Cannot use -stop option if ACT backtracking is enabled");
   }
@@ -150,7 +147,7 @@ void SharedBase::set_step_and_angle(const float voxel_frac,
   INFO(angle_msg + " = " + str(max_angle_1o) + " deg");
   max_angle_1o *= Math::pi / 180.0;
   cos_max_angle_1o = std::cos(max_angle_1o);
-  min_radius = step_size / (2.0f * std::sin(0.5f * max_angle_1o));
+  min_radius = step_size / (2.0F * std::sin(0.5F * max_angle_1o));
   INFO("Minimum radius of curvature = " + str(min_radius) + "mm");
 
   if (intrinsic_integration_order == intrinsic_integration_order_t::HIGHER) {
@@ -159,7 +156,7 @@ void SharedBase::set_step_and_angle(const float voxel_frac,
     // Clear these variables so that the next() function of the underlying method
     //   does not enforce curvature constraints; rely on e.g. RK4 to do it
     max_angle_1o = static_cast<float>(Math::pi);
-    cos_max_angle_1o = 0.0f;
+    cos_max_angle_1o = 0.0F;
   }
 
   // If the curvature constraint gets applied implicitly during path propagation,
@@ -177,7 +174,7 @@ void SharedBase::set_step_and_angle(const float voxel_frac,
 
 void SharedBase::set_num_points() {
   // Angle around the circle of minimum radius for the given step size
-  const float angle_minradius_preds = 2.0f * std::asin(step_size / (2.0f * min_radius));
+  const float angle_minradius_preds = 2.0F * std::asin(step_size / (2.0F * min_radius));
   // Maximum inter-vertex distance after streamline has been downsampled
   const float max_step_postds = downsampler.get_ratio() * step_size;
 
@@ -205,8 +202,9 @@ void SharedBase::set_num_points(const float angle_minradius_preds, const float m
   //         it will invariably be either truncated or rejected, no matter what
   //         happens during downsampling)
   max_num_points_preds =
-      min_step_postds ? (3 + static_cast<size_t>(std::ceil(downsampler.get_ratio() * max_dist / min_step_postds)))
-                      : std::numeric_limits<size_t>::max();
+      (min_step_postds == 0.0F)
+          ? std::numeric_limits<size_t>::max()
+          : (3 + static_cast<size_t>(std::ceil(downsampler.get_ratio() * max_dist / min_step_postds)));
   //   - After downsampling:
   //     - How many vertices must a streamline have (after downsampling) for it to be
   //         guaranteed to exceed the minimum length?

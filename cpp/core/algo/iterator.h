@@ -32,11 +32,11 @@ public:
       d[i] = S.size(i);
   }
 
-  size_t ndim() const { return d.size(); }
-  ssize_t size(size_t axis) const { return d[axis]; }
+  [[nodiscard]] size_t ndim() const { return d.size(); }
+  [[nodiscard]] ssize_t size(size_t axis) const { return d[axis]; }
 
-  const ssize_t &index(size_t axis) const { return p[axis]; }
-  ssize_t &index(size_t axis) { return p[axis]; }
+  [[nodiscard]] const ssize_t &index(size_t axis) const { return p[axis]; }
+  [[nodiscard]] ssize_t &index(size_t axis) { return p[axis]; }
 
   friend std::ostream &operator<<(std::ostream &stream, const Iterator &V) {
     stream << "iterator, position [ ";

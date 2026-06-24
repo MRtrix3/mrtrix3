@@ -15,6 +15,9 @@
  */
 
 #include "file/dicom/image.h"
+
+#include <memory>
+
 #include "exception.h"
 #include "file/dicom/csa_entry.h"
 #include "file/dicom/patient.h"
@@ -52,9 +55,9 @@ void Image::parse_item(Element &item) {
         return;
       {
         int c = sequence_name.size() - 1;
-        if (!isdigit(sequence_name[c]))
+        if (isdigit(sequence_name[c]) == 0)
           return;
-        while (c >= 0 && isdigit(sequence_name[c]))
+        while (c >= 0 && (isdigit(sequence_name[c]) != 0))
           --c;
         if (c >= 0 && sequence_name[c] != '#') {
           sequence = 0;
@@ -112,13 +115,13 @@ void Image::parse_item(Element &item) {
       echo_time = item.get_float(0, echo_time);
       return;
     case 0x9087U: { // ugly hack to handle badly formatted Philips data:
-      default_type v = item.get_float(0, bvalue);
+      const default_type v = item.get_float(0, bvalue);
       if (v < 1.0e10)
         bvalue = v;
     }
       return;
     case 0x9089U: { // ugly hack to handle badly formatted Philips data:
-      default_type v = item.get_float(0, G[0]);
+      const default_type v = item.get_float(0, G[0]);
       if (v < 1.0e10) {
         G[0] = v;
         G[1] = item.get_float(1, G[1]);
@@ -289,7 +292,7 @@ void Image::parse_item(Element &item) {
       if (!item.parents.empty() && item.parents.back().group == 0x5200U && item.parents.back().element == 0x9230U) {
         if (in_frames) {
           calc_distance();
-          frames.push_back(std::shared_ptr<Frame>(new Frame(*this)));
+          frames.push_back(std::make_shared<Frame>(*this));
           frame_offset += dim[0] * dim[1] * (bits_alloc / 8) * samples_per_pixel;
         } else
           in_frames = true;
@@ -320,10 +323,10 @@ void Image::read() {
     calc_distance();
 
     if (frame_offset > 0)
-      frames.push_back(std::shared_ptr<Frame>(new Frame(*this)));
+      frames.push_back(std::make_shared<Frame>(*this));
 
-    for (size_t n = 0; n < frames.size(); ++n)
-      frames[n]->data = data + frames[n]->frame_offset;
+    for (auto &frame : frames)
+      frame->data = data + frame->frame_offset;
   }
   check_app_exit_code();
 }
@@ -415,7 +418,7 @@ void Image::decode_csa(const std::byte *start, const std::byte *end) {
       time_after_start = entry.get_float();
   }
 
-  if (G[0] && bvalue)
+  if ((G[0] != 0.0) && (bvalue != 0.0))
     if (std::fabs(G[0]) > 1.0 && std::fabs(G[1]) > 1.0 && std::fabs(G[2]) > 1.0)
       bvalue = G[0] = G[1] = G[2] = 0.0;
 }
@@ -423,7 +426,7 @@ void Image::decode_csa(const std::byte *start, const std::byte *end) {
 KeyValues Image::read_csa_ascii(const std::vector<std::string> &data) {
 
   auto split_keyval = [](std::string_view s) -> std::pair<std::string, std::string> {
-    const size_t delimiter = s.find_first_of("=");
+    const size_t delimiter = s.find_first_of('=');
     if (delimiter == std::string::npos)
       return std::make_pair(std::string(), std::string());
     return std::make_pair(strip(s.substr(0, delimiter)), strip(s.substr(delimiter + 1)));
@@ -480,8 +483,8 @@ std::ostream &operator<<(std::ostream &stream, const Image &item) {
          << (!item.frames.empty() ? str(item.frames.size()) + " frames with dim " + str(item.frame_dim)
                                   : std::string());
   if (!item.frames.empty()) {
-    for (size_t n = 0; n < item.frames.size(); ++n)
-      stream << "  " << static_cast<const Frame &>(*item.frames[n]) << "\n";
+    for (const auto &frame : item.frames)
+      stream << "  " << static_cast<const Frame &>(*frame) << "\n";
   } else
     stream << "  " << static_cast<const Frame &>(item) << "\n";
 
@@ -492,7 +495,7 @@ namespace {
 
 inline void update_count(size_t num, std::vector<size_t> &dim, std::vector<size_t> &index) {
   for (size_t n = 0; n < num; ++n) {
-    if (dim[n] && index[n] != dim[n])
+    if ((dim[n] != 0U) && index[n] != dim[n])
       throw Exception("dimensions mismatch in DICOM series");
     index[n] = 1;
   }
@@ -521,11 +524,11 @@ std::vector<size_t> Frame::count(const std::vector<Frame *> &frames) {
     previous = &frame;
   }
 
-  if (!dim[0])
+  if (dim[0] == 0U)
     dim[0] = 1;
-  if (!dim[1])
+  if (dim[1] == 0U)
     dim[1] = 1;
-  if (!dim[2])
+  if (dim[2] == 0U)
     dim[2] = 1;
 
   return dim;
@@ -607,7 +610,7 @@ Eigen::MatrixXd Frame::get_PE_scheme(const std::vector<Frame *> &frames, const s
 
   for (size_t n = 0; n != num_volumes; ++n) {
     const Frame &frame(*frames[n * nslices]);
-    if (frame.pe_axis == 3 || !frame.pe_sign) {
+    if ((frame.pe_axis == 3) || (frame.pe_sign == 0)) {
       DEBUG("no phase-encoding information found in DICOM frames");
       return {};
     }
@@ -619,7 +622,7 @@ Eigen::MatrixXd Frame::get_PE_scheme(const std::vector<Frame *> &frames, const s
     }
   }
 
-  if (pe_scheme.col(3).sum())
+  if (pe_scheme.col(3).sum() != 0.0)
     return pe_scheme;
   return pe_scheme.leftCols(3);
 }

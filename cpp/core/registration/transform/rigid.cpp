@@ -33,9 +33,9 @@ using namespace MR::Math;
 namespace Registration::Transform {
 void project_linear2rotation(const Eigen::Matrix<default_type, 3, 3> &linear,
                              Eigen::Matrix<default_type, 3, 3> &rotation) {
-  Eigen::JacobiSVD<Eigen::Matrix<default_type, 3, 3>> svd(linear, Eigen::ComputeFullU | Eigen::ComputeFullV);
+  const Eigen::JacobiSVD<Eigen::Matrix<default_type, 3, 3>> svd(linear, Eigen::ComputeFullU | Eigen::ComputeFullV);
 
-  default_type x = (svd.matrixU() * svd.matrixV().adjoint()).determinant(); // so x has absolute value 1
+  const default_type x = (svd.matrixU() * svd.matrixV().adjoint()).determinant(); // so x has absolute value 1
   Eigen::Matrix<default_type, 3, 1> sv(svd.singularValues());
   sv.coeffRef(0) *= x;
   Eigen::Matrix<default_type, 3, 3> m(svd.matrixU());
@@ -55,7 +55,18 @@ bool RigidLinearNonSymmetricUpdate::operator()(Eigen::Matrix<default_type, Eigen
   assert(g.size() == 12);
 
   Eigen::Matrix<default_type, 12, 1> delta;
-  Eigen::Matrix<default_type, 4, 4> X, Delta, G, A, Asqrt, B, Bsqrt, Bsqrtinv, Xnew, P, Diff, XnewP;
+  Eigen::Matrix<default_type, 4, 4> X;
+  Eigen::Matrix<default_type, 4, 4> Delta;
+  Eigen::Matrix<default_type, 4, 4> G;
+  Eigen::Matrix<default_type, 4, 4> A;
+  Eigen::Matrix<default_type, 4, 4> Asqrt;
+  Eigen::Matrix<default_type, 4, 4> B;
+  Eigen::Matrix<default_type, 4, 4> Bsqrt;
+  Eigen::Matrix<default_type, 4, 4> Bsqrtinv;
+  Eigen::Matrix<default_type, 4, 4> Xnew;
+  Eigen::Matrix<default_type, 4, 4> P;
+  Eigen::Matrix<default_type, 4, 4> Diff;
+  Eigen::Matrix<default_type, 4, 4> XnewP;
   Registration::Transform::param_vec2mat(g, G);
   Registration::Transform::param_vec2mat(x, X);
 
@@ -64,7 +75,7 @@ bool RigidLinearNonSymmetricUpdate::operator()(Eigen::Matrix<default_type, Eigen
     step_size = 0.2 / G.block(0, 0, 3, 3).array().abs().maxCoeff();
   }
   // use control points and coherence length as update criterion
-  if (control_points.size()) {
+  if (control_points.size() != 0) {
     P = control_points;
     const default_type orig_step_size(step_size);
     const default_type step_down_factor(0.5);
@@ -184,13 +195,15 @@ bool RigidLinearNonSymmetricUpdate::operator()(Eigen::Matrix<default_type, Eigen
   // project affine 3x3 matrix to rigid matrix
   // adjust translation to account for scale of affine by matching projected control point
   // centroids of affine and projected rigid transformation
-  Eigen::Matrix<default_type, 3, 3> L(Xnew.template block<3, 3>(0, 0));
+  const Eigen::Matrix<default_type, 3, 3> L(Xnew.template block<3, 3>(0, 0));
   Eigen::Matrix<default_type, 3, 3> R;
   project_linear2rotation(L, R);
   Xnew.template block<3, 3>(0, 0) = R;
-  if (control_points.size()) {
+  if (control_points.size() != 0) {
     P = control_points;
-    Eigen::Matrix<default_type, 3, 1> T_affine, T_new, centroid;
+    Eigen::Matrix<default_type, 3, 1> T_affine;
+    Eigen::Matrix<default_type, 3, 1> T_new;
+    Eigen::Matrix<default_type, 3, 1> centroid;
     T_affine = Xnew.block<3, 1>(0, 3);
     centroid = P.rowwise().mean().head<3>();
     T_new = L.sqrt() * centroid + T_affine - R.sqrt() * centroid;
@@ -204,7 +217,7 @@ bool RigidLinearNonSymmetricUpdate::operator()(Eigen::Matrix<default_type, Eigen
     return false;
   }
 
-  if (control_points.size()) {
+  if (control_points.size() != 0) {
     XnewP = (Xnew * P).eval();
 
     // stop criterion based on slope of smoothed control point trajectories

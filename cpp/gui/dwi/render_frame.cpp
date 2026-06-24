@@ -17,6 +17,7 @@
 #include <fstream>
 
 #include <QOpenGLWidget>
+#include <memory>
 
 #include "app.h"
 #include "dwi/render_frame.h"
@@ -25,21 +26,21 @@ namespace MR::GUI::DWI {
 
 namespace {
 
-constexpr float RotationInc = 0.004f;
-constexpr float Degrees2radians = 0.01745329252f;
+constexpr float RotationInc = 0.004F;
+constexpr float Degrees2radians = 0.01745329252F;
 
-constexpr float DistDefault = 0.3f;
-constexpr float DistInc = 0.005f;
+constexpr float DistDefault = 0.3F;
+constexpr float DistInc = 0.005F;
 
-constexpr float ScaleInc = 1.05f;
+constexpr float ScaleInc = 1.05F;
 
-constexpr float AngleDefault = 40.0f;
-constexpr float AngleInc = 0.1f;
-constexpr float AngleMin = 1.0f;
-constexpr float AngleMax = 90.0f;
+constexpr float AngleDefault = 40.0F;
+constexpr float AngleInc = 0.1F;
+constexpr float AngleMin = 1.0F;
+constexpr float AngleMax = 90.0F;
 
-const Eigen::Quaternionf DefaultOrientation = Eigen::AngleAxisf(Math::pi_4, Eigen::Vector3f(0.0f, 0.0f, 1.0f)) *
-                                              Eigen::AngleAxisf(Math::pi / 3.0f, Eigen::Vector3f(1.0f, 0.0f, 0.0f));
+const Eigen::Quaternionf DefaultOrientation = Eigen::AngleAxisf(Math::pi_4, Eigen::Vector3f(0.0F, 0.0F, 1.0F)) *
+                                              Eigen::AngleAxisf(Math::pi / 3.0F, Eigen::Vector3f(1.0F, 0.0F, 0.0F));
 QFont get_font(QWidget *parent) {
   QFont f = parent->font();
   f.setPointSize(MR::File::Config::get_int("FontSize", 10));
@@ -52,22 +53,12 @@ RenderFrame::RenderFrame(QWidget *parent)
       view_angle(AngleDefault),
       distance(DistDefault),
       scale(NaNF),
-      lmax_computed(0),
-      lod_computed(0),
-      mode(mode_t::SH),
-      recompute_mesh(true),
-      recompute_amplitudes(true),
-      show_axes(true),
-      hide_neg_values(true),
-      color_by_dir(true),
-      use_lighting(true),
+
       glfont(get_font(parent)),
       projection(this, glfont),
       orientation(DefaultOrientation),
       focus(0.0, 0.0, 0.0),
-      OS(0),
-      OS_x(0),
-      OS_y(0),
+
       renderer(static_cast<QOpenGLWidget *>(this)) {
   setMinimumSize(128, 128);
   lighting = new GL::Lighting(this);
@@ -76,7 +67,7 @@ RenderFrame::RenderFrame(QWidget *parent)
 }
 
 RenderFrame::~RenderFrame() {
-  GL::Context::Grab context(this);
+  const GL::Context::Grab context(this);
   axes_VB.clear();
   axes_VAO.clear();
 }
@@ -92,7 +83,7 @@ void RenderFrame::set_rotation(const GL::mat4 &rotation) {
 }
 
 void RenderFrame::initializeGL() {
-  GL::Context::Grab context(this);
+  const GL::Context::Grab context(this);
   GL::init();
   glfont.initGL(false);
   renderer.initGL();
@@ -114,21 +105,21 @@ void RenderFrame::initializeGL() {
                                              -1.0, -1.0, -1.0, 0.0, 0.0, 1.0, -1.0, -1.0, 1.0,  0.0, 0.0, 1.0}; //
   gl::BufferData(gl::ARRAY_BUFFER, sizeof(axis_data), axis_data.data(), gl::STATIC_DRAW);
 
-  GL::Shader::Vertex vertex_shader("layout(location = 0) in vec3 vertex_in;\n"
-                                   "layout(location = 1) in vec3 color_in;\n"
-                                   "uniform mat4 MVP;\n"
-                                   "uniform vec3 origin;\n"
-                                   "out vec3 color;\n"
-                                   "void main () {\n"
-                                   "  color = color_in;\n"
-                                   "  gl_Position = MVP * vec4(vertex_in + origin, 1.0);\n"
-                                   "}\n");
+  const GL::Shader::Vertex vertex_shader("layout(location = 0) in vec3 vertex_in;\n"
+                                         "layout(location = 1) in vec3 color_in;\n"
+                                         "uniform mat4 MVP;\n"
+                                         "uniform vec3 origin;\n"
+                                         "out vec3 color;\n"
+                                         "void main () {\n"
+                                         "  color = color_in;\n"
+                                         "  gl_Position = MVP * vec4(vertex_in + origin, 1.0);\n"
+                                         "}\n");
 
-  GL::Shader::Fragment fragment_shader("in vec3 color;\n"
-                                       "out vec4 color_out;\n"
-                                       "void main () {\n"
-                                       "  color_out = vec4 (color, 1.0);\n"
-                                       "}\n");
+  const GL::Shader::Fragment fragment_shader("in vec3 color;\n"
+                                             "out vec4 color_out;\n"
+                                             "void main () {\n"
+                                             "  color_out = vec4 (color, 1.0);\n"
+                                             "}\n");
 
   axes_shader.attach(vertex_shader);
   axes_shader.attach(fragment_shader);
@@ -138,27 +129,27 @@ void RenderFrame::initializeGL() {
 }
 
 void RenderFrame::resizeGL(int w, int h) {
-  GL::Context::Grab context(this);
+  const GL::Context::Grab context(this);
   projection.set_viewport(*this, 0, 0, w, h);
 }
 
 void RenderFrame::paintGL() {
-  GL::Context::Grab context(this);
-  gl::ColorMask(true, true, true, true);
+  const GL::Context::Grab context(this);
+  gl::ColorMask(1U, 1U, 1U, 1U);
   gl::ClearColor(lighting->background_color[0], lighting->background_color[1], lighting->background_color[2], 0.0);
   gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
-  float dist(1.0f / (distance * view_angle * Degrees2radians));
-  float near_ = (dist - 3.0f > 0.001f ? dist - 3.0f : 0.001f);
-  float horizontal = 2.0f * near_ * tan(0.5f * view_angle * Degrees2radians) * static_cast<float>(width()) /
-                     static_cast<float>(width() + height());
-  float vertical = 2.0f * near_ * tan(0.5f * view_angle * Degrees2radians) * static_cast<float>(height()) /
-                   static_cast<float>(width() + height());
+  const float dist(1.0F / (distance * view_angle * Degrees2radians));
+  const float near_ = (dist - 3.0F > 0.001F ? dist - 3.0F : 0.001F);
+  const float horizontal = 2.0F * near_ * tan(0.5F * view_angle * Degrees2radians) * static_cast<float>(width()) /
+                           static_cast<float>(width() + height());
+  const float vertical = 2.0F * near_ * tan(0.5F * view_angle * Degrees2radians) * static_cast<float>(height()) /
+                         static_cast<float>(width() + height());
 
   GL::mat4 P;
   if (OS > 0) {
-    float incx = 2.0f * horizontal / static_cast<float>(OS);
-    float incy = 2.0f * vertical / static_cast<float>(OS);
+    const float incx = 2.0F * horizontal / static_cast<float>(OS);
+    const float incy = 2.0F * vertical / static_cast<float>(OS);
     P = GL::frustum(-horizontal + OS_x * incx,
                     -horizontal + (1 + OS_x) * incx,
                     -vertical + OS_y * incy,
@@ -171,21 +162,21 @@ void RenderFrame::paintGL() {
 
   Eigen::Matrix<float, 4, 4> M;
   M.topLeftCorner(3, 3) = orientation.matrix().transpose();
-  M(0, 3) = M(1, 3) = M(2, 3) = M(3, 0) = M(3, 1) = M(3, 2) = 0.0f;
-  M(3, 3) = 1.0f;
+  M(0, 3) = M(1, 3) = M(2, 3) = M(3, 0) = M(3, 1) = M(3, 2) = 0.0F;
+  M(3, 3) = 1.0F;
 
-  GL::mat4 MV = GL::translate(0.0, 0.0, -dist) * GL::mat4(M);
+  const GL::mat4 MV = GL::translate(0.0, 0.0, -dist) * GL::mat4(M);
   projection.set(MV, P);
 
   gl::Enable(gl::DEPTH_TEST);
   gl::DepthMask(gl::TRUE_);
 
-  if (values.size()) {
+  if (values.size() != 0) {
     if (std::isfinite(values[0])) {
       gl::Disable(gl::BLEND);
 
       if (!std::isfinite(scale))
-        scale = 2.0f / values.norm();
+        scale = 2.0F / values.norm();
 
       renderer.set_mode(mode);
 
@@ -251,7 +242,7 @@ void RenderFrame::paintGL() {
     gl::Disable(gl::LINE_SMOOTH);
 
     if (!text.empty()) {
-      projection.setup_render_text(0.0f, 0.0f, 0.0f);
+      projection.setup_render_text(0.0F, 0.0F, 0.0F);
       projection.render_text(10, 10, text);
       projection.done_render_text();
     }
@@ -260,7 +251,7 @@ void RenderFrame::paintGL() {
   // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
   // otherwise we get transparent windows...
   gl::ClearColor(0.0, 0.0, 0.0, 1.0);
-  gl::ColorMask(false, false, false, true);
+  gl::ColorMask(0U, 0U, 0U, 1U);
   gl::Clear(gl::COLOR_BUFFER_BIT);
 
   if (OS > 0)
@@ -289,8 +280,8 @@ void RenderFrame::mouseMoveEvent(QMouseEvent *event) {
   int dy = event->position().y() - last_pos.y();
   last_pos = event->position();
 #else
-  int dx = event->pos().x() - last_pos.x();
-  int dy = event->pos().y() - last_pos.y();
+  const int dx = event->pos().x() - last_pos.x();
+  const int dy = event->pos().y() - last_pos.y();
   last_pos = event->pos();
 #endif
   if (dx == 0 && dy == 0)
@@ -334,7 +325,7 @@ void RenderFrame::wheelEvent(QWheelEvent *event) {
 #else
   QPoint delta = event->orientation() == Qt::Vertical ? QPoint(0, event->delta()) : QPoint(event->delta(), 0);
 #endif
-  int scroll = delta.y() / 15;
+  const int scroll = delta.y() / 15;
   for (int n = 0; n < scroll; n++)
     scale *= ScaleInc;
   for (int n = 0; n > scroll; n--)
@@ -347,21 +338,21 @@ void RenderFrame::screenshot(int oversampling, const std::filesystem::path &imag
   screenshot_path = image_path;
   OS = oversampling;
   OS_x = OS_y = 0;
-  framebuffer = std::make_unique<GLubyte[]>(3 * static_cast<size_t>(projection.width()) *
+  framebuffer = std::make_unique<GLubyte[]>(3U * static_cast<size_t>(projection.width()) *
                                             static_cast<size_t>(projection.height()));
-  pix.reset(new QImage(OS * projection.width(), OS * projection.height(), QImage::Format_RGB32));
+  pix = std::make_unique<QImage>(OS * projection.width(), OS * projection.height(), QImage::Format_RGB32);
   update();
 }
 
 void RenderFrame::snapshot() {
-  GL::Context::Grab context(this);
+  const GL::Context::Grab context(this);
   gl::PixelStorei(gl::PACK_ALIGNMENT, 1);
   gl::ReadPixels(0, 0, projection.width(), projection.height(), gl::RGB, gl::UNSIGNED_BYTE, framebuffer.get());
 
-  int start_i = projection.width() * OS_x;
-  int start_j = projection.height() * (OS - OS_y - 1);
+  const int start_i = projection.width() * OS_x;
+  const int start_j = projection.height() * (OS - OS_y - 1);
   for (int j = 0; j < projection.height(); j++) {
-    int j2 = projection.height() - j - 1;
+    const int j2 = projection.height() - j - 1;
     for (int i = 0; i < projection.width(); i++) {
       GLubyte *p = framebuffer.get() +
                    3 * (static_cast<size_t>(i) + (static_cast<size_t>(projection.width()) * static_cast<size_t>(j)));

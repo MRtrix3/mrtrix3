@@ -44,7 +44,7 @@ bool Client::TryConnect() {
   socket->abort();
   socket->connectToServer(connectToServerName);
   socket->waitForConnected();
-  QLocalSocket::LocalSocketState state = socket->state();
+  const QLocalSocket::LocalSocketState state = socket->state();
 
   return state == QLocalSocket::ConnectedState;
 }
@@ -55,7 +55,7 @@ bool Client::TryConnect() {
 void Client::SendData(QByteArray dat) {
   // Prefix data with how long the message is
   QByteArray prefixedData;
-  unsigned int size = (unsigned int)dat.size();
+  auto size = (unsigned int)dat.size();
   prefixedData.insert(0, reinterpret_cast<const char *>(&size), 4);
   prefixedData.insert(4, dat, dat.size());
 

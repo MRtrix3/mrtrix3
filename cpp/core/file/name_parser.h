@@ -32,7 +32,7 @@ class NameParser {
 public:
   class Item {
   public:
-    Item() : seq_length(0) {}
+    Item() = default;
 
     void set_str(std::string_view s) {
       clear();
@@ -52,46 +52,48 @@ public:
       seq_length = 0;
     }
 
-    std::string string() const { return (str); }
+    [[nodiscard]] std::string string() const { return (str); }
 
-    const std::vector<uint32_t> &sequence() const { return (seq); }
+    [[nodiscard]] const std::vector<uint32_t> &sequence() const { return (seq); }
 
-    std::vector<uint32_t> &sequence() { return (seq); }
+    [[nodiscard]] std::vector<uint32_t> &sequence() { return (seq); }
 
-    bool is_string() const { return (seq_length == 0); }
+    [[nodiscard]] bool is_string() const { return (seq_length == 0); }
 
-    bool is_sequence() const { return (seq_length != 0); }
+    [[nodiscard]] bool is_sequence() const { return (seq_length != 0); }
 
-    size_t size() const { return (seq_length ? seq_length : str.size()); }
+    [[nodiscard]] size_t size() const { return ((seq_length != 0U) ? seq_length : str.size()); }
 
     void calc_padding(size_t maxval = 0);
 
     friend std::ostream &operator<<(std::ostream &stream, const Item &item);
 
   protected:
-    size_t seq_length;
+    size_t seq_length{0};
     std::string str;
     std::vector<uint32_t> seq;
   };
 
   void parse(std::string_view specifier, size_t max_num_sequences = std::numeric_limits<size_t>::max());
 
-  size_t num() const { return (array.size()); }
+  [[nodiscard]] size_t num() const { return (array.size()); }
 
-  std::string spec() const { return specification; }
+  [[nodiscard]] std::string spec() const { return specification; }
 
-  const Item &operator[](size_t i) const { return (array[i]); }
+  [[nodiscard]] const Item &operator[](size_t i) const { return (array[i]); }
 
-  const std::vector<uint32_t> &sequence(size_t index) const { return (array[seq_index[index]].sequence()); }
+  [[nodiscard]] const std::vector<uint32_t> &sequence(size_t index) const {
+    return (array[seq_index[index]].sequence());
+  }
 
-  size_t ndim() const { return (seq_index.size()); }
+  [[nodiscard]] size_t ndim() const { return (seq_index.size()); }
 
-  size_t index_of_sequence(size_t number = 0) const { return (seq_index[number]); }
+  [[nodiscard]] size_t index_of_sequence(size_t number = 0) const { return (seq_index[number]); }
 
-  bool match(std::string_view file_name, std::vector<uint32_t> &indices) const;
+  [[nodiscard]] bool match(std::string_view file_name, std::vector<uint32_t> &indices) const;
   void calculate_padding(const std::vector<uint32_t> &maxvals);
-  std::filesystem::path name(const std::vector<uint32_t> &indices);
-  std::filesystem::path get_next_match(std::vector<uint32_t> &indices, bool return_seq_index = false);
+  [[nodiscard]] std::filesystem::path name(const std::vector<uint32_t> &indices);
+  [[nodiscard]] std::filesystem::path get_next_match(std::vector<uint32_t> &indices, bool return_seq_index = false);
 
   friend std::ostream &operator<<(std::ostream &stream, const NameParser &parser);
 
@@ -128,11 +130,11 @@ public:
 
     void scan(NameParser &parser);
 
-    std::vector<uint32_t> count() const;
+    [[nodiscard]] std::vector<uint32_t> count() const;
 
-    size_t biggest_filename_size() const { return max_name_size; }
+    [[nodiscard]] size_t biggest_filename_size() const { return max_name_size; }
 
-    size_t size() const { return list.size(); }
+    [[nodiscard]] size_t size() const { return list.size(); }
 
     const ParsedName &operator[](size_t index) const { return *(list[index]); }
 
@@ -144,9 +146,9 @@ public:
     size_t max_name_size;
   };
 
-  const std::filesystem::path &name() const { return filename; }
-  size_t ndim() const { return indices.size(); }
-  uint32_t index(size_t num) const { return indices[num]; }
+  [[nodiscard]] const std::filesystem::path &name() const { return filename; }
+  [[nodiscard]] size_t ndim() const { return indices.size(); }
+  [[nodiscard]] uint32_t index(size_t num) const { return indices[num]; }
 
   bool operator<(const ParsedName &pn) const;
   friend std::ostream &operator<<(std::ostream &stream, const ParsedName &pin);

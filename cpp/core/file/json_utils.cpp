@@ -187,7 +187,7 @@ bool attempt_matrix(const std::pair<std::string, std::string> &kv, nlohmann::jso
         if (std::floor(data[i]) != data[i])
           noninteger = true;
       }
-      if (row)
+      if (row != 0)
         temp[kv.first].push_back(data);
       else if (M_float.rows() == 1)
         temp[kv.first] = data;
@@ -207,7 +207,7 @@ bool attempt_matrix(const std::pair<std::string, std::string> &kv, nlohmann::jso
         std::vector<int> data(M_int.cols());
         for (ssize_t i = 0; i != M_int.cols(); ++i)
           data[i] = M_int(row, i);
-        if (row)
+        if (row != 0)
           temp[kv.first].push_back(data);
         else if (M_int.rows() == 1)
           temp[kv.first] = data;

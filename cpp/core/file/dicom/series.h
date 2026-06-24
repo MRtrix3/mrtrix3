@@ -59,7 +59,7 @@ public:
     }
   }
 
-  std::vector<int> count() const;
+  [[nodiscard]] std::vector<int> count() const;
   bool operator<(const Series &s) const {
     if (number != s.number)
       return number < s.number;

@@ -55,7 +55,7 @@ public:
 
     if (properties.find("seed_dynamic") == properties.end()) {
 
-      typename Method::Shared shared(diff_path, properties);
+      const typename Method::Shared shared(diff_path, properties);
       WriteKernel writer(shared, destination, properties);
       Exec<Method> tracker(shared);
       Thread::run_queue(
@@ -67,19 +67,19 @@ public:
       const std::string max_num_tracks = properties["max_num_tracks"];
       if (max_num_tracks.empty())
         throw Exception("Dynamic seeding requires setting the desired number of tracks using the -select option");
-      const size_t num_tracks = to<size_t>(max_num_tracks);
+      const auto num_tracks = to<size_t>(max_num_tracks);
 
       using SetDixel = Mapping::SetDixel;
       using TckMapper = Mapping::TrackMapperBase;
       using Writer = Seeding::WriteKernelDynamic;
 
-      DWI::Directions::FastLookupSet dirs(1281);
+      const DWI::Directions::FastLookupSet dirs(1281);
       auto fod_data = Image<float>::open(fod_path);
       Math::SH::check(fod_data);
-      Seeding::Dynamic *seeder = new Seeding::Dynamic(fod_path, fod_data, num_tracks, dirs);
+      auto *seeder = new Seeding::Dynamic(fod_path, fod_data, num_tracks, dirs);
       properties.seeds.add(seeder); // List is responsible for deleting this from memory
 
-      typename Method::Shared shared(diff_path, properties);
+      const typename Method::Shared shared(diff_path, properties);
 
       Writer writer(shared, destination, properties);
       Exec<Method> tracker(shared);
@@ -101,14 +101,11 @@ public:
   Exec(const typename Method::Shared &shared)
       : S(shared),
         method(shared),
-        track_excluded(false),
+
         include_visitation(S.properties.include, S.properties.ordered_include) {}
 
   Exec(const Exec &that)
-      : S(that.S),
-        method(that.method),
-        track_excluded(false),
-        include_visitation(S.properties.include, S.properties.ordered_include) {}
+      : S(that.S), method(that.method), include_visitation(S.properties.include, S.properties.ordered_include) {}
 
   bool operator()(GeneratedTrack &item) {
     if (!seed_track(item))
@@ -134,7 +131,7 @@ public:
 private:
   const typename Method::Shared &S;
   Method method;
-  bool track_excluded;
+  bool track_excluded{false};
   IncludeROIVisitation include_visitation;
 
   std::optional<term_t> iterate() {
@@ -181,21 +178,18 @@ private:
         tck.set_status(GeneratedTrack::status_t::SEED_REJECTED);
       }
       return true;
-
-    } else {
-
-      for (size_t num_attempts = 0; num_attempts != failed_seed_attempts_to_abort; ++num_attempts) {
-        if (S.properties.seeds.get_seed(method.pos, method.dir)) {
-          if (!(method.check_seed() && method.init())) {
-            track_excluded = true;
-            tck.set_status(GeneratedTrack::status_t::SEED_REJECTED);
-          }
-          return true;
-        }
-      }
-      FAIL("Failed to find suitable seed point after " + str(failed_seed_attempts_to_abort) + " attempts - aborting");
-      return false;
     }
+    for (size_t num_attempts = 0; num_attempts != failed_seed_attempts_to_abort; ++num_attempts) {
+      if (S.properties.seeds.get_seed(method.pos, method.dir)) {
+        if (!(method.check_seed() && method.init())) {
+          track_excluded = true;
+          tck.set_status(GeneratedTrack::status_t::SEED_REJECTED);
+        }
+        return true;
+      }
+    }
+    FAIL("Failed to find suitable seed point after " + str(failed_seed_attempts_to_abort) + " attempts - aborting");
+    return false;
   }
 
   bool gen_track(GeneratedTrack &tck) {
@@ -235,7 +229,7 @@ private:
         if (!termination.has_value() || termination_info.at(termination.value()).add_term_to_tck)
           tck.push_back(method.pos);
         if (termination.has_value()) {
-          apply_priors(termination);
+          apply_priors(termination.value());
           if (track_excluded && termination.value() != term_t::ENTER_EXCLUDE) {
             if (tck.size() > max_size_at_backtrack) {
               max_size_at_backtrack = tck.size();
@@ -269,7 +263,7 @@ private:
       } while (!termination.has_value());
     }
 
-    apply_priors(termination);
+    apply_priors(termination.value());
 
     if (termination == term_t::EXIT_SGM) {
       truncate_exit_sgm(tck);
@@ -306,12 +300,10 @@ private:
 #endif
   }
 
-  void apply_priors(std::optional<term_t> &termination) {
-    assert(termination.has_value());
-
+  void apply_priors(term_t &termination) {
     if (S.is_act()) {
 
-      switch (termination.value()) {
+      switch (termination) {
 
       case term_t::ENTER_CGM:
       case term_t::EXIT_IMAGE:
@@ -339,13 +331,13 @@ private:
 
     } else {
 
-      switch (termination.value()) {
+      switch (termination) {
 
       case term_t::ENTER_CGM:
       case term_t::ENTER_CSF:
       case term_t::EXIT_SGM:
       case term_t::TERM_IN_SGM:
-        throw Exception("\nFIXME: Have received ACT-based termination for non-ACT tracking in apply_priors()\n");
+        throw Exception("FIXME: Have received ACT-based termination for non-ACT tracking in apply_priors()");
 
       case term_t::EXIT_IMAGE:
       case term_t::EXIT_MASK:
@@ -412,7 +404,8 @@ private:
     // ACT instead now defaults to a 2-voxel minimum length
     if (ACT::wm_pathintegral_threshold == 0.0F && ACT::wm_maxabs_threshold == 0.0F)
       return true;
-    float integral = 0.0, max_value = 0.0;
+    float integral = 0.0;
+    float max_value = 0.0;
     for (const auto &i : tck) {
       if (method.act().fetch_tissue_data(i)) {
         const float wm = method.act().tissues().get_wm();
@@ -461,8 +454,8 @@ private:
       class IndexAndValue {
       public:
         IndexAndValue(const size_t index, const float value) : i(index), v(value) {}
-        size_t index() const { return i; }
-        float value() const { return v; }
+        [[nodiscard]] size_t index() const { return i; }
+        [[nodiscard]] float value() const { return v; }
 
       private:
         const size_t i;
@@ -534,7 +527,7 @@ private:
     // If the truncation would result in removing the seed point, truncate all
     //   the way back to the seed point, reverse the streamline, and then
     //   truncate off the end (which used to be the start)
-    float length_sum = 0.0f;
+    float length_sum = 0.0F;
     size_t index;
     for (index = 1; index != tck.size(); ++index) {
       const float seg_length = (tck[index] - tck[index - 1]).norm();

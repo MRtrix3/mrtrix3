@@ -31,7 +31,7 @@ namespace MR::DWI::Tractography::Mapping {
 class DixelMappingPlugin {
 public:
   DixelMappingPlugin(const DWI::Directions::FastLookupSet &directions) : dirs(directions) {}
-  DixelMappingPlugin(const DixelMappingPlugin &that) : dirs(that.dirs) {}
+  DixelMappingPlugin(const DixelMappingPlugin &that) = default;
   DWI::Directions::index_type operator()(const Streamline<>::tangent_type &d) const {
     return dirs.select_direction(d.template cast<default_type>());
   }
@@ -59,13 +59,9 @@ public:
   TWIImagePluginBase(Image<float> &input_image, const tck_stat_t track_statistic)
       : statistic(track_statistic), interp(input_image), backtrack(false) {}
 
-  TWIImagePluginBase(const TWIImagePluginBase &that)
-      : statistic(that.statistic),
-        interp(that.interp),
-        backtrack(that.backtrack),
-        backtrack_mask(that.backtrack_mask) {}
+  TWIImagePluginBase(const TWIImagePluginBase &that) = default;
 
-  virtual ~TWIImagePluginBase() {}
+  virtual ~TWIImagePluginBase() = default;
 
   virtual TWIImagePluginBase *clone() const = 0;
 
@@ -86,8 +82,8 @@ protected:
   mutable Image<bool> backtrack_mask;
 
   // Helper functions; find the last point on the streamline from which valid image information can be read
-  ssize_t get_end_index(const Streamline<> &, const bool) const;
-  const Streamline<>::point_type get_end_point(const Streamline<> &, const bool) const;
+  [[nodiscard]] ssize_t get_end_index(const Streamline<> &, const bool) const;
+  [[nodiscard]] const Streamline<>::point_type get_end_point(const Streamline<> &, const bool) const;
 };
 
 class TWIScalarImagePlugin : public TWIImagePluginBase {
@@ -106,7 +102,7 @@ public:
       interp.index(3) = 0;
   }
 
-  TWIScalarImagePlugin *clone() const override { return new TWIScalarImagePlugin(*this); }
+  [[nodiscard]] TWIScalarImagePlugin *clone() const override { return new TWIScalarImagePlugin(*this); }
 
   void load_factors(const Streamline<> &, std::vector<default_type> &) const override;
 };
@@ -125,7 +121,7 @@ public:
 
   TWIFODImagePlugin(const TWIFODImagePlugin &that) = default;
 
-  TWIFODImagePlugin *clone() const override { return new TWIFODImagePlugin(*this); }
+  [[nodiscard]] TWIFODImagePlugin *clone() const override { return new TWIFODImagePlugin(*this); }
 
   void load_factors(const Streamline<> &, std::vector<default_type> &) const override;
 
@@ -140,7 +136,7 @@ public:
 
   TWDFCStaticImagePlugin(const TWDFCStaticImagePlugin &that) = default;
 
-  TWDFCStaticImagePlugin *clone() const override { return new TWDFCStaticImagePlugin(*this); }
+  [[nodiscard]] TWDFCStaticImagePlugin *clone() const override { return new TWDFCStaticImagePlugin(*this); }
 
   void load_factors(const Streamline<> &, std::vector<default_type> &) const override;
 };
@@ -155,7 +151,7 @@ public:
 
   TWDFCDynamicImagePlugin(const TWDFCDynamicImagePlugin &that) = default;
 
-  TWDFCDynamicImagePlugin *clone() const override { return new TWDFCDynamicImagePlugin(*this); }
+  [[nodiscard]] TWDFCDynamicImagePlugin *clone() const override { return new TWDFCDynamicImagePlugin(*this); }
 
   void load_factors(const Streamline<> &, std::vector<default_type> &) const override;
 

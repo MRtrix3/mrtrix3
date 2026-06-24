@@ -16,6 +16,8 @@
 
 #include "dwi/fmls.h"
 
+#include <memory>
+
 namespace MR::DWI::FMLS {
 
 // clang-format off
@@ -88,7 +90,7 @@ IntegrationWeights::IntegrationWeights(const DWI::Directions::Set &dirs) : data(
   const size_t calibration_lmax = Math::SH::LforN(dirs.size()) + 2;
   Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_in_pairs(dirs.size(), 2);
   for (size_t row = 0; row != dirs.size(); ++row) {
-    const auto d = dirs.get_dir(row);
+    const auto &d = dirs.get_dir(row);
     az_in_pairs(row, 0) = std::atan2(d[1], d[0]);
     az_in_pairs(row, 1) = std::acos(d[2]);
   }
@@ -121,18 +123,15 @@ Segmenter::Segmenter(const DWI::Directions::FastLookupSet &directions, const siz
       precomputer(new Math::SH::PrecomputedAL<default_type>(lmax, 2 * dirs.size())),
       integral_threshold(default_integral_threshold),
       peak_value_threshold(default_peakamp_threshold),
-      lobe_merge_ratio(default_mergeratio_bridgetopeak),
-      create_null_lobe(false),
-      create_lookup_table(true),
-      dilate_lookup_table(false) {
+      lobe_merge_ratio(default_mergeratio_bridgetopeak) {
   Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_in_pairs(dirs.size(), 2);
   for (size_t row = 0; row != dirs.size(); ++row) {
     const auto d = dirs.get_dir(row);
     az_in_pairs(row, 0) = std::atan2(d[1], d[0]);
     az_in_pairs(row, 1) = std::acos(d[2]);
   }
-  transform.reset(new Math::SH::Transform<default_type>(az_in_pairs, lmax));
-  weights.reset(new IntegrationWeights(dirs));
+  transform = std::make_shared<Math::SH::Transform<default_type>>(az_in_pairs, lmax);
+  weights = std::make_shared<IntegrationWeights>(dirs);
 }
 
 class Max_abs {
@@ -196,33 +195,33 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
         for (size_t j = 1; j != adj_lobes.size(); ++j)
           out[adj_lobes[0]].merge(out[adj_lobes[j]]);
         out[adj_lobes[0]].add(i.second, dirs[i.second], i.first, (*weights)[i.second]);
-        for (auto j = retrospective_assignments.begin(); j != retrospective_assignments.end(); ++j) {
+        for (auto &assignment : retrospective_assignments) {
           bool modified = false;
           for (size_t k = 1; k != adj_lobes.size(); ++k) {
-            if (j->second == adj_lobes[k]) {
-              j->second = adj_lobes[0];
+            if (assignment.second == adj_lobes[k]) {
+              assignment.second = adj_lobes[0];
               modified = true;
             }
           }
           if (!modified) {
             // Compensate for impending deletion of elements from the vector
-            uint32_t lobe_index = j->second;
-            for (size_t k = adj_lobes.size() - 1; k; --k) {
+            uint32_t lobe_index = assignment.second;
+            for (size_t k = adj_lobes.size() - 1; k != 0U; --k) {
               if (adj_lobes[k] < lobe_index)
                 --lobe_index;
             }
-            j->second = lobe_index;
+            assignment.second = lobe_index;
           }
         }
-        for (size_t j = adj_lobes.size() - 1; j; --j) {
-          std::vector<FOD_lobe>::iterator ptr = out.begin();
+        for (size_t j = adj_lobes.size() - 1; j != 0U; --j) {
+          auto ptr = out.begin();
           advance(ptr, adj_lobes[j]);
           out.erase(ptr);
         }
 
       } else {
 
-        retrospective_assignments.push_back(std::make_pair(i.second, adj_lobes.front()));
+        retrospective_assignments.emplace_back(i.second, adj_lobes.front());
       }
     }
   }
@@ -295,19 +294,17 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
     if (dilate_lookup_table && !out.empty()) {
 
       Eigen::Array<bool, Eigen::Dynamic, 1> processed(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(dirs.size()));
-      for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
-        processed = processed || i->get_mask();
+      for (const auto &i : out)
+        processed = processed || i.get_mask();
 
       NON_POD_VLA(new_assignments, std::vector<uint32_t>, dirs.size());
       while (!processed.all()) {
 
         for (index_type dir = 0; dir != dirs.size(); ++dir) {
           if (!processed[dir]) {
-            for (std::vector<index_type>::const_iterator neighbour = dirs.get_adj_dirs(dir).begin();
-                 neighbour != dirs.get_adj_dirs(dir).end();
-                 ++neighbour) {
-              if (processed[*neighbour])
-                new_assignments[dir].push_back(out.lut[*neighbour]);
+            for (const auto &neighbour : dirs.get_adj_dirs(dir)) {
+              if (processed[neighbour])
+                new_assignments[dir].push_back(out.lut[neighbour]);
             }
           }
         }
@@ -322,12 +319,10 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
 
             uint32_t best_lobe = 0;
             default_type max_integral = 0.0;
-            for (std::vector<uint32_t>::const_iterator lobe_no = new_assignments[dir].begin();
-                 lobe_no != new_assignments[dir].end();
-                 ++lobe_no) {
-              if (out[*lobe_no].get_integral() > max_integral) {
-                best_lobe = *lobe_no;
-                max_integral = out[*lobe_no].get_integral();
+            for (auto lobe_no : new_assignments[dir]) {
+              if (out[lobe_no].get_integral() > max_integral) {
+                best_lobe = lobe_no;
+                max_integral = out[lobe_no].get_integral();
               }
             }
             out.lut[dir] = best_lobe;
@@ -341,8 +336,8 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
 
   if (create_null_lobe) {
     mask_type nonnull_mask(mask_type::Zero(dirs.size()));
-    for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
-      nonnull_mask = nonnull_mask || i->get_mask();
+    for (const auto &i : out)
+      nonnull_mask = nonnull_mask || i.get_mask();
     // Invert all elements in mask
     const mask_type null_mask =
         (Eigen::Array<uint8_t, Eigen::Dynamic, 1>::Ones(dirs.size()) - nonnull_mask.cast<uint8_t>()).cast<bool>();

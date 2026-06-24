@@ -62,9 +62,9 @@ using value_type = float;
 class BoundsCheck {
 public:
   BoundsCheck(value_type tolerance, const Eigen::Matrix<value_type, 3, 1> &marker, size_t &total_count)
-      : precision(tolerance), vec(marker), counter(total_count), count(0), val(decltype(val)::Constant(NaNF)) {}
+      : precision(tolerance), vec(marker), counter(total_count), val(decltype(val)::Constant(NaNF)) {}
   BoundsCheck(const BoundsCheck &that)
-      : precision(that.precision), vec(that.vec), counter(that.counter), count(0), val(decltype(val)::Constant(NaNF)) {}
+      : precision(that.precision), vec(that.vec), counter(that.counter), val(decltype(val)::Constant(NaNF)) {}
   template <class ImageTypeIn, class ImageTypeOut> void operator()(ImageTypeIn &in, ImageTypeOut &out) {
     val = Eigen::Matrix<value_type, 3, 1>(in.row(3));
     if ((vec - val).isMuchSmallerThan(precision) || (vec.hasNaN() && val.hasNaN())) {
@@ -85,7 +85,7 @@ protected:
   const value_type precision;
   const Eigen::Matrix<value_type, 3, 1> vec;
   size_t &counter;
-  size_t count;
+  size_t count{0};
   Eigen::Matrix<value_type, 3, 1> val;
 
   static std::mutex mutex;

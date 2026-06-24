@@ -25,7 +25,7 @@ void Connector::Adjacency::initialise(const Header &header, const Voxel2Vector &
   if (header.ndim() < 3)
     throw Exception("Connected components filter not designed to handle less than 3 axes");
   if (header.ndim() > enabled_axes.size())
-    enabled_axes.resize(header.ndim(), false);
+    enabled_axes.conservativeResizeLike(axis_mask_type::Zero(header.ndim()));
   // Begin by disabling adjacency offsets for those axes for which adjacency is not permitted
   std::vector<std::vector<int>> offsets;
   std::vector<int> o(header.ndim(), -1);
@@ -92,7 +92,7 @@ void Connector::run(std::vector<Cluster> &clusters, std::vector<uint32_t> &label
   uint32_t current_label = 0;
   for (uint32_t i = 0; i < labels.size(); i++) {
     // This node has not been already clustered
-    if (!labels[i]) {
+    if (labels[i] == 0U) {
       Cluster cluster(++current_label);
       depth_first_search(i, cluster, labels);
       clusters.push_back(cluster);
@@ -104,7 +104,7 @@ void Connector::run(std::vector<Cluster> &clusters, std::vector<uint32_t> &label
 
 bool Connector::next_neighbour(uint32_t &node, std::vector<uint32_t> &labels) const {
   for (auto n : adjacency[node]) {
-    if (!labels[n]) {
+    if (labels[n] == 0U) {
       node = n;
       return true;
     }
@@ -121,14 +121,13 @@ void Connector::depth_first_search(const uint32_t root, Cluster &cluster, std::v
     cluster.size++;
     if (next_neighbour(node, labels)) {
       continue;
-    } else {
-      do {
-        if (stack.top() == root)
-          return;
-        stack.pop();
-        node = stack.top();
-      } while (!next_neighbour(node, labels));
     }
+    do {
+      if (stack.top() == root)
+        return;
+      stack.pop();
+      node = stack.top();
+    } while (!next_neighbour(node, labels));
   }
 }
 

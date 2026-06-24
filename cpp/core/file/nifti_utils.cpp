@@ -90,10 +90,9 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
       memcmp(&NH.magic[0], Type<NiftiHeader>::magic2.data(), 4) != 0) {
     if (Type<NiftiHeader>::is_version2) {
       throw Exception("image \"" + H.path().string() + "\" is not in " + version + " format (invalid magic signature)");
-    } else {
-      is_nifti = false;
-      DEBUG("assuming image \"" + H.path().string() + "\" is in AnalyseAVW format.");
     }
+    is_nifti = false;
+    DEBUG("assuming image \"" + H.path().string() + "\" is in AnalyseAVW format.");
   }
 
   if (Type<NiftiHeader>::is_version2) {
@@ -203,7 +202,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
     H.reset_intensity_scaling();
   }
 
-  const int64_t data_offset = Raw::fetch_<vox_offset_type>(&NH.vox_offset, is_BE);
+  const auto data_offset = Raw::fetch_<vox_offset_type>(&NH.vox_offset, is_BE);
 
   std::string descrip(81, '\0');
   strncpy(&descrip[0], NH.descrip, 80); // check_syntax off
@@ -220,8 +219,8 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
   bool rescale_voxel_sizes = false;
 
   if (is_nifti) {
-    bool sform_code = Raw::fetch_<code_type>(&NH.sform_code, is_BE);
-    bool qform_code = Raw::fetch_<code_type>(&NH.qform_code, is_BE);
+    const bool sform_code = Raw::fetch_<code_type>(&NH.sform_code, is_BE);
+    const bool qform_code = Raw::fetch_<code_type>(&NH.qform_code, is_BE);
 
     if (sform_code) {
       auto &M(H.transform().matrix());
@@ -282,7 +281,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
       M_qform.translation()[2] = Raw::fetch_<float_type>(&NH.qoffset_z, is_BE);
 
       // qfac:
-      float qfac = Raw::fetch_<float_type>(&NH.pixdim[0], is_BE) >= 0.0 ? 1.0 : -1.0;
+      const float qfac = Raw::fetch_<float_type>(&NH.pixdim[0], is_BE) >= 0.0 ? 1.0 : -1.0;
       if (qfac < 0.0)
         M_qform.matrix().col(2) *= qfac;
 
@@ -317,7 +316,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
     // CONF A boolean value to indicate whether, when opening NIfTI images,
     // CONF any corresponding JSON file should be automatically loaded.
     if (File::Config::get_bool("NIfTIAutoLoadJSON", false)) {
-      std::filesystem::path json_path = get_json_path(static_cast<const Header &>(H).path());
+      const std::filesystem::path json_path = get_json_path(static_cast<const Header &>(H).path());
       if (std::filesystem::exists(json_path))
         File::JSON::load(H, json_path);
     }
@@ -349,7 +348,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
   if (H.ndim() > 7)
     throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.path().string() + "\"");
 
-  bool is_BE = H.datatype().is_big_endian();
+  const bool is_BE = H.datatype().is_big_endian();
 
   Axes::permutations_type axes;
   auto M = File::NIfTI::adjust_transform(H, axes);
@@ -520,7 +519,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
 
   if (Type<NiftiHeader>::is_version2) {
     const std::array<char, 4> xyzt_units{NIFTI_UNITS_MM, NIFTI_UNITS_MM, NIFTI_UNITS_MM, NIFTI_UNITS_SEC};
-    const int32_t *const xyzt_units_as_int_ptr = reinterpret_cast<const int32_t *>(xyzt_units.data());
+    const auto *const xyzt_units_as_int_ptr = reinterpret_cast<const int32_t *>(xyzt_units.data());
     Raw::store<int32_t>(*xyzt_units_as_int_ptr, &NH.xyzt_units, is_BE);
   } else
     NH.xyzt_units = SPACE_TIME_TO_XYZT(NIFTI_UNITS_MM, NIFTI_UNITS_SEC);
@@ -532,7 +531,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
   // CONF to save any header entries that cannot be stored in the NIfTI
   // CONF header.
   if (single_file && File::Config::get_bool("NIfTIAutoSaveJSON", false)) {
-    std::filesystem::path json_path = get_json_path(H.path());
+    const std::filesystem::path json_path = get_json_path(H.path());
     File::JSON::save(H, json_path, H.path());
   }
 }
@@ -641,13 +640,14 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read(Header &H) {
     return std::unique_ptr<ImageIO::Base>();
 
   const bool single_file = Path::has_suffix(hpath, ".nii");
-  std::filesystem::path header_path = single_file ? hpath : std::filesystem::path(hpath).replace_extension(".hdr");
+  const std::filesystem::path header_path =
+      single_file ? hpath : std::filesystem::path(hpath).replace_extension(".hdr");
 
   try {
     File::MMap fmap{MR::File::Entry(header_path)};
     const size_t data_offset = fetch(H, *((const nifti_header *)fmap.address()));
     std::unique_ptr<ImageIO::Default> handler(new ImageIO::Default(H));
-    handler->files.push_back(File::Entry(hpath, (single_file ? data_offset : 0)));
+    handler->files.emplace_back(hpath, (single_file ? data_offset : 0));
     return handler;
   } catch (Exception &e) {
     e.display();
@@ -671,7 +671,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read_gz(Header &H) {
     std::unique_ptr<ImageIO::GZ> io_handler(new ImageIO::GZ(H, data_offset));
     memcpy(io_handler.get()->header(), &NH, sizeof(NH));
     memset(io_handler.get()->header() + sizeof(NH), 0, sizeof(nifti1_extender));
-    io_handler->files.push_back(File::Entry(static_cast<const Header &>(H).path(), data_offset));
+    io_handler->files.emplace_back(static_cast<const Header &>(H).path(), data_offset);
     return io_handler;
   } catch (Exception &e) {
     throw Exception(e, "Error reading compressed NIfTI image \"" + H.name() + "\"");
@@ -687,7 +687,8 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
 
   const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
   const bool single_file = Path::has_suffix(hpath, ".nii");
-  std::filesystem::path header_path = single_file ? hpath : std::filesystem::path(hpath).replace_extension(".hdr");
+  const std::filesystem::path header_path =
+      single_file ? hpath : std::filesystem::path(hpath).replace_extension(".hdr");
 
   nifti_header NH;
   store(NH, H, single_file);
@@ -709,7 +710,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
   }
 
   std::unique_ptr<ImageIO::Default> handler(new ImageIO::Default(H));
-  handler->files.push_back(File::Entry(hpath, data_offset));
+  handler->files.emplace_back(hpath, data_offset);
 
   return handler;
 }
@@ -730,7 +731,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H) {
   const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
   File::OFStream data_file(hpath);
   data_file.close();
-  io_handler->files.push_back(File::Entry(hpath, sizeof(nifti_header) + 4));
+  io_handler->files.emplace_back(hpath, sizeof(nifti_header) + 4);
 
   return io_handler;
 }

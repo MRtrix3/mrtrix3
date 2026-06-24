@@ -87,21 +87,18 @@ default_type G2z(const default_type G, const size_t rank, const default_type dof
   assert(G >= 0.0);
   if (G == default_type(0))
     return -std::numeric_limits<default_type>::infinity();
-  if (G >= 1.0)
-    return F2z_upper(G, rank, dof);
-  else
-    return F2z_lower(1.0 / G, rank, dof);
+  return (G >= 1.0) ? F2z_upper(G, rank, dof) : F2z_lower(1.0 / G, rank, dof);
 }
 
 default_type Zstatistic::t2z(const default_type t, const size_t dof) const {
   {
-    std::shared_lock lock(mutex);
+    const std::shared_lock lock(mutex);
     auto it = t2z_data.find(dof);
     if (it != t2z_data.end())
       return (it->second)(t);
   }
   {
-    std::unique_lock lock(mutex);
+    const std::unique_lock lock(mutex);
     auto it = t2z_data.find(dof);
     if (it == t2z_data.end())
       it = t2z_data.emplace(dof, Lookup_t2z(dof)).first;
@@ -112,13 +109,13 @@ default_type Zstatistic::t2z(const default_type t, const size_t dof) const {
 default_type Zstatistic::F2z(const default_type F, const size_t rank, const size_t dof) const {
   const auto pair = std::make_pair(rank, dof);
   {
-    std::shared_lock lock(mutex);
+    const std::shared_lock lock(mutex);
     auto it = F2z_data.find(pair);
     if (it != F2z_data.end())
       return (it->second)(F);
   }
   {
-    std::unique_lock lock(mutex);
+    const std::unique_lock lock(mutex);
     // Need to check again for presence of lookup table
     //   now that we have the lock
     auto it = F2z_data.find(pair);
@@ -139,7 +136,7 @@ default_type Zstatistic::LookupBase::interp(const default_type stat,
                                             std::function<default_type(default_type)> func) const {
   const default_type index_float = (stat - offset) * scale;
   if (index_float >= 1.0 && index_float < data.size() - 2) {
-    const ssize_t index_int(static_cast<ssize_t>(std::floor(index_float)));
+    const auto index_int(static_cast<ssize_t>(std::floor(index_float)));
     const default_type mu(index_float - static_cast<default_type>(index_int));
     Math::Hermite<default_type> hermite(0.0);
     hermite.set(mu);
@@ -279,10 +276,8 @@ Zstatistic::Lookup_F2z::Lookup_F2z(const size_t rank, const size_t dof)
 default_type Zstatistic::Lookup_F2z::operator()(const default_type F) const {
   auto func_upper = [&](const default_type in) { return F2z_upper(in, rank, static_cast<default_type>(dof)); };
   auto func_lower = [&](const default_type in) { return F2z_lower(in, rank, static_cast<default_type>(dof)); };
-  if (F >= 1.0)
-    return interp(F, offset_upper, scale_upper, data_upper, func_upper);
-  else
-    return interp(1.0 / F, offset_lower, scale_lower, data_lower, func_lower);
+  return (F >= 1.0) ? interp(F, offset_upper, scale_upper, data_upper, func_upper)
+                    : interp(1.0 / F, offset_lower, scale_lower, data_lower, func_lower);
 }
 
 } // namespace MR::Math

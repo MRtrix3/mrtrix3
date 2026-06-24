@@ -54,19 +54,19 @@ class Random_per_voxel : public Base {
 public:
   Random_per_voxel(const std::filesystem::path &in, const size_t num_per_voxel);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
-  virtual ~Random_per_voxel() {}
+  virtual ~Random_per_voxel() = default;
 
 private:
   mutable Mask mask;
   const size_t num;
-  mutable size_t inc;
-  mutable bool expired;
+  mutable size_t inc{0};
+  mutable bool expired{false};
 };
 
 class Grid_per_voxel : public Base {
 public:
   Grid_per_voxel(const std::filesystem::path &in, const size_t os_factor);
-  virtual ~Grid_per_voxel() {}
+  virtual ~Grid_per_voxel() = default;
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 
 private:
@@ -74,7 +74,7 @@ private:
   const size_t os;
   mutable Eigen::Array<size_t, 3, 1> pos;
   const float offset, step;
-  mutable bool expired;
+  mutable bool expired{false};
 };
 
 class Rejection_per_voxel : public Base {
@@ -90,7 +90,7 @@ private:
   Image<float> image;
   transform_type voxel2scanner;
 #endif
-  float max;
+  float max{0.0};
 };
 
 class CoordinatesLoader {
@@ -100,8 +100,8 @@ public:
 protected:
   Eigen::MatrixXf coords;
   Eigen::VectorXf weights;
-  ssize_t num_coordinates() const { return coords.rows(); }
-  bool have_weights() const { return weights.size() > 0; }
+  [[nodiscard]] ssize_t num_coordinates() const { return coords.rows(); }
+  [[nodiscard]] bool have_weights() const { return weights.size() > 0; }
 };
 
 class Count_per_coord : public Base, public CoordinatesLoader {
@@ -110,9 +110,9 @@ public:
   bool get_seed(Eigen::Vector3f &p) const override;
 
 private:
-  mutable ssize_t current_coord;
-  mutable ssize_t num_at_coord;
-  mutable bool expired;
+  mutable ssize_t current_coord{0};
+  mutable ssize_t num_at_coord{0};
+  mutable bool expired{false};
   const size_t streamlines_per_coordinate;
 };
 

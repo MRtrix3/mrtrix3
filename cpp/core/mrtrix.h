@@ -151,27 +151,28 @@ template <class T> inline T to(std::string_view string) {
       const std::string lstring = lowercase(stripped);
       if (lstring == "nan")
         return std::numeric_limits<T>::quiet_NaN();
-      else if (lstring == "-nan")
+      if (lstring == "-nan")
         return -std::numeric_limits<T>::quiet_NaN();
-      else if (lstring == "inf")
+      if (lstring == "inf")
         return std::numeric_limits<T>::infinity();
-      else if (lstring == "-inf")
+      if (lstring == "-inf")
         return -std::numeric_limits<T>::infinity();
     }
     throw Exception("error converting string \"" + string + "\" to type \"" + typeid(T).name() + "\"");
-  } else if (!stream.eof()) {
+  }
+  if (!stream.eof()) {
     throw Exception("incomplete use of string \"" + string + "\" in conversion to type \"" + typeid(T).name() + "\"");
   }
   return value;
 }
 
 template <> inline bool to<bool>(std::string_view string) {
-  std::string value = lowercase(strip(string));
+  const std::string value = lowercase(strip(string));
   if (value == "true" || value == "yes")
     return true;
   if (value == "false" || value == "no")
     return false;
-  return to<int>(string);
+  return to<int>(string) != 0;
 }
 
 template <> inline std::string str<cfloat>(const cfloat &value, int precision) {
@@ -179,7 +180,7 @@ template <> inline std::string str<cfloat>(const cfloat &value, int precision) {
   if (precision > 0)
     stream.precision(precision);
   stream << value.real();
-  if (value.imag())
+  if (value.imag() != 0.0F)
     stream << std::showpos << value.imag() << "i";
   if (stream.fail())
     throw Exception("error converting complex float value to string");
@@ -193,7 +194,8 @@ template <> inline cfloat to<cfloat>(std::string_view string) {
   const std::string stripped = strip(string);
   std::vector<cfloat> candidates;
   for (ssize_t i = -1; i <= static_cast<ssize_t>(stripped.size()); ++i) {
-    std::string first, second;
+    std::string first;
+    std::string second;
     if (i == -1) {
       first = "0";
       second = stripped;
@@ -212,7 +214,7 @@ template <> inline cfloat to<cfloat>(std::string_view string) {
     if (second.empty() || second == "-" || second == "+")
       second.push_back('1');
     try {
-      candidates.push_back(cfloat{to<float>(first), to<float>(second)});
+      candidates.emplace_back(to<float>(first), to<float>(second));
     } catch (Exception &) { // NOLINT(bugprone-empty-catch)
     }
   }
@@ -236,7 +238,7 @@ template <> inline std::string str<cdouble>(const cdouble &value, int precision)
   if (precision > 0)
     stream.precision(precision);
   stream << value.real();
-  if (value.imag())
+  if (value.imag() != 0.0)
     stream << std::showpos << value.imag() << "i";
   if (stream.fail())
     throw Exception("error converting complex double value to string");
@@ -250,7 +252,8 @@ template <> inline cdouble to<cdouble>(std::string_view string) {
   const std::string stripped = strip(string);
   std::vector<cdouble> candidates;
   for (ssize_t i = -1; i <= static_cast<ssize_t>(stripped.size()); ++i) {
-    std::string first, second;
+    std::string first;
+    std::string second;
     if (i == -1) {
       first = "0";
       second = stripped;
@@ -269,7 +272,7 @@ template <> inline cdouble to<cdouble>(std::string_view string) {
     if (second.empty() || second == "-" || second == "+")
       second.push_back('1');
     try {
-      candidates.push_back(cdouble{to<double>(first), to<double>(second)});
+      candidates.emplace_back(to<double>(first), to<double>(second));
     } catch (Exception &) { // NOLINT(bugprone-empty-catch)
     }
   }
@@ -293,7 +296,7 @@ std::vector<default_type> parse_floats(std::string_view spec);
 
 template <typename IntType>
 std::vector<IntType> parse_ints(std::string_view spec, const IntType last = std::numeric_limits<IntType>::max()) {
-  typedef typename std::make_signed<IntType>::type SignedIntType;
+  using SignedIntType = typename std::make_signed<IntType>::type;
   if (spec.empty())
     throw Exception("integer sequence specifier is empty");
 
@@ -304,7 +307,8 @@ std::vector<IntType> parse_ints(std::string_view spec, const IntType last = std:
   };
 
   std::vector<IntType> V;
-  std::string::size_type start = 0, end;
+  std::string::size_type start = 0;
+  std::string::size_type end;
   std::array<SignedIntType, 3> num;
   size_t i = 0;
   try {
@@ -313,7 +317,7 @@ std::vector<IntType> parse_ints(std::string_view spec, const IntType last = std:
       if (start == std::string::npos)
         break;
       end = spec.find_first_of(" \t,:", start);
-      std::string token(strip(spec.substr(start, end - start)));
+      const std::string token(strip(spec.substr(start, end - start)));
       if (lowercase(token) == "end") {
         if (last == std::numeric_limits<IntType>::max())
           throw Exception("value of \"end\" is not known in number sequence \"" + spec + "\"");
@@ -330,7 +334,8 @@ std::vector<IntType> parse_ints(std::string_view spec, const IntType last = std:
           throw Exception("invalid number range in number sequence \"" + spec + "\"");
       } else {
         if (i) {
-          SignedIntType inc, last;
+          SignedIntType inc;
+          SignedIntType last;
           if (i == 2) {
             inc = num[1];
             last = num[2];
@@ -386,7 +391,7 @@ template <typename T> inline std::string join(const std::vector<T> &V, std::stri
   if (V.empty())
     return ret;
   ret = str(V[0]);
-  for (typename std::vector<T>::const_iterator i = V.begin() + 1; i != V.end(); ++i)
+  for (auto i = V.cbegin() + 1; i != V.cend(); ++i)
     ret += delimiter + str(*i);
   return ret;
 }

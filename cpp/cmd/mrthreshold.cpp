@@ -172,7 +172,7 @@ get_data(Image<value_type> &in, Image<bool> &mask, const size_t max_axis, const 
     Adapter::Replicate<Image<bool>> mask_replicate(mask, in);
     if (ignore_zero) {
       for (auto l = Loop(in, 0, max_axis)(in, mask_replicate); l; ++l) {
-        if (mask_replicate.value() && !std::isnan(static_cast<value_type>(in.value())) && in.value() != 0.0f)
+        if (mask_replicate.value() && !std::isnan(static_cast<value_type>(in.value())) && in.value() != 0.0F)
           data.push_back(in.value());
       }
     } else {
@@ -184,7 +184,7 @@ get_data(Image<value_type> &in, Image<bool> &mask, const size_t max_axis, const 
   } else {
     if (ignore_zero) {
       for (auto l = Loop(in, 0, max_axis)(in); l; ++l) {
-        if (!std::isnan(static_cast<value_type>(in.value())) && in.value() != 0.0f)
+        if (!std::isnan(static_cast<value_type>(in.value())) && in.value() != 0.0F)
           data.push_back(in.value());
       }
     } else {
@@ -210,26 +210,26 @@ default_type calculate(Image<value_type> &in,
   if (std::isfinite(abs)) {
 
     return abs;
-
-  } else if (std::isfinite(percentile)) {
+  }
+  if (std::isfinite(percentile)) {
 
     auto data = get_data(in, mask, max_axis, ignore_zero);
     if (percentile == 100.0) {
       return static_cast<default_type>(*std::max_element(data.begin(), data.end()));
-    } else if (percentile == 0.0) {
-      return static_cast<default_type>(*std::min_element(data.begin(), data.end()));
-    } else {
-      const default_type interp_index = 0.01 * percentile * (data.size() - 1);
-      const size_t lower_index = static_cast<size_t>(std::floor(interp_index));
-      const default_type mu = interp_index - static_cast<default_type>(lower_index);
-      std::nth_element(data.begin(), data.begin() + lower_index, data.end());
-      const default_type lower_value = static_cast<default_type>(data[lower_index]);
-      std::nth_element(data.begin(), data.begin() + lower_index + 1, data.end());
-      const default_type upper_value = static_cast<default_type>(data[lower_index + 1]);
-      return (1.0 - mu) * lower_value + mu * upper_value;
     }
-
-  } else if (std::max(bottom, top) >= 0) {
+    if (percentile == 0.0) {
+      return static_cast<default_type>(*std::min_element(data.begin(), data.end()));
+    }
+    const default_type interp_index = 0.01 * percentile * (data.size() - 1);
+    const auto lower_index = static_cast<size_t>(std::floor(interp_index));
+    const default_type mu = interp_index - static_cast<default_type>(lower_index);
+    std::nth_element(data.begin(), data.begin() + lower_index, data.end());
+    const auto lower_value = static_cast<default_type>(data[lower_index]);
+    std::nth_element(data.begin(), data.begin() + lower_index + 1, data.end());
+    const auto upper_value = static_cast<default_type>(data[lower_index + 1]);
+    return (1.0 - mu) * lower_value + mu * upper_value;
+  }
+  if (std::max(bottom, top) >= 0) {
 
     auto data = get_data(in, mask, max_axis, ignore_zero);
     const ssize_t index(bottom >= 0 ? bottom - 1 : (static_cast<ssize_t>(data.size()) - top));
@@ -239,7 +239,7 @@ default_type calculate(Image<value_type> &in,
                       str(bottom >= 0 ? bottom : top) + ")");
     std::nth_element(data.begin(), data.begin() + index, data.end());
     const value_type threshold_float = data[index];
-    if (index) {
+    if (index != 0) {
       std::nth_element(data.begin(), data.begin() + index - 1, data.end());
       if (data[index - 1] == threshold_float)
         issue_degeneracy_warning = true;
@@ -250,47 +250,46 @@ default_type calculate(Image<value_type> &in,
         issue_degeneracy_warning = true;
     }
     return static_cast<default_type>(threshold_float);
-
-  } else { // No explicit mechanism option: do automatic thresholding
-
-    if (max_axis < in.ndim()) {
-
-      // Need to extract just the current 3D volume
-      std::vector<size_t> in_from(in.ndim()), in_size(in.ndim());
-      size_t axis;
-      for (axis = 0; axis != 3; ++axis) {
-        in_from[axis] = 0;
-        in_size[axis] = in.size(axis);
-      }
-      for (; axis != in.ndim(); ++axis) {
-        in_from[axis] = in.index(axis);
-        in_size[axis] = 1;
-      }
-      Adapter::Subset<Image<value_type>> in_subset(in, in_from, in_size);
-      if (mask.valid()) {
-        std::vector<size_t> mask_from(mask.ndim()), mask_size(mask.ndim());
-        for (axis = 0; axis != 3; ++axis) {
-          mask_from[axis] = 0;
-          mask_size[axis] = mask.size(axis);
-        }
-        for (; axis != mask.ndim(); ++axis) {
-          mask_from[axis] = mask.index(axis);
-          mask_size[axis] = 1;
-        }
-        Adapter::Subset<Image<bool>> mask_subset(mask, mask_from, mask_size);
-        Adapter::Replicate<decltype(mask_subset)> mask_replicate(mask_subset, in_subset);
-        return Filter::estimate_optimal_threshold(in_subset, mask_replicate);
-      } else {
-        return Filter::estimate_optimal_threshold(in_subset);
-      }
-
-    } else if (mask.valid()) {
-      Adapter::Replicate<Image<bool>> mask_replicate(mask, in);
-      return Filter::estimate_optimal_threshold(in, mask_replicate);
-    } else {
-      return Filter::estimate_optimal_threshold(in);
-    }
   }
+
+  // No explicit mechanism option: do automatic thresholding
+  if (max_axis < in.ndim()) {
+
+    // Need to extract just the current 3D volume
+    std::vector<size_t> in_from(in.ndim());
+    std::vector<size_t> in_size(in.ndim());
+    size_t axis;
+    for (axis = 0; axis != 3; ++axis) {
+      in_from[axis] = 0;
+      in_size[axis] = in.size(axis);
+    }
+    for (; axis != in.ndim(); ++axis) {
+      in_from[axis] = in.index(axis);
+      in_size[axis] = 1;
+    }
+    Adapter::Subset<Image<value_type>> in_subset(in, in_from, in_size);
+    if (mask.valid()) {
+      std::vector<size_t> mask_from(mask.ndim());
+      std::vector<size_t> mask_size(mask.ndim());
+      for (axis = 0; axis != 3; ++axis) {
+        mask_from[axis] = 0;
+        mask_size[axis] = mask.size(axis);
+      }
+      for (; axis != mask.ndim(); ++axis) {
+        mask_from[axis] = mask.index(axis);
+        mask_size[axis] = 1;
+      }
+      Adapter::Subset<Image<bool>> mask_subset(mask, mask_from, mask_size);
+      Adapter::Replicate<decltype(mask_subset)> mask_replicate(mask_subset, in_subset);
+      return Filter::estimate_optimal_threshold(in_subset, mask_replicate);
+    }
+    return Filter::estimate_optimal_threshold(in_subset);
+  }
+  if (mask.valid()) {
+    Adapter::Replicate<Image<bool>> mask_replicate(mask, in);
+    return Filter::estimate_optimal_threshold(in, mask_replicate);
+  }
+  return Filter::estimate_optimal_threshold(in);
 }
 
 template <typename T>
@@ -364,7 +363,7 @@ void execute(Image<value_type> &in,
     if (out.valid()) {
 
       for (auto l = Loop("Determining and applying per-volume thresholds", 3, in.ndim())(in); l; ++l) {
-        LogLevelLatch latch(App::log_level - 1);
+        const LogLevelLatch latch(App::log_level - 1);
         const default_type threshold = calculate(in, mask, 3, abs, percentile, bottom, top, ignore_zero);
         assign_pos_of(in, 3).to(out);
         apply(in, mask, out, 3, static_cast<value_type>(threshold), op, mask_out);
@@ -372,7 +371,7 @@ void execute(Image<value_type> &in,
 
     } else {
 
-      LogLevelLatch latch(App::log_level - 1);
+      const LogLevelLatch latch(App::log_level - 1);
       bool is_first_loop = true;
       for (auto l = Loop(3, in.ndim())(in); l; ++l) {
         if (is_first_loop)
@@ -385,8 +384,8 @@ void execute(Image<value_type> &in,
     }
 
     return;
-
-  } else if (in.ndim() <= 3 && all_volumes) {
+  }
+  if (in.ndim() <= 3 && all_volumes) {
     WARN("Option -allvolumes ignored; input image is less than 4D");
   }
 
@@ -425,7 +424,7 @@ void run() {
   bool mask_out = !get_options("out_masked").empty();
 
   const operator_type default_comp = bottom >= 0 ? operator_type::LE : operator_type::GE;
-  operator_type comp = get_option_choice<operator_type>("comparison", default_comp);
+  auto comp = get_option_choice<operator_type>("comparison", default_comp);
   if (invert) {
     switch (comp) {
     case operator_type::LT:
@@ -472,7 +471,7 @@ void run() {
       WARN("-out_masked option ignored; no mask image provided via -mask");
       mask_out = false;
     }
-    if (!num_explicit_mechanisms) {
+    if (num_explicit_mechanisms == 0U) {
       if (ignore_zero) {
         WARN("Option -ignorezero ignored by automatic threshold calculation");
       }

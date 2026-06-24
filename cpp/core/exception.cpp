@@ -47,8 +47,8 @@ namespace MR {
 
 void display_exception_cmdline(const Exception &E, int log_level) {
   if (App::log_level >= log_level)
-    for (size_t n = 0; n < E.description.size(); ++n)
-      report_to_user_func(E.description[n], log_level);
+    for (const auto &n : E.description)
+      report_to_user_func(n, log_level);
 }
 
 bool _need_newline = false;
@@ -101,7 +101,7 @@ void (*report_to_user_func)(std::string_view msg, int type) = cmdline_report_to_
 void (*Exception::display_func)(const Exception &E, int log_level) = display_exception_cmdline;
 
 void check_app_exit_code() {
-  if (App::exit_error_code)
+  if (App::exit_error_code != 0)
     throw Exception("Command performing delayed termination due to prior critical error");
 }
 

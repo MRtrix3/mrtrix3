@@ -28,7 +28,7 @@ CFE::CFE(const Fixel::Matrix::Reader &connectivity_matrix,
 
 void CFE::operator()(in_column_type stats, out_column_type enhanced_stats) const {
   enhanced_stats.setZero();
-  std::vector<default_type> connected_stats;
+  const std::vector<default_type> connected_stats;
   for (size_t fixel = 0; fixel < matrix.size(); ++fixel) {
     if (stats[fixel] < dh)
       continue;

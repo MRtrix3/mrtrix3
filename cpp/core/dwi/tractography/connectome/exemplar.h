@@ -34,15 +34,12 @@ public:
            const size_t length,
            const NodePair &nodes,
            const std::pair<point_type, point_type> &COMs)
-      : Tractography::Streamline<float>(length, {0.0F, 0.0F, 0.0F}),
-        nodes(nodes),
-        node_COMs(COMs),
-        is_finalized(false) {
+      : Tractography::Streamline<float>(length, {0.0F, 0.0F, 0.0F}), nodes(nodes), node_COMs(COMs) {
     set_index(exemplar_index);
     weight = 0.0F;
   }
 
-  Exemplar(Exemplar &&that)
+  Exemplar(Exemplar &&that) noexcept
       : Tractography::Streamline<float>(std::move(static_cast<Tractography::Streamline<float> &&>(that))),
         mutex(),
         nodes(that.nodes),
@@ -62,20 +59,20 @@ public:
   void add(const Connectome::Streamline_nodelist &);
   void finalize(const float);
 
-  const Tractography::Streamline<float> &get() const {
+  [[nodiscard]] const Tractography::Streamline<float> &get() const {
     assert(is_finalized);
     return *this;
   }
 
-  bool is_diagonal() const { return nodes.first == nodes.second; }
+  [[nodiscard]] bool is_diagonal() const { return nodes.first == nodes.second; }
 
-  float get_weight() const { return weight; }
+  [[nodiscard]] float get_weight() const { return weight; }
 
 private:
   std::mutex mutex;
   NodePair nodes;
   std::pair<point_type, point_type> node_COMs;
-  bool is_finalized;
+  bool is_finalized{false};
 
   void add(const Tractography::Streamline<float> &, const bool is_reversed);
 };

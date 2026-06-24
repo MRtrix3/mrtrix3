@@ -48,21 +48,21 @@ void parse_general_options(Registration::Linear &registration) {
   }
   opt = get_options("init_rotation.search.directions");
   if (!opt.empty()) {
-    ssize_t dirs(opt[0][0]);
+    const ssize_t dirs(opt[0][0]);
     if (dirs < 1)
       throw Exception("init_rotation.search.directions has to be at least 1");
     registration.init.init_rotation.search.directions = dirs;
   }
   opt = get_options("init_rotation.search.scale");
   if (!opt.empty()) {
-    default_type scale = (opt[0][0]);
+    const default_type scale = (opt[0][0]);
     if (scale < 0.0001 or scale > 1.0)
       throw Exception("init_rotation.search.scale has to be between 0.0001 and 1.0");
     registration.init.init_rotation.search.scale = scale;
   }
   opt = get_options("init_rotation.search.global.iterations");
   if (!opt.empty()) {
-    size_t iters(opt[0][0]);
+    const size_t iters(opt[0][0]);
     if (iters == 0)
       throw Exception("init_rotation.search.global.iterations has to be at least 1");
     registration.init.init_rotation.search.global.iterations = iters;

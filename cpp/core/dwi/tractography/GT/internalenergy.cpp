@@ -25,8 +25,8 @@ double InternalEnergyComputer::stageConnect(const ParticleEnd &pe1, ParticleEnd 
   dEint = pe2.e_conn;
   // old
   Particle *par0 = (pe1.alpha == -1) ? pe1.par->getPredecessor() : pe1.par->getSuccessor();
-  if (par0) {
-    int a = (par0->getPredecessor() == pe1.par) ? -1 : +1;
+  if (par0 != nullptr) {
+    const int a = (par0->getPredecessor() == pe1.par) ? -1 : +1;
     dEint -= calcEnergy(pe1.par, pe1.alpha, par0, a);
   }
   return dEint / stats.getTint();
@@ -36,16 +36,21 @@ void InternalEnergyComputer::scanNeighbourhood(const Particle *p, const int alph
   neighbourhood.resize(1);
   normalization = 1.0;
 
-  Point_t ep = p->getEndPoint(alpha0);
+  const Point_t ep = p->getEndPoint(alpha0);
   if (pGrid.isoutofbounds(ep))
     return;
-  size_t x, y, z;
+  size_t x;
+  size_t y;
+  size_t z;
   pGrid.pos2xyz(ep, x, y, z);
 
-  float tolerance2 = Particle::L * Particle::L; // distance threshold (particle length), hard coded
-  float costheta = Math::sqrt1_2;               // angular threshold (45 degrees), hard coded
+  const float tolerance2 = Particle::L * Particle::L; // distance threshold (particle length), hard coded
+  const float costheta = Math::sqrt1_2;               // angular threshold (45 degrees), hard coded
   ParticleEnd pe;
-  float d1, d2, d, ct;
+  float d1;
+  float d2;
+  float d;
+  float ct;
 
   for (int i = -1; i <= 1; i++) {
     for (int j = -1; j <= 1; j++) {
@@ -54,10 +59,10 @@ void InternalEnergyComputer::scanNeighbourhood(const Particle *p, const int alph
         if (pvec == nullptr)
           continue;
 
-        std::lock_guard<std::mutex> lock(pvec->mutex);
+        const std::lock_guard<std::mutex> lock(pvec->mutex);
 
-        for (ParticleGrid::ParticleContainer::const_iterator it = pvec->begin(); it != pvec->end(); ++it) {
-          pe.par = *it;
+        for (auto it : *pvec) {
+          pe.par = it;
           if (pe.par == p)
             continue;
           d1 = (ep - pe.par->getEndPoint(-1)).squaredNorm();
@@ -90,11 +95,9 @@ ParticleEnd InternalEnergyComputer::pickNeighbour() {
     return sum >= t;
   });
 
-  if (neighbour != neighbourhood.end()) {
-    return *neighbour;
-  } else {
+  if (neighbour == neighbourhood.end())
     throw Exception("Unable to pick neighbour!");
-  }
+  return *neighbour;
 }
 
 } // namespace MR::DWI::Tractography::GT

@@ -70,7 +70,7 @@ void run() {
 
   for (auto l = Loop(image)(image); l; ++l) {
     const node_t value = image.value();
-    if (value) {
+    if (value != 0U) {
       if (value > coms.rows()) {
         coms.conservativeResizeLike(matrix_type::Zero(value, 3));
         masses.conservativeResizeLike(vector_type::Zero(value));
@@ -101,7 +101,7 @@ void run() {
   }
 
   // Ensure that the printout of centres-of-mass is nicely formatted
-  Eigen::IOFormat fmt(Eigen::StreamPrecision, 0, ", ", "\n", "[ ", " ]", "", "");
+  const Eigen::IOFormat fmt(Eigen::StreamPrecision, 0, ", ", "\n", "[ ", " ]", "", "");
   std::stringstream com_stringstream;
   com_stringstream << coms.format(fmt);
   const std::vector<std::string> com_strings = split(com_stringstream.str(), "\n");
@@ -122,7 +122,7 @@ void run() {
             << std::setw(com_width / 2 + std::string("centre of mass").size() / 2) << std::right << "centre of mass"
             << "\n";
   for (ssize_t i = 0; i != masses.size(); ++i) {
-    if (masses[i]) {
+    if (masses[i] != 0.0) {
       std::cout << std::setw(8) << std::right << i + 1 << " " << std::setw(8) << std::right << masses[i] << " "
                 << std::setw(4 + com_width) << std::right << com_strings[i] << "\n";
     }

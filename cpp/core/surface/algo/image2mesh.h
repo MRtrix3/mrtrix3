@@ -47,7 +47,8 @@ template <class ImageType> void image2mesh_blocky(const ImageType &input_image, 
   if (input_image.ndim() != 3)
     throw Exception("Voxel-to-mesh conversion only works for 3D images");
 
-  ImageType voxel(input_image), neighbour(input_image);
+  ImageType voxel(input_image);
+  ImageType neighbour(input_image);
   VertexList vertices;
   TriangleList triangles;
   std::map<Vox, size_t> vox2vertindex;
@@ -55,7 +56,7 @@ template <class ImageType> void image2mesh_blocky(const ImageType &input_image, 
   // Perform all initial calculations in voxel space;
   //   only once the final vertex position in voxel space is determined
   //   is it transformed to real space for the final output
-  Transform transform(input_image);
+  const Transform transform(input_image);
 
   // Also, for initial calculations, do this such that a voxel location actually
   //   refers to the lower corner of the voxel; that way searches for existing
@@ -427,7 +428,7 @@ template <class ImageType> void image2mesh_mc(const ImageType &input_image, Mesh
   VertexList vertices;
   TriangleList triangles;
 
-  Transform transform(input_image);
+  const Transform transform(input_image);
 
   ImageType voxel(input_image);
   std::array<float, 8> in_vertex_values{};
@@ -511,7 +512,7 @@ template <class ImageType> void image2mesh_mc(const ImageType &input_image, Mesh
           const std::array<uint32_t, 3> indices{edge_to_output_vertex[row[first_edge_index]],
                                                 edge_to_output_vertex[row[first_edge_index + 2]],
                                                 edge_to_output_vertex[row[first_edge_index + 1]]};
-          triangles.push_back(Triangle(indices));
+          triangles.emplace_back(indices);
         }
       }
     }

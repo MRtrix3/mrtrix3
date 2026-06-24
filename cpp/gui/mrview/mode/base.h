@@ -62,11 +62,11 @@ public:
   Base(int flags = FocusContrast | MoveTarget);
   virtual ~Base();
 
-  Window &window() const { return *Window::main; }
+  [[nodiscard]] Window &window() const { return *Window::main; }
   Projection projection;
   const int features;
   QList<ImageBase *> overlays_for_3D;
-  bool update_overlays;
+  bool update_overlays{false};
 
   virtual void paint(Projection &projection);
   virtual void mouse_press_event();
@@ -80,31 +80,28 @@ public:
   virtual void tilt_event();
   virtual void rotate_event();
   virtual void image_changed_event() {}
-  virtual const Projection *get_current_projection() const;
+  [[nodiscard]] virtual const Projection *get_current_projection() const;
   virtual void reset_windowing();
 
   virtual void request_update_mode_gui(ModeGuiVisitor &visitor) const { visitor.update_base_mode_gui(*this); }
 
   void paintGL();
 
-  const Image *image() const { return window().image(); }
-  const Eigen::Vector3f &focus() const { return window().focus(); }
-  const Eigen::Vector3f &target() const { return window().target(); }
-  float FOV() const { return window().FOV(); }
-  int plane() const { return window().plane(); }
-  Eigen::Quaternionf orientation() const {
-    if (snap_to_image()) {
-      if (image())
-        return Eigen::Quaternionf(image()->header().transform().rotation().cast<float>());
-      else
-        return Eigen::Quaternionf::Identity();
-    }
+  [[nodiscard]] const Image *image() const { return window().image(); }
+  [[nodiscard]] const Eigen::Vector3f &focus() const { return window().focus(); }
+  [[nodiscard]] const Eigen::Vector3f &target() const { return window().target(); }
+  [[nodiscard]] float FOV() const { return window().FOV(); }
+  [[nodiscard]] int plane() const { return window().plane(); }
+  [[nodiscard]] Eigen::Quaternionf orientation() const {
+    if (snap_to_image())
+      return (image() == nullptr) ? Eigen::Quaternionf::Identity()
+                                  : Eigen::Quaternionf(image()->header().transform().rotation().cast<float>());
     return window().orientation();
   }
 
-  int width() const { return glarea()->width(); }
-  int height() const { return glarea()->height(); }
-  bool snap_to_image() const { return window().snap_to_image(); }
+  [[nodiscard]] int width() const { return glarea()->width(); }
+  [[nodiscard]] int height() const { return glarea()->height(); }
+  [[nodiscard]] bool snap_to_image() const { return window().snap_to_image(); }
 
   Image *image() { return window().image(); }
 
@@ -125,15 +122,16 @@ public:
   void set_plane(int p) { window().set_plane(p); }
   void set_orientation(const Eigen::Quaternionf &V) { window().set_orientation(V); }
   void reset_orientation() {
-    if (image())
+    if (image() != nullptr)
       set_orientation(Eigen::Quaternionf(image()->header().transform().rotation().cast<float>()));
     else
       set_orientation(Eigen::Quaternionf::Identity());
   }
 
-  GL::Area *glarea() const { return reinterpret_cast<GL::Area *>(window().glarea); }
+  [[nodiscard]] GL::Area *glarea() const { return reinterpret_cast<GL::Area *>(window().glarea); }
 
-  Eigen::Vector3f get_through_plane_translation(float distance, const ModelViewProjection &projection) const {
+  [[nodiscard]] Eigen::Vector3f get_through_plane_translation(float distance,
+                                                              const ModelViewProjection &projection) const {
     Eigen::Vector3f move(projection.screen_normal());
     move.normalize();
     move *= distance;
@@ -146,9 +144,9 @@ public:
 
   void render_tools(const Projection &projection, bool is_3D = false, int axis = 0, int slice = 0) {
     QList<QAction *> tools = window().tools()->actions();
-    for (int i = 0; i < tools.size(); ++i) {
-      Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tools[i])->dock;
-      if (dock) {
+    for (auto &tool : tools) {
+      Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tool)->dock;
+      if (dock != nullptr) {
         GL::assert_context_is_current();
         dock->tool->draw(projection, is_3D, axis, slice);
         GL::assert_context_is_current();
@@ -160,11 +158,11 @@ public:
   void setup_projection(const Eigen::Quaternionf &, ModelViewProjection &) const;
   void setup_projection(const GL::mat4 &, ModelViewProjection &) const;
 
-  Eigen::Quaternionf get_tilt_rotation(const ModelViewProjection &proj) const;
-  Eigen::Quaternionf get_rotate_rotation(const ModelViewProjection &proj) const;
+  [[nodiscard]] Eigen::Quaternionf get_tilt_rotation(const ModelViewProjection &proj) const;
+  [[nodiscard]] Eigen::Quaternionf get_rotate_rotation(const ModelViewProjection &proj) const;
 
-  Eigen::Vector3f voxel_at(const Eigen::Vector3f &pos) const {
-    if (!image())
+  [[nodiscard]] Eigen::Vector3f voxel_at(const Eigen::Vector3f &pos) const {
+    if (image() == nullptr)
       return Eigen::Vector3f::Constant(NaNF);
     const Eigen::Vector3f result = image()->scanner2voxel().cast<float>() * pos;
     return result;
@@ -180,8 +178,8 @@ public:
       with_projection.draw_orientation_labels();
   }
 
-  int slice(int axis) const { return std::round(voxel_at(focus())[axis]); }
-  int slice() const { return slice(plane()); }
+  [[nodiscard]] int slice(int axis) const { return std::round(voxel_at(focus())[axis]); }
+  [[nodiscard]] int slice() const { return slice(plane()); }
 
   void updateGL() { window().updateGL(); }
 
@@ -193,12 +191,14 @@ protected:
   void tilt_event(const ModelViewProjection &proj);
   void rotate_event(const ModelViewProjection &proj);
 
-  GL::mat4 adjust_projection_matrix(const GL::mat4 &Q, int proj) const;
-  GL::mat4 adjust_projection_matrix(const GL::mat4 &Q) const { return adjust_projection_matrix(Q, plane()); }
+  [[nodiscard]] GL::mat4 adjust_projection_matrix(const GL::mat4 &Q, int proj) const;
+  [[nodiscard]] GL::mat4 adjust_projection_matrix(const GL::mat4 &Q) const {
+    return adjust_projection_matrix(Q, plane());
+  }
 
   void reset_view();
 
-  bool visible;
+  bool visible{true};
 };
 
 //! \cond skip
@@ -214,7 +214,7 @@ public:
     setStatusTip(tr(description));
   }
 
-  virtual Base *create() const = 0;
+  [[nodiscard]] virtual Base *create() const = 0;
 };
 //! \endcond
 
@@ -223,7 +223,7 @@ public:
   Action(QActionGroup *parent, const char *const name, const char *const description, int index) // check_syntax off
       : ActionWrapper(parent, name, description, index) {}
 
-  virtual Base *create() const { return new T; }
+  [[nodiscard]] virtual Base *create() const { return new T; }
 };
 
 } // namespace Mode

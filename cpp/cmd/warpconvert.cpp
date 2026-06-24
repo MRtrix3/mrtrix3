@@ -89,7 +89,7 @@ void usage() {
 // clang-format on
 
 void run() {
-  const ConversionType type = MR::Enum::from_name<ConversionType>(argument[1]);
+  const auto type = MR::Enum::from_name<ConversionType>(argument[1]);
   const bool midway_space = !get_options("midway_space").empty();
   auto template_filepath = get_optional<std::filesystem::path>("template");
   const int from = get_option_value("from", 1);

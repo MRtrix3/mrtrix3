@@ -35,7 +35,7 @@ class Edge {
 
 public:
   Edge(const node_t, const node_t, const Eigen::Vector3f &, const Eigen::Vector3f &);
-  Edge(Edge &&);
+  Edge(Edge &&) noexcept;
   Edge() = delete;
   ~Edge();
 
@@ -46,7 +46,7 @@ public:
 
   void load_exemplar(const MR::DWI::Tractography::Streamline<float> &data) {
     assert(!exemplar);
-    exemplar.reset(new Exemplar(*this, data));
+    exemplar = std::make_unique<Exemplar>(*this, data);
   }
   void clear_exemplar() {
     if (streamtube)
@@ -60,7 +60,7 @@ public:
   void create_streamline() {
     assert(!streamline);
     assert(exemplar);
-    streamline.reset(new Streamline(*exemplar));
+    streamline = std::make_unique<Streamline>(*exemplar);
   }
   void render_streamline() const {
     assert(streamline);
@@ -74,7 +74,7 @@ public:
   void create_streamtube() {
     assert(!streamtube);
     assert(exemplar);
-    streamtube.reset(new Streamtube(*exemplar));
+    streamtube = std::make_unique<Streamtube>(*exemplar);
   }
   void render_streamtube() const {
     assert(streamtube);
@@ -87,30 +87,30 @@ public:
 
   static void set_streamtube_LOD(const size_t lod) { Streamtube::LOD(lod); }
 
-  node_t get_node_index(const size_t i) const {
+  [[nodiscard]] node_t get_node_index(const size_t i) const {
     assert(i == 0 || i == 1);
     return node_indices[i];
   }
-  const Eigen::Vector3f &get_node_centre(const size_t i) const {
+  [[nodiscard]] const Eigen::Vector3f &get_node_centre(const size_t i) const {
     assert(i == 0 || i == 1);
     return node_centres[i];
   }
-  Eigen::Vector3f get_com() const { return (node_centres[0] + node_centres[1]) * 0.5; }
+  [[nodiscard]] Eigen::Vector3f get_com() const { return (node_centres[0] + node_centres[1]) * 0.5; }
 
-  const GLfloat *get_rot_matrix() const { return rot_matrix; }
+  [[nodiscard]] const GLfloat *get_rot_matrix() const { return rot_matrix; }
 
-  const Eigen::Vector3f &get_dir() const { return dir; }
+  [[nodiscard]] const Eigen::Vector3f &get_dir() const { return dir; }
   void set_size(const float i) { size = i; }
-  float get_size() const { return size; }
+  [[nodiscard]] float get_size() const { return size; }
   void set_colour(const Eigen::Array3f &i) { colour = i; }
-  const Eigen::Array3f &get_colour() const { return colour; }
+  [[nodiscard]] const Eigen::Array3f &get_colour() const { return colour; }
   void set_alpha(const float i) { alpha = i; }
-  float get_alpha() const { return alpha; }
+  [[nodiscard]] float get_alpha() const { return alpha; }
   void set_visible(const bool i) { visible = i; }
-  bool is_visible() const { return visible; }
-  bool is_diagonal() const { return (node_indices[0] == node_indices[1]); }
+  [[nodiscard]] bool is_visible() const { return visible; }
+  [[nodiscard]] bool is_diagonal() const { return (node_indices[0] == node_indices[1]); }
 
-  bool to_draw() const { return (visible && (alpha > 0.0f) && (size > 0.0f)); }
+  [[nodiscard]] bool to_draw() const { return (visible && (alpha > 0.0F) && (size > 0.0F)); }
 
 private:
   const std::array<node_t, 2> node_indices;
@@ -132,7 +132,7 @@ private:
   class Line {
   public:
     Line(const Edge &parent);
-    Line(Line &&that)
+    Line(Line &&that) noexcept
         : vertex_buffer(std::move(that.vertex_buffer)),
           tangent_buffer(std::move(that.tangent_buffer)),
           vertex_array_object(std::move(that.vertex_array_object)) {}
@@ -150,7 +150,7 @@ private:
   class Exemplar {
   public:
     Exemplar(const Edge &, const MR::DWI::Tractography::Streamline<float> &);
-    Exemplar(Exemplar &&that)
+    Exemplar(Exemplar &&that) noexcept
         : endpoints{that.endpoints[0], that.endpoints[1]},
           vertices(std::move(that.vertices)),
           tangents(std::move(that.tangents)),
@@ -170,7 +170,7 @@ private:
   class Streamline {
   public:
     Streamline(const Exemplar &exemplar);
-    Streamline(Streamline &&that)
+    Streamline(Streamline &&that) noexcept
         : count(that.count),
           vertex_buffer(std::move(that.vertex_buffer)),
           tangent_buffer(std::move(that.tangent_buffer)),
@@ -193,7 +193,7 @@ private:
   class Streamtube {
   public:
     Streamtube(const Exemplar &);
-    Streamtube(Streamtube &&that)
+    Streamtube(Streamtube &&that) noexcept
         : count(that.count),
           vertex_buffer(std::move(that.vertex_buffer)),
           tangent_buffer(std::move(that.tangent_buffer)),
@@ -212,7 +212,7 @@ private:
 
     class Shared {
     public:
-      Shared() : max_num_points(0), LOD(0), element_counts(nullptr) {}
+      Shared() = default;
       ~Shared() { clear(); }
       void check_num_points(const size_t num_points) {
         if (num_points > max_num_points) {
@@ -228,13 +228,13 @@ private:
           regenerate();
         }
       }
-      size_t points_per_vertex() const { return Math::pow2(LOD + 1); }
+      [[nodiscard]] size_t points_per_vertex() const { return Math::pow2(LOD + 1); }
 
     protected:
-      size_t max_num_points;
-      size_t LOD;
-      GLsizei *element_counts;
-      GLuint **element_indices;
+      size_t max_num_points{0};
+      size_t LOD{0};
+      GLsizei *element_counts{nullptr};
+      GLuint **element_indices{nullptr};
 
     private:
       void regenerate();

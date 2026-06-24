@@ -47,16 +47,15 @@ QModelIndex TreeModel::index(int row, int column, const QModelIndex &parent) con
   else
     parentItem = static_cast<TreeItem *>(parent.internalPointer());
   TreeItem *childItem = parentItem->child(row);
-  if (childItem)
+  if (childItem != nullptr)
     return createIndex(row, column, childItem);
-  else
-    return {};
+  return {};
 }
 
 QModelIndex TreeModel::parent(const QModelIndex &index) const {
   if (!index.isValid())
     return {};
-  TreeItem *childItem = static_cast<TreeItem *>(index.internalPointer());
+  auto *childItem = static_cast<TreeItem *>(index.internalPointer());
   TreeItem *parentItem = childItem->parent();
   if (parentItem == rootItem)
     return {};
@@ -77,8 +76,7 @@ int TreeModel::rowCount(const QModelIndex &parent) const {
 int TreeModel::columnCount(const QModelIndex &parent) const {
   if (parent.isValid())
     return static_cast<TreeItem *>(parent.internalPointer())->columnCount();
-  else
-    return rootItem->columnCount();
+  return rootItem->columnCount();
 }
 
 } // namespace MR::GUI::Dialog

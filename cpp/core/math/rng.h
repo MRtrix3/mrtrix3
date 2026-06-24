@@ -50,7 +50,7 @@ public:
 
   static std::mt19937::result_type get_seed() {
     static std::mutex mutex;
-    std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     static std::mt19937::result_type current_seed = get_seed_private();
     return current_seed++;
   }

@@ -90,7 +90,7 @@ public:
     assert(!neg);
     assert(index < num_peaks());
     peak_dirs[index] = revised_peak_dir;
-    if (!index)
+    if (index == 0U)
       max_peak_value = revised_peak_value;
   }
 
@@ -122,17 +122,17 @@ public:
     integral += that.integral;
   }
 
-  const mask_type &get_mask() const { return mask; }
-  const Eigen::Array<default_type, Eigen::Dynamic, 1> &get_values() const { return values; }
-  default_type get_max_peak_value() const { return max_peak_value; }
-  size_t num_peaks() const { return peak_dirs.size(); }
-  const Eigen::Vector3d &get_peak_dir(const size_t i) const {
+  [[nodiscard]] const mask_type &get_mask() const { return mask; }
+  [[nodiscard]] const Eigen::Array<default_type, Eigen::Dynamic, 1> &get_values() const { return values; }
+  [[nodiscard]] default_type get_max_peak_value() const { return max_peak_value; }
+  [[nodiscard]] size_t num_peaks() const { return peak_dirs.size(); }
+  [[nodiscard]] const Eigen::Vector3d &get_peak_dir(const size_t i) const {
     assert(i < num_peaks());
     return peak_dirs[i];
   }
-  const Eigen::Vector3d &get_mean_dir() const { return mean_dir; }
-  default_type get_integral() const { return integral; }
-  bool is_negative() const { return neg; }
+  [[nodiscard]] const Eigen::Vector3d &get_mean_dir() const { return mean_dir; }
+  [[nodiscard]] default_type get_integral() const { return integral; }
+  [[nodiscard]] bool is_negative() const { return neg; }
 
 private:
   mask_type mask;
@@ -173,9 +173,9 @@ public:
     if (mask.valid()) {
       do {
         assign_pos_of(fod, 0, 3).to(mask);
-        if (!mask.value())
+        if (!static_cast<bool>(mask.value()))
           ++loop;
-      } while (loop && !mask.value());
+      } while (loop && !static_cast<bool>(mask.value()));
     }
     assign_pos_of(fod).to(out.vox);
     out.resize(fod.size(3));
@@ -214,23 +214,23 @@ public:
 
   bool operator()(const SH_coefs &, FOD_lobes &) const;
 
-  default_type get_integral_threshold() const { return integral_threshold; }
+  [[nodiscard]] default_type get_integral_threshold() const { return integral_threshold; }
   void set_integral_threshold(const default_type i) { integral_threshold = i; }
-  default_type get_peak_value_threshold() const { return peak_value_threshold; }
+  [[nodiscard]] default_type get_peak_value_threshold() const { return peak_value_threshold; }
   void set_peak_value_threshold(const default_type i) { peak_value_threshold = i; }
-  default_type get_lobe_merge_ratio() const { return lobe_merge_ratio; }
+  [[nodiscard]] default_type get_lobe_merge_ratio() const { return lobe_merge_ratio; }
   void set_lobe_merge_ratio(const default_type i) { lobe_merge_ratio = i; }
-  bool get_create_null_lobe() const { return create_null_lobe; }
+  [[nodiscard]] bool get_create_null_lobe() const { return create_null_lobe; }
   void set_create_null_lobe(const bool i) {
     create_null_lobe = i;
     verify_settings();
   }
-  bool get_create_lookup_table() const { return create_lookup_table; }
+  [[nodiscard]] bool get_create_lookup_table() const { return create_lookup_table; }
   void set_create_lookup_table(const bool i) {
     create_lookup_table = i;
     verify_settings();
   }
-  bool get_dilate_lookup_table() const { return dilate_lookup_table; }
+  [[nodiscard]] bool get_dilate_lookup_table() const { return dilate_lookup_table; }
   void set_dilate_lookup_table(const bool i) {
     dilate_lookup_table = i;
     verify_settings();
@@ -248,25 +248,32 @@ private:
   std::shared_ptr<Math::SH::PrecomputedAL<default_type>> precomputer;
   std::shared_ptr<IntegrationWeights> weights;
 
-  default_type integral_threshold;   // Integral of positive lobe must be at least this value
-  default_type peak_value_threshold; // Absolute threshold for the peak amplitude of the lobe
-  default_type lobe_merge_ratio;     // Determines whether two lobes get agglomerated into one, depending on the FOD
-                                 // amplitude at the current point and how it compares to the maximal amplitudes of the
-                                 // lobes to which it could be assigned
-  bool create_null_lobe;    // If this is set, an additional lobe will be created after segmentation with zero size,
-                            // containing all directions not assigned to any other lobe
-  bool create_lookup_table; // If this is set, an additional lobe will be created after segmentation with zero size,
-                            // containing all directions not assigned to any other lobe
-  bool dilate_lookup_table; // If this is set, the lookup table created for each voxel will be dilated so that all
-                            // directions correspond to the nearest positive non-zero FOD lobe
+  // Integral of positive lobe must be at least this value
+  default_type integral_threshold;
+  // Absolute threshold for the peak amplitude of the lobe
+  default_type peak_value_threshold;
+  // Determines whether two lobes get agglomerated into one,
+  // depending on the FOD amplitude at the current point
+  // and how it compares to the maximal amplitudes of the lobes to which it could be assigned
+  default_type lobe_merge_ratio;
+  // If this is set, an additional lobe will be created after segmentation with zero size,
+  // containing all directions not assigned to any other lobe
+  bool create_null_lobe{false};
+  // If this is set, an additional lobe will be created after segmentation with zero size,
+  // containing all directions not assigned to any other lobe
+  bool create_lookup_table{true};
+  // If this is set, the lookup table created for each voxel will be dilated
+  // so that all directions correspond to the nearest positive non-zero FOD lobe
+  bool dilate_lookup_table{false};
 
   void verify_settings() const {
     if (create_null_lobe && dilate_lookup_table)
-      throw Exception(
-          "For FOD segmentation, options 'create_null_lobe' and 'dilate_lookup_table' are mutually exclusive");
+      throw Exception("For FOD segmentation,"
+                      " options 'create_null_lobe' and 'dilate_lookup_table' are mutually exclusive");
     if (!create_lookup_table && dilate_lookup_table)
-      throw Exception("For FOD segmentation, 'create_lookup_table' must be set in order for lookup tables to be "
-                      "dilated ('dilate_lookup_table')");
+      throw Exception("For FOD segmentation,"
+                      " 'create_lookup_table' must be set in order for lookup tables to be dilated"
+                      " ('dilate_lookup_table')");
   }
 
 #ifdef FMLS_OPTIMISE_MEAN_DIR

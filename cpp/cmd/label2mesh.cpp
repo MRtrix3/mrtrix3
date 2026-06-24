@@ -73,11 +73,12 @@ void run() {
 
   using voxel_corner_t = Eigen::Array<int, 3, 1>;
 
-  std::vector<voxel_corner_t> lower_corners, upper_corners;
+  std::vector<voxel_corner_t> lower_corners;
+  std::vector<voxel_corner_t> upper_corners;
   {
     for (auto i = Loop("Importing label image", labels)(labels); i; ++i) {
       const uint32_t index = labels.value();
-      if (index) {
+      if (index != 0U) {
 
         if (index >= lower_corners.size()) {
           lower_corners.resize(index + 1, voxel_corner_t(labels.size(0), labels.size(1), labels.size(2)));
@@ -118,7 +119,8 @@ void run() {
 
     auto worker = [&](const size_t &in) {
       meshes[in].set_name(str(in));
-      std::vector<int> from, dimensions;
+      std::vector<int> from;
+      std::vector<int> dimensions;
       for (size_t axis = 0; axis != 3; ++axis) {
         from.push_back(lower_corners[in][axis]);
         dimensions.push_back(upper_corners[in][axis] - lower_corners[in][axis] + 1);
@@ -136,7 +138,7 @@ void run() {
         MR::Surface::Algo::image2mesh_blocky(scratch, meshes[in]);
       else
         MR::Surface::Algo::image2mesh_mc(scratch, meshes[in], 0.5);
-      std::lock_guard<std::mutex> lock(mutex);
+      const std::lock_guard<std::mutex> lock(mutex);
       ++progress;
       return true;
     };

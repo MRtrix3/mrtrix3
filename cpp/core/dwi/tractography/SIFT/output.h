@@ -52,7 +52,7 @@ template <class Fixel> void ModelBase<Fixel>::output_target_voxel(const std::fil
 template <class Fixel> void ModelBase<Fixel>::output_target_sh(const std::filesystem::path &path) const {
   const size_t L = 8;
   const size_t N = Math::SH::NforL(L);
-  Math::SH::aPSF<default_type> aPSF(L);
+  const Math::SH::aPSF<default_type> aPSF(L);
   Header H_sh(Fixel_map<Fixel>::header());
   H_sh.ndim() = 4;
   H_sh.size(3) = N;
@@ -80,7 +80,7 @@ template <class Fixel> void ModelBase<Fixel>::output_target_sh(const std::filesy
 }
 
 template <class Fixel> void ModelBase<Fixel>::output_target_fixel(const std::filesystem::path &path) const {
-  Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
+  const Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Image<float> image(Image<float>::create(path, H));
   for (auto l = Loop(0)(image); l; ++l)
     image.value() = fixels[image.index(0)].get_FOD();
@@ -124,7 +124,7 @@ template <class Fixel> void ModelBase<Fixel>::output_tdi_sh(const std::filesyste
   const default_type current_mu = mu();
   const size_t L = 8;
   const size_t N = Math::SH::NforL(L);
-  Math::SH::aPSF<default_type> aPSF(L);
+  const Math::SH::aPSF<default_type> aPSF(L);
   Header H_sh(Fixel_map<Fixel>::header());
   H_sh.ndim() = 4;
   H_sh.size(3) = N;
@@ -152,7 +152,7 @@ template <class Fixel> void ModelBase<Fixel>::output_tdi_sh(const std::filesyste
 }
 
 template <class Fixel> void ModelBase<Fixel>::output_tdi_fixel(const std::filesystem::path &path) const {
-  Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
+  const Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Image<float> image(Image<float>::create(path, H));
   for (auto l = Loop(0)(image); l; ++l)
     image.value() = fixels[image.index(0)].get_TD();
@@ -170,7 +170,9 @@ void ModelBase<Fixel>::output_errors_voxel(const std::filesystem::path &dirpath,
   VoxelAccessor v(accessor());
   for (auto l = Loop(v)(v, out_max_abs_diff, out_diff, out_cost); l; ++l) {
     if (v.value()) {
-      default_type max_abs_diff = 0.0, diff = 0.0, cost = 0.0;
+      default_type max_abs_diff = 0.0;
+      default_type diff = 0.0;
+      default_type cost = 0.0;
       for (typename Fixel_map<Fixel>::ConstIterator i = begin(v); i; ++i) {
         const default_type this_diff = i().get_diff(current_mu);
         max_abs_diff = std::max(max_abs_diff, std::fabs(this_diff));
@@ -193,7 +195,7 @@ void ModelBase<Fixel>::output_errors_fixel(const std::filesystem::path &dirpath,
                                            const std::filesystem::path &diff_path,
                                            const std::filesystem::path &cost_path) const {
   const default_type current_mu = mu();
-  Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
+  const Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Image<float> image_diff(Image<float>::create((dirpath / diff_path), H));
   Image<float> image_cost(Image<float>::create((dirpath / cost_path), H));
   for (auto l = Loop(0)(image_diff, image_cost); l; ++l) {
@@ -207,7 +209,7 @@ template <class Fixel> void ModelBase<Fixel>::output_scatterplot(const std::file
   out << "# " << App::command_history_string << "\n";
   const default_type current_mu = mu();
   out << "#Fibre density,Track density (unscaled),Track density (scaled),Weight,\n";
-  typename std::vector<Fixel>::const_iterator i = fixels.begin(); // Skip first null fixel in DWI::Fixel_map<>
+  auto i = fixels.begin(); // Skip first null fixel in DWI::Fixel_map<>
   for (++i; i != fixels.end(); ++i)
     out << str(i->get_FOD()) << "," << str(i->get_TD()) << "," << str(i->get_TD() * current_mu) << ","
         << str(i->get_weight()) << ",\n";

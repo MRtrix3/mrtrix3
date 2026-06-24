@@ -14,6 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+#include <memory>
+
 #include "command.h"
 #include "enum.h"
 #include "file/path.h"
@@ -30,8 +33,6 @@
 #include "fixel/filter/smooth.h"
 #include "fixel/matrix.h"
 #include "stats/cfe.h"
-
-#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -94,7 +95,7 @@ using value_type = float;
 
 void run() {
   const std::filesystem::path input_path{argument[0]};
-  const FilterType filter_type = MR::Enum::from_name<FilterType>(argument[1]);
+  const auto filter_type = MR::Enum::from_name<FilterType>(argument[1]);
   const std::filesystem::path output_path{argument[2]};
 
   std::set<std::string> option_list{"cfe_dh",
@@ -161,7 +162,7 @@ void run() {
     }
 
     opt = get_options("matrix");
-    Fixel::Matrix::Reader matrix(opt[0][0], mask);
+    const Fixel::Matrix::Reader matrix(opt[0][0], mask);
 
     if (nfixels != matrix.size())
       throw Exception("Number of fixels in input (" + str(nfixels) + ")" +        //
@@ -174,8 +175,8 @@ void run() {
       const value_type cfe_e = get_option_value("cfe_e", Fixel::Filter::cfe_default_e);
       const value_type cfe_h = get_option_value("cfe_h", Fixel::Filter::cfe_default_h);
       const value_type cfe_c = get_option_value("cfe_c", Fixel::Filter::cfe_default_c);
-      const bool cfe_legacy = get_options("cfe_legacy").size();
-      filter.reset(new Fixel::Filter::CFE(matrix, cfe_dh, cfe_e, cfe_h, cfe_c, !cfe_legacy));
+      const bool cfe_legacy = !get_options("cfe_legacy").empty();
+      filter = std::make_unique<Fixel::Filter::CFE>(matrix, cfe_dh, cfe_e, cfe_h, cfe_c, !cfe_legacy);
       option_list.erase("cfe_dh");
       option_list.erase("cfe_e");
       option_list.erase("cfe_h");
@@ -187,7 +188,7 @@ void run() {
       const float connect =
           get_option_value("threshold_connectivity", Fixel::Filter::Connect::default_connectivity_threshold);
       // TODO What does / should -mask do here?
-      filter.reset(new Fixel::Filter::Connect(matrix, value, connect));
+      filter = std::make_unique<Fixel::Filter::Connect>(matrix, value, connect);
       output_header.datatype() = DataType::UInt32;
       output_header.datatype().set_byte_order_native();
       option_list.erase("threshold_value");
@@ -196,7 +197,7 @@ void run() {
     case FilterType::SMOOTH: {
       const float fwhm = get_option_value("fwhm", Fixel::Filter::Smooth::default_fwhm);
       const float threshold = get_option_value("minweight", Fixel::Filter::Smooth::default_threshold);
-      filter.reset(new Fixel::Filter::Smooth(index_image, matrix, fwhm, threshold));
+      filter = std::make_unique<Fixel::Filter::Smooth>(index_image, matrix, fwhm, threshold);
       option_list.erase("fwhm");
       option_list.erase("minweight");
     } break;

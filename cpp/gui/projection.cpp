@@ -21,7 +21,7 @@ namespace MR::GUI {
 namespace {
 class OrientationLabel {
 public:
-  OrientationLabel() {}
+  OrientationLabel() = default;
   OrientationLabel(const Eigen::Vector3f &direction, const char textlabel) : dir(direction), label(1, textlabel) {}
   Eigen::Vector3f dir;
   std::string label;
@@ -31,12 +31,12 @@ public:
 
 void Projection::draw_orientation_labels() const {
   std::vector<OrientationLabel> labels;
-  labels.push_back(OrientationLabel(model_to_screen_direction(Eigen::Vector3f{-1.0, 0.0, 0.0}), 'L'));
-  labels.push_back(OrientationLabel(model_to_screen_direction(Eigen::Vector3f{1.0, 0.0, 0.0}), 'R'));
-  labels.push_back(OrientationLabel(model_to_screen_direction(Eigen::Vector3f{0.0, -1.0, 0.0}), 'P'));
-  labels.push_back(OrientationLabel(model_to_screen_direction(Eigen::Vector3f{0.0, 1.0, 0.0}), 'A'));
-  labels.push_back(OrientationLabel(model_to_screen_direction(Eigen::Vector3f{0.0, 0.0, -1.0}), 'I'));
-  labels.push_back(OrientationLabel(model_to_screen_direction(Eigen::Vector3f{0.0, 0.0, 1.0}), 'S'));
+  labels.emplace_back(model_to_screen_direction(Eigen::Vector3f{-1.0, 0.0, 0.0}), 'L');
+  labels.emplace_back(model_to_screen_direction(Eigen::Vector3f{1.0, 0.0, 0.0}), 'R');
+  labels.emplace_back(model_to_screen_direction(Eigen::Vector3f{0.0, -1.0, 0.0}), 'P');
+  labels.emplace_back(model_to_screen_direction(Eigen::Vector3f{0.0, 1.0, 0.0}), 'A');
+  labels.emplace_back(model_to_screen_direction(Eigen::Vector3f{0.0, 0.0, -1.0}), 'I');
+  labels.emplace_back(model_to_screen_direction(Eigen::Vector3f{0.0, 0.0, 1.0}), 'S');
 
   setup_render_text(1.0, 0.0, 0.0);
   std::sort(labels.begin(), labels.end());
