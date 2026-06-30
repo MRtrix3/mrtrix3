@@ -24,6 +24,13 @@ namespace MR {
 
 
 
+        const App::Option BlurStreamlinesOption
+          = App::Option ("blur_streamlines",
+                         "EXPERIMENTAL; blur assignment of streamlines to image in a manner akin to trilinear interpolation; "
+                         "will increase RAM requirements & computational expense");
+
+
+
 
         size_t determine_upsample_ratio (const Header& header, const float step_size, const float ratio)
         {

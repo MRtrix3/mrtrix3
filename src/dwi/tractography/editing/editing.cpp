@@ -58,10 +58,10 @@ const OptionGroup TruncateOption = OptionGroup ("Streamline count truncation opt
 const OptionGroup WeightsOption = OptionGroup ("Thresholds pertaining to per-streamline weighting")
 
   + Option ("maxweight", "set the maximum weight of any streamline")
-    + Argument ("value").type_float (0.0)
+    + Argument ("value").type_float ()
 
   + Option ("minweight", "set the minimum weight of any streamline")
-    + Argument ("value").type_float (0.0);
+    + Argument ("value").type_float ();
 
 
 

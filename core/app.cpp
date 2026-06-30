@@ -128,7 +128,7 @@ namespace MR
       inline void get_matches (vector<const Option*>& candidates, const OptionGroup& group, const std::string& stub)
       {
         for (size_t i = 0; i < group.size(); ++i) {
-          if (stub.compare (0, stub.size(), group[i].id, stub.size()) == 0)
+          if (stub.compare (0, stub.size(), std::string(group[i].id), 0, stub.size()) == 0)
             candidates.push_back (&group[i]);
         }
       }

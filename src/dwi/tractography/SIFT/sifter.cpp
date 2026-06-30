@@ -232,6 +232,7 @@ namespace MR
                   fixels(fixel_cont.get_fixel_index(), td_column) = std::max (0.0, fixels(fixel_cont.get_fixel_index(), td_column) - fixel_cont.get_length());
                 }
                 TD_sum -= candidate_contribution.get_total_contribution();
+                update_dynamic_mu();
                 contributing_length_removed += candidate_contribution.get_total_length();
                 delete contributions[candidate_index];
                 contributions[candidate_index] = nullptr;

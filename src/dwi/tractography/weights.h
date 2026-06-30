@@ -17,6 +17,8 @@
 #ifndef __dwi_tractography_weights_h__
 #define __dwi_tractography_weights_h__
 
+#include <string>
+
 #include "cmdline_option.h"
 
 namespace MR
@@ -29,6 +31,16 @@ namespace MR
 
       extern const App::Option TrackWeightsInOption;
       extern const App::Option TrackWeightsOutOption;
+
+      //! Throw if streamline weights provided via -tck_weights_in include any negative value.
+      /*! Computations that normalise by a sum of streamline weights (e.g. a weighted-mean voxel or
+       *  edge statistic) are only well-defined for non-negative weights, and are therefore
+       *  incompatible with the signed weights produced by the SIFT2 differential model; for such
+       *  data the denominator may vanish or change sign, and the result may fall outside the range
+       *  of the input values. A command implementing such a computation should invoke this check,
+       *  describing the incompatible computation, prior to processing the streamline data.
+       *  \param computation textual description of the computation that is incompatible with negative weights */
+      void check_weights_in_nonnegative (const std::string& computation);
 
     }
   }

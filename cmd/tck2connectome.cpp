@@ -142,6 +142,11 @@ void execute (Image<node_t>& node_image, const node_t max_node_index, const std:
   std::unique_ptr<Tck2nodes_base> tck2nodes (load_assignment_mode (node_image));
   auto opt = get_options ("stat_edge");
   const stat_edge statistic = opt.size() ? stat_edge(int(opt[0][0])) : stat_edge::SUM;
+  // A mean per-edge statistic normalises each edge by the sum of weights of its contributing
+  //   streamlines, which is ill-defined for the signed weights of SIFT2 differential mode;
+  //   the default summed statistic instead yields a valid net connectivity for signed weights
+  if (statistic == stat_edge::MEAN)
+    Tractography::check_weights_in_nonnegative ("the requested mean per-edge statistic (-stat_edge mean)");
 
   // Prepare for reading the track data
   Tractography::Properties properties;

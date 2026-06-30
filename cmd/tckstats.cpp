@@ -104,6 +104,25 @@ void run ()
 
   const bool weights_provided = get_options ("tck_weights_in").size();
 
+  vector<std::string> fields;
+  {
+    const auto opt = get_options ("output");
+    for (size_t n = 0; n != opt.size(); ++n)
+      fields.push_back (opt[n][0]);
+  }
+
+  // The weighted mean, median and standard deviation all normalise by the sum of streamline weights;
+  //   this is not well-defined for the signed weights produced by SIFT2 differential mode, so refuse
+  //   to compute these statistics in their presence (min / max / count do not depend on the weights)
+  if (weights_provided) {
+    const bool need_weighted_statistic = fields.empty()
+                                      || std::find (fields.begin(), fields.end(), std::string ("mean")) != fields.end()
+                                      || std::find (fields.begin(), fields.end(), std::string ("median")) != fields.end()
+                                      || std::find (fields.begin(), fields.end(), std::string ("std")) != fields.end();
+    if (need_weighted_statistic)
+      Tractography::check_weights_in_nonnegative ("the weighted streamline-length mean, median and standard deviation statistics");
+  }
+
   float step_size = NaN;
   size_t count = 0, header_count = 0;
   float min_length = std::numeric_limits<float>::infinity();
@@ -198,11 +217,6 @@ void run ()
     ssd += i->get_weight() * Math::pow2 (i->get_length() - mean_length);
   const float stdev = sum_weights ? (std::sqrt (ssd / (((count - 1) / default_type(count)) * sum_weights))) : NaN;
 
-  vector<std::string> fields;
-  auto opt = get_options ("output");
-  for (size_t n = 0; n < opt.size(); ++n)
-    fields.push_back (opt[n][0]);
-
   if (fields.size()) {
 
     for (size_t n = 0; n < fields.size(); ++n) {
@@ -235,7 +249,7 @@ void run ()
 
   }
 
-  opt = get_options ("histogram");
+  auto opt = get_options ("histogram");
   if (opt.size()) {
     File::OFStream out (opt[0][0], std::ios_base::out | std::ios_base::trunc);
     out << "# " << App::command_history_string << "\n";

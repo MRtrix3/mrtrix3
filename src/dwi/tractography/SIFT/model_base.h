@@ -93,7 +93,7 @@ namespace MR
                 track_t    count()  const { return track_t((*this)[track_count_column]); }
 
                 value_type get_diff (const value_type mu) const { return ((td() * mu) - fd()); }
-                value_type get_cost (const value_type mu) const { return get_cost_unweighted (mu) * weight(); }
+                value_type get_cost (const value_type mu) const { return weight() ? weight() * get_cost_unweighted (mu) : value_type(0); }
 
               private:
                 value_type get_cost_unweighted (const value_type mu) const { return Math::pow2 (get_diff (mu)); }
@@ -131,10 +131,10 @@ namespace MR
 
             void scale_FDs_by_GM();
 
-            value_type mu() const { return (FD_sum / TD_sum); }
+            value_type mu() const { return std::isnan(fixed_mu) ? dynamic_mu : fixed_mu; }
             bool have_act_data() const { return act_5tt.valid(); }
 
-            virtual bool operator() (const Mapping::SetFixel& in);
+            virtual bool operator() (const Mapping::Set<Mapping::Fixel>& in);
 
             value_type calc_cost_function() const;
 
@@ -154,6 +154,7 @@ namespace MR
             data_matrix_type fixels;
 
             value_type FD_sum, TD_sum;
+            value_type dynamic_mu, fixed_mu;
 
             // TODO Dummy dixel mask to which fixels can point if the
             //   input fixel dataset does not include such
@@ -162,7 +163,9 @@ namespace MR
             void load_5tt_image (const std::string&);
             void set_model_weights (const std::string&);
 
+            void update_dynamic_mu() { dynamic_mu = FD_sum / TD_sum; }
 
+            void output_model_weights (const std::string&) const;
             void output_target_voxel (const std::string&) const;
             void output_target_sh (const std::string&) const;
             void output_target_fixel (const std::string&) const;

@@ -26,7 +26,7 @@ namespace MR {
 
 
 
-          void TrackMapper::set_factor (const Streamline<>& tck, SetVoxelExtras& out) const
+          void TrackMapper::set_factor (const Streamline<>& tck, SetExtras& out) const
           {
             factors.clear();
             factors.reserve (tck.size());

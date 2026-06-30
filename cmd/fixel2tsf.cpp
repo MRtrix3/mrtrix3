@@ -67,7 +67,7 @@ void usage ()
 
 }
 
-using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
+using SetVoxelDir = DWI::Tractography::Mapping::Set<DWI::Tractography::Mapping::VoxelDir>;
 
 
 void run ()
@@ -95,7 +95,7 @@ void run ()
   const size_t num_tracks = properties["count"].empty() ? 0 : to<int> (properties["count"]);
 
   DWI::Tractography::Mapping::TrackMapperBase mapper (in_index_image);
-  mapper.set_use_precise_mapping (true);
+  mapper.set_algorithm (DWI::Tractography::Mapping::algorithm_t::PRECISE);
 
   ProgressBar progress ("mapping fixel values to streamline points", num_tracks);
   DWI::Tractography::Streamline<float> tck;
