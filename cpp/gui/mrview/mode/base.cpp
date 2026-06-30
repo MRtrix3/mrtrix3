@@ -91,7 +91,7 @@ void Base::paintGL() {
     GL_CHECK_ERROR;
     if (window().show_colourbar()) {
 
-      auto &colourbar_renderer = window().colourbar_renderer;
+      auto &colourbar_renderer = window().annotation_colourbar(window().supersample());
 
       colourbar_renderer.begin(&projection, window().colourbar_position, 1);
       colourbar_renderer.render(*image(), image()->scale_inverted());

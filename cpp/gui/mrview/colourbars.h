@@ -46,7 +46,9 @@ public:
     BottomRight = Bottom | Right
   };
 
-  ColourBars();
+  //! \a supersample scales all pixel dimensions, so a colourbar rendered into a super-resolution
+  //! image retains the same on-screen proportions
+  explicit ColourBars(int supersample = 1);
 
   void begin(Projection *projection, const Position position, const size_t ncolourbars) {
     current_position = position;

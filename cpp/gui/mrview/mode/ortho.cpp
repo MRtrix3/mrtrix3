@@ -44,6 +44,11 @@ void Ortho::paint(Projection &projection) {
   gl::DepthMask(gl::FALSE_);
   gl::ColorMask(gl::TRUE_, gl::TRUE_, gl::TRUE_, gl::TRUE_);
 
+  // Propagate the active text font (e.g. a size-scaled font during super-resolution capture) to the
+  // per-view projections, which are persistent copies of the mode's primary projection.
+  for (auto &p : projections)
+    p.set_font(projection.get_font());
+
   const GLint w = show_as_row ? width() / 3 : width() / 2;
   const GLint h = show_as_row ? height() : height() / 2;
 

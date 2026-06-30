@@ -67,9 +67,15 @@ private:
   SpinBox *start_index;
   SpinBox *frames;
   SpinBox *volume_axis;
+  SpinBox *supersample;
+  QComboBox *msaa;
+  SpinBox *downsample;
   QLineEdit *prefix_textbox;
   QPushButton *folder_button;
   int axis;
+
+  //! select the multi-sample anti-aliasing combo-box entry whose sample count best matches \a value
+  void set_msaa_value(int value);
 
   bool is_playing;
 

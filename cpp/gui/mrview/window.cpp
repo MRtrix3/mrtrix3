@@ -30,6 +30,7 @@
 #include "file/config.h"
 #include "header.h"
 #include "mrtrix.h"
+#include "mrview/capture_buffer.h"
 #include "mrview/mode/base.h"
 #include "mrview/mode/list.h"
 #include "mrview/qthelpers.h"
@@ -1412,13 +1413,123 @@ void Window::paintGL() {
     mode->projection.done_render_text();
   }
 
-  // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
-  // otherwise we get transparent windows...
+  // Force the alpha channel to opaque. With QOpenGLWidget (Qt >= 5.4) this prevents transparent windows
+  // on-screen; it is equally required for off-screen capture, because opaque triangulated geometry is
+  // drawn by shaders that declare "out vec4 color" but write only color.rgb, leaving color.a at zero.
+  // Without this flatten such geometry would be transparent in the captured RGBA image.
   gl::ColorMask(false, false, false, true);
   gl::Clear(gl::COLOR_BUFFER_BIT);
   glColorMask(true, true, true, true);
   GL_CHECK_ERROR;
   GL::assert_context_is_current();
+}
+
+GL::Font &Window::annotation_font(int ratio) {
+  if (ratio <= 1)
+    return font;
+  std::unique_ptr<GL::Font> &cached = supersample_fonts[ratio];
+  if (!cached) {
+    QFont scaled(font.get_qfont());
+    if (scaled.pointSizeF() > 0.0)
+      scaled.setPointSizeF(scaled.pointSizeF() * ratio);
+    else if (scaled.pixelSize() > 0)
+      scaled.setPixelSize(scaled.pixelSize() * ratio);
+    cached.reset(new GL::Font(scaled));
+    cached->initGL();
+  }
+  return *cached;
+}
+
+ColourBars &Window::annotation_colourbar(int ratio) {
+  if (ratio <= 1)
+    return colourbar_renderer;
+  std::unique_ptr<ColourBars> &cached = supersample_colourbars[ratio];
+  if (!cached)
+    cached.reset(new ColourBars(ratio));
+  return *cached;
+}
+
+Window::OffscreenScope::OffscreenScope(Window &window, int supersample)
+    : window(window),
+      previous_font(window.mode ? &window.mode->projection.get_font() : nullptr),
+      previous_supersample(window.supersample_) {
+  window.supersample_ = supersample;
+  if (window.mode)
+    window.mode->projection.set_font(window.annotation_font(supersample));
+}
+
+Window::OffscreenScope::~OffscreenScope() {
+  if (window.mode && previous_font != nullptr)
+    window.mode->projection.set_font(*previous_font);
+  window.supersample_ = previous_supersample;
+}
+
+void Window::captureGL(const std::filesystem::path &filepath, int supersample, int msaa, int downsample) {
+  supersample = std::max(1, supersample);
+  msaa = std::max(1, msaa);
+  downsample = std::max(1, downsample);
+
+  QImage image;
+
+  // Off-screen rendering is required for super-sampling and for multi-sample anti-aliasing.
+  if (mode && (supersample > 1 || msaa > 1)) {
+    glarea->makeCurrent();
+    GL::assert_context_is_current();
+
+    // Match the device-pixel scaling applied by Projection::set_viewport(), so the off-screen
+    // framebuffer dimensions equal the GL viewport that the render path will configure.
+    const int device_pixel_ratio = std::max(1, static_cast<int>(devicePixelRatio()));
+    const GLsizei base_width = static_cast<GLsizei>(glarea->width()) * device_pixel_ratio;
+    const GLsizei base_height = static_cast<GLsizei>(glarea->height()) * device_pixel_ratio;
+
+    // Clamp the super-sampling factor to the largest off-screen buffer the GL implementation supports.
+    GLint max_texture_size = 0;
+    GLint max_buffer_size = 0;
+    gl::GetIntegerv(gl::MAX_TEXTURE_SIZE, &max_texture_size);
+    gl::GetIntegerv(gl::MAX_RENDERBUFFER_SIZE, &max_buffer_size);
+    const GLint limit = std::min(max_texture_size, max_buffer_size);
+    if (limit > 0 && supersample * std::max(base_width, base_height) > limit) {
+      const int fit = std::max(1, static_cast<int>(limit / std::max(base_width, base_height)));
+      WARN("screenshot super-sampling factor " + str(supersample) +
+           " exceeds the maximum supported off-screen buffer size; reducing to " + str(fit));
+      supersample = fit;
+    }
+
+    // Clamp the anti-aliasing factor to the maximum multi-sample count the GL implementation supports.
+    GLint max_samples = 0;
+    gl::GetIntegerv(gl::MAX_SAMPLES, &max_samples);
+    if (max_samples > 0 && msaa > max_samples) {
+      WARN("screenshot anti-aliasing factor " + str(msaa) +
+           " exceeds the maximum supported sample count; reducing to " + str(max_samples));
+      msaa = max_samples;
+    }
+
+    if (!capture_buffer)
+      capture_buffer.reset(new CaptureBuffer);
+    {
+      OffscreenScope scope(*this, supersample);
+      capture_buffer->ensure(base_width * supersample, base_height * supersample, msaa); // re-used across frames
+      capture_buffer->bind();
+      if (msaa > 1)
+        gl::Enable(gl::MULTISAMPLE);
+      paintGL();
+      image = capture_buffer->read();
+      capture_buffer->unbind();
+    }
+    glarea->doneCurrent();
+  } else {
+    // Native-resolution capture (common case, and when neither super-sampling nor anti-aliasing is requested).
+    image = glarea->grabFramebuffer();
+  }
+
+  // Reduce to the requested export resolution (native * supersample / downsample).
+  if (downsample > 1) {
+    const int target_width = std::max(1, image.width() / downsample);
+    const int target_height = std::max(1, image.height() / downsample);
+    image = image.scaled(target_width, target_height, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+  }
+
+  image.save(qstr(filepath.string()));
 }
 
 void Window::initGL() {

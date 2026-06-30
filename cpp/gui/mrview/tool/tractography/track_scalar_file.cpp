@@ -113,14 +113,15 @@ void TrackScalarFileOptions::render_tractogram_colourbar(const Tractogram &tract
           ? tractogram.scaling_max_thresholded()
           : tractogram.scaling_max();
 
-  window().colourbar_renderer.render(
-      tractogram.colourmap,
-      tractogram.scale_inverted(),
-      min_value,
-      max_value,
-      tractogram.scaling_min(),
-      tractogram.display_range,
-      {tractogram.colour[0] / 255.0f, tractogram.colour[1] / 255.0f, tractogram.colour[2] / 255.0f});
+  window()
+      .annotation_colourbar(window().supersample())
+      .render(tractogram.colourmap,
+              tractogram.scale_inverted(),
+              min_value,
+              max_value,
+              tractogram.scaling_min(),
+              tractogram.display_range,
+              {tractogram.colour[0] / 255.0f, tractogram.colour[1] / 255.0f, tractogram.colour[2] / 255.0f});
 }
 
 void TrackScalarFileOptions::update_UI() {

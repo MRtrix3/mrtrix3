@@ -817,23 +817,27 @@ void Connectome::draw_colourbars() {
   if (((node_colour == node_colour_t::CONNECTOME && matrix_list_model->rowCount()) ||
        node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) &&
       show_node_colour_bar)
-    window().colourbar_renderer.render(node_colourmap_index,
-                                       node_colourmap_invert,
-                                       node_colour_lower_button->value(),
-                                       node_colour_upper_button->value(),
-                                       node_colour_lower_button->value(),
-                                       node_colour_upper_button->value() - node_colour_lower_button->value(),
-                                       node_fixed_colour);
+    window()
+        .annotation_colourbar(window().supersample())
+        .render(node_colourmap_index,
+                node_colourmap_invert,
+                node_colour_lower_button->value(),
+                node_colour_upper_button->value(),
+                node_colour_lower_button->value(),
+                node_colour_upper_button->value() - node_colour_lower_button->value(),
+                node_fixed_colour);
   if (((edge_colour == edge_colour_t::CONNECTOME && matrix_list_model->rowCount()) ||
        edge_colour == edge_colour_t::MATRIX_FILE) &&
       show_edge_colour_bar)
-    window().colourbar_renderer.render(edge_colourmap_index,
-                                       edge_colourmap_invert,
-                                       edge_colour_lower_button->value(),
-                                       edge_colour_upper_button->value(),
-                                       edge_colour_lower_button->value(),
-                                       edge_colour_upper_button->value() - edge_colour_lower_button->value(),
-                                       edge_fixed_colour);
+    window()
+        .annotation_colourbar(window().supersample())
+        .render(edge_colourmap_index,
+                edge_colourmap_invert,
+                edge_colour_lower_button->value(),
+                edge_colour_upper_button->value(),
+                edge_colour_lower_button->value(),
+                edge_colour_upper_button->value() - edge_colour_lower_button->value(),
+                edge_fixed_colour);
   GL::assert_context_is_current();
 }
 

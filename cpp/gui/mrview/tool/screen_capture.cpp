@@ -16,9 +16,12 @@
 
 #include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Geometry>
+#include <QProgressDialog>
 #include <filesystem>
+#include <memory>
 
 #include "dialog/file.h"
+#include "file/config.h"
 #include "file/path.h"
 #include "mrtrix.h"
 #include "mrview/mode/base.h"
@@ -147,6 +150,54 @@ Capture::Capture(Dock *parent)
   folder_button->setToolTip(tr("Output folder"));
   connect(folder_button, SIGNAL(clicked()), this, SLOT(select_output_folder_slot()));
   output_grid_layout->addWidget(folder_button, 1, 0, 1, 2);
+
+  output_grid_layout->addWidget(new QLabel(tr("Super-sampling: ")), 2, 0);
+  supersample = new SpinBox(this);
+  supersample->setMinimum(1);
+  supersample->setMaximum(8);
+  supersample->setToolTip(tr("Render exported images off-screen at this integer multiple of the window resolution"));
+  // CONF option: MRViewScreenshotSuperSample
+  // CONF default: 1
+  // CONF The default super-sampling (super-resolution) factor for the MRView screenshot tool.
+  // CONF A value greater than one renders each exported image off-screen at this integer multiple
+  // CONF of the window resolution, improving image quality at the cost of additional computation
+  // CONF and graphics memory; the interactive window continues to render at native resolution.
+  supersample->setValue(File::Config::get_int("MRViewScreenshotSuperSample", 1));
+  output_grid_layout->addWidget(supersample, 2, 1);
+
+  output_grid_layout->addWidget(new QLabel(tr("Anti-aliasing: ")), 3, 0);
+  msaa = new QComboBox(this);
+  // Multi-sample counts are restricted to powers of two by graphics hardware, hence a combo-box
+  // rather than a spin-box; the value is additionally clamped to the GL maximum at capture time.
+  msaa->insertItem(0, tr("None"), 1);
+  msaa->insertItem(1, tr("2x"), 2);
+  msaa->insertItem(2, tr("4x"), 4);
+  msaa->insertItem(3, tr("8x"), 8);
+  msaa->insertItem(4, tr("16x"), 16);
+  msaa->setToolTip(tr("Off-screen multi-sample anti-aliasing applied to exported images"));
+  // CONF option: MRViewScreenshotMSAA
+  // CONF default: 1
+  // CONF The default multi-sample anti-aliasing factor for the MRView screenshot tool.
+  // CONF A value greater than one renders each exported image off-screen with this number of
+  // CONF samples per pixel, smoothing edges; the value is rounded to a supported power of two and
+  // CONF the interactive window continues to render at its configured quality (see MSAA).
+  set_msaa_value(File::Config::get_int("MRViewScreenshotMSAA", 1));
+  output_grid_layout->addWidget(msaa, 3, 1);
+
+  output_grid_layout->addWidget(new QLabel(tr("Down-sampling: ")), 4, 0);
+  downsample = new SpinBox(this);
+  downsample->setMinimum(1);
+  downsample->setMaximum(8);
+  downsample->setToolTip(tr(
+      "Reduce exported images by this integer factor (export resolution = native x super-sampling / down-sampling)"));
+  // CONF option: MRViewScreenshotDownSample
+  // CONF default: 1
+  // CONF The default down-sampling factor for the MRView screenshot tool.
+  // CONF The exported image resolution is the native window resolution multiplied by the
+  // CONF super-sampling factor and divided by this down-sampling factor; combining super-sampling
+  // CONF with an equal down-sampling factor yields anti-aliased images at the native resolution.
+  downsample->setValue(File::Config::get_int("MRViewScreenshotDownSample", 1));
+  output_grid_layout->addWidget(downsample, 4, 1);
 
   QGroupBox *capture_group_box = new QGroupBox(tr("Capture"));
   main_box->addWidget(capture_group_box);
@@ -324,12 +375,35 @@ void Capture::run(bool with_capture) {
   if (with_capture && !std::filesystem::exists(current_folder))
     std::filesystem::create_directories(current_folder);
 
+  const int ratio = supersample->value();
+  const int msaa_value = msaa->currentData().toInt();
+  const int downsample_value = downsample->value();
+
+  // For multi-frame captures, present a progress dialog. It is advanced only between frames, while the
+  // off-screen framebuffer is unbound, so its event processing does not interfere with the rendering of
+  // any individual image (granular progress within a single large render would require tiled rendering).
+  std::unique_ptr<QProgressDialog> progress;
+  if (with_capture && frames_value > 1) {
+    progress = std::make_unique<QProgressDialog>(
+        tr("Capturing screenshots..."), tr("Cancel"), 0, static_cast<int>(frames_value), this);
+    progress->setWindowModality(Qt::WindowModal);
+    progress->setMinimumDuration(0);
+  }
+
   for (size_t i = first_index; i < first_index + frames_value; ++i) {
     if (!is_playing)
       break;
 
+    if (progress) {
+      if (progress->wasCanceled()) {
+        is_playing = false;
+        break;
+      }
+      progress->setValue(static_cast<int>(i - first_index));
+    }
+
     if (with_capture)
-      win.captureGL(current_folder / (prefix + printf("%04d.png", i)));
+      win.captureGL(current_folder / (prefix + printf("%04d.png", i)), ratio, msaa_value, downsample_value);
 
     // Rotation
     Eigen::Quaternionf orientation(win.orientation());
@@ -408,6 +482,9 @@ void Capture::run(bool with_capture) {
     qApp->processEvents();
   }
 
+  if (progress)
+    progress->setValue(static_cast<int>(frames_value));
+
   is_playing = false;
 }
 
@@ -423,6 +500,16 @@ void Capture::select_output_folder_slot() {
 
 void Capture::on_output_update() { start_index->setValue(0); }
 
+void Capture::set_msaa_value(int value) {
+  // Items are ordered by ascending sample count; select the largest that does not exceed the request.
+  int best_index = 0;
+  for (int i = 0; i < msaa->count(); ++i) {
+    if (msaa->itemData(i).toInt() <= value)
+      best_index = i;
+  }
+  msaa->setCurrentIndex(best_index);
+}
+
 void Capture::add_commandline_options(MR::App::OptionList &options) {
   using namespace MR::App;
   // clang-format off
@@ -435,6 +522,20 @@ void Capture::add_commandline_options(MR::App::OptionList &options) {
       + Option("capture.prefix",
                "Set the output file prefix for the screen capture tool.").allow_multiple()
         + Argument("string").type_text()
+
+      + Option("capture.supersample",
+               "Set the super-sampling (super-resolution) factor for the screen capture tool.").allow_multiple()
+        + Argument("factor").type_integer(1)
+
+      + Option("capture.msaa",
+               "Set the multi-sample anti-aliasing factor for the screen capture tool "
+               "(rounded to a supported power of two).").allow_multiple()
+        + Argument("factor").type_integer(1)
+
+      + Option("capture.downsample",
+               "Set the down-sampling factor for the screen capture tool; the exported resolution is "
+               "the native resolution times the super-sampling factor divided by this factor.").allow_multiple()
+        + Argument("factor").type_integer(1)
 
       + Option("capture.grab",
                "Start the screen capture process.").allow_multiple();
@@ -454,6 +555,21 @@ bool Capture::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("capture.prefix")) {
     prefix_textbox->setText(qstr(opt[0]));
     on_output_update();
+    return true;
+  }
+
+  if (opt.opt->is("capture.supersample")) {
+    supersample->setValue(static_cast<int>(opt[0]));
+    return true;
+  }
+
+  if (opt.opt->is("capture.msaa")) {
+    set_msaa_value(static_cast<int>(opt[0]));
+    return true;
+  }
+
+  if (opt.opt->is("capture.downsample")) {
+    downsample->setValue(static_cast<int>(opt[0]));
     return true;
   }
 

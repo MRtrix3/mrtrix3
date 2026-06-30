@@ -327,6 +327,56 @@ protected:
   GLuint id;
 };
 
+class RenderBuffer {
+public:
+  RenderBuffer() : id(0) {}
+  ~RenderBuffer() { clear(); }
+  RenderBuffer(const RenderBuffer &) : id(0) {}
+  RenderBuffer(RenderBuffer &&t) : id(t.id) { t.id = 0; }
+  RenderBuffer &operator=(RenderBuffer &&t) {
+    clear();
+    id = t.id;
+    t.id = 0;
+    return *this;
+  }
+  operator GLuint() const { return id; }
+  void gen() {
+    if (!id) {
+      check_context.set();
+      gl::GenRenderbuffers(1, &id);
+      GL_DEBUG("created OpenGL renderbuffer ID " + str(id));
+    }
+  }
+  void clear() {
+    if (id) {
+      check_context();
+      GL_DEBUG("deleting OpenGL renderbuffer ID " + str(id));
+      gl::DeleteRenderbuffers(1, &id);
+    }
+    id = 0;
+  }
+  void bind() const {
+    assert(id);
+    check_context();
+    GL_DEBUG("binding OpenGL renderbuffer ID " + str(id));
+    gl::BindRenderbuffer(gl::RENDERBUFFER, id);
+  }
+  //! allocate single-sample storage
+  void set_storage(GLenum internalformat, GLsizei width, GLsizei height) const {
+    bind();
+    gl::RenderbufferStorage(gl::RENDERBUFFER, internalformat, width, height);
+  }
+  //! allocate multi-sample storage (for future multi-sample anti-aliased capture)
+  void set_storage_multisample(GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height) const {
+    bind();
+    gl::RenderbufferStorageMultisample(gl::RENDERBUFFER, samples, internalformat, width, height);
+  }
+
+protected:
+  Context::Checker check_context;
+  GLuint id;
+};
+
 class FrameBuffer {
 public:
   FrameBuffer() : id(0) {}
@@ -362,6 +412,16 @@ public:
     GL_DEBUG("binding OpenGL framebuffer ID " + str(id));
     gl::BindFramebuffer(gl::FRAMEBUFFER, id);
   }
+  void bind_read() const {
+    assert(id);
+    check_context();
+    gl::BindFramebuffer(gl::READ_FRAMEBUFFER, id);
+  }
+  void bind_draw() const {
+    assert(id);
+    check_context();
+    gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, id);
+  }
   void unbind() const {
     check_context();
     GL_DEBUG("binding default OpenGL framebuffer");
@@ -375,6 +435,25 @@ public:
              str(attachment));
     gl::FramebufferTexture(gl::FRAMEBUFFER, GLenum(static_cast<size_t>(gl::COLOR_ATTACHMENT0) + attachment), tex, 0);
   }
+
+  //! attach a renderbuffer as a colour attachment (for future multi-sample anti-aliased capture)
+  void attach_color(RenderBuffer &buffer, size_t attachment) const {
+    assert(buffer);
+    bind();
+    GL_DEBUG("renderbuffer ID " + str(buffer) + " attached to framebuffer ID " + str(id) + " at color attachement " +
+             str(attachment));
+    gl::FramebufferRenderbuffer(
+        gl::FRAMEBUFFER, GLenum(static_cast<size_t>(gl::COLOR_ATTACHMENT0) + attachment), gl::RENDERBUFFER, buffer);
+  }
+
+  //! attach a renderbuffer as the depth attachment
+  void attach_depth(RenderBuffer &buffer) const {
+    assert(buffer);
+    bind();
+    GL_DEBUG("renderbuffer ID " + str(buffer) + " attached to framebuffer ID " + str(id) + " as depth attachment");
+    gl::FramebufferRenderbuffer(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::RENDERBUFFER, buffer);
+  }
+
   void draw_buffers(size_t first) const {
     check_context();
     const std::array<GLenum, 1> list = {GLenum(static_cast<size_t>(gl::COLOR_ATTACHMENT0) + first)};

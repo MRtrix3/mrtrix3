@@ -180,6 +180,12 @@ Screen Capture tool options
 
 -  **-capture.prefix string** *(multiple uses permitted)* Set the output file prefix for the screen capture tool.
 
+-  **-capture.supersample factor** *(multiple uses permitted)* Set the super-sampling (super-resolution) factor for the screen capture tool.
+
+-  **-capture.msaa factor** *(multiple uses permitted)* Set the multi-sample anti-aliasing factor for the screen capture tool (rounded to a supported power of two).
+
+-  **-capture.downsample factor** *(multiple uses permitted)* Set the down-sampling factor for the screen capture tool; the exported resolution is the native resolution times the super-sampling factor divided by this factor.
+
 -  **-capture.grab** *(multiple uses permitted)* Start the screen capture process.
 
 Standard options

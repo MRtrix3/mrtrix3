@@ -28,6 +28,9 @@ public:
 
   void initGL(bool with_shadow = true);
 
+  //! the underlying Qt font; used to derive size-scaled fonts for super-resolution rendering
+  const QFont &get_qfont() const { return font; }
+
   const QFontMetrics metric;
 
   void start(int width, int height, float red, float green, float blue) const {

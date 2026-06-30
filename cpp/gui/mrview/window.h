@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <map>
+
 #include "cursor.h"
 #include "gui.h"
 #include "image.h"
@@ -40,6 +42,8 @@ class CameraInteractor;
 } // namespace MR::GUI::MRView::Tool
 
 namespace MR::GUI::MRView {
+
+class CaptureBuffer;
 
 class Window : public QMainWindow, ColourMapButtonObserver {
   Q_OBJECT
@@ -155,10 +159,21 @@ public:
 
   bool sync_focus_on() const { return sync_focus_action->isChecked(); }
 
-  void captureGL(const std::filesystem::path &filepath) {
-    QImage image(glarea->grabFramebuffer());
-    image.save(qstr(filepath.string()));
-  }
+  //! Export the current visualisation to \a filepath.
+  /*! Off-screen rendering is used when \a supersample or \a msaa exceeds unity: the scene is rendered
+   *  off-screen at \a supersample times the display resolution, optionally with \a msaa-sample
+   *  anti-aliasing, leaving the visible window untouched; otherwise the on-screen framebuffer is
+   *  grabbed directly. The captured image is finally reduced by \a downsample, so the exported
+   *  resolution is the native resolution times \a supersample divided by \a downsample. */
+  void captureGL(const std::filesystem::path &filepath, int supersample = 1, int msaa = 1, int downsample = 1);
+
+  //! The super-sampling ratio currently driving the render path (unity unless an off-screen capture is in progress).
+  int supersample() const { return supersample_; }
+
+  //! Text-rendering font for the given super-sampling ratio; size-scaled instances are generated on demand.
+  GL::Font &annotation_font(int ratio);
+  //! Colourbar renderer for the given super-sampling ratio; scaled instances are generated on demand.
+  ColourBars &annotation_colourbar(int ratio);
 
   GL::Area *glwidget() const { return glarea; }
   GL::Lighting &lighting() { return *lighting_; }
@@ -245,6 +260,27 @@ private:
   std::unique_ptr<Mode::Base> mode;
   GL::Lighting *lighting_;
   GL::Font font;
+
+  // Off-screen super-resolution screen capture (see captureGL()):
+  int supersample_ = 1;
+  std::unique_ptr<CaptureBuffer> capture_buffer;
+  std::map<int, std::unique_ptr<GL::Font>> supersample_fonts;
+  std::map<int, std::unique_ptr<ColourBars>> supersample_colourbars;
+
+  //! RAII guard establishing the off-screen capture state (super-sampling ratio, scaled annotation
+  //! font) for the duration of a single off-screen render, restoring the prior state on destruction.
+  class OffscreenScope {
+  public:
+    OffscreenScope(Window &window, int supersample);
+    ~OffscreenScope();
+    OffscreenScope(const OffscreenScope &) = delete;
+    OffscreenScope &operator=(const OffscreenScope &) = delete;
+
+  private:
+    Window &window;
+    const GL::Font *previous_font;
+    int previous_supersample;
+  };
 
   const Qt::KeyboardModifiers FocusModifier, MoveModifier, RotateModifier;
   MouseAction mouse_action;
