@@ -16,6 +16,10 @@
 
 #include "dwi/tractography/weights.h"
 
+#include "app.h"
+#include "exception.h"
+#include "math/math.h"
+
 namespace MR
 {
   namespace DWI
@@ -32,6 +36,21 @@ namespace MR
       const Option TrackWeightsOutOption
       = Option ("tck_weights_out", "specify the path for an output text scalar file containing streamline weights")
           + Argument ("path").type_file_out();
+
+      void check_weights_in_nonnegative (const std::string& computation)
+      {
+        auto opt = get_options ("tck_weights_in");
+        if (!opt.size())
+          return;
+        const std::string path = opt[0][0];
+        const Eigen::Matrix<float, Eigen::Dynamic, 1> weights = MR::load_vector<float> (path);
+        if ((weights.array() < 0.0f).any())
+          throw Exception ("Streamline weights file \"" + path + "\" contains negative value(s), "
+                           "which are incompatible with " + computation + "; "
+                           "such a computation cannot be performed automatically in the presence of "
+                           "SIFT2 differential weights, and must instead be defined explicitly by the researcher "
+                           "(e.g. by separating positively- and negatively-weighted streamlines using tckedit)");
+      }
 
     }
   }

@@ -355,6 +355,11 @@ void run () {
 
   opt = get_options ("stat_vox");
   vox_stat_t stat_vox = opt.size() ? vox_stat_t(int(opt[0][0])) : V_SUM;
+  // A weighted-mean voxel statistic normalises by the sum of streamline weights, which is not
+  //   well-defined for the signed weights produced by SIFT2 differential mode; the signed-sum
+  //   statistic (the default) by contrast remains valid and yields a net track-density image
+  if (stat_vox == V_MEAN)
+    Tractography::check_weights_in_nonnegative ("the requested mean per-voxel statistic (-stat_vox mean)");
 
   opt = get_options ("stat_tck");
   tck_stat_t stat_tck = opt.size() ? tck_stat_t(int(opt[0][0])) : T_MEAN;
@@ -492,6 +497,13 @@ void run () {
       throw Exception ("Undefined contrast mechanism");
 
   }
+
+  // Checked once the voxel statistic is finalised (it may be coerced to 'sum' above):
+  //   the summed DEC statistic rescales each voxel's colour vector by its summed streamline weight;
+  //   with the signed weights of SIFT2 differential mode this sum can vanish or change sign,
+  //   flipping the encoded colour, so it is not well-defined and is forbidden
+  if (writer_type == DEC && stat_vox == V_SUM)
+    Tractography::check_weights_in_nonnegative ("the summed voxel statistic (-stat_vox sum) with directionally-encoded colour (-dec)");
 
 
   output_header.keyval()["twi_contrast"] = contrasts[contrast];
