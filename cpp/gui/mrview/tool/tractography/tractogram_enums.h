@@ -21,7 +21,13 @@
 namespace MR::GUI::MRView::Tool {
 enum class TrackColourType { Direction, Ends, Manual, ScalarFile };
 enum class TrackGeometryType { Pseudotubes, Lines, Points };
-enum class TrackThresholdType { None, UseColourFile, SeparateFile };
+enum class TrackThresholdType { None, SeparateFile };
+//! How per-streamline thickness modulation is sourced.
+/*! \c None leaves every streamline at the global thickness; \c SidecarData scales
+ *  each streamline's pseudo-tube width / point radius by a data-per-streamline
+ *  (dps) sidecar value. Only dps data are permissible, and modulation is only
+ *  honoured for the Pseudotubes and Points geometries. */
+enum class TrackThicknessType { None, SidecarData };
 
 //! Per-vertex position within its parent streamline.
 /*! Uploaded as a vertex attribute so that the vertex shader can compute the

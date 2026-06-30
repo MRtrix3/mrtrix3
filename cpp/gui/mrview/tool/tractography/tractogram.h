@@ -19,6 +19,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -103,6 +104,11 @@ public:
   void load_end_colours();
   void load_intensity_track_scalars(const std::filesystem::path &);
   void load_threshold_track_scalars(const std::filesystem::path &);
+  //! \brief Load an external per-streamline scalar file for thickness modulation.
+  /*! Only data-per-streamline (dps) data may modulate thickness, so a per-vertex
+   * track scalar file (.tsf) is rejected; the file must be a plain text vector
+   * holding one value per streamline (broadcast to all of its vertices). */
+  void load_thickness_track_scalars(const std::filesystem::path &);
   //! \brief Load an embedded dpv/dps field column for streamline colouring.
   /*! \a entry indexes embedded_scalar_fields(); the field column is read lazily
    * from the file and uploaded as the intensity scalar (rendered identically to
@@ -110,26 +116,36 @@ public:
   void load_intensity_embedded_scalars(size_t entry);
   //! \brief Load an embedded dpv/dps field column for streamline thresholding.
   void load_threshold_embedded_scalars(size_t entry);
+  //! \brief Load an embedded dpv/dps field column for streamline thickness modulation.
+  /*! \a entry indexes embedded_scalar_fields(). Any per-vertex (dpv) or
+   * per-streamline (dps) field column is permissible. */
+  void load_thickness_embedded_scalars(size_t entry);
+  //! \brief Point the threshold role at the colour role's scalar data (shared).
+  /*! Used by the command-line tsf_thresh path: rather than reloading, the
+   * threshold simply references the same scalar array already loaded for
+   * colouring, so a single vertex array object backs both roles. */
+  void use_intensity_data_for_threshold();
   //! \brief The embedded scalar fields (one entry per field column) available
   //!   in this tractogram, enumerated at load time.
   const std::vector<EmbeddedScalarField> &embedded_scalar_fields() const { return embedded_fields; }
   void erase_colour_data();
   void erase_intensity_scalar_data();
   void erase_threshold_scalar_data();
+  void erase_thickness_scalar_data();
 
   void set_color_type(const TrackColourType);
   void set_threshold_type(const TrackThresholdType);
+  void set_thickness_type(const TrackThicknessType);
   void set_geometry_type(const TrackGeometryType);
   TrackColourType get_color_type() const { return color_type; }
   TrackThresholdType get_threshold_type() const { return threshold_type; }
+  TrackThicknessType get_thickness_type() const { return thickness_type; }
   TrackGeometryType get_geometry_type() const { return geometry_type; }
 
   float get_threshold_rate() const {
     switch (threshold_type) {
     case TrackThresholdType::None:
       return NaNF;
-    case TrackThresholdType::UseColourFile:
-      return scaling_rate();
     case TrackThresholdType::SeparateFile:
       return (1e-3 * (threshold_max - threshold_min));
     }
@@ -138,6 +154,11 @@ public:
   }
   float get_threshold_min() const { return threshold_min; }
   float get_threshold_max() const { return threshold_max; }
+  //! Step size for the thickness zero-offset spinbox, scaled to the data range.
+  float get_thickness_offset_rate() const {
+    const float range = thickness_max - thickness_min;
+    return (std::isfinite(range) && range > 0.f) ? (1e-3f * range) : 0.1f;
+  }
 
   static TrackGeometryType default_tract_geom;
   //! \brief When set, force half-precision GPU storage for any input.
@@ -153,16 +174,33 @@ public:
   bool should_update_lod;
   float original_fov;
   float line_thickness;
+  //! Sidecar value mapping to zero thickness; values below it render at zero
+  //!   thickness, those above scale with the global thickness. Defaults to 0.
+  float thickness_offset;
+  //! Sidecar value span (above the offset) mapping to the unmodulated thickness;
+  //!   auto-populated with the data mean on load so typical thickness is stable
+  //!   across data of differing numerical range. Defaults to 1.
+  float thickness_scale;
+  //! When true, the (offset/scale-normalised) sidecar value is treated as a
+  //!   cross-sectional area (pseudo-tubes) or volume (points), so the rendered
+  //!   thickness scales as its square / cube root; when false the value sets the
+  //!   thickness directly. Defaults to true.
+  bool thickness_power_transform;
   //! Filesystem path of the external intensity scalar file, if one is loaded.
   std::filesystem::path intensity_scalar_path;
   //! Filesystem path of the external threshold scalar file, if one is loaded.
   std::filesystem::path threshold_scalar_path;
+  //! Filesystem path of the external thickness-modulation scalar file, if loaded.
+  std::filesystem::path thickness_scalar_path;
   //! \brief Index into embedded_scalar_fields() of the loaded intensity source,
   //!   or std::nullopt when the intensity scalar comes from an external file.
   std::optional<size_t> intensity_embedded_field;
   //! \brief Index into embedded_scalar_fields() of the loaded threshold source,
   //!   or std::nullopt when the threshold scalar comes from an external file.
   std::optional<size_t> threshold_embedded_field;
+  //! \brief Index into embedded_scalar_fields() of the loaded thickness source,
+  //!   or std::nullopt when the thickness scalar comes from an external file.
+  std::optional<size_t> thickness_embedded_field;
 
   class Shader : public Displayable::Shader {
   public:
@@ -171,6 +209,8 @@ public:
           use_lighting(false),
           color_type(TrackColourType::Direction),
           threshold_type(TrackThresholdType::None),
+          thickness_type(TrackThicknessType::None),
+          thickness_power_transform(true),
           geometry_type(Tractogram::default_tract_geom) {}
     std::string vertex_shader_source(const Displayable &) override;
     std::string fragment_shader_source(const Displayable &) override;
@@ -182,6 +222,8 @@ public:
     bool do_crop_to_slab, use_lighting;
     TrackColourType color_type;
     TrackThresholdType threshold_type;
+    TrackThicknessType thickness_type;
+    bool thickness_power_transform;
     TrackGeometryType geometry_type;
 
   } track_shader;
@@ -207,6 +249,7 @@ private:
 
   TrackColourType color_type;
   TrackThresholdType threshold_type;
+  TrackThicknessType thickness_type;
   TrackGeometryType geometry_type;
 
   // Instead of tracking the file path, pre-calculate the per-streamline
@@ -246,8 +289,29 @@ private:
   // Per-vertex TrackVertexType classification (uint8_t), one buffer per chunk
   std::vector<GLuint> vertex_type_buffers;
   std::vector<GLuint> colour_buffers;
-  std::vector<GLuint> intensity_scalar_buffers;
-  std::vector<GLuint> threshold_scalar_buffers;
+
+  //! \brief A per-vertex scalar array resident on the GPU (one VBO per chunk).
+  /*! Shared, via std::shared_ptr, by whichever of the colour / threshold /
+   * thickness roles select the same sidecar source, so identical data is uploaded
+   * once rather than into independent vertex array objects (the role's source
+   * identity is tracked separately on the Tractogram). The GL buffers are released
+   * when the last referencing role drops the array. */
+  struct ScalarArray {
+    std::vector<GLuint> buffers; //!< one VBO per vertex chunk, aligned to vertex_buffers
+    float value_min{NaNF};       //!< minimum raw value across the array
+    float value_max{NaNF};       //!< maximum raw value across the array
+    //! Mean over the source elements (per vertex for dpv, per streamline for dps);
+    //!   thickness modulation auto-populates its "scale" with this so the typical
+    //!   thickness is suitable irrespective of the data's numerical range.
+    float value_mean{NaNF};
+    ~ScalarArray();
+  };
+  //! Scalar arrays backing the three roles; two roles share one array when they
+  //!   select the same source (compared via the role identity members above).
+  std::shared_ptr<ScalarArray> intensity_scalars;
+  std::shared_ptr<ScalarArray> threshold_scalars;
+  std::shared_ptr<ScalarArray> thickness_scalars;
+
   // Embedded dpv/dps fields available in this tractogram (one entry per field
   //   column), enumerated from the format registry at load time.
   std::vector<EmbeddedScalarField> embedded_fields;
@@ -276,6 +340,10 @@ private:
   // Extra members now required since different scalar files
   //   may be used for streamline colouring and thresholding
   float threshold_min, threshold_max;
+  // Value range of the loaded thickness-modulation scalar (informational; the
+  //   shader interprets the raw value directly as a volume / cross-sectional
+  //   area multiplier).
+  float thickness_min, thickness_max;
 
   void load_tracks_onto_GPU(std::vector<Eigen::Vector3f> &buffer,
                             std::vector<GLint> &starts,
@@ -340,25 +408,32 @@ private:
 
   void load_end_colours_onto_GPU(std::vector<uint8_t> &);
 
-  void load_intensity_scalars_onto_GPU(std::vector<float> &buffer, size_t &tck_count);
-  void load_threshold_scalars_onto_GPU(std::vector<float> &buffer, size_t &tck_count);
+  //! \brief Append one chunk's staged scalars to \a array as a fresh VBO.
+  /*! Honours the half-precision flag; \a buffer and \a tck_count are consumed. */
+  void upload_scalar_chunk(ScalarArray &array, std::vector<float> &buffer, size_t &tck_count);
 
-  //! \brief Where the value range from a scalar read should be deposited.
-  /*! load_embedded_scalars_onto_GPU() serves both the colouring (intensity) and
-   * thresholding paths, which keep their value range in different members; this
-   * selects the destination. */
-  enum class ScalarDestination { Intensity, Threshold };
-  //! \brief Read one embedded dpv/dps field column and upload it, chunk-aligned.
-  /*! Re-opens the tractogram through the generic loader, reads the requested
-   * field via the TractogramItem overload, extracts the selected column (dps
-   * values broadcast to every vertex of their streamline), and uploads one
-   * scalar per real vertex into the chunk buffers of \a destination. Returns the
-   * observed value range. */
-  struct ScalarRange {
-    float min;
-    float max;
-  };
-  ScalarRange load_embedded_scalars_onto_GPU(const EmbeddedScalarField &field, ScalarDestination destination);
+  //! \brief Return an already-loaded role array matching an external file source.
+  std::shared_ptr<ScalarArray> find_loaded_scalar_array(const std::filesystem::path &) const;
+  //! \brief Return an already-loaded role array matching an embedded field column.
+  std::shared_ptr<ScalarArray> find_loaded_scalar_array(size_t entry) const;
+
+  //! \brief Reuse a matching loaded array or read a fresh one from a file source.
+  std::shared_ptr<ScalarArray> acquire_file_scalar_array(const std::filesystem::path &);
+  //! \brief Reuse a matching loaded array or read a fresh one from an embedded column.
+  std::shared_ptr<ScalarArray> acquire_embedded_scalar_array(size_t entry);
+
+  //! \brief Read a scalar array from an external file (.tsf per-vertex, or a plain
+  //!   text vector with one value per streamline broadcast to its vertices).
+  std::shared_ptr<ScalarArray> read_file_scalar_array(const std::filesystem::path &);
+  //! \brief Read a scalar array from an embedded dpv/dps field column.
+  /*! Re-opens the tractogram through the generic loader, reads the requested field
+   * via the TractogramItem overload, extracts the selected column (dps values
+   * broadcast to every vertex of their streamline), and uploads one scalar per
+   * real vertex, chunk-aligned to the vertex buffers. */
+  std::shared_ptr<ScalarArray> read_embedded_scalar_array(const EmbeddedScalarField &field);
+
+  //! \brief Set thickness_scale from the loaded thickness data's mean (or a fallback).
+  void auto_populate_thickness_scale();
 
   //! On-screen sizes (in pixels) shared by rendering and level-of-detail selection.
   //! Derived from the current field of view and viewport so that the level of

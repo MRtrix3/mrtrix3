@@ -22,79 +22,66 @@
 namespace MR::GUI::MRView::Tool {
 
 TrackScalarFileOptions::TrackScalarFileOptions(Tractography *parent)
-    : QGroupBox("Scalar file options", parent), tool(parent), tractogram(nullptr) {
-  main_box = new Tool::Base::VBoxLayout(this);
+    : QObject(parent), tool(parent), tractogram(nullptr) {
 
-  colour_groupbox = new QGroupBox("Colour map and scaling");
-  Tool::Base::VBoxLayout *vlayout = new Tool::Base::VBoxLayout;
-  vlayout->setContentsMargins(0, 0, 0, 0);
-  vlayout->setSpacing(0);
-  colour_groupbox->setLayout(vlayout);
+  // The colour-map menu is placed beside the colour combo-box by the toolbar (and
+  //   reparented there); it is created here because this object observes it.
+  colourmap_button = new ColourMapButton(nullptr, *this, false, false, true);
 
-  Tool::Base::HBoxLayout *hlayout = new Tool::Base::HBoxLayout;
+  // Scaling spin-boxes (min / max); the toolbar embeds this widget in its "colour"
+  //   group and shows it only while colouring by scalar data.
+  colour_scaling_widget = new QWidget;
+  Tool::Base::HBoxLayout *hlayout = new Tool::Base::HBoxLayout(colour_scaling_widget);
   hlayout->setContentsMargins(0, 0, 0, 0);
   hlayout->setSpacing(0);
 
-  intensity_file_button = new QPushButton(this);
-  intensity_file_button->setToolTip(tr("Open (track) scalar file for colouring streamlines"));
-  connect(intensity_file_button, SIGNAL(clicked()), this, SLOT(open_intensity_track_scalar_file_slot()));
-  hlayout->addWidget(intensity_file_button);
-
-  colourmap_button = new ColourMapButton(this, *this, false, false, true);
-  hlayout->addWidget(colourmap_button);
-
-  vlayout->addLayout(hlayout);
-
-  hlayout = new Tool::Base::HBoxLayout;
-  hlayout->setContentsMargins(0, 0, 0, 0);
-  hlayout->setSpacing(0);
-
-  min_entry = new AdjustButton(this);
+  min_entry = new AdjustButton(colour_scaling_widget);
   connect(min_entry, SIGNAL(valueChanged()), this, SLOT(on_set_scaling_slot()));
   hlayout->addWidget(min_entry);
 
-  max_entry = new AdjustButton(this);
+  max_entry = new AdjustButton(colour_scaling_widget);
   connect(max_entry, SIGNAL(valueChanged()), this, SLOT(on_set_scaling_slot()));
   hlayout->addWidget(max_entry);
 
-  vlayout->addLayout(hlayout);
+  // Threshold controls; the toolbar embeds this widget in its "thresholding"
+  //   group. The combo-box sits alongside its label (as colour and thickness do).
+  threshold_widget = new QWidget;
+  Tool::Base::VBoxLayout *threshold_layout = new Tool::Base::VBoxLayout(threshold_widget);
+  threshold_layout->setContentsMargins(0, 0, 0, 0);
+  threshold_layout->setSpacing(0);
 
-  main_box->addWidget(colour_groupbox);
+  hlayout = new Tool::Base::HBoxLayout;
+  hlayout->setContentsMargins(0, 0, 0, 0);
+  hlayout->setSpacing(0);
+  hlayout->addWidget(new QLabel("threshold", threshold_widget));
 
-  QGroupBox *threshold_box = new QGroupBox("Thresholds");
-  vlayout = new Tool::Base::VBoxLayout;
-  vlayout->setContentsMargins(0, 0, 0, 0);
-  vlayout->setSpacing(0);
-  threshold_box->setLayout(vlayout);
-
-  threshold_file_combobox = new QComboBox(this);
+  threshold_file_combobox = new QComboBox(threshold_widget);
   threshold_file_combobox->addItem("None");
-  threshold_file_combobox->addItem("Use colour scalar file");
-  threshold_file_combobox->addItem("Separate scalar file");
+  threshold_file_combobox->addItem("Sidecar file");
   connect(threshold_file_combobox, SIGNAL(activated(int)), this, SLOT(threshold_scalar_file_slot(int)));
-  vlayout->addWidget(threshold_file_combobox);
+  hlayout->addWidget(threshold_file_combobox);
+
+  threshold_layout->addLayout(hlayout);
 
   hlayout = new Tool::Base::HBoxLayout;
   hlayout->setContentsMargins(0, 0, 0, 0);
   hlayout->setSpacing(0);
 
-  threshold_lower_box = new QCheckBox(this);
+  threshold_lower_box = new QCheckBox(threshold_widget);
   connect(threshold_lower_box, SIGNAL(stateChanged(int)), this, SLOT(threshold_lower_changed(int)));
   hlayout->addWidget(threshold_lower_box);
-  threshold_lower = new AdjustButton(this, 0.1);
+  threshold_lower = new AdjustButton(threshold_widget, 0.1);
   connect(threshold_lower, SIGNAL(valueChanged()), this, SLOT(threshold_lower_value_changed()));
   hlayout->addWidget(threshold_lower);
 
-  threshold_upper_box = new QCheckBox(this);
+  threshold_upper_box = new QCheckBox(threshold_widget);
   hlayout->addWidget(threshold_upper_box);
-  threshold_upper = new AdjustButton(this, 0.1);
+  threshold_upper = new AdjustButton(threshold_widget, 0.1);
   connect(threshold_upper_box, SIGNAL(stateChanged(int)), this, SLOT(threshold_upper_changed(int)));
   connect(threshold_upper, SIGNAL(valueChanged()), this, SLOT(threshold_upper_value_changed()));
   hlayout->addWidget(threshold_upper);
 
-  vlayout->addLayout(hlayout);
-
-  main_box->addWidget(threshold_box);
+  threshold_layout->addLayout(hlayout);
 
   update_UI();
 }
@@ -102,22 +89,13 @@ TrackScalarFileOptions::TrackScalarFileOptions(Tractography *parent)
 void TrackScalarFileOptions::set_tractogram(Tractogram *selected_tractogram) { tractogram = selected_tractogram; }
 
 void TrackScalarFileOptions::render_tractogram_colourbar(const Tractogram &tractogram) {
-
-  float min_value =
-      (tractogram.get_threshold_type() == TrackThresholdType::UseColourFile && tractogram.use_discard_lower())
-          ? tractogram.scaling_min_thresholded()
-          : tractogram.scaling_min();
-
-  float max_value =
-      (tractogram.get_threshold_type() == TrackThresholdType::UseColourFile && tractogram.use_discard_upper())
-          ? tractogram.scaling_max_thresholded()
-          : tractogram.scaling_max();
-
+  // Colouring and thresholding are independent roles; the colour bar reflects the
+  //   full colour scaling range irrespective of any (separate) threshold.
   window().colourbar_renderer.render(
       tractogram.colourmap,
       tractogram.scale_inverted(),
-      min_value,
-      max_value,
+      tractogram.scaling_min(),
+      tractogram.scaling_max(),
       tractogram.scaling_min(),
       tractogram.display_range,
       {tractogram.colour[0] / 255.0f, tractogram.colour[1] / 255.0f, tractogram.colour[2] / 255.0f});
@@ -126,38 +104,24 @@ void TrackScalarFileOptions::render_tractogram_colourbar(const Tractogram &tract
 void TrackScalarFileOptions::update_UI() {
 
   if (!tractogram) {
-    setVisible(false);
+    colour_scaling_widget->setVisible(false);
     return;
   }
-  setVisible(true);
 
   if (tractogram->get_color_type() == TrackColourType::ScalarFile) {
 
-    colour_groupbox->setVisible(true);
+    colour_scaling_widget->setVisible(true);
     min_entry->setRate(tractogram->scaling_rate());
     max_entry->setRate(tractogram->scaling_rate());
     min_entry->setValue(tractogram->scaling_min());
     max_entry->setValue(tractogram->scaling_max());
 
-    colourmap_button->setEnabled(true);
     colourmap_button->set_colourmap_index(tractogram->colourmap);
     colourmap_button->set_scale_inverted(tractogram->scale_inverted());
     colourmap_button->set_show_colourbar(tractogram->show_colour_bar);
 
-    if (tractogram->intensity_embedded_field.has_value()) {
-      // Embedded source: label the button with the field (and column).
-      const auto &field = tractogram->embedded_scalar_fields()[*tractogram->intensity_embedded_field];
-      intensity_file_button->setText(qstr(shorten(field.label(), 35, 0)));
-      intensity_file_button->setToolTip(qstr("Embedded field: " + field.label()));
-    } else {
-      assert(!tractogram->intensity_scalar_path.empty());
-      intensity_file_button->setText(qstr(shorten(tractogram->intensity_scalar_path.filename().string(), 35, 0)));
-      intensity_file_button->setToolTip(qstr(tractogram->intensity_scalar_path.string()));
-    }
-
   } else {
-    colour_groupbox->setVisible(false);
-    intensity_file_button->setToolTip(tr("Open (track) scalar file for colouring streamlines"));
+    colour_scaling_widget->setVisible(false);
   }
 
   // Rebuild the threshold combo around the three fixed modes: append one entry
@@ -175,9 +139,6 @@ void TrackScalarFileOptions::update_UI() {
   switch (tractogram->get_threshold_type()) {
   case TrackThresholdType::None:
     threshold_file_combobox->setCurrentIndex(0);
-    break;
-  case TrackThresholdType::UseColourFile:
-    threshold_file_combobox->setCurrentIndex(1);
     break;
   case TrackThresholdType::SeparateFile:
     if (tractogram->threshold_embedded_field.has_value()) {
@@ -216,7 +177,7 @@ void TrackScalarFileOptions::update_UI() {
 
 bool TrackScalarFileOptions::open_intensity_track_scalar_file_slot() {
   auto load_paths = Dialog::File::input_filepath(
-      this, "Select scalar text file or Track Scalar file (.tsf) to open", "", tool->current_folder);
+      colour_scaling_widget, "Select scalar text file or Track Scalar file (.tsf) to open", "", tool->current_folder);
   if (!load_paths.empty())
     tool->current_folder = load_paths.last_directory;
   return open_intensity_track_scalar_file_slot(load_paths.single_selection);
@@ -259,20 +220,16 @@ void TrackScalarFileOptions::selected_custom_colour(const QColor &c, const Colou
   }
 }
 
-// TrackThresholdType dataSource
-void TrackScalarFileOptions::set_threshold(GUI::MRView::Tool::TrackThresholdType dataSource,
-                                           default_type min,
-                                           default_type max) {
+void TrackScalarFileOptions::set_threshold(default_type min, default_type max) {
   if (tractogram) {
-    // Source
-    tractogram->set_threshold_type(dataSource);
-    // Range
-    if (dataSource != TrackThresholdType::None) {
-      tractogram->lessthan = min;
-      tractogram->greaterthan = max;
-      threshold_lower_box->setChecked(true);
-      threshold_upper_box->setChecked(true);
-    }
+    // Threshold using the scalar data already loaded for colouring; the shared
+    //   array means no second copy is uploaded to the GPU.
+    tractogram->use_intensity_data_for_threshold();
+    tractogram->set_threshold_type(TrackThresholdType::SeparateFile);
+    tractogram->lessthan = min;
+    tractogram->greaterthan = max;
+    threshold_lower_box->setChecked(true);
+    threshold_upper_box->setChecked(true);
 
     update_UI();
     window().updateGL();
@@ -299,7 +256,7 @@ bool TrackScalarFileOptions::threshold_scalar_file_slot(int /*unused*/) {
   const int index = threshold_file_combobox->currentIndex();
   const std::vector<EmbeddedScalarField> &fields = tractogram->embedded_scalar_fields();
   const int embedded_count = static_cast<int>(fields.size());
-  // Combo layout: [None, UseColourFile, SeparateFile, embedded..., (loaded file)]
+  // Combo layout: [None, Sidecar file, embedded..., (loaded file)]
   const int embedded_begin = num_fixed_threshold_modes;
   const int embedded_end = embedded_begin + embedded_count;
 
@@ -310,26 +267,10 @@ bool TrackScalarFileOptions::threshold_scalar_file_slot(int /*unused*/) {
     tractogram->set_use_discard_lower(false);
     tractogram->set_use_discard_upper(false);
     break;
-  case 1:
-    if (tractogram->get_color_type() == TrackColourType::ScalarFile) {
-      tractogram->set_threshold_type(TrackThresholdType::UseColourFile);
-      tractogram->erase_threshold_scalar_data();
-    } else {
-      QMessageBox::warning(
-          QApplication::activeWindow(),
-          tr("Tractogram threshold error"),
-          tr("Can only threshold based on scalar file used for streamline colouring if that colour mode is active"),
-          QMessageBox::Ok,
-          QMessageBox::Ok);
-      // Restore the combo to reflect the unchanged threshold state.
-      update_UI();
-      return false;
-    }
-    break;
-  case 2: {
+  case 1: {
     std::filesystem::path file_path;
     auto load_paths = Dialog::File::input_filepath(
-        this, "Select scalar text file or Track Scalar file (.tsf) to open", "", tool->current_folder);
+        threshold_widget, "Select scalar text file or Track Scalar file (.tsf) to open", "", tool->current_folder);
     if (!load_paths.empty()) {
       tool->current_folder = load_paths.last_directory;
       try {

@@ -60,6 +60,17 @@ bool Tractogram::force_half_precision_gpu(false);
 std::string Tractogram::Shader::vertex_shader_source(const Displayable &displayable) {
   const Tractogram &tractogram = dynamic_cast<const Tractogram &>(displayable);
 
+  // Per-streamline thickness modulation: a data-per-streamline sidecar value
+  //   (broadcast to every vertex) scales the pseudo-tube width as its square root
+  //   (treating the value as a cross-sectional area multiplier) or the point
+  //   radius as its cube root (a volume multiplier). The attribute and its uses
+  //   are only emitted for the tube and point geometries (the "line" geometry has
+  //   no width feature, so its vertex array object is never loaded).
+  const bool modulate_tubes =
+      thickness_type == TrackThicknessType::SidecarData && geometry_type == TrackGeometryType::Pseudotubes;
+  const bool modulate_points =
+      thickness_type == TrackThicknessType::SidecarData && geometry_type == TrackGeometryType::Points;
+
   std::string source = "layout (location = 0) in vec3 vertex;\n"
                        "layout (location = 1) in vec3 prev_vertex;\n"
                        "layout (location = 2) in vec3 next_vertex;\n"
@@ -70,8 +81,16 @@ std::string Tractogram::Shader::vertex_shader_source(const Displayable &displaya
   else if (color_type == TrackColourType::ScalarFile)
     source += "layout (location = 3) in float amp;\n";
 
-  if (threshold_type == TrackThresholdType::SeparateFile)
+  if (threshold_type != TrackThresholdType::None)
     source += "layout (location = 4) in float thresh_amp;\n";
+
+  if (modulate_tubes || modulate_points)
+    source += "layout (location = 6) in float thickness_amp;\n"
+              "uniform float thickness_offset;\n"
+              "uniform float thickness_scale;\n";
+
+  if (modulate_points)
+    source += "uniform float point_size;\n";
 
   source += "uniform mat4 MVP;\n"
             "uniform float line_thickness;\n"
@@ -112,22 +131,44 @@ std::string Tractogram::Shader::vertex_shader_source(const Displayable &displaya
             "    v_tangent = next_vertex - prev_vertex;\n"
             "  else\n"
             "    v_tangent = vec3 (0.0);\n"
-            "  vec2 dir = mat3x2(MVP) * v_tangent;\n"
-            // A single-vertex streamline has no tangent: emit a zero offset
-            // rather than normalising a zero vector (which would be NaN)
-            "  if (dot (dir, dir) > 0.0) {\n"
-            "    v_end = line_thickness * normalize (vec2 (dir.y/scale_x, -dir.x/scale_y));\n"
-            "    v_end.x *= scale_y; v_end.y *= scale_x;\n"
+            "  vec2 dir = mat3x2(MVP) * v_tangent;\n";
+
+  // A single-vertex streamline has no tangent: emit a zero offset rather than
+  //   normalising a zero vector (which would be NaN). When modulating tube width
+  //   by sidecar data, scale the half-width offset by the value above the
+  //   zero-thickness offset, normalised by thickness_scale; with the power
+  //   transform enabled that value is treated as the tube's cross-sectional area
+  //   (so width is its square root), otherwise it sets the width directly. Values
+  //   at or below the offset collapse to zero width, which keeps negative data
+  //   usable by lowering the offset beneath it.
+  source += "  if (dot (dir, dir) > 0.0) {\n";
+  if (modulate_tubes) {
+    source += "    float t = max ((thickness_amp - thickness_offset) / thickness_scale, 0.0);\n";
+    source += thickness_power_transform ? "    float width_scale = sqrt (t);\n" : "    float width_scale = t;\n";
+    source += "    v_end = line_thickness * width_scale * normalize (vec2 (dir.y/scale_x, -dir.x/scale_y));\n";
+  } else {
+    source += "    v_end = line_thickness * normalize (vec2 (dir.y/scale_x, -dir.x/scale_y));\n";
+  }
+  source += "    v_end.x *= scale_y; v_end.y *= scale_x;\n"
             "  } else {\n"
             "    v_end = vec2 (0.0);\n"
             "  }\n";
 
+  // Point geometry sets its size per-vertex here (rather than via the fixed
+  //   function point size). With the power transform enabled the offset-relative,
+  //   scale-normalised value is treated as a volume (radius is its cube root),
+  //   otherwise it sets the size directly; values at or below the offset collapse
+  //   to zero size.
+  if (modulate_points) {
+    source += "  float t = max ((thickness_amp - thickness_offset) / thickness_scale, 0.0);\n";
+    source += thickness_power_transform ? "  gl_PointSize = point_size * pow (t, 1.0 / 3.0);\n"
+                                        : "  gl_PointSize = point_size * t;\n";
+  }
+
   if (do_crop_to_slab)
     source += "  v_include = (dot(vertex, screen_normal) - crop_var) / slab_width;\n";
 
-  if (threshold_type == TrackThresholdType::UseColourFile)
-    source += "  v_amp = amp;\n";
-  else if (threshold_type == TrackThresholdType::SeparateFile)
+  if (threshold_type != TrackThresholdType::None)
     source += "  v_amp = thresh_amp;\n";
 
   if (color_type == TrackColourType::Ends)
@@ -334,6 +375,10 @@ bool Tractogram::Shader::need_update(const Displayable &object) const {
     return true;
   if (threshold_type != tractogram.threshold_type)
     return true;
+  if (thickness_type != tractogram.thickness_type)
+    return true;
+  if (thickness_power_transform != tractogram.thickness_power_transform)
+    return true;
   if (use_lighting != tractogram.tractography_tool.use_lighting)
     return true;
   if (geometry_type != tractogram.geometry_type)
@@ -348,8 +393,20 @@ void Tractogram::Shader::update(const Displayable &object) {
   use_lighting = tractogram.tractography_tool.use_lighting;
   color_type = tractogram.color_type;
   threshold_type = tractogram.threshold_type;
+  thickness_type = tractogram.thickness_type;
+  thickness_power_transform = tractogram.thickness_power_transform;
   geometry_type = tractogram.geometry_type;
   Displayable::Shader::update(object);
+}
+
+Tractogram::ScalarArray::~ScalarArray() {
+  if (buffers.empty())
+    return;
+  // The owning role(s) may drop the last reference from outside a render pass, so
+  //   grab the GL context to release the buffers (the grab is a safe no-op nest
+  //   when a context is already current).
+  GL::Context::Grab context;
+  gl::DeleteBuffers(buffers.size(), &buffers[0]);
 }
 
 Tractogram::Tractogram(Tractography &tool, const std::filesystem::path &filepath)
@@ -357,10 +414,14 @@ Tractogram::Tractogram(Tractography &tool, const std::filesystem::path &filepath
       show_colour_bar(true),
       original_fov(NaNF),
       line_thickness(0.f),
+      thickness_offset(0.f),
+      thickness_scale(1.f),
+      thickness_power_transform(true),
       tractography_tool(tool),
       filepath(filepath),
       color_type(TrackColourType::Direction),
       threshold_type(TrackThresholdType::None),
+      thickness_type(TrackThicknessType::None),
       geometry_type(default_tract_geom),
       vertex_gpu_type(VertexGPUType::Float32),
       vertices_have_gaps(false),
@@ -369,7 +430,9 @@ Tractogram::Tractogram(Tractography &tool, const std::filesystem::path &filepath
       ebo_dirty(false),
       vao_dirty(true),
       threshold_min(NaNF),
-      threshold_max(NaNF) {
+      threshold_max(NaNF),
+      thickness_min(NaNF),
+      thickness_max(NaNF) {
   set_allowed_features(true, true, true);
   colourmap = 1;
   connect(&window(), SIGNAL(fieldOfViewChanged()), this, SLOT(on_FOV_changed()));
@@ -386,10 +449,8 @@ Tractogram::~Tractogram() {
     gl::DeleteBuffers(vertex_type_buffers.size(), &vertex_type_buffers[0]);
   if (!colour_buffers.empty())
     gl::DeleteBuffers(colour_buffers.size(), &colour_buffers[0]);
-  if (!intensity_scalar_buffers.empty())
-    gl::DeleteBuffers(intensity_scalar_buffers.size(), &intensity_scalar_buffers[0]);
-  if (!threshold_scalar_buffers.empty())
-    gl::DeleteBuffers(threshold_scalar_buffers.size(), &threshold_scalar_buffers[0]);
+  // The intensity / threshold / thickness scalar arrays free their own GL buffers
+  //   when the last referencing role drops them (the shared_ptr members below).
   if (!element_buffers.empty())
     gl::DeleteBuffers(element_buffers.size(), &element_buffers[0]);
   GL::assert_context_is_current();
@@ -457,7 +518,30 @@ void Tractogram::render(const Projection &transform) {
   gl::Uniform1f(gl::GetUniformLocation(track_shader, "scale_x"), transform.width());
   gl::Uniform1f(gl::GetUniformLocation(track_shader, "scale_y"), transform.height());
 
-  glPointSize(metrics.point_diameter_px);
+  // Thickness modulation (tube width or point size) is honoured for every
+  //   geometry except "line"; supply the zero-thickness offset uniform whenever
+  //   it is active.
+  const bool modulate_thickness =
+      thickness_type == TrackThicknessType::SidecarData && geometry_type != TrackGeometryType::Lines;
+  if (modulate_thickness) {
+    gl::Uniform1f(gl::GetUniformLocation(track_shader, "thickness_offset"), thickness_offset);
+    // Guard against a near-zero divisor (e.g. zero-mean data the user has not yet
+    //   adjusted) so the shader never divides by zero.
+    const float scale = std::fabs(thickness_scale) > 1e-12f ? thickness_scale : 1.0f;
+    gl::Uniform1f(gl::GetUniformLocation(track_shader, "thickness_scale"), scale);
+  }
+
+  // When modulating point size by sidecar data, the vertex shader writes
+  //   gl_PointSize (the base diameter is supplied as a uniform and scaled by the
+  //   cube root of the per-vertex value), which requires program point size to be
+  //   enabled; otherwise the fixed-function point size applies to all points.
+  const bool modulate_point_size = modulate_thickness && geometry_type == TrackGeometryType::Points;
+  if (modulate_point_size) {
+    gl::Enable(gl::PROGRAM_POINT_SIZE);
+    gl::Uniform1f(gl::GetUniformLocation(track_shader, "point_size"), metrics.point_diameter_px);
+  } else {
+    glPointSize(metrics.point_diameter_px);
+  }
 
   if (tractography_tool.line_opacity < 1.0) {
     gl::Enable(gl::BLEND);
@@ -485,6 +569,11 @@ void Tractogram::render(const Projection &transform) {
     gl::Enable(gl::DEPTH_TEST);
     gl::DepthMask(gl::TRUE_);
   }
+
+  // Restore the fixed-function point-size regime so the enabled state does not
+  //   leak to other renderers in the frame.
+  if (modulate_point_size)
+    gl::Disable(gl::PROGRAM_POINT_SIZE);
 
   stop(track_shader);
   GL::assert_context_is_current();
@@ -531,20 +620,38 @@ inline void Tractogram::render_streamlines(const ScreenMetrics &metrics) {
         gl::VertexAttribPointer(3, 3, gl::UNSIGNED_BYTE, gl::TRUE_, 0, nullptr);
         break;
       case TrackColourType::ScalarFile:
-        gl::BindBuffer(gl::ARRAY_BUFFER, intensity_scalar_buffers[buf]);
-        gl::EnableVertexAttribArray(3);
         // Half-precision scalars are promoted to float on fetch (config flag);
-        //   only the attribute type enum changes between fp32 and fp16.
-        gl::VertexAttribPointer(3, 1, scalar_gl_type(), gl::FALSE_, 0, nullptr);
+        //   only the attribute type enum changes between fp32 and fp16. The
+        //   intensity array may be shared with the threshold / thickness roles.
+        if (intensity_scalars && intensity_scalars->buffers.size() == vertex_buffers.size()) {
+          gl::BindBuffer(gl::ARRAY_BUFFER, intensity_scalars->buffers[buf]);
+          gl::EnableVertexAttribArray(3);
+          gl::VertexAttribPointer(3, 1, scalar_gl_type(), gl::FALSE_, 0, nullptr);
+        }
         break;
       default:
         break;
       }
 
-      if (threshold_type == TrackThresholdType::SeparateFile) {
-        gl::BindBuffer(gl::ARRAY_BUFFER, threshold_scalar_buffers[buf]);
+      // Attribute 4: threshold scalar. The array may be the very same one bound to
+      //   attribute 3 (when colour and threshold select the same source).
+      if (threshold_type != TrackThresholdType::None && threshold_scalars &&
+          threshold_scalars->buffers.size() == vertex_buffers.size()) {
+        gl::BindBuffer(gl::ARRAY_BUFFER, threshold_scalars->buffers[buf]);
         gl::EnableVertexAttribArray(4);
         gl::VertexAttribPointer(4, 1, scalar_gl_type(), gl::FALSE_, 0, nullptr);
+      }
+
+      // Attribute 6: per-vertex thickness-modulation scalar. Bound only for the
+      //   tube / point geometries (the line geometry never loads it); otherwise
+      //   the array is disabled so a binding from a previous mode is not fetched.
+      if (thickness_type == TrackThicknessType::SidecarData && geometry_type != TrackGeometryType::Lines &&
+          thickness_scalars && thickness_scalars->buffers.size() == vertex_buffers.size()) {
+        gl::BindBuffer(gl::ARRAY_BUFFER, thickness_scalars->buffers[buf]);
+        gl::EnableVertexAttribArray(6);
+        gl::VertexAttribPointer(6, 1, scalar_gl_type(), gl::FALSE_, 0, nullptr);
+      } else {
+        gl::DisableVertexAttribArray(6);
       }
 
       // Position attributes prev / curr / next all read from the one vertex
@@ -1468,15 +1575,16 @@ void Tractogram::load_end_colours() {
   GL::assert_context_is_current();
 }
 
-void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filepath) {
-  // Make sure to set graphics context!
-  // We're setting up vertex array objects
-  GL::Context::Grab context;
+std::shared_ptr<Tractogram::ScalarArray> Tractogram::read_file_scalar_array(const std::filesystem::path &filepath) {
   GL::assert_context_is_current();
 
-  erase_intensity_scalar_data();
-  value_min = std::numeric_limits<float>::infinity();
-  value_max = -std::numeric_limits<float>::infinity();
+  auto array = std::make_shared<ScalarArray>();
+  float value_min = std::numeric_limits<float>::infinity();
+  float value_max = -std::numeric_limits<float>::infinity();
+  // Mean over the source elements (per vertex for .tsf, per streamline for the
+  //   text-vector form), used to auto-populate the thickness modulation scale.
+  double value_sum = 0.0;
+  size_t value_count = 0;
   std::vector<float> buffer;
   DWI::Tractography::TrackScalar<float> tck_scalar;
 
@@ -1502,13 +1610,15 @@ void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filep
         buffer.push_back(tck_scalar[i]);
         value_max = std::max(value_max, tck_scalar[i]);
         value_min = std::min(value_min, tck_scalar[i]);
+        value_sum += tck_scalar[i];
+        ++value_count;
       }
       // Pad the in-band delimiter slot when the vertex chunk carries gaps.
       if (vertices_have_gaps)
         buffer.push_back(0.0f);
 
       if (++chunk_track_count == num_tracks_per_buffer[buffer_index]) {
-        load_intensity_scalars_onto_GPU(buffer, chunk_track_count);
+        upload_scalar_chunk(*array, buffer, chunk_track_count);
         ++buffer_index;
         chunk_track_count = 0;
       }
@@ -1542,108 +1652,50 @@ void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filep
 
         value_max = std::max(value_max, value);
         value_min = std::min(value_min, value);
+        value_sum += value;
+        ++value_count;
       }
 
-      load_intensity_scalars_onto_GPU(buffer, num_tracks);
+      upload_scalar_chunk(*array, buffer, num_tracks);
     }
   }
-  assert(intensity_scalar_buffers.size() == vertex_buffers.size());
-  intensity_scalar_path = filepath;
-  intensity_embedded_field.reset();
-  this->set_windowing(value_min, value_max);
-  if (!std::isfinite(greaterthan))
-    greaterthan = value_max;
-  if (!std::isfinite(lessthan))
-    lessthan = value_min;
+  assert(array->buffers.size() == vertex_buffers.size());
+  array->value_min = value_min;
+  array->value_max = value_max;
+  array->value_mean = value_count > 0 ? static_cast<float>(value_sum / static_cast<double>(value_count)) : NaNF;
   GL::assert_context_is_current();
+  return array;
 }
 
-void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filepath) {
-  // Make sure to set graphics context!
-  // We're setting up vertex array objects
-  GL::Context::Grab context;
-  GL::assert_context_is_current();
+std::shared_ptr<Tractogram::ScalarArray>
+Tractogram::find_loaded_scalar_array(const std::filesystem::path &filepath) const {
+  // A role sources from an external file iff its path is set (cleared for an
+  //   embedded source), so matching the per-role path identifies a shared array.
+  if (filepath.empty())
+    return nullptr;
+  if (intensity_scalars && intensity_scalar_path == filepath)
+    return intensity_scalars;
+  if (threshold_scalars && threshold_scalar_path == filepath)
+    return threshold_scalars;
+  if (thickness_scalars && thickness_scalar_path == filepath)
+    return thickness_scalars;
+  return nullptr;
+}
 
-  erase_threshold_scalar_data();
-  threshold_min = std::numeric_limits<float>::infinity();
-  threshold_max = -std::numeric_limits<float>::infinity();
-  std::vector<float> buffer;
-  DWI::Tractography::TrackScalar<float> tck_scalar;
+std::shared_ptr<Tractogram::ScalarArray> Tractogram::find_loaded_scalar_array(const size_t entry) const {
+  if (intensity_scalars && intensity_embedded_field == entry)
+    return intensity_scalars;
+  if (threshold_scalars && threshold_embedded_field == entry)
+    return threshold_scalars;
+  if (thickness_scalars && thickness_embedded_field == entry)
+    return thickness_scalars;
+  return nullptr;
+}
 
-  if (filepath.extension() == ".tsf") {
-    DWI::Tractography::Properties scalar_properties;
-    DWI::Tractography::ScalarReader<float> file(filepath, scalar_properties);
-    DWI::Tractography::validate_tsf_properties(properties, scalar_properties, ".tck / .tsf pair");
-    // Replay the chunk boundaries established when loading the tracks so that
-    //   the scalar buffers align exactly with the vertex buffers
-    size_t buffer_index = 0;
-    size_t chunk_track_count = 0;
-    while (file(tck_scalar)) {
-
-      const size_t tck_size = tck_scalar.size();
-      if (tck_size == 0)
-        continue; // empty streamlines were skipped when loading the tracks
-
-      if (buffer_index >= vertex_buffers.size() ||
-          tck_size != static_cast<size_t>(original_track_sizes[buffer_index][chunk_track_count]))
-        throw Exception("Track scalar file is inconsistent with the selected tractogram");
-
-      for (size_t i = 0; i < tck_size; ++i) {
-        buffer.push_back(tck_scalar[i]);
-        threshold_max = std::max(threshold_max, tck_scalar[i]);
-        threshold_min = std::min(threshold_min, tck_scalar[i]);
-      }
-      // Pad the in-band delimiter slot when the vertex chunk carries gaps.
-      if (vertices_have_gaps)
-        buffer.push_back(0.0f);
-
-      if (++chunk_track_count == num_tracks_per_buffer[buffer_index]) {
-        load_threshold_scalars_onto_GPU(buffer, chunk_track_count);
-        ++buffer_index;
-        chunk_track_count = 0;
-      }
-    }
-    file.close();
-    if (buffer_index != vertex_buffers.size())
-      throw Exception("Track scalar file contains fewer streamlines than the selected tractogram");
-  } else {
-    const Eigen::VectorXf scalars = File::Matrix::load_vector<float>(filepath);
-    size_t total_num_tracks = 0;
-    for (std::vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
-      total_num_tracks += *i;
-    if (static_cast<size_t>(scalars.size()) != total_num_tracks)
-      throw Exception("The scalar text file does not contain the same number of elements as the selected tractogram");
-    size_t running_index = 0;
-
-    for (size_t buffer_index = 0; buffer_index != vertex_buffers.size(); ++buffer_index) {
-
-      size_t num_tracks = num_tracks_per_buffer[buffer_index];
-      std::vector<GLint> &track_lengths(original_track_sizes[buffer_index]);
-
-      for (size_t index = 0; index != num_tracks; ++index, ++running_index) {
-        const float value = scalars[running_index];
-
-        // One scalar per real vertex, plus a padding slot per streamline when
-        //   the vertex chunk carries in-band delimiter slots (fast path).
-        for (GLint i = 0; i < track_lengths[index]; ++i)
-          buffer.push_back(value);
-        if (vertices_have_gaps)
-          buffer.push_back(0.0f);
-
-        threshold_max = std::max(threshold_max, value);
-        threshold_min = std::min(threshold_min, value);
-      }
-
-      load_threshold_scalars_onto_GPU(buffer, num_tracks);
-    }
-  }
-  assert(threshold_scalar_buffers.size() == vertex_buffers.size());
-  threshold_scalar_path = filepath;
-  threshold_embedded_field.reset();
-  greaterthan = threshold_max;
-  lessthan = threshold_min;
-
-  GL::assert_context_is_current();
+std::shared_ptr<Tractogram::ScalarArray> Tractogram::acquire_file_scalar_array(const std::filesystem::path &filepath) {
+  if (auto existing = find_loaded_scalar_array(filepath))
+    return existing;
+  return read_file_scalar_array(filepath);
 }
 
 namespace {
@@ -1661,8 +1713,7 @@ inline float dps_element_to_float(const DWI::Tractography::DPSValue &value, cons
 }
 } // namespace
 
-Tractogram::ScalarRange Tractogram::load_embedded_scalars_onto_GPU(const EmbeddedScalarField &field,
-                                                                   const ScalarDestination destination) {
+std::shared_ptr<Tractogram::ScalarArray> Tractogram::read_embedded_scalar_array(const EmbeddedScalarField &field) {
   GL::assert_context_is_current();
 
   // Re-open the tractogram through the generic loader and read the requested
@@ -1680,8 +1731,12 @@ Tractogram::ScalarRange Tractogram::load_embedded_scalars_onto_GPU(const Embedde
   const DWI::Tractography::FieldRole role = field.role;
   const Eigen::Index column = static_cast<Eigen::Index>(field.column);
 
+  auto array = std::make_shared<ScalarArray>();
   float range_min = std::numeric_limits<float>::infinity();
   float range_max = -std::numeric_limits<float>::infinity();
+  // Mean over the source elements (per vertex for dpv, per streamline for dps).
+  double value_sum = 0.0;
+  size_t value_count = 0;
 
   std::vector<float> buffer;
   DWI::Tractography::TractogramItem<float> item;
@@ -1709,6 +1764,8 @@ Tractogram::ScalarRange Tractogram::load_embedded_scalars_onto_GPU(const Embedde
         buffer.push_back(v);
         range_max = std::max(range_max, v);
         range_min = std::min(range_min, v);
+        value_sum += v;
+        ++value_count;
       }
     } else {
       if (field.ordinal >= item.dps.size())
@@ -1720,6 +1777,8 @@ Tractogram::ScalarRange Tractogram::load_embedded_scalars_onto_GPU(const Embedde
         buffer.push_back(v);
       range_max = std::max(range_max, v);
       range_min = std::min(range_min, v);
+      value_sum += v;
+      ++value_count;
     }
     // Pad the in-band delimiter slot when the vertex chunk carries gaps, so the
     //   scalar slots stay aligned with the position buffer (never indexed).
@@ -1727,10 +1786,7 @@ Tractogram::ScalarRange Tractogram::load_embedded_scalars_onto_GPU(const Embedde
       buffer.push_back(0.0f);
 
     if (++chunk_track_count == num_tracks_per_buffer[buffer_index]) {
-      if (destination == ScalarDestination::Intensity)
-        load_intensity_scalars_onto_GPU(buffer, chunk_track_count);
-      else
-        load_threshold_scalars_onto_GPU(buffer, chunk_track_count);
+      upload_scalar_chunk(*array, buffer, chunk_track_count);
       ++buffer_index;
       chunk_track_count = 0;
     }
@@ -1739,28 +1795,68 @@ Tractogram::ScalarRange Tractogram::load_embedded_scalars_onto_GPU(const Embedde
     throw Exception("Embedded scalar field \"" + field.name +
                     "\" spans fewer streamlines than the selected tractogram");
 
+  assert(array->buffers.size() == vertex_buffers.size());
+  array->value_min = range_min;
+  array->value_max = range_max;
+  array->value_mean = value_count > 0 ? static_cast<float>(value_sum / static_cast<double>(value_count)) : NaNF;
   GL::assert_context_is_current();
-  return {range_min, range_max};
+  return array;
+}
+
+std::shared_ptr<Tractogram::ScalarArray> Tractogram::acquire_embedded_scalar_array(const size_t entry) {
+  if (auto existing = find_loaded_scalar_array(entry))
+    return existing;
+  return read_embedded_scalar_array(embedded_fields[entry]);
+}
+
+void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filepath) {
+  GL::Context::Grab context;
+  GL::assert_context_is_current();
+  // Acquire (reusing the array already loaded for another role if it shares this
+  //   source) before updating the identity, so the dedup match sees the old one.
+  intensity_scalars = acquire_file_scalar_array(filepath);
+  intensity_scalar_path = filepath;
+  intensity_embedded_field.reset();
+  value_min = intensity_scalars->value_min;
+  value_max = intensity_scalars->value_max;
+  set_windowing(value_min, value_max);
+  if (!std::isfinite(greaterthan))
+    greaterthan = value_max;
+  if (!std::isfinite(lessthan))
+    lessthan = value_min;
+  vao_dirty = true;
+  GL::assert_context_is_current();
 }
 
 void Tractogram::load_intensity_embedded_scalars(const size_t entry) {
   GL::Context::Grab context;
   GL::assert_context_is_current();
   assert(entry < embedded_fields.size());
-  const EmbeddedScalarField &field = embedded_fields[entry];
-
-  erase_intensity_scalar_data();
-  const ScalarRange range = load_embedded_scalars_onto_GPU(field, ScalarDestination::Intensity);
-  assert(intensity_scalar_buffers.size() == vertex_buffers.size());
-
-  value_min = range.min;
-  value_max = range.max;
+  intensity_scalars = acquire_embedded_scalar_array(entry);
+  intensity_scalar_path.clear();
   intensity_embedded_field = entry;
+  value_min = intensity_scalars->value_min;
+  value_max = intensity_scalars->value_max;
   set_windowing(value_min, value_max);
   if (!std::isfinite(greaterthan))
     greaterthan = value_max;
   if (!std::isfinite(lessthan))
     lessthan = value_min;
+  vao_dirty = true;
+  GL::assert_context_is_current();
+}
+
+void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filepath) {
+  GL::Context::Grab context;
+  GL::assert_context_is_current();
+  threshold_scalars = acquire_file_scalar_array(filepath);
+  threshold_scalar_path = filepath;
+  threshold_embedded_field.reset();
+  threshold_min = threshold_scalars->value_min;
+  threshold_max = threshold_scalars->value_max;
+  greaterthan = threshold_max;
+  lessthan = threshold_min;
+  vao_dirty = true;
   GL::assert_context_is_current();
 }
 
@@ -1768,18 +1864,72 @@ void Tractogram::load_threshold_embedded_scalars(const size_t entry) {
   GL::Context::Grab context;
   GL::assert_context_is_current();
   assert(entry < embedded_fields.size());
-  const EmbeddedScalarField &field = embedded_fields[entry];
-
-  erase_threshold_scalar_data();
-  const ScalarRange range = load_embedded_scalars_onto_GPU(field, ScalarDestination::Threshold);
-  assert(threshold_scalar_buffers.size() == vertex_buffers.size());
-
-  threshold_min = range.min;
-  threshold_max = range.max;
+  threshold_scalars = acquire_embedded_scalar_array(entry);
+  threshold_scalar_path.clear();
   threshold_embedded_field = entry;
+  threshold_min = threshold_scalars->value_min;
+  threshold_max = threshold_scalars->value_max;
   greaterthan = threshold_max;
   lessthan = threshold_min;
+  vao_dirty = true;
   GL::assert_context_is_current();
+}
+
+void Tractogram::load_thickness_track_scalars(const std::filesystem::path &filepath) {
+  GL::Context::Grab context;
+  GL::assert_context_is_current();
+  // Any per-vertex (.tsf) or per-streamline (text vector) data is permissible.
+  thickness_scalars = acquire_file_scalar_array(filepath);
+  thickness_scalar_path = filepath;
+  thickness_embedded_field.reset();
+  thickness_min = thickness_scalars->value_min;
+  thickness_max = thickness_scalars->value_max;
+  auto_populate_thickness_scale();
+  vao_dirty = true;
+  GL::assert_context_is_current();
+}
+
+void Tractogram::load_thickness_embedded_scalars(const size_t entry) {
+  GL::Context::Grab context;
+  GL::assert_context_is_current();
+  assert(entry < embedded_fields.size());
+  // Any dpv or dps field column is permissible for thickness modulation.
+  thickness_scalars = acquire_embedded_scalar_array(entry);
+  thickness_scalar_path.clear();
+  thickness_embedded_field = entry;
+  thickness_min = thickness_scalars->value_min;
+  thickness_max = thickness_scalars->value_max;
+  auto_populate_thickness_scale();
+  vao_dirty = true;
+  GL::assert_context_is_current();
+}
+
+void Tractogram::auto_populate_thickness_scale() {
+  // Map the data mean to the unmodulated thickness, so the typical streamline is
+  //   suitably sized irrespective of the data's numerical range (and aggregate
+  //   size stays stable across sidecar files). Fall back to the value range (or 1)
+  //   when the mean is too near zero to divide by.
+  const float mean = thickness_scalars ? thickness_scalars->value_mean : NaNF;
+  const float range = thickness_scalars ? (thickness_scalars->value_max - thickness_scalars->value_min) : NaNF;
+  if (std::isfinite(mean) && std::fabs(mean) > 1e-6f)
+    thickness_scale = mean;
+  else if (std::isfinite(range) && range > 0.f)
+    thickness_scale = range;
+  else
+    thickness_scale = 1.f;
+}
+
+void Tractogram::use_intensity_data_for_threshold() {
+  // Reference the very same array already loaded for colouring, so a single
+  //   vertex array object backs both roles.
+  threshold_scalars = intensity_scalars;
+  threshold_scalar_path = intensity_scalar_path;
+  threshold_embedded_field = intensity_embedded_field;
+  if (threshold_scalars) {
+    threshold_min = threshold_scalars->value_min;
+    threshold_max = threshold_scalars->value_max;
+  }
+  vao_dirty = true;
 }
 
 void Tractogram::erase_colour_data() {
@@ -1795,28 +1945,38 @@ void Tractogram::erase_colour_data() {
 void Tractogram::erase_intensity_scalar_data() {
   GL::Context::Grab context;
   GL::assert_context_is_current();
-  if (!intensity_scalar_buffers.empty()) {
-    gl::DeleteBuffers(intensity_scalar_buffers.size(), &intensity_scalar_buffers[0]);
-    intensity_scalar_buffers.clear();
-  }
+  // Dropping the reference frees the GL buffers once no other role shares them.
+  intensity_scalars.reset();
   intensity_scalar_path.clear();
   intensity_embedded_field.reset();
+  vao_dirty = true;
   GL::assert_context_is_current();
 }
 
 void Tractogram::erase_threshold_scalar_data() {
   GL::Context::Grab context;
   GL::assert_context_is_current();
-  if (!threshold_scalar_buffers.empty()) {
-    gl::DeleteBuffers(threshold_scalar_buffers.size(), &threshold_scalar_buffers[0]);
-    threshold_scalar_buffers.clear();
-  }
+  threshold_scalars.reset();
   threshold_scalar_path.clear();
   threshold_embedded_field.reset();
   threshold_min = NaNF;
   threshold_max = NaNF;
   set_use_discard_lower(false);
   set_use_discard_upper(false);
+  vao_dirty = true;
+  GL::assert_context_is_current();
+}
+
+void Tractogram::erase_thickness_scalar_data() {
+  GL::Context::Grab context;
+  GL::assert_context_is_current();
+  thickness_scalars.reset();
+  thickness_scalar_path.clear();
+  thickness_embedded_field.reset();
+  thickness_min = NaNF;
+  thickness_max = NaNF;
+  // Drop the now-stale attribute binding (location 6) from each VAO.
+  vao_dirty = true;
   GL::assert_context_is_current();
 }
 
@@ -1833,18 +1993,19 @@ void Tractogram::set_threshold_type(const TrackThresholdType t) {
   case TrackThresholdType::None:
     threshold_min = threshold_max = NaN;
     break;
-  case TrackThresholdType::UseColourFile:
-    threshold_min = value_min;
-    threshold_max = value_max;
-    break;
   case TrackThresholdType::SeparateFile:
     break;
   }
 }
 
+void Tractogram::set_thickness_type(const TrackThicknessType t) { thickness_type = t; }
+
 void Tractogram::set_geometry_type(const TrackGeometryType t) {
   geometry_type = t;
   should_update_lod = true;
+  // The thickness attribute (location 6) is bound only for tube / point geometry,
+  //   so the per-VAO attribute setup must be refreshed when the geometry changes.
+  vao_dirty = true;
 }
 
 void Tractogram::load_tracks_onto_GPU(std::vector<Eigen::Vector3f> &buffer,
@@ -2032,38 +2193,17 @@ static void upload_scalar_buffer(const std::vector<float> &buffer, const ScalarG
   }
 }
 
-void Tractogram::load_intensity_scalars_onto_GPU(std::vector<float> &buffer, size_t &tck_count) {
+void Tractogram::upload_scalar_chunk(ScalarArray &array, std::vector<float> &buffer, size_t &tck_count) {
   GL::assert_context_is_current();
 
-  assert(num_tracks_per_buffer[intensity_scalar_buffers.size()] == tck_count);
+  assert(num_tracks_per_buffer[array.buffers.size()] == tck_count);
 
   GLuint vertexbuffer;
   gl::GenBuffers(1, &vertexbuffer);
   gl::BindBuffer(gl::ARRAY_BUFFER, vertexbuffer);
   upload_scalar_buffer(buffer, scalar_gpu_type);
 
-  vao_dirty = true;
-
-  intensity_scalar_buffers.push_back(vertexbuffer);
-  buffer.clear();
-  tck_count = 0;
-
-  GL::assert_context_is_current();
-}
-
-void Tractogram::load_threshold_scalars_onto_GPU(std::vector<float> &buffer, size_t &tck_count) {
-  GL::assert_context_is_current();
-
-  assert(num_tracks_per_buffer[threshold_scalar_buffers.size()] == tck_count);
-
-  GLuint vertexbuffer;
-  gl::GenBuffers(1, &vertexbuffer);
-  gl::BindBuffer(gl::ARRAY_BUFFER, vertexbuffer);
-  upload_scalar_buffer(buffer, scalar_gpu_type);
-
-  vao_dirty = true;
-
-  threshold_scalar_buffers.push_back(vertexbuffer);
+  array.buffers.push_back(vertexbuffer);
   buffer.clear();
   tck_count = 0;
 
