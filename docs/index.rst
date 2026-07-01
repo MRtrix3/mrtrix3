@@ -154,7 +154,7 @@ Table of Contents
    :caption: Getting started
 
    getting_started/beginner_dwi_tutorial
-   getting_started/image_data
+   getting_started/data_types
    getting_started/command_line
    getting_started/config
 
@@ -231,6 +231,9 @@ Table of Contents
    :caption: Reference
 
    reference/commands_list
+   reference/data_formats/image_data
+   reference/data_formats/tractography_data
+   reference/data_formats/other_data
    reference/config_file_options
    reference/environment_variables
    reference/mrtrix2_equivalent_commands
