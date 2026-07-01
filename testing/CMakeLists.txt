@@ -16,7 +16,7 @@ include(ExternalProject)
 ExternalProject_Add(BinariesTestData
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/binaries_data
     GIT_REPOSITORY ${mrtrix_binaries_data_url}
-    GIT_TAG e3482b2157c441702145b1f9ffbc05b826465512
+    GIT_TAG b9b562018253402de0432f942d850e55f951b613
     GIT_PROGRESS TRUE
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
@@ -41,6 +41,91 @@ set(BINARY_DATA_DIR
 
 set(SCRIPT_DATA_DIR
     ${CMAKE_CURRENT_BINARY_DIR}/scripts_data/src/ScriptsTestData
+)
+
+# Reference data published by the originators of externally-defined tractogram file
+# formats, used to validate MRtrix3's readers against canonical exemplars. Each
+# dataset is downloaded at build time into an independent location and exposed as a
+# variable so that individual tests can nominate it as their working directory.
+
+# Adopt the recommended timestamp behaviour for downloaded archives where the host
+# CMake is new enough to offer it, suppressing the CMP0135 configure-time warning.
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+endif()
+
+# TRX format gold-standard data, distributed as a single archive that ExternalProject
+# extracts into the source directory.
+ExternalProject_Add(TRXReferenceData
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/trx_data
+    URL "https://github.com/tee-ar-ex/trx-test-data/releases/download/v0.1.0/gold_standard.zip"
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ""
+    INSTALL_COMMAND ""
+    LOG_DOWNLOAD ON
+)
+
+# .trk (and companion .tck / .nii.gz) reference data from NiBabel; only the subset of
+# files relevant to MRtrix3's format tests is fetched.
+set(trk_reference_base_url
+    "https://raw.githubusercontent.com/nipy/nibabel/5.4.2/nibabel/tests/data"
+)
+string(JOIN "|" trk_reference_files
+    simple.tck
+    simple.trk
+    simple_big_endian.tck
+    standard.LPS.trk
+    standard.nii.gz
+    standard.tck
+    standard.trk
+)
+ExternalProject_Add(TRKReferenceData
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/trk_data
+    DOWNLOAD_COMMAND ${CMAKE_COMMAND}
+        -D BASE_URL=${trk_reference_base_url}
+        -D FILES=${trk_reference_files}
+        -D DEST_DIR=<SOURCE_DIR>
+        -P ${PROJECT_SOURCE_DIR}/cmake/DownloadFiles.cmake
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ""
+    INSTALL_COMMAND ""
+)
+
+# .vtx / .vtk (and companion .tck / .trk) reference data from rordenlab; only the
+# subset of files relevant to MRtrix3's format tests is fetched.
+set(vtx_reference_base_url
+    "https://raw.githubusercontent.com/rordenlab/TractographyFormat/master/DATA"
+)
+string(JOIN "|" vtx_reference_files
+    example.tck
+    example.trk
+    example.vtk
+    example.vtx
+)
+ExternalProject_Add(VTXReferenceData
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vtx_data
+    DOWNLOAD_COMMAND ${CMAKE_COMMAND}
+        -D BASE_URL=${vtx_reference_base_url}
+        -D FILES=${vtx_reference_files}
+        -D DEST_DIR=<SOURCE_DIR>
+        -P ${PROJECT_SOURCE_DIR}/cmake/DownloadFiles.cmake
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ""
+    INSTALL_COMMAND ""
+)
+
+# Locations of the downloaded (and, for TRX, extracted) reference data, for tests to
+# nominate as their working directory.
+set(TRX_DATA_DIR
+    ${CMAKE_CURRENT_BINARY_DIR}/trx_data/src/TRXReferenceData
+)
+
+set(TRK_DATA_DIR
+    ${CMAKE_CURRENT_BINARY_DIR}/trk_data/src/TRKReferenceData
+)
+
+set(VTX_DATA_DIR
+    ${CMAKE_CURRENT_BINARY_DIR}/vtx_data/src/VTXReferenceData
 )
 
 add_subdirectory(binaries)

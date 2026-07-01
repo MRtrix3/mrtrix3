@@ -1,0 +1,7 @@
+#!/bin/bash
+# Round-trip streamlines through the ASCII VTK encoding via the framework handler:
+#   tck -> vtk(ASCII) -> tck must reproduce the input within tolerance.
+# Coordinates are written with sufficient precision to round-trip float32 losslessly.
+tckconvert -ascii tracks.tck tmp_ascii.vtk -force -quiet
+tckconvert tmp_ascii.vtk tmp_ascii.tck -force -quiet
+testing_diff_tck tmp_ascii.tck tracks.tck

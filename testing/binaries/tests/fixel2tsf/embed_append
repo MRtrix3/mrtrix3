@@ -1,0 +1,10 @@
+#!/bin/bash
+# Appending the sampled per-vertex field to an EXISTING dataset whose format supports
+#   in-place augmentation (an uncompressed TRX archive) does NOT require -force when the
+#   field name is new: the field is written as a new member without rewriting the
+#   streamline data. Geometry is left untouched.
+rm -rf tmp_ap.trx tmp_ap_rt.tck
+tckconvert tracks.tck tmp_ap.trx -config TRXArchiveCompression store -force
+fixel2tsf fixel_image/afd.mif tracks.tck tmp_ap.trx::afd
+tckconvert tmp_ap.trx tmp_ap_rt.tck -force
+testing_diff_tck tmp_ap_rt.tck tracks.tck

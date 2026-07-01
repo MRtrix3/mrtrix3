@@ -28,7 +28,7 @@ using namespace MR;
 using namespace App;
 using namespace MR::Surface;
 
-enum class TransformChoice { First2Real, Real2First, Voxel2Real, Real2Voxel, Fs2Real };
+enum class TransformChoice { FSL2Real, Real2FSL, Voxel2Real, Real2Voxel, FreeSurfer2Real };
 
 // clang-format off
 void usage() {
@@ -76,10 +76,10 @@ void run() {
     auto H = Header::open(opt[0][1]);
     auto transform = std::make_unique<Surface::Filter::VertexTransform>(H);
     switch (MR::Enum::from_name<TransformChoice>(opt[0][0])) {
-    case TransformChoice::First2Real:
+    case TransformChoice::FSL2Real:
       transform->set_first2real();
       break;
-    case TransformChoice::Real2First:
+    case TransformChoice::Real2FSL:
       transform->set_real2first();
       break;
     case TransformChoice::Voxel2Real:
@@ -88,7 +88,7 @@ void run() {
     case TransformChoice::Real2Voxel:
       transform->set_real2voxel();
       break;
-    case TransformChoice::Fs2Real:
+    case TransformChoice::FreeSurfer2Real:
       transform->set_fs2real();
       break;
     default:

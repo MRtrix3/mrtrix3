@@ -1,0 +1,12 @@
+#!/bin/bash
+# When the destination EXISTS and its format cannot be augmented in place (a compressed
+#   TRX archive), adding a field requires -force: the dataset is rewritten with the field
+#   added, in the mapping pass. Without -force the export must fail.
+rm -rf tmp_rw.trx tmp_rw_rt.tck tmp_rw.txt
+tckconvert tracks.tck tmp_rw.trx -config TRXArchiveCompression deflate -force
+! fixel2tsf fixel_image/afd.mif tracks.tck tmp_rw.trx::afd 2> tmp_rw.txt
+cat tmp_rw.txt
+grep -i "already exists" tmp_rw.txt
+fixel2tsf fixel_image/afd.mif tracks.tck tmp_rw.trx::afd -force
+tckconvert tmp_rw.trx tmp_rw_rt.tck -force
+testing_diff_tck tmp_rw_rt.tck tracks.tck

@@ -1,0 +1,11 @@
+#!/bin/bash
+# In-place augmentation requires -force only when the named field is ALREADY present:
+#   the first append of a new field succeeds without -force; a second append of the
+#   same field name fails without -force and succeeds with it.
+rm -rf tmp_apf.trx tmp_apf.txt
+tckconvert tracks.tck tmp_apf.trx -config TRXArchiveCompression store -force
+fixel2tsf fixel_image/afd.mif tracks.tck tmp_apf.trx::afd
+! fixel2tsf fixel_image/afd.mif tracks.tck tmp_apf.trx::afd 2> tmp_apf.txt
+cat tmp_apf.txt
+grep -i "already exists" tmp_apf.txt
+fixel2tsf fixel_image/afd.mif tracks.tck tmp_apf.trx::afd -force

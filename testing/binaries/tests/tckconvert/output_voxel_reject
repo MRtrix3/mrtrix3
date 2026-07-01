@@ -1,0 +1,12 @@
+#!/bin/bash
+# The -output_as_voxelspace option encodes vertices in voxel space and so requires an
+#   output format able to embed the voxel-to-realspace transform within its header.
+#   A format that cannot record the grid affine (".tck" carries scanner-space
+#   coordinates only) must be rejected with a clean, non-zero-exit error rather
+#   than silently writing ambiguous voxel coordinates.
+tckconvert tracks.tck tmp_reject.tck -output_as_voxelspace dwi.mif -force -quiet 2>/dev/null \
+  && { echo "Expected rejection of -output_as_voxelspace to a format that cannot embed a transform"; exit 1; }
+
+# The TRX format records VOXEL_TO_RASMM, so the same request must succeed there.
+tckconvert tracks.tck tmp_accept.trx -output_as_voxelspace dwi.mif -force -quiet
+true

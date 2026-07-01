@@ -17,15 +17,19 @@ Usage
 
 -  *fixel_in*: the input fixel data file (within the fixel directory)
 -  *tracks*: the input track file
--  *tsf*: the output track scalar file
+-  *tsf*: the output track scalar file, or a "DATASET::NAME" embedded sidecar field
 
 Description
 -----------
 
 This command is useful for visualising all brain fixels (e.g. the output from fixelcfestats) in 3D.
 
+By default the sampled fixel values are written to a standalone track scalar file (.tsf). Alternatively, they may be embedded into a tractography dataset as a named per-vertex (data-per-vertex) sidecar field, using the qualified "DATASET::NAME" form for the output argument. If DATASET does not yet exist it is created as a copy of the input tractogram carrying the new field, generated within the same pass that performs the sampling. If DATASET already exists and its format supports adding a field in place (a TRX directory or uncompressed archive), the field is appended without rewriting the streamline data; the -force option is then required only if a field named NAME is already present. If DATASET already exists but cannot be augmented in place (e.g. ".trk", or a compressed TRX archive), the -force option is required and the dataset is rewritten with the field added.
+
 Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
 https://mrtrix.readthedocs.io/en/3.0.8/fixel_based_analysis/fixel_directory_format.html
+
+Where a command-line argument accepts tractogram sidecar data (such as streamline weights), it may be given as: "<path>" to read from / write to a standalone external file; "<path>::<field>" to access a named field of sidecar data embedded within the specified tractogram dataset; or "::<field>" to access a named field of sidecar data embedded within the command's own input or output tractogram (the only form able to reference embedded sidecar data of a piped tractogram, which has no command-line filesystem path).
 
 Options
 -------

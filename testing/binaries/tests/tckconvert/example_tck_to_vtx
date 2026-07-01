@@ -1,0 +1,14 @@
+#!/bin/bash
+# Reference-data interop (VTX_DATA_DIR, rordenlab TractographyFormat): write
+#   "example.tck" out as binary ".vtx" and compare to "example.vtx".
+#
+# The bytes differ from the reference (MRtrix emits 64-bit OFFSETS, the reference
+#   32-bit), so the comparison bridges both files through the ".tck" domain; the
+#   geometry matches essentially exactly.
+tckconvert example.tck tmp_tck2vtx.vtx -force -quiet
+if cmp -s tmp_tck2vtx.vtx example.vtx; then
+  exit 0
+fi
+tckconvert tmp_tck2vtx.vtx tmp_mine_dec.tck -force -quiet
+tckconvert example.vtx tmp_ref_dec.tck -force -quiet
+testing_diff_tck tmp_mine_dec.tck tmp_ref_dec.tck -distance 1e-4

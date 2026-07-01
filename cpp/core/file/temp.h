@@ -25,4 +25,14 @@ namespace MR::File {
 bool is_tempfile(const std::filesystem::path &name, std::string_view suffix = "");
 std::filesystem::path create_tempfile(int64_t size = 0, std::string_view suffix = "");
 
+//! \brief create an empty temporary directory alongside create_tempfile()'s files.
+/*! The directory is created in the same location used by create_tempfile()
+ * (the TmpFileDir config / MRTRIX_TMPFILE_DIR location), with the same
+ * randomised TmpFilePrefix basename, plus the optional \a suffix. The caller
+ * owns the directory's lifetime: it should register it with the signal handler
+ * for cleanup on unexpected termination (SignalHandler::mark_file_for_deletion)
+ * and remove it once finished. Used by the TRX handler to extract a compressed
+ * archive before memory-mapping its members (D5). */
+std::filesystem::path create_tempdir(std::string_view suffix = "");
+
 } // namespace MR::File

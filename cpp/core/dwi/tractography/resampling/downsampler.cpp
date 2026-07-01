@@ -38,6 +38,25 @@ bool Downsampler::operator()(Tracking::GeneratedTrack &tck) const {
   return true;
 }
 
+std::vector<size_t> Downsampler::retained_indices(const Streamline<> &in) const {
+  std::vector<size_t> indices;
+  if (ratio == 1 || in.size() <= 2) {
+    indices.resize(in.size());
+    for (size_t i = 0; i != in.size(); ++i)
+      indices[i] = i;
+    return indices;
+  }
+  indices.push_back(0);
+  const size_t midpoint = in.size() / 2;
+  size_t index = (((midpoint - 1) % ratio) + 1);
+  while (index < in.size() - 1) {
+    indices.push_back(index);
+    index += ratio;
+  }
+  indices.push_back(in.size() - 1);
+  return indices;
+}
+
 bool Downsampler::operator()(const Streamline<> &in, Streamline<> &out) const {
   out.clear();
   if (!valid())
@@ -48,14 +67,10 @@ bool Downsampler::operator()(const Streamline<> &in, Streamline<> &out) const {
   }
   out.set_index(in.get_index());
   out.weight = in.weight;
-  out.push_back(in.front());
-  const size_t midpoint = in.size() / 2;
-  size_t index = (((midpoint - 1) % ratio) + 1);
-  while (index < in.size() - 1) {
-    out.push_back(in[index]);
-    index += ratio;
-  }
-  out.push_back(in.back());
+  // Share the vertex-selection logic with retained_indices() so that a parallel
+  //   dpv field can be sub-sampled to exactly the vertices retained here (§2.7).
+  for (const size_t i : retained_indices(in))
+    out.push_back(in[i]);
   return true;
 }
 

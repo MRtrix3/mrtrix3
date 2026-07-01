@@ -522,6 +522,18 @@ List of MRtrix3 configuration file options
      The position of all visible tool colourbars within the main window in MRView.
      Valid values are: bottomleft, bottomright, topleft, topright.
 
+.. option:: MRViewTractogramHalfPrecisionGPU
+
+    *default: false (0)*
+
+     Force mrview to upload tractogram vertex data to the GPU in IEEE
+     half-precision (16-bit float) regardless of the input file's on-disk
+     vertex datatype, halving the vertex buffer footprint at the cost of
+     positional precision (~0.06 mm near +/-100 mm). This is a rendering
+     representation only and never feeds quantitative paths. When unset,
+     mrview honours the on-disk datatype (Float16 -> half; Float32 -> float;
+     Float64 -> float).
+
 .. option:: MRViewWrapVolumes
 
     *default: false*
@@ -735,6 +747,17 @@ List of MRtrix3 configuration file options
     *default: 0.5*
 
      The default intensity for the specular light in OpenGL renders.
+
+.. option:: TRXArchiveCompression
+
+    *default: store*
+
+     The zip compression method used when writing a new ".trx" archive
+     file: "store" (uncompressed; the default, which permits later in-place
+     augmentation of the dataset with additional sidecar data without
+     rewriting it) or "deflate" (smaller files, but adding sidecar data
+     later requires the whole archive to be rewritten). Has no effect on a
+     TRX dataset written as a directory.
 
 .. option:: TckgenEarlyExit
 

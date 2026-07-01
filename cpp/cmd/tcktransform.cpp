@@ -15,19 +15,30 @@
  */
 
 #include "command.h"
-#include "dwi/tractography/file.h"
+#include "dwi/tractography/nonfinite.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/tractogram.h"
+#include "dwi/tractography/weights.h"
 #include "image.h"
 #include "interp/linear.h"
 #include "ordered_thread_queue.h"
 #include "progressbar.h"
 #include "registration/warp/validate.h"
 
+#include <atomic>
 #include <filesystem>
+#include <limits>
+#include <memory>
+#include <optional>
+#include <vector>
 
 using namespace MR;
 using namespace MR::DWI;
+using namespace MR::DWI::Tractography;
 using namespace App;
+
+// Disambiguate from the image subsystem's MR::Formats, also in scope here.
+namespace TrackFormats = MR::DWI::Tractography::Formats;
 
 // clang-format off
 void usage() {
@@ -48,47 +59,110 @@ void usage() {
     " So for instance, this may involve the utilisation of a template-to-subject warp field"
     " in order to transform streamlines from subject to template space.";
 
+  DESCRIPTION
+  + "Sidecar data associated with the streamlines are passed through unchanged,"
+    " since a spatial transformation relocates existing vertices without altering"
+    " their number or order:"
+    " per-streamline weights (-tck_weights_in/out) and per-vertex data"
+    " (a track scalar file via -tsf_in / -tsf_out) remain valid for the"
+    " transformed streamlines and are carried across verbatim.";
+
+  DESCRIPTION
+  + "A streamline vertex that falls outside the field of view of the deformation field"
+    " has no defined transformed location, and is assigned a non-finite (NaN) position."
+    " How such vertices are handled on output depends on whether the selected output format"
+    " can represent non-finite vertex coordinates:"
+    " a format that cannot (e.g. \".tck\", which uses non-finite values as in-band delimiters)"
+    " has those vertices culled from the output,"
+    " and a warning is issued quoting the number of streamlines so affected;"
+    " a format that can (e.g. \".trk\", \".trx\") retains those vertices in the output,"
+    " and a warning is issued quoting the number of streamlines that contain non-finite vertex data.";
+
   ARGUMENTS
   + Argument ("tracks", "the input track file.").type_tracks_in()
   + Argument ("transform", "the image containing the transform.").type_image_in()
   + Argument ("output", "the output track file").type_tracks_out();
 
+  OPTIONS
+  + OptionGroup ("Options for handling sidecar data")
+  + Tractography::TrackWeightsInOption
+  + Tractography::TrackWeightsOutOption
+  + Option ("tsf_in", "an input track scalar file (.tsf) of per-vertex data,"
+                      " passed through unchanged to correspond to the transformed vertices")
+    + Argument ("path").type_file_in()
+  + Option ("tsf_out", "the output track scalar file (.tsf) corresponding to -tsf_in")
+    + Argument ("path").type_file_out();
+
 }
 // clang-format on
 
 using value_type = float;
-using TrackType = Tractography::Streamline<value_type>;
+using item_type = TractogramItem<value_type>;
 
-class Loader {
-public:
-  Loader(const std::filesystem::path &path) : reader(path, properties) {}
-
-  bool operator()(TrackType &item) { return reader(item); }
-
-  Tractography::Properties properties;
-
-protected:
-  Tractography::Reader<value_type> reader;
-};
-
+//! \brief Samples the deformation field at each streamline vertex and applies
+//!   the output-format-dependent non-finite vertex policy.
+/*! A vertex that falls outside the deformation field is assigned a non-finite
+ * (NaN) position. If the selected output format cannot represent non-finite
+ * vertices (TrackFormats::NonFinite::Forbidden) such vertices are culled — together
+ * with their matching per-vertex (dpv) sidecar rows, so the two stay aligned —
+ * and any streamline that lost a vertex is tallied. Otherwise the vertices are
+ * retained, and any streamline that contains non-finite vertex data is tallied.
+ * The tally is a shared atomic so the count survives the multi-threaded fan-out
+ * (the functor is copied per worker; the counter is shared). */
 class Warper {
 public:
-  Warper(const Image<value_type> &warp) : interp(warp) {}
+  Warper(const Image<value_type> &warp,
+         const TrackFormats::NonFinite vertex_tolerance,
+         const std::shared_ptr<std::atomic<size_t>> &affected)
+      : interp(warp), vertex_tolerance(vertex_tolerance), affected(affected) {}
 
-  bool operator()(const TrackType &in, TrackType &out) {
+  bool operator()(const item_type &in, item_type &out) {
     out.clear();
-    out.set_index(in.get_index());
-    out.weight = in.weight;
-    for (size_t n = 0; n < in.size(); ++n) {
-      auto vertex = pos(in[n]);
-      if (vertex.allFinite())
-        out.push_back(vertex);
+    out.streamline.set_index(in.streamline.get_index());
+    out.streamline.weight = in.streamline.weight;
+    out.dps = in.dps;
+    out.dpv = in.dpv;
+    out.groups = in.groups;
+
+    if (vertex_tolerance == TrackFormats::NonFinite::Forbidden) {
+      // Cull non-finite vertices, sub-sampling the per-vertex sidecar to match.
+      std::vector<size_t> kept;
+      kept.reserve(in.streamline.size());
+      for (size_t n = 0; n != in.streamline.size(); ++n) {
+        const Eigen::Matrix<value_type, 3, 1> vertex = pos(in.streamline[n]);
+        if (vertex.allFinite()) {
+          out.streamline.push_back(vertex);
+          kept.push_back(n);
+        }
+      }
+      if (kept.size() != in.streamline.size()) {
+        ++(*affected);
+        select_dpv_vertices(out, kept);
+      }
+    } else {
+      // Retain every vertex, including the non-finite ones the format can carry.
+      bool contains_nonfinite = false;
+      for (size_t n = 0; n != in.streamline.size(); ++n) {
+        const Eigen::Matrix<value_type, 3, 1> vertex = pos(in.streamline[n]);
+        if (!vertex.allFinite())
+          contains_nonfinite = true;
+        out.streamline.push_back(vertex);
+      }
+      if (contains_nonfinite)
+        ++(*affected);
     }
     return true;
   }
 
+protected:
+  Interp::Linear<Image<value_type>> interp;
+  TrackFormats::NonFinite vertex_tolerance;
+  std::shared_ptr<std::atomic<size_t>> affected;
+
+  //! \brief the transformed position of \a x, or a NaN vector if outside the field.
   Eigen::Matrix<value_type, 3, 1> pos(const Eigen::Matrix<value_type, 3, 1> &x) {
-    Eigen::Matrix<value_type, 3, 1> p;
+    Eigen::Matrix<value_type, 3, 1> p =
+        Eigen::Matrix<value_type, 3, 1>::Constant(std::numeric_limits<value_type>::quiet_NaN());
     if (interp.scanner(x)) {
       interp.index(3) = 0;
       p[0] = interp.value();
@@ -99,28 +173,25 @@ public:
     }
     return p;
   }
-
-protected:
-  Interp::Linear<Image<value_type>> interp;
 };
 
-class Writer {
+//! \brief Queue sink: writes the transformed item and advances the progress bar.
+class Sink {
 public:
-  Writer(const std::filesystem::path &path, const Tractography::Properties &properties)
-      : progress("applying spatial transformation to tracks",
-                 properties.find("count") == properties.end() ? 0 : to<size_t>(properties.find("count")->second)),
-        writer(path, properties) {}
+  Sink(Tractogram<value_type> &output, const Properties &properties)
+      : output(output),
+        progress("applying spatial transformation to tracks",
+                 properties.find("count") == properties.end() ? 0 : to<size_t>(properties.find("count")->second)) {}
 
-  bool operator()(const TrackType &item) {
-    writer(item);
+  bool operator()(const item_type &item) {
+    output.write(item);
     ++progress;
     return true;
   }
 
 protected:
+  Tractogram<value_type> &output;
   ProgressBar progress;
-  Tractography::Properties properties;
-  Tractography::Writer<value_type> writer;
 };
 
 void run() {
@@ -133,10 +204,52 @@ void run() {
   auto data = H_warp.get_image<value_type>(DirectIO{3});
   Registration::Warp::debug_validate_image(data);
 
-  Loader loader(argument[0]);
-  Warper warper(data);
-  Writer writer(argument[2], loader.properties);
+  auto tsf_in = get_optional<std::filesystem::path>("tsf_in");
+  auto tsf_out = get_optional<std::filesystem::path>("tsf_out");
+  if (!tsf_in.has_value() && tsf_out.has_value())
+    throw Exception("The -tsf_out option requires the -tsf_in option");
 
-  Thread::run_ordered_queue(
-      loader, Thread::batch(TrackType(), 1024), Thread::multi(warper), Thread::batch(TrackType(), 1024), writer);
+  Properties properties;
+  auto input = Tractogram<value_type>::open(argument[0], properties);
+  // Route the explicitly-specified streamline weights (external file or named field
+  //   of the input tractogram) into Streamline::weight; weights pass through unchanged.
+  const WeightInput weight_input = register_weight_input(input, argument[0]);
+  // Inject the input .tsf as a per-vertex (dpv) field so it flows through the
+  //   item pipeline alongside the vertices (and is culled in lock-step below).
+  if (tsf_in.has_value())
+    input.register_input_sidecar(tsf_in->string(), properties);
+
+  // Declare the output field set from the (possibly sidecar-augmented) input
+  //   registry. plan_weight_output resolves the streamline-weight destination.
+  //   The warped vertices are emitted in the warp-target realspace; an output
+  //   format that records a grid (".trk"/".tt") leaves it unrecorded
+  //   (vox_to_ras[3][3] = 0), as for any realspace-only conversion.
+  const WeightOutput weight_output = plan_weight_output(input.fields(), weight_input, argument[2], properties);
+  auto output = Tractogram<value_type>::create(argument[2], properties, weight_output.registry);
+  apply_weight_output(output, weight_output);
+  if (tsf_out.has_value())
+    output.register_output_sidecar(tsf_out->string(), properties);
+
+  const TrackFormats::NonFinite vertex_tolerance = output.capabilities().vertices;
+  auto affected = std::make_shared<std::atomic<size_t>>(0);
+
+  {
+    Warper warper(data, vertex_tolerance, affected);
+    Sink sink(output, properties);
+    Thread::run_ordered_queue(
+        input, Thread::batch(item_type(), 1024), Thread::multi(warper), Thread::batch(item_type(), 1024), sink);
+  }
+  output.finalise_sidecars();
+
+  const size_t count = affected->load();
+  if (count != 0) {
+    if (vertex_tolerance == TrackFormats::NonFinite::Forbidden) {
+      WARN(str(count) + " streamline" + (count == 1 ? " has" : "s have") +
+           " had non-finite vertices culled from the output," + " as the output format (\"" + output.format() +
+           "\") cannot represent them");
+    } else {
+      WARN(str(count) + " streamline" + (count == 1 ? "" : "s") +
+           " contain non-finite vertex data, retained in the output" + " (format \"" + output.format() + "\")");
+    }
+  }
 }

@@ -17,6 +17,11 @@ Usage
 
 -  *tracks_in*: the input track file
 
+Description
+-----------
+
+Where a command-line argument accepts tractogram sidecar data (such as streamline weights), it may be given as: "<path>" to read from / write to a standalone external file; "<path>::<field>" to access a named field of sidecar data embedded within the specified tractogram dataset; or "::<field>" to access a named field of sidecar data embedded within the command's own input or output tractogram (the only form able to reference embedded sidecar data of a piped tractogram, which has no command-line filesystem path).
+
 Options
 -------
 
@@ -28,7 +33,7 @@ Options
 
 -  **-ignorezero** do not generate a warning if the track file contains streamlines with zero length
 
--  **-tck_weights_in path** specify a text scalar file containing the streamline weights
+-  **-tck_weights_in spec** specify the streamline weights: either a standalone scalar file, or "[<tractogram>]::<field>" naming a per-streamline field of the input tractogram (an empty <tractogram>, i.e. "::<field>", refers to the command's own input tractogram, which is the only way to name a field of a piped input)
 
 Standard options
 ^^^^^^^^^^^^^^^^

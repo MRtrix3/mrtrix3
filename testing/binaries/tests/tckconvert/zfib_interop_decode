@@ -1,0 +1,11 @@
+#!/bin/bash
+# Byte-compatibility interop: decode a reference ".zfib" produced by the SCIL
+#   FiberCompression tool and confirm the recovered geometry matches the source
+#   ".tck". This test is registered now but skips cleanly until the user supplies
+#   the reference data, at which point it activates automatically.
+if [ ! -f reference.zfib ] || [ ! -f reference_source.tck ]; then
+  echo "reference .zfib interop data not present; skipping decode interop test"
+  exit 0
+fi
+tckconvert reference.zfib tmp_interop.tck -force -quiet
+testing_diff_tck reference_source.tck tmp_interop.tck -distance 0.55 -unordered

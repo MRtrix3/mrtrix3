@@ -1,0 +1,18 @@
+#!/bin/bash
+# Verify the ".trk" voxel-millimetre <-> scanner coordinate pipeline against a
+#   known geometry. With no reference grid the ".trk" handler uses a default
+#   axis-aligned grid with a corner origin, identity vox_to_ras and 1 mm isotropic
+#   voxel size, so the round-trip is the identity: an input must survive
+#   tck -> trk -> tck exactly (no offset, no axis flip, no scaling error). The
+#   chosen path distinguishes the three axes so an axis swap or sign flip would be
+#   detected. Coordinates are exactly representable in float32.
+
+printf "1.00000 2.00000 3.00000\n1.25000 2.50000 3.75000\n1.50000 2.25000 3.50000\n2.00000 3.00000 4.00000\n" > tmp_known.txt
+tckconvert tmp_known.txt tmp_known.tck -force -quiet
+
+tckconvert tmp_known.tck tmp_known.trk -force -quiet
+tckconvert tmp_known.trk tmp_known_back.tck -force -quiet
+tckconvert tmp_known_back.tck tmp_known_back-[].txt -force -quiet
+
+# Exact match expected (identity transform; float32-exact coordinates).
+testing_diff_matrix tmp_known.txt tmp_known_back-0000000.txt -abs 1e-4

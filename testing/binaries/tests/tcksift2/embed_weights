@@ -1,0 +1,14 @@
+#!/bin/bash
+# Step 4: when the tcksift2 "out_weights" argument is a tractography format that can
+#   carry per-streamline data (here ".trx"), the command writes a copy of the input
+#   tractogram with the estimated SIFT2 weights embedded as a per-streamline
+#   (data-per-streamline) field named "weights".
+# Step 1 of the redesign verifies that the command produces a valid tractogram whose
+#   streamline vertices are unchanged from the input (read back via tckconvert); the
+#   embedded weight VALUES are checked once the qualified "DATASET::NAME" sidecar
+#   import (a later stage) provides a way to extract a named dps field.
+rm -rf tmp_embed.trx tmp_embed_rt.tck
+tcksift2 SIFT_phantom/tracks.tck SIFT_phantom/fods.mif tmp_embed.trx -force
+# The embedded tractogram must round-trip back to the input streamline geometry.
+tckconvert tmp_embed.trx tmp_embed_rt.tck -force
+testing_diff_tck tmp_embed_rt.tck SIFT_phantom/tracks.tck

@@ -14,24 +14,44 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include <array>
-#include <cstdio>
+#include <algorithm>
 #include <filesystem>
-#include <sstream>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
 
 #include "command.h"
+#include "datatype.h"
+#include "dwi/tractography/field_registry.h"
 #include "dwi/tractography/file.h"
+#include "dwi/tractography/formats/list.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/sidecar.h"
+#include "dwi/tractography/sidecar_value.h"
+#include "dwi/tractography/tractogram.h"
+#include "dwi/tractography/tractogram_item.h"
+#include "enum.h"
 #include "file/matrix.h"
 #include "file/name_parser.h"
 #include "file/ofstream.h"
-#include "raw.h"
 
 using namespace MR;
 using namespace App;
 using namespace MR::DWI::Tractography;
-using namespace MR::Raw;
-using namespace MR::ByteOrder;
+
+//! \brief CLI selector disambiguating per-streamline (dps) from per-vertex (dpv) sidecar fields.
+/*! Every sidecar-manipulation option takes this as its first argument: a given
+ * name may identify both a dps and a dpv field (legal in every sidecar-capable
+ * format), so the role must be stated explicitly rather than inferred. */
+enum class SidecarType { dps, dpv };
+
+namespace {
+FieldRole to_field_role(const SidecarType type) { return type == SidecarType::dpv ? FieldRole::DPV : FieldRole::DPS; }
+std::string role_word(const FieldRole role) {
+  return role == FieldRole::DPV ? "per-vertex (dpv)" : "per-streamline (dps)";
+}
+} // namespace
 
 constexpr int default_ply_increment = 1;
 constexpr float default_ply_radius = 0.1F;
@@ -52,7 +72,46 @@ void usage() {
       " MRtrix .tck files (input/output),"
       " ascii text files (input/output),"
       " VTK polydata files (input/output),"
-      " and RenderMan RIB (export only).";
+      " QFib lossy compressed .qfib files (input/output),"
+      " and RenderMan RIB (export only)."
+
+    + "The QFib format (Mercier et al.) stores each streamline as its first two"
+      " vertices plus a sequence of quantized unit tangents. It is lossy, requires"
+      " the input to be of constant step size (resample beforehand with"
+      " \"tckresample -step_size\" otherwise), and stores geometry only:"
+      " per-streamline weights and dps/dpv sidecar data are discarded."
+
+    + "Some tractography file formats (the TrackVis \".trk\" format and the TRX"
+      " format) can embed per-streamline (dps) and per-vertex (dpv) sidecar data"
+      " within the tractogram dataset itself. The -extract, -insert, -rename,"
+      " -remove and -convert options manipulate this embedded data during"
+      " conversion. Each takes a leading \"dps\" or \"dpv\" argument to disambiguate"
+      " the two, since a per-streamline and a per-vertex field may legitimately"
+      " share the same name. Per-streamline data is exchanged with standalone"
+      " numerical files (text, \".csv\" or \".npy\"); per-vertex data with track"
+      " scalar (\".tsf\") files. When a \".tsf\" is produced from extracted"
+      " per-vertex data, a matching \"timestamp\" key-value is recorded on both it"
+      " and the output tractogram so the pair passes the track-scalar validation"
+      " checks. Fields are always referenced by string name, never by index."
+
+    + "By default vertex positions are read and written in MRtrix3 real (scanner)"
+      " space. The -input_is_voxelspace and -input_is_imagespace options instead interpret the"
+      " vertex positions of the input tractogram as voxel coordinates, or as image"
+      " coordinates (in mm), of the provided reference image, converting them to"
+      " real space for internal processing and output; the two are mutually"
+      " exclusive. The -output_as_voxelspace option encodes the vertex positions of the"
+      " output tractogram as voxel coordinates of the provided reference image"
+      " rather than in real space; this requires an output format able to embed the"
+      " corresponding voxel-to-real-space transform within its header (for example"
+      " the TRX format), and raises an error otherwise."
+
+    + "The -reference_image option embeds the spatial grid (the dimensions and the"
+      " voxel-to-real-space transform) of the image from which the tractogram was"
+      " generated into the output tractogram header as provenance metadata; unlike"
+      " -output_as_voxelspace it does not alter the vertex positions, which remain in"
+      " real space. It likewise requires an output format able to record that"
+      " transform within its header (currently only the TRX format), and the two"
+      " options are mutually exclusive.";
 
   EXAMPLES
     + Example("Writing multiple ASCII files, one per streamline",
@@ -67,29 +126,26 @@ void usage() {
     + Argument ("output", "the output track file.").type_tracks_out().type_file_out();
 
   OPTIONS
-    + Option ("scanner2voxel",
-        "if specified,"
-        " the properties of this image will be used to convert track point positions"
-        " from real (scanner) coordinates into voxel coordinates.")
+    + OptionGroup ("Options to specify the coordinate space of the input and/or output vertex positions")
+
+    + Option ("input_is_voxelspace",
+        "interpret the input tractogram vertex positions as voxel coordinates of this reference image")
       + Argument ("reference").type_image_in()
 
-    + Option ("scanner2image",
-        "if specified,"
-        " the properties of this image will be used to convert track point positions"
-        " from real (scanner) coordinates into image coordinates (in mm).")
+    + Option ("input_is_imagespace",
+        "interpret the input tractogram vertex positions as image coordinates (in mm) of this reference image")
       + Argument ("reference").type_image_in()
 
-    + Option ("voxel2scanner",
-        "if specified,"
-        " the properties of this image will be used to convert track point positions"
-        " from voxel coordinates into real (scanner) coordinates.")
+    + Option ("output_as_voxelspace",
+        "store the output tractogram vertex positions as voxel coordinates of this reference image")
       + Argument ("reference").type_image_in()
 
-    + Option ("image2scanner",
-        "if specified,"
-        " the properties of this image will be used to convert track point positions"
-        " from image coordinates (in mm) into real (scanner) coordinates.")
-      + Argument ("reference").type_image_in()
+    + OptionGroup ("Options for embedding spatial metadata into the output tractogram header")
+
+    + Option ("reference_image",
+        "embed the spatial grid of this reference image"
+        " (the image from which the input tractogram was generated) into the output tractogram header")
+      + Argument ("image").type_image_in()
 
     + OptionGroup ("Options specific to PLY writer")
 
@@ -111,177 +167,70 @@ void usage() {
     + OptionGroup ("Options specific to VTK writer")
 
     + Option ("ascii", "write an ASCII VTK file"
-                       " (binary by default)");
+                       " (binary by default)")
+  // The "-ascii" option is consumed by the framework's .vtk format handler
+  //   (dwi/tractography/formats/vtk.cpp), which selects the ASCII encoding when
+  //   it is present; tckconvert itself no longer branches on the VTK encoding.
+
+    + OptionGroup ("Options specific to ZFIB writer")
+
+    + Option ("zfib_max_error",
+              "the worst-case compression error in mm for lossy .zfib output (default: 0.5)")
+      + Argument("value").type_float(0.0)
+  // The "-zfib_max_error" option is consumed by the framework's .zfib format
+  //   handler backend (dwi/tractography/formats/zfib.cpp), which derives the
+  //   linearization tolerance and the quantization precision from it.
+
+    + OptionGroup ("Options specific to the QFib writer")
+
+    + Option ("qfib_bits",
+              "the per-direction quantization bit depth for lossy .qfib output,"
+              " either 8 or 16 (default: 16)")
+      + Argument("depth").type_integer(8, 16)
+
+    + Option ("qfib_max_angle",
+              "the maximum streamline deviation angle in degrees for lossy .qfib output;"
+              " defaults to the max_angle property of the input, else 90")
+      + Argument("angle").type_float(0.0, 90.0)
+  // The "-qfib_bits" and "-qfib_max_angle" options are consumed by the framework's
+  //   .qfib format handler backend (dwi/tractography/formats/qfib.cpp), which
+  //   derives the octahedral bit depth and the cap-to-sphere ratio from them.
+
+    + OptionGroup ("Options for manipulating embedded sidecar data")
+
+    + Option ("extract",
+              "extract an embedded sidecar field, referenced by name, to a standalone file")
+      .allow_multiple()
+      + Argument ("type").type_choice<SidecarType>()
+      + Argument ("name").type_text()
+      + Argument ("file").type_file_out()
+
+    + Option ("insert",
+              "embed a new sidecar field, read from a standalone file, into the output")
+      .allow_multiple()
+      + Argument ("type").type_choice<SidecarType>()
+      + Argument ("name").type_text()
+      + Argument ("file").type_file_in()
+
+    + Option ("rename", "rename an embedded sidecar field")
+      .allow_multiple()
+      + Argument ("type").type_choice<SidecarType>()
+      + Argument ("old").type_text()
+      + Argument ("new").type_text()
+
+    + Option ("remove", "remove an embedded sidecar field")
+      .allow_multiple()
+      + Argument ("type").type_choice<SidecarType>()
+      + Argument ("name").type_text()
+
+    + Option ("convert", "change the on-disk datatype of an embedded sidecar field")
+      .allow_multiple()
+      + Argument ("type").type_choice<SidecarType>()
+      + Argument ("name").type_text()
+      + Argument ("datatype").type_text();
 
 }
 // clang-format on
-
-class VTKWriter : public WriterInterface<float> {
-public:
-  VTKWriter(const std::filesystem::path &path, bool write_ascii = true)
-      : VTKout(path, std::ios::binary), write_ascii(write_ascii) {
-    // create and write header of VTK output file:
-    VTKout << "# vtk DataFile Version 3.0\n"
-              "Data values for Tracks\n";
-    if (write_ascii) {
-      VTKout << "ASCII\n";
-    } else {
-      VTKout << "BINARY\n";
-    }
-    VTKout << "DATASET POLYDATA\n"
-              "POINTS ";
-    // keep track of offset to write proper value later:
-    offset_num_points = VTKout.tellp();
-    VTKout << "XXXXXXXXXX float\n";
-  }
-
-  bool operator()(const Streamline<float> &tck) {
-    // write out points, and build index of tracks:
-    size_t start_index = current_index;
-    current_index += tck.size();
-    track_list.push_back(std::pair<size_t, size_t>(start_index, current_index));
-    if (write_ascii) {
-      for (const auto &pos : tck) {
-        VTKout << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
-      }
-    } else {
-      std::array<float, 3> p{};
-      for (const auto &pos : tck) {
-        for (auto i = 0; i < 3; ++i)
-          Raw::store_BE(pos[i], p.data(), i);
-        VTKout.write(reinterpret_cast<char *>(p.data()), sizeof(p));
-      }
-    }
-    return true;
-  }
-
-  ~VTKWriter() {
-    try {
-      // write out list of tracks:
-      if (write_ascii == false) {
-        // Need to include an extra new line when writing binary
-        VTKout << "\n";
-      }
-      VTKout << "LINES " << track_list.size() << " " << track_list.size() + current_index << "\n";
-      for (const auto &track : track_list) {
-        if (write_ascii) {
-          VTKout << track.second - track.first << " " << track.first;
-          for (size_t i = track.first + 1; i < track.second; ++i)
-            VTKout << " " << i;
-          VTKout << "\n";
-        } else {
-          int32_t buffer;
-          buffer = ByteOrder::BE<int32_t>(track.second - track.first);
-          VTKout.write(reinterpret_cast<char *>(&buffer), sizeof(int32_t));
-
-          buffer = ByteOrder::BE<int32_t>(track.first);
-          VTKout.write(reinterpret_cast<char *>(&buffer), sizeof(int32_t));
-
-          for (size_t i = track.first + 1; i < track.second; ++i) {
-            buffer = ByteOrder::BE<int32_t>(i);
-            VTKout.write(reinterpret_cast<char *>(&buffer), sizeof(int32_t));
-          }
-        }
-      }
-      if (write_ascii == false) {
-        // Need to include an extra new line when writing binary
-        VTKout << "\n";
-      }
-
-      // write back total number of points:
-      VTKout.seekp(offset_num_points);
-      std::string num_points(str(current_index));
-      num_points.resize(10, ' ');
-      VTKout.write(num_points.c_str(), 10);
-
-      VTKout.close();
-    } catch (Exception &e) {
-      e.display();
-      App::exit_error_code = 1;
-    }
-  }
-
-private:
-  File::OFStream VTKout;
-  const bool write_ascii;
-  size_t offset_num_points;
-  std::vector<std::pair<size_t, size_t>> track_list;
-  size_t current_index = 0;
-};
-
-template <class T> void loadLines(std::vector<int64_t> &lines, std::ifstream &input, int number_of_line_indices) {
-  std::vector<T> buffer(number_of_line_indices);
-  input.read(reinterpret_cast<char *>(buffer.data()), number_of_line_indices * sizeof(T));
-  lines.resize(number_of_line_indices);
-  // swap from big endian
-  for (int i = 0; i < number_of_line_indices; i++)
-    lines[i] = static_cast<int64_t>(ByteOrder::BE(buffer[i]));
-}
-
-class VTKReader : public ReaderInterface<float> {
-public:
-  VTKReader(const std::filesystem::path &path) {
-    std::ifstream input(path, std::ios::binary);
-    std::string line;
-    int number_of_points = 0;
-    number_of_lines = 0;
-    number_of_line_indices = 0;
-
-    while (std::getline(input, line)) {
-      if (line.find("ASCII") == 0)
-        throw Exception("VTK Reader only supports BINARY input");
-
-      if (sscanf(line.c_str(), "POINTS %d float", &number_of_points) == 1) {
-        points.resize(3 * static_cast<size_t>(number_of_points));
-        input.read(reinterpret_cast<char *>(points.data()),
-                   3UL * static_cast<unsigned long>(number_of_points) * sizeof(float));
-
-        // swap
-        for (int i = 0; i < 3 * number_of_points; i++)
-          points[i] = ByteOrder::BE(points[i]);
-
-        continue;
-      } else {
-        if (sscanf(line.c_str(), "LINES %d %d", &number_of_lines, &number_of_line_indices) == 2) {
-          if (line.find("vtktypeint64") != std::string::npos) {
-            loadLines<int64_t>(lines, input, number_of_line_indices);
-          } else {
-            loadLines<int32_t>(lines, input, number_of_line_indices);
-          }
-          // We can safely break
-          break;
-        }
-      }
-    }
-    input.close();
-    lineIdx = 0;
-  }
-
-  bool operator()(Streamline<float> &tck) {
-    tck.clear();
-    if (lineIdx < number_of_line_indices) {
-      int count = lines[lineIdx];
-      lineIdx++;
-      for (int i = 0; i < count; i++) {
-        int idx = lines[lineIdx];
-        Eigen::Vector3f f(points[static_cast<size_t>(idx) * 3],
-                          points[static_cast<size_t>(idx) * 3 + 1],
-                          points[static_cast<size_t>(idx) * 3 + 2]);
-        tck.push_back(f);
-        lineIdx++;
-      }
-      return true;
-    }
-    return false;
-  }
-
-private:
-  std::vector<float> points;
-  std::vector<int64_t> lines;
-  int lineIdx;
-  int number_of_lines;
-  int number_of_line_indices;
-};
 
 class ASCIIReader : public ReaderInterface<float> {
 public:
@@ -682,29 +631,380 @@ private:
   bool wroteHeader;
 };
 
-void run() {
-  std::filesystem::path input_path{argument[0]};
-  std::filesystem::path output_path{argument[1]};
+//! \brief resolve the (optional) input-interpretation transform from the CLI options.
+/*! By default the input vertex positions are taken to be MRtrix3 real (scanner)
+ * space and the identity transform is returned. The -input_is_voxelspace / -input_is_imagespace
+ * options instead interpret them as voxel / image coordinates of a reference image
+ * and return the transform that maps them into real space (applied to the
+ * in-memory streamlines immediately after reading, so the internal representation
+ * is always realspace). The two are mutually exclusive: the input vertices occupy
+ * a single coordinate space. Shared by both conversion branches so the behaviour
+ * is independent of the I/O path selected. */
+transform_type get_input_transform() {
+  transform_type T;
+  T.setIdentity();
+  size_t nopts = 0;
+  auto opt = get_options("input_is_voxelspace");
+  if (!opt.empty()) {
+    auto header = Header::open(opt[0][0]);
+    T = Transform(header).voxel2scanner;
+    nopts++;
+  }
+  opt = get_options("input_is_imagespace");
+  if (!opt.empty()) {
+    auto header = Header::open(opt[0][0]);
+    T = Transform(header).image2scanner;
+    nopts++;
+  }
+  if (nopts > 1)
+    throw Exception("the -input_is_voxelspace and -input_is_imagespace options are mutually exclusive"
+                    " (the input vertex positions occupy a single coordinate space)");
+  return T;
+}
+
+//! \brief serialise a 4×4 voxel-to-realspace affine and grid dimensions into Properties.
+/*! Writes the keys the TRX writer consults ("trx_voxel_to_rasmm" as a row-major
+ * 4×4 of comma-separated values, "trx_dimensions" as the three grid sizes), so the
+ * output dataset embeds \a voxel_to_scanner as its header affine. */
+void embed_output_grid(Properties &properties, const transform_type &voxel_to_scanner, const Header &header) {
+  std::string affine;
+  for (size_t row = 0; row != 4; ++row)
+    for (size_t col = 0; col != 4; ++col) {
+      if (!affine.empty())
+        affine += ",";
+      // transform_type is a 3×4 AffineCompact matrix; the implicit fourth row is
+      //   [0 0 0 1].
+      const double value = (row == 3) ? ((col == 3) ? 1.0 : 0.0) : voxel_to_scanner(row, col);
+      affine += str(value);
+    }
+  properties["trx_voxel_to_rasmm"] = affine;
+  properties["trx_dimensions"] = str(header.size(0)) + "," + str(header.size(1)) + "," + str(header.size(2));
+}
+
+//! \brief resolve the (optional) output grid embedding / voxel-space encoding.
+/*! Two options embed a reference image's grid into the output header:
+ * -output_as_voxelspace additionally re-expresses the output vertices in that
+ * grid's voxel space, whereas -reference_image embeds the grid as provenance
+ * metadata only and leaves the vertices in realspace. They are mutually exclusive.
+ * Either way the output format must be able to embed a voxel-to-realspace
+ * transform within its header (currently only TRX); an unsupported output format
+ * is rejected up front. The reference grid (and dimensions) is stamped into
+ * \a properties so the writer records it, so this must be called before the output
+ * writer is created. \returns the scanner→voxel transform to apply to each vertex
+ * (only for -output_as_voxelspace), or std::nullopt when the output vertices stay
+ * in realspace (the default, or -reference_image). */
+std::optional<transform_type> get_output_grid_transform(const std::filesystem::path &output_path,
+                                                        Properties &properties) {
+  const auto voxel_opt = get_options("output_as_voxelspace");
+  const auto reference_opt = get_options("reference_image");
+  if (voxel_opt.empty() && reference_opt.empty())
+    return std::nullopt;
+  if (!voxel_opt.empty() && !reference_opt.empty())
+    throw Exception("the -output_as_voxelspace and -reference_image options are mutually exclusive"
+                    " (both embed a reference image's grid in the output header,"
+                    " differing only in whether the output vertices are re-expressed in voxel space)");
+
+  const bool to_voxelspace = !voxel_opt.empty();
+  const std::string option_name = to_voxelspace ? "output_as_voxelspace" : "reference_image";
+  const MR::DWI::Tractography::Formats::Base *const handler = MR::DWI::Tractography::Formats::get_handler(output_path);
+  if (handler == nullptr || !handler->can_embed_grid_transform())
+    throw Exception(std::string("the output tractography format") +
+                    (handler != nullptr ? " \"" + handler->description + "\"" : std::string()) +
+                    " cannot embed a voxel-to-realspace transform within its header,"
+                    " so the -" +
+                    option_name +
+                    " option cannot be used with it;"
+                    " use a format that records the grid affine (e.g. TRX)");
+
+  const auto &opt = to_voxelspace ? voxel_opt : reference_opt;
+  auto header = Header::open(opt[0][0]);
+  const Transform transform(header);
+  embed_output_grid(properties, transform.voxel2scanner, header);
+  // -output_as_voxelspace re-expresses the vertices in the grid's voxel space;
+  //   -reference_image embeds the grid as metadata only, leaving them in realspace.
+  return to_voxelspace ? std::optional<transform_type>(transform.scanner2voxel) : std::nullopt;
+}
+
+namespace {
+
+//! \brief one parsed sidecar-manipulation operation (each role-qualified, by name).
+struct ExtractOp {
+  FieldRole role;
+  std::string name;
+  std::filesystem::path path;
+};
+struct InsertOp {
+  FieldRole role;
+  std::string name;
+  std::filesystem::path path;
+};
+struct RenameOp {
+  FieldRole role;
+  std::string old_name;
+  std::string new_name;
+};
+struct RemoveOp {
+  FieldRole role;
+  std::string name;
+};
+struct ConvertOp {
+  FieldRole role;
+  std::string name;
+  DataType dtype;
+};
+
+//! \brief the full set of sidecar-manipulation operations requested on the command line.
+struct SidecarPlan {
+  std::vector<ExtractOp> extracts;
+  std::vector<InsertOp> inserts;
+  std::vector<RenameOp> renames;
+  std::vector<RemoveOp> removes;
+  std::vector<ConvertOp> converts;
+  bool empty() const {
+    return extracts.empty() && inserts.empty() && renames.empty() && removes.empty() && converts.empty();
+  }
+};
+
+//! \brief functor that asserts a DataType is a representable sidecar element type.
+/*! dispatch_sidecar_datatype() throws for an unsupported datatype, so invoking it
+ * with this no-op probe validates a "-convert" target up front. */
+struct SidecarDataTypeProbe {
+  template <typename T> bool operator()() const { return true; }
+};
+
+//! \brief parse the role-qualified sidecar options into a SidecarPlan (§2.4).
+SidecarPlan parse_sidecar_plan() {
+  SidecarPlan plan;
+  // The "file" argument is a filesystem-path type, so it converts directly to
+  //   std::filesystem::path (never via std::string, which trips the pure-filesystem
+  //   argument assertion); "type"/"name" are non-filesystem and read as text.
+  for (const auto &opt : get_options("extract"))
+    plan.extracts.push_back(
+        {to_field_role(Enum::from_name<SidecarType>(opt[0])), std::string(opt[1]), std::filesystem::path(opt[2])});
+  for (const auto &opt : get_options("insert"))
+    plan.inserts.push_back(
+        {to_field_role(Enum::from_name<SidecarType>(opt[0])), std::string(opt[1]), std::filesystem::path(opt[2])});
+  for (const auto &opt : get_options("rename"))
+    plan.renames.push_back(
+        {to_field_role(Enum::from_name<SidecarType>(opt[0])), std::string(opt[1]), std::string(opt[2])});
+  for (const auto &opt : get_options("remove"))
+    plan.removes.push_back({to_field_role(Enum::from_name<SidecarType>(opt[0])), std::string(opt[1])});
+  for (const auto &opt : get_options("convert")) {
+    DataType dtype = DataType::parse(std::string(opt[2]));
+    dtype.set_byte_order_native();
+    dispatch_sidecar_datatype(dtype, SidecarDataTypeProbe{});
+    plan.converts.push_back({to_field_role(Enum::from_name<SidecarType>(opt[0])), std::string(opt[1]), dtype});
+  }
+  return plan;
+}
+
+//! \brief carry of one input field to its output slot, with an optional dtype recast.
+struct FieldCarry {
+  size_t in_ordinal;
+  size_t out_ordinal;
+  std::optional<DataType> convert;
+};
+
+//! \brief the output field registry plus per-role carry maps derived from a plan.
+struct SidecarTransform {
+  FieldRegistry output_registry;
+  std::vector<FieldCarry> dps_carry;
+  std::vector<FieldCarry> dpv_carry;
+};
+
+//! \brief derive the output field set and the per-item carry maps from \a input + \a plan.
+/*! Applies "-remove" (drops the field), "-rename" (changes its name) and
+ * "-convert" (changes its on-disk datatype, recast per item) to the input field
+ * registry, producing the output registry and, per role, the (input ordinal →
+ * output ordinal [, recast]) carry list. Inserted fields are already part of
+ * \a input (registered as input loaders), so they are carried like any other.
+ * Every referenced field is validated to exist (and renames not to collide) up
+ * front, so a bad option fails before any output is written. */
+SidecarTransform build_transform(const FieldRegistry &input, const SidecarPlan &plan) {
+  const auto exists = [&](const std::string_view name, const FieldRole role) {
+    return input.find(name, role) != nullptr;
+  };
+  for (const RemoveOp &op : plan.removes)
+    if (!exists(op.name, op.role))
+      throw Exception(std::string("cannot remove ") + role_word(op.role) + " sidecar field \"" + op.name +
+                      "\": no such field in the input tractogram");
+  for (const ConvertOp &op : plan.converts)
+    if (!exists(op.name, op.role))
+      throw Exception(std::string("cannot convert ") + role_word(op.role) + " sidecar field \"" + op.name +
+                      "\": no such field in the input tractogram");
+  for (const RenameOp &op : plan.renames) {
+    if (!exists(op.old_name, op.role))
+      throw Exception(std::string("cannot rename ") + role_word(op.role) + " sidecar field \"" + op.old_name +
+                      "\": no such field in the input tractogram");
+    if (op.new_name != op.old_name && exists(op.new_name, op.role))
+      throw Exception(std::string("cannot rename ") + role_word(op.role) + " sidecar field \"" + op.old_name +
+                      "\" to \"" + op.new_name + "\": a field of that name already exists");
+  }
+
+  SidecarTransform transform;
+  for (const FieldDescriptor &field : input) {
+    const bool removed = std::any_of(plan.removes.begin(), plan.removes.end(), [&](const RemoveOp &op) {
+      return op.role == field.role && op.name == field.name;
+    });
+    if (removed)
+      continue;
+    FieldDescriptor out = field;
+    out.source = FieldSource::Internal;
+    for (const RenameOp &op : plan.renames)
+      if (op.role == field.role && op.old_name == field.name)
+        out.name = op.new_name;
+    std::optional<DataType> convert;
+    for (const ConvertOp &op : plan.converts)
+      if (op.role == field.role && op.name == field.name) {
+        convert = op.dtype;
+        out.dtype = op.dtype;
+      }
+    const size_t out_ordinal = transform.output_registry.add(out);
+    const FieldCarry carry{field.ordinal, out_ordinal, convert};
+    if (field.role == FieldRole::DPV)
+      transform.dpv_carry.push_back(carry);
+    else if (field.role == FieldRole::DPS)
+      transform.dps_carry.push_back(carry);
+  }
+  return transform;
+}
+
+} // namespace
+
+//! \brief generic conversion through the Tractogram format-handler framework.
+/*! Used when both the input and output extensions are recognised by the
+ * framework's handler list (Stage 1). Constructs an input and an output
+ * Tractogram and copies the full composite TractogramItem single-threaded (pure
+ * I/O; no thread queue), applying the point-position transform per vertex.
+ *
+ * The conversion is sidecar-aware (Stage 10): every dps/dpv field the input
+ * carries is declared on the output and copied across in its native dtype, except
+ * as redirected by \a plan — "-insert" adds a new field from a standalone file,
+ * "-remove"/"-rename"/"-convert" drop/rename/recast an existing field, and
+ * "-extract" taps an input field out to a standalone file (independent of whether
+ * it is also carried). With an empty \a plan this is a verbatim sidecar copy. */
+void run_generic(const std::filesystem::path &input_path,
+                 const std::filesystem::path &output_path,
+                 const SidecarPlan &plan) {
+  Properties properties;
+  auto input = Tractogram<float>::open(input_path, properties);
+
+  // Interpret the input vertex positions (default: realspace) and, if requested,
+  //   the output grid embedding / voxel-space encoding. The output resolution
+  //   mutates `properties` to embed the grid affine, so it must precede output
+  //   creation; both are resolved up front so a bad reference image / unsupported
+  //   output fails before any output is written.
+  const transform_type input_transform = get_input_transform();
+  const std::optional<transform_type> output_transform = get_output_grid_transform(output_path, properties);
+
+  // "-insert": register each new field as a named input loader, so its values flow
+  //   into the streaming items and the field joins the input registry (carried to
+  //   the output like any internal field).
+  for (const InsertOp &op : plan.inserts)
+    input.register_named_input_sidecar(op.role, op.name, op.path, properties);
+
+  const SidecarTransform transform = build_transform(input.fields(), plan);
+
+  // Resolve "-extract" targets to input payload ordinals before any output is
+  //   created, so an unknown field name fails before writing anything.
+  struct ExtractTarget {
+    FieldRole role;
+    size_t ordinal;
+    std::filesystem::path path;
+  };
+  std::vector<ExtractTarget> extract_targets;
+  for (const ExtractOp &op : plan.extracts) {
+    const std::optional<size_t> ordinal = input.fields().ordinal(op.name, op.role);
+    if (!ordinal.has_value())
+      throw Exception(std::string("cannot extract ") + role_word(op.role) + " sidecar field \"" + op.name +
+                      "\": no such field in the input tractogram");
+    extract_targets.push_back({op.role, *ordinal, op.path});
+  }
+
+  // A ".tsf" extracted from per-vertex data must share a "timestamp" with the
+  //   output tractogram (track-scalar validation). Stamp a fresh shared value
+  //   before creating the output; formats that re-stamp on write (".tck", the
+  //   pipe) overwrite it, and the exporters created afterwards inherit whichever
+  //   value the output settled on, so the pair always matches.
+  const bool any_dpv_extract = std::any_of(
+      plan.extracts.begin(), plan.extracts.end(), [](const ExtractOp &op) { return op.role == FieldRole::DPV; });
+  if (any_dpv_extract)
+    properties.set_timestamp();
+
+  auto output = Tractogram<float>::create(output_path, properties, transform.output_registry);
+
+  // "-extract" exporters tap the INPUT item, independent of whether the field is
+  //   also carried to (or dropped from) the output.
+  std::vector<std::unique_ptr<SidecarExporter<float>>> extractors;
+  for (const ExtractTarget &target : extract_targets)
+    extractors.push_back(make_named_sidecar_exporter<float>(target.role, target.ordinal, target.path, properties));
+
+  const Eigen::Transform<float, 3, Eigen::AffineCompact> input_transform_f = input_transform.cast<float>();
+  const std::optional<Eigen::Transform<float, 3, Eigen::AffineCompact>> output_transform_f =
+      output_transform.has_value()
+          ? std::optional<Eigen::Transform<float, 3, Eigen::AffineCompact>>(output_transform->cast<float>())
+          : std::nullopt;
+
+  TractogramItem<float> in_item;
+  TractogramItem<float> out_item;
+  while (input.read(in_item)) {
+    // Bring the input vertices into realspace, so extraction and sidecar carry
+    //   operate on the internal (realspace) representation.
+    for (auto &pos : in_item.streamline)
+      pos = input_transform_f * pos;
+    for (auto &extractor : extractors)
+      (*extractor)(in_item);
+    out_item.clear();
+    out_item.streamline = in_item.streamline;
+    // Encode the output vertices in voxel space, if requested.
+    if (output_transform_f.has_value())
+      for (auto &pos : out_item.streamline)
+        pos = *output_transform_f * pos;
+    out_item.dps.resize(transform.output_registry.dps_count());
+    out_item.dpv.resize(transform.output_registry.dpv_count());
+    for (const FieldCarry &carry : transform.dps_carry)
+      out_item.dps[carry.out_ordinal] = carry.convert.has_value()
+                                            ? convert_dps_value(in_item.dps[carry.in_ordinal], *carry.convert)
+                                            : in_item.dps[carry.in_ordinal];
+    for (const FieldCarry &carry : transform.dpv_carry)
+      out_item.dpv[carry.out_ordinal] = carry.convert.has_value()
+                                            ? convert_dpv_value(in_item.dpv[carry.in_ordinal], *carry.convert)
+                                            : in_item.dpv[carry.in_ordinal];
+    output.write(out_item);
+  }
+  for (auto &extractor : extractors)
+    extractor->finalise();
+}
+
+//! \brief bespoke conversion for esoteric / export-only formats.
+/*! The original tckconvert reader/writer selection, retained verbatim for the
+ * formats intentionally not exposed to other commands as framework handlers:
+ * the ".txt" ASCII reader/writer and the write-only ".ply" and ".rib"
+ * exporters. Selected as a fallback whenever the framework does not recognise
+ * either of the two extensions. */
+void run_bespoke(const std::filesystem::path &input_path, const std::filesystem::path &output_path) {
   // Reader
   Properties properties;
   std::unique_ptr<ReaderInterface<float>> reader;
   if (input_path.extension() == ".tck") {
-    reader.reset(new Reader<float>(input_path, properties));
+    reader.reset(new TCKReader<float>(input_path, properties));
   } else if (input_path.extension() == ".txt") {
     reader.reset(new ASCIIReader(input_path.string()));
-  } else if (input_path.extension() == ".vtk") {
-    reader.reset(new VTKReader(input_path));
   } else {
     throw Exception("Unsupported input file type.");
   }
 
+  // Interpret the input vertex positions and, if requested, the output grid
+  //   embedding / voxel-space encoding. Resolve both before the writer is created
+  //   so an unsupported output format (none of the bespoke ".txt"/".ply"/".rib"
+  //   exporters can embed a transform) fails before any output is written.
+  const transform_type input_transform = get_input_transform();
+  const std::optional<transform_type> output_transform = get_output_grid_transform(output_path, properties);
+
   // Writer
   std::unique_ptr<WriterInterface<float>> writer;
   if (output_path.extension() == ".tck") {
-    writer.reset(new Writer<float>(output_path, properties));
-  } else if (output_path.extension() == ".vtk") {
-    auto write_ascii = get_options("ascii").size();
-    writer.reset(new VTKWriter(output_path, write_ascii));
+    writer.reset(new TCKWriter<float>(output_path, properties));
   } else if (output_path.extension() == ".ply") {
     const int increment = get_option_value("increment", default_ply_increment);
     const float radius = get_option_value("radius", default_ply_radius);
@@ -718,44 +1018,44 @@ void run() {
     throw Exception("Unsupported output file type.");
   }
 
-  // Tranform matrix
-  transform_type T;
-  T.setIdentity();
-  size_t nopts = 0;
-  auto opt = get_options("scanner2voxel");
-  if (!opt.empty()) {
-    auto header = Header::open(opt[0][0]);
-    T = Transform(header).scanner2voxel;
-    nopts++;
-  }
-  opt = get_options("scanner2image");
-  if (!opt.empty()) {
-    auto header = Header::open(opt[0][0]);
-    T = Transform(header).scanner2image;
-    nopts++;
-  }
-  opt = get_options("voxel2scanner");
-  if (!opt.empty()) {
-    auto header = Header::open(opt[0][0]);
-    T = Transform(header).voxel2scanner;
-    nopts++;
-  }
-  opt = get_options("image2scanner");
-  if (!opt.empty()) {
-    auto header = Header::open(opt[0][0]);
-    T = Transform(header).image2scanner;
-    nopts++;
-  }
-  if (nopts > 1) {
-    throw Exception("Transform options are mutually exclusive.");
-  }
+  const Eigen::Transform<float, 3, Eigen::AffineCompact> input_transform_f = input_transform.cast<float>();
+  const std::optional<Eigen::Transform<float, 3, Eigen::AffineCompact>> output_transform_f =
+      output_transform.has_value()
+          ? std::optional<Eigen::Transform<float, 3, Eigen::AffineCompact>>(output_transform->cast<float>())
+          : std::nullopt;
 
   // Copy
   Streamline<float> tck;
   while ((*reader)(tck)) {
-    for (auto &pos : tck) {
-      pos = T.cast<float>() * pos;
-    }
+    for (auto &pos : tck)
+      pos = input_transform_f * pos;
+    if (output_transform_f.has_value())
+      for (auto &pos : tck)
+        pos = *output_transform_f * pos;
     (*writer)(tck);
+  }
+}
+
+void run() {
+  std::filesystem::path input_path{argument[0]};
+  std::filesystem::path output_path{argument[1]};
+
+  const SidecarPlan plan = parse_sidecar_plan();
+
+  // First attempt the generic framework branch: it serves the conversion only
+  // when both extensions are recognised by the format-handler framework
+  // (".tck"/".trk"/TRX/".vtk"/...). Otherwise fall back to the bespoke handlers,
+  // retained for the esoteric / export-only formats (".txt"/".ply"/".rib").
+  const bool input_is_framework = MR::DWI::Tractography::Formats::get_handler(input_path) != nullptr;
+  const bool output_is_framework = MR::DWI::Tractography::Formats::get_handler(output_path) != nullptr;
+  if (input_is_framework && output_is_framework) {
+    run_generic(input_path, output_path, plan);
+  } else {
+    if (!plan.empty())
+      throw Exception("embedded sidecar manipulation (-extract / -insert / -rename / -remove / -convert)"
+                      " is only available when converting between framework tractography formats"
+                      " (\".tck\", \".trk\", TRX, \".vtk\", \".vtx\", \".qfib\", \".zfib\");"
+                      " the \".txt\" / \".ply\" / \".rib\" paths do not carry sidecar data");
+    run_bespoke(input_path, output_path);
   }
 }

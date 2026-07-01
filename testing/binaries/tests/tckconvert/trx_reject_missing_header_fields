@@ -1,0 +1,40 @@
+#!/bin/bash
+# Negative tests: a TRX dataset whose JSON header omits a compulsory field
+#   (VOXEL_TO_RASMM / DIMENSIONS / NB_STREAMLINES / NB_VERTICES) must be rejected
+#   with a clean, non-zero-exit error rather than crashing or silently producing
+#   an empty tractogram. A dataset missing the "positions" / "offsets" arrays
+#   must likewise be rejected.
+
+make_dir() {
+  # $1 = dir, remaining args via stdin = header.json body
+  rm -rf "$1"; mkdir "$1"
+  cat > "$1/header.json"
+  # minimal positions/offsets so the missing-header-field is the only fault
+  printf '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' > "$1/positions.3.float32"
+  printf '\x00\x00\x00\x00\x00\x00\x00\x00' > "$1/offsets.uint64"
+}
+
+# 1) Missing NB_VERTICES.
+make_dir tmp_bad1 <<'JSON'
+{"VOXEL_TO_RASMM": [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]], "DIMENSIONS": [1,1,1], "NB_STREAMLINES": 1}
+JSON
+tckconvert tmp_bad1 tmp_bad1.tck -force -quiet 2>/dev/null \
+  && { echo "Expected rejection of TRX header missing NB_VERTICES"; exit 1; }
+
+# 2) Missing VOXEL_TO_RASMM.
+make_dir tmp_bad2 <<'JSON'
+{"DIMENSIONS": [1,1,1], "NB_STREAMLINES": 1, "NB_VERTICES": 1}
+JSON
+tckconvert tmp_bad2 tmp_bad2.tck -force -quiet 2>/dev/null \
+  && { echo "Expected rejection of TRX header missing VOXEL_TO_RASMM"; exit 1; }
+
+# 3) Missing the positions array entirely.
+rm -rf tmp_bad3; mkdir tmp_bad3
+cat > tmp_bad3/header.json <<'JSON'
+{"VOXEL_TO_RASMM": [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]], "DIMENSIONS": [1,1,1], "NB_STREAMLINES": 1, "NB_VERTICES": 1}
+JSON
+printf '\x00\x00\x00\x00\x00\x00\x00\x00' > tmp_bad3/offsets.uint64
+tckconvert tmp_bad3 tmp_bad3.tck -force -quiet 2>/dev/null \
+  && { echo "Expected rejection of TRX dataset missing positions"; exit 1; }
+
+true

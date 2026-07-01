@@ -23,6 +23,10 @@ Description
 
 This command can be used to perform various types of manipulations on track data. A range of such manipulations are demonstrated in the examples provided below.
 
+Streamlines can additionally be filtered based on arbitrary data fields carried by the input tractogram. The -dps_min / -dps_max options threshold a named per-streamline (data-per-streamline) field, discarding any whole streamline whose value lies outside the requested range. The -dpv_min / -dpv_max options instead threshold a named per-vertex (data-per-vertex) field, retaining only those vertices whose value lies within the range; as with the -mask option, removing interior vertices may fragment a single input streamline into several output streamlines. Each of these options may be specified multiple times, and the named field must be a single-column (scalar) field present in the input; field-based filtering requires a single input track file.
+
+Where a command-line argument accepts tractogram sidecar data (such as streamline weights), it may be given as: "<path>" to read from / write to a standalone external file; "<path>::<field>" to access a named field of sidecar data embedded within the specified tractogram dataset; or "::<field>" to access a named field of sidecar data embedded within the command's own input or output tractogram (the only form able to reference embedded sidecar data of a piped tractogram, which has no command-line filesystem path).
+
 Example usages
 --------------
 
@@ -85,6 +89,17 @@ Thresholds pertaining to per-streamline weighting
 
 -  **-minweight value** set the minimum weight of any streamline
 
+Options for thresholding based on arbitrary streamline data fields
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-dps_min field value** *(multiple uses permitted)* retain only those streamlines for which the named per-streamline field is greater than or equal to the specified value
+
+-  **-dps_max field value** *(multiple uses permitted)* retain only those streamlines for which the named per-streamline field is less than or equal to the specified value
+
+-  **-dpv_min field value** *(multiple uses permitted)* retain only those streamline vertices for which the named per-vertex field is greater than or equal to the specified value
+
+-  **-dpv_max field value** *(multiple uses permitted)* retain only those streamline vertices for which the named per-vertex field is less than or equal to the specified value
+
 Other options specific to tckedit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -92,12 +107,14 @@ Other options specific to tckedit
 
 -  **-ends_only** only test the ends of each streamline against the provided include/exclude ROIs
 
+-  **-out_selection path** record the streamline selection as an embedded per-streamline (data-per-streamline) field: one value (1) per streamline written to the output, saved as a standalone per-streamline sidecar file (plain-text or .npy by extension). When the -mask option fragments a single input streamline into several output streamlines, each fragment is an independent output streamline and is assigned its own selection value; any associated per-vertex (data-per-vertex) data would likewise be sub-sampled per fragment.
+
 Options for handling streamline weights
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-tck_weights_in path** specify a text scalar file containing the streamline weights
+-  **-tck_weights_in spec** specify the streamline weights: either a standalone scalar file, or "[<tractogram>]::<field>" naming a per-streamline field of the input tractogram (an empty <tractogram>, i.e. "::<field>", refers to the command's own input tractogram, which is the only way to name a field of a piped input)
 
--  **-tck_weights_out path** specify the path for an output text scalar file containing streamline weights
+-  **-tck_weights_out spec** specify where to write the output streamline weights: either a standalone scalar file, or "[<tractogram>]::<field>" naming a per-streamline field of the output tractogram (an empty <tractogram>, i.e. "::<field>", refers to the command's own output tractogram, which is the only way to name a field of a piped output)
 
 Standard options
 ^^^^^^^^^^^^^^^^

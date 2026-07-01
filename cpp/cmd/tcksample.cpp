@@ -21,10 +21,17 @@
 #include <vector>
 
 #include "command.h"
-#include "dwi/tractography/file.h"
+#include "dwi/tractography/field_registry.h"
+#include "dwi/tractography/formats/base.h"
+#include "dwi/tractography/formats/list.h"
+#include "dwi/tractography/formats/tsf.h"
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/properties.h"
-#include "dwi/tractography/scalar_file.h"
+#include "dwi/tractography/sidecar.h"
+#include "dwi/tractography/sidecar_embed.h"
+#include "dwi/tractography/sidecar_value.h"
+#include "dwi/tractography/tractogram.h"
+#include "dwi/tractography/tractogram_item.h"
 #include "enum.h"
 #include "file/matrix.h"
 #include "file/ofstream.h"
@@ -70,12 +77,26 @@ void usage ()
     "and the number of volumes corresponds to an antipodally symmetric spherical harmonics function, "
     "then the -sh option must be specified, "
     "indicating whether the input image should be interpreted as such a function "
-    "or whether the input volumes should be sampled individually.";
+    "or whether the input volumes should be sampled individually."
+
+  + "The sampled values may instead be embedded into a tractography dataset as a named "
+    "sidecar field, using the qualified \"DATASET::NAME\" form for the output argument. "
+    "Per-vertex sampling is stored as a per-vertex (data-per-vertex) field, and a "
+    "per-streamline statistic as a per-streamline (data-per-streamline) field (with one "
+    "column per metric for a 4D image). If DATASET does not yet exist it is created as a "
+    "copy of the input tractogram carrying the new field, generated within the same pass "
+    "that performs the sampling. If DATASET already exists and its format supports adding "
+    "a field in place (a TRX directory or uncompressed archive), the field is appended "
+    "without rewriting the streamline data; the -force option is then required only if a "
+    "field named NAME is already present. If DATASET already exists but cannot be augmented "
+    "in place (e.g. \".trk\", or a compressed TRX archive), the -force option is required "
+    "and the dataset is rewritten with the field added.";
 
   ARGUMENTS
   + Argument ("tracks", "the input track file").type_tracks_in()
   + Argument ("image",  "the image to be sampled").type_image_in()
-  + Argument ("values", "the output sampled values").type_file_out();
+  + Argument ("values", "the output sampled values")
+    .type_tractogram_sidecar_out(TractogramSidecarOutMode::MayCreateDataset);
 
   OPTIONS
   + Option ("stat_tck", "compute some statistic from the values along each streamline;"
@@ -98,7 +119,12 @@ void usage ()
   + Option ("sh",
             "Interpret a 4D image input as representing coefficients of a spherical harmonic function, "
             "and sample the amplitudes of that function along the streamline")
-    + Argument ("value").type_bool();
+    + Argument ("value").type_bool()
+
+  + Option ("deliberate_vertex_mismatch",
+            "(for testing only) deliberately emit one fewer scalar than the number of vertices"
+            " for each streamline, to verify that the write-time per-vertex consistency check"
+            " (one scalar per vertex) raises a clean error");
 
   // TODO add support for reading from fixel image
   //   (this would supersede fixel2tsf when used without -precise or -stat_tck options)
@@ -144,6 +170,22 @@ public:
 private:
   Image<value_type> &image;
   ProgressBar progress;
+};
+
+//! \brief Queue pipe adapting a composite item to the precise track mapper (TDI pre-pass).
+/*! Feeds each TractogramItem's streamline to a precise TrackMapperBase, so the
+ * TDI pre-pass reads through the same Tractogram framework as the main sampling
+ * pass rather than a separate legacy reader. */
+class StreamlineMapper {
+public:
+  StreamlineMapper(const Header &header) : mapper(header) { mapper.set_use_precise_mapping(true); }
+  StreamlineMapper(const StreamlineMapper &) = default;
+  bool operator()(const DWI::Tractography::TractogramItem<value_type> &in, DWI::Tractography::Mapping::SetVoxel &out) {
+    return mapper(in.streamline, out);
+  }
+
+private:
+  DWI::Tractography::Mapping::TrackMapperBase mapper;
 };
 
 class SamplerBase {
@@ -692,9 +734,59 @@ private:
   matrix_type data;
 };
 
+//! \brief A sampled per-vertex scalar sequence plus its source vertex count.
+/*! Carries the number of vertices in the streamline that produced this scalar
+ * sequence (step 7), so that the receiver can perform a cheap write-time
+ * consistency check (scalar length == streamline vertex count) without a second
+ * pass over the tractogram. */
+struct PerVertexScalar : public DWI::Tractography::TrackScalar<value_type> {
+  size_t source_vertices = 0;
+};
+
+//! \brief Queue pipe that runs a sampler on each TractogramItem's streamline.
+/*! The single source for all standalone-output modes: the input is read through
+ * the Tractogram framework as a composite TractogramItem (vertices + any existing
+ * sidecar), and this worker feeds item.streamline to the chosen sampler and emits
+ * the mode-specific result the receiver expects. The per-vertex overload also
+ * records the streamline's vertex count so the receiver can perform its O(1)
+ * write-time consistency check (one scalar per vertex) without a second pass. */
+template <class Sampler> class SampleWorker {
+public:
+  SampleWorker(Sampler &&sampler, const bool deliberate_mismatch = false)
+      : sampler(std::move(sampler)), deliberate_mismatch(deliberate_mismatch) {}
+  SampleWorker(const SampleWorker &) = default;
+
+  bool operator()(const DWI::Tractography::TractogramItem<value_type> &in, OnePerStreamline &out) {
+    return sampler(in.streamline, out);
+  }
+
+  bool operator()(const DWI::Tractography::TractogramItem<value_type> &in, ManyPerStreamline &out) {
+    return sampler(in.streamline, out);
+  }
+
+  bool operator()(const DWI::Tractography::TractogramItem<value_type> &in, PerVertexScalar &out) {
+    DWI::Tractography::TrackScalar<value_type> scalar;
+    sampler(in.streamline, scalar);
+    out.clear();
+    out.set_index(in.get_index());
+    for (const value_type v : scalar)
+      out.push_back(v);
+    out.source_vertices = in.streamline.size();
+    // Test-only fault injection: deliberately corrupt the scalar length so the
+    //   receiver's write-time consistency check is exercised.
+    if (deliberate_mismatch && !out.empty())
+      out.pop_back();
+    return true;
+  }
+
+private:
+  Sampler sampler;
+  bool deliberate_mismatch;
+};
+
 class Receiver_PerVertex : public ReceiverBase {
 public:
-  using InputType = DWI::Tractography::TrackScalar<value_type>;
+  using InputType = PerVertexScalar;
   Receiver_PerVertex(const DWI::Tractography::Properties &properties,
                      const size_t num_tracks,
                      const std::filesystem::path &path)
@@ -711,6 +803,13 @@ public:
   bool operator()(const InputType &in) {
     // Requires preservation of order
     assert(in.get_index() == ReceiverBase::received);
+    // Write-time consistency check (step 7): the emitted per-vertex scalar
+    //   sequence must contain exactly one value per streamline vertex. This is a
+    //   cheap O(1) invariant at the write boundary, not a second pass.
+    if (in.size() != in.source_vertices)
+      throw Exception("Inconsistent per-vertex output for streamline " + str(in.get_index()) + ":" + //
+                      " produced " + str(in.size()) + " scalar value(s)" +                           //
+                      " for a streamline of " + str(in.source_vertices) + " vertices");              //
     if (ascii) {
       if (!in.empty()) {
         auto i = in.begin();
@@ -731,92 +830,155 @@ private:
   std::unique_ptr<DWI::Tractography::ScalarWriter<value_type>> tsf;
 };
 
-template <class SamplerType, class ReceiverType>
-void execute(DWI::Tractography::Reader<value_type> &reader, SamplerType &sampler, ReceiverType &receiver) {
-  if (receiver.ordered())
-    Thread::run_ordered_queue(reader,
-                              Thread::batch(DWI::Tractography::Streamline<value_type>()),
-                              Thread::multi(sampler),
-                              Thread::batch(typename ReceiverType::InputType()),
-                              receiver);
-  else
-    Thread::run_queue(reader,
-                      Thread::batch(DWI::Tractography::Streamline<value_type>()),
-                      Thread::multi(sampler),
-                      Thread::batch(typename ReceiverType::InputType()),
-                      receiver);
-}
+//! \brief whether the per-vertex producer should be deliberately corrupted (test).
+bool deliberate_vertex_mismatch() { return !App::get_options("deliberate_vertex_mismatch").empty(); }
 
-template <class ReceiverType>
-void execute(DWI::Tractography::Reader<value_type> &reader,
-             Image<value_type> &image,
-             const interp_type interp,
-             const contrast_type contrast,
-             const std::optional<Statistic> &statistic,
-             Image<value_type> &tdi,
-             ReceiverType &receiver) {
+//! \brief construct the sampler for the (contrast, interp) pair and invoke \a fn with it.
+/*! Centralises the 2×3 sampler-type selection so every output path (standalone file
+ * and tractogram embedding) shares one construction site. \a fn is a generic
+ * callable receiving the freshly-constructed sampler by forwarding reference. */
+template <class Fn>
+void with_sampler(Image<value_type> &image,
+                  const interp_type interp,
+                  const contrast_type contrast,
+                  const std::optional<Statistic> &statistic,
+                  Image<value_type> &tdi,
+                  Fn &&fn) {
   switch (contrast) {
-  case contrast_type::SH: {
+  case contrast_type::SH:
     switch (interp) {
-    case interp_type::NEAREST: {
-      SamplerNonPreciseSH<Interp::Nearest<Image<value_type>>> sampler(image, statistic);
-      execute(reader, sampler, receiver);
-    } break;
-    case interp_type::LINEAR: {
-      SamplerNonPreciseSH<Interp::Linear<Image<value_type>>> sampler(image, statistic);
-      execute(reader, sampler, receiver);
-    } break;
-    case interp_type::PRECISE: {
-      SamplerPreciseSH sampler(image, statistic);
-      execute(reader, sampler, receiver);
-    } break;
+    case interp_type::NEAREST:
+      fn(SamplerNonPreciseSH<Interp::Nearest<Image<value_type>>>(image, statistic));
+      break;
+    case interp_type::LINEAR:
+      fn(SamplerNonPreciseSH<Interp::Linear<Image<value_type>>>(image, statistic));
+      break;
+    case interp_type::PRECISE:
+      fn(SamplerPreciseSH(image, statistic));
+      break;
     }
-  } break;
-  case contrast_type::SCALAR: {
+    break;
+  case contrast_type::SCALAR:
     switch (interp) {
-    case interp_type::NEAREST: {
-      SamplerNonPreciseScalar<Interp::Nearest<Image<value_type>>> sampler(image, statistic);
-      execute(reader, sampler, receiver);
-    } break;
-    case interp_type::LINEAR: {
-      SamplerNonPreciseScalar<Interp::Linear<Image<value_type>>> sampler(image, statistic);
-      execute(reader, sampler, receiver);
-    } break;
-    case interp_type::PRECISE: {
-      SamplerPreciseScalar sampler(image, statistic, tdi);
-      execute(reader, sampler, receiver);
-    } break;
+    case interp_type::NEAREST:
+      fn(SamplerNonPreciseScalar<Interp::Nearest<Image<value_type>>>(image, statistic));
+      break;
+    case interp_type::LINEAR:
+      fn(SamplerNonPreciseScalar<Interp::Linear<Image<value_type>>>(image, statistic));
+      break;
+    case interp_type::PRECISE:
+      fn(SamplerPreciseScalar(image, statistic, tdi));
+      break;
     }
-  }
+    break;
   }
 }
 
-void execute(DWI::Tractography::Reader<value_type> &reader,
-             DWI::Tractography::Properties &properties,
-             const size_t num_tracks,
-             Image<value_type> &image,
-             const interp_type interp,
-             const contrast_type contrast,
-             const std::optional<Statistic> &statistic,
-             Image<value_type> &tdi,
-             const std::filesystem::path &path) {
-  const size_t num_metrics = image.ndim() == 4 && contrast == contrast_type::SCALAR ? image.size(3) : 1;
-  if (!statistic.has_value()) {
-    Receiver_PerVertex receiver(properties, num_tracks, path);
-    execute(reader, image, interp, contrast, statistic, tdi, receiver);
-  } else if (num_metrics == 1) {
-    Receiver_OnePerStreamline receiver(num_tracks, path);
-    execute(reader, image, interp, contrast, statistic, tdi, receiver);
-  } else {
-    Receiver_ManyPerStreamline receiver(num_tracks, num_metrics, path);
-    execute(reader, image, interp, contrast, statistic, tdi, receiver);
+//! \brief run the sampling queue into a standalone-file receiver.
+template <class ReceiverType>
+void run_standalone(DWI::Tractography::Tractogram<value_type> &input,
+                    Image<value_type> &image,
+                    const interp_type interp,
+                    const contrast_type contrast,
+                    const std::optional<Statistic> &statistic,
+                    Image<value_type> &tdi,
+                    ReceiverType &receiver) {
+  using Item = DWI::Tractography::TractogramItem<value_type>;
+  using OutType = typename ReceiverType::InputType;
+  const bool deliberate = deliberate_vertex_mismatch();
+  with_sampler(image, interp, contrast, statistic, tdi, [&](auto &&sampler) {
+    SampleWorker<std::decay_t<decltype(sampler)>> worker(std::move(sampler), deliberate);
+    if (receiver.ordered())
+      Thread::run_ordered_queue(
+          input, Thread::batch(Item()), Thread::multi(worker), Thread::batch(OutType()), receiver);
+    else
+      Thread::run_queue(input, Thread::batch(Item()), Thread::multi(worker), Thread::batch(OutType()), receiver);
+  });
+}
+
+//! \brief Queue pipe that samples each streamline and slots the result into a new
+//!   sidecar field of the same composite item, carrying all other input data through.
+/*! The output item is the input item plus one extra field at \a ordinal: a
+ * per-vertex (dpv) scalar column when no statistic is requested, or a
+ * per-streamline (dps) row of \a columns values otherwise. This lets the output
+ * tractogram be generated by the sampling queue itself, with no second pass over
+ * the input. */
+template <class Sampler> class EmbedWorker {
+public:
+  EmbedWorker(Sampler &&sampler, const DWI::Tractography::FieldRole role, const size_t ordinal, const size_t columns)
+      : sampler(std::move(sampler)), role(role), ordinal(ordinal), columns(columns) {}
+  EmbedWorker(const EmbedWorker &) = default;
+
+  bool operator()(const DWI::Tractography::TractogramItem<value_type> &in,
+                  DWI::Tractography::TractogramItem<value_type> &out) {
+    out = in;
+    if (role == DWI::Tractography::FieldRole::DPV) {
+      DWI::Tractography::TrackScalar<value_type> scalar;
+      sampler(in.streamline, scalar);
+      DWI::Tractography::VectorOrMatrix<value_type> column(static_cast<Eigen::Index>(scalar.size()), 1);
+      for (size_t i = 0; i != scalar.size(); ++i)
+        column(static_cast<Eigen::Index>(i), 0) = scalar[i];
+      if (out.dpv.size() <= ordinal)
+        out.dpv.resize(ordinal + 1);
+      out.dpv[ordinal] = DWI::Tractography::make_dpv(std::move(column));
+    } else {
+      DWI::Tractography::ScalarOrVector<value_type> row(static_cast<Eigen::Index>(columns));
+      if (columns == 1) {
+        OnePerStreamline one;
+        sampler(in.streamline, one);
+        row(0, 0) = one.value;
+      } else {
+        ManyPerStreamline many;
+        sampler(in.streamline, many);
+        for (size_t i = 0; i != columns; ++i)
+          row(0, static_cast<Eigen::Index>(i)) = many.values[static_cast<Eigen::Index>(i)];
+      }
+      if (out.dps.size() <= ordinal)
+        out.dps.resize(ordinal + 1);
+      out.dps[ordinal] = DWI::Tractography::make_dps(std::move(row));
+    }
+    return true;
   }
+
+private:
+  Sampler sampler;
+  DWI::Tractography::FieldRole role;
+  size_t ordinal;
+  size_t columns;
+};
+
+//! \brief embed the sampled values into a tractography dataset via "DATASET::NAME".
+/*! Writes the sampled column as a new per-streamline (dps) or per-vertex (dpv) field
+ * named NAME within the dataset, choosing in-place append vs whole-dataset create/
+ * rewrite from the format's capabilities (§2.7). The destination decision and the
+ * three write forms are handled by the shared embed_sidecar_field() orchestration;
+ * this command supplies only the sampling queue, so the output tractogram (input
+ * streamlines + the new field) is produced by that queue without a second pass. */
+void run_embed(const DWI::Tractography::SidecarReference &reference,
+               DWI::Tractography::Tractogram<value_type> &input,
+               DWI::Tractography::Properties &properties,
+               const size_t num_tracks,
+               Image<value_type> &image,
+               const interp_type interp,
+               const contrast_type contrast,
+               const std::optional<Statistic> &statistic,
+               Image<value_type> &tdi,
+               const size_t num_metrics) {
+  using namespace DWI::Tractography;
+  using Item = TractogramItem<value_type>;
+  const FieldRole role = statistic.has_value() ? FieldRole::DPS : FieldRole::DPV;
+  const size_t columns = (role == FieldRole::DPS) ? num_metrics : 1;
+
+  embed_sidecar_field<value_type>(
+      reference, input, properties, role, columns, num_tracks, [&](auto &sink, const size_t ordinal) {
+        with_sampler(image, interp, contrast, statistic, tdi, [&](auto &&sampler) {
+          EmbedWorker<std::decay_t<decltype(sampler)>> worker(std::move(sampler), role, ordinal, columns);
+          Thread::run_ordered_queue(input, Thread::batch(Item()), Thread::multi(worker), Thread::batch(Item()), sink);
+        });
+      });
 }
 
 void run() {
-  DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader<value_type> reader(argument[0], properties);
-
   auto H = Header::open(argument[1]);
   const bool plausibly_SH =
       H.ndim() > 3 && Math::SH::NforL(Math::SH::LforN(static_cast<int>(H.size(3)))) == static_cast<size_t>(H.size(3));
@@ -870,7 +1032,6 @@ void run() {
   const interp_type interp = nointerp ? interp_type::NEAREST : (precise ? interp_type::PRECISE : interp_type::LINEAR);
   if (!statistic.has_value() && interp == interp_type::PRECISE)
     throw Exception("Cannot combine per-vertex values with precise mapping mechanism");
-  const size_t num_tracks = properties.find("count") == properties.end() ? 0 : to<size_t>(properties["count"]);
 
   Image<value_type> tdi;
   if (!get_options("use_tdi_fraction").empty()) {
@@ -880,13 +1041,18 @@ void run() {
       throw Exception("Cannot use -use_tdi_fraction option in conjunction with SH function sampling");
     if (interp != interp_type::PRECISE)
       throw Exception("-use_tdi_fraction can only be used in conjunction with precise mapping");
-    DWI::Tractography::Reader<value_type> tdi_reader(argument[0], properties);
-    DWI::Tractography::Mapping::TrackMapperBase mapper(H);
-    mapper.set_use_precise_mapping(true);
+    // Independent first pass over the input to accumulate the track density image;
+    //   a Tractogram reader is single-pass, so the main sampling pass below opens
+    //   the input afresh.
+    DWI::Tractography::Properties tdi_properties;
+    auto tdi_input = DWI::Tractography::Tractogram<value_type>::open(argument[0], tdi_properties);
+    const size_t tdi_count =
+        tdi_properties.find("count") == tdi_properties.end() ? 0 : to<size_t>(tdi_properties["count"]);
+    StreamlineMapper mapper(H);
     tdi = Image<value_type>::scratch(H, "TDI scratch image");
-    TDI tdi_fill(tdi, num_tracks);
-    Thread::run_queue(tdi_reader,
-                      Thread::batch(DWI::Tractography::Streamline<value_type>()),
+    TDI tdi_fill(tdi, tdi_count);
+    Thread::run_queue(tdi_input,
+                      Thread::batch(DWI::Tractography::TractogramItem<value_type>()),
                       Thread::multi(mapper),
                       Thread::batch(DWI::Tractography::Mapping::SetVoxel()),
                       tdi_fill);
@@ -894,5 +1060,34 @@ void run() {
 
   auto image = H.get_image<value_type>();
 
-  execute(reader, properties, num_tracks, image, interp, contrast, statistic, tdi, argument[2]);
+  const DWI::Tractography::SidecarReference reference =
+      DWI::Tractography::parse_sidecar_reference(argument[2].as_text());
+
+  DWI::Tractography::Properties properties;
+  auto input = DWI::Tractography::Tractogram<value_type>::open(argument[0], properties);
+  const size_t num_tracks = properties.find("count") == properties.end() ? 0 : to<size_t>(properties["count"]);
+  const size_t num_metrics = image.ndim() == 4 && contrast == contrast_type::SCALAR ? image.size(3) : 1;
+
+  // A bare path that no tractography handler recognises is a standalone output file
+  //   (.tsf / ASCII / .csv / .npy), exactly as before; only the input now flows
+  //   through the Tractogram framework rather than the legacy reader.
+  if (DWI::Tractography::Formats::get_handler(reference.dataset) == nullptr) {
+    if (reference.is_qualified())
+      throw Exception("output \"" + std::string(argument[2].as_text()) + "\"" +
+                      " uses the qualified \"DATASET::NAME\" sidecar form," + " but \"" + reference.dataset.string() +
+                      "\" is not a recognised tractography format");
+    if (!statistic.has_value()) {
+      Receiver_PerVertex receiver(properties, num_tracks, reference.dataset);
+      run_standalone(input, image, interp, contrast, statistic, tdi, receiver);
+    } else if (num_metrics == 1) {
+      Receiver_OnePerStreamline receiver(num_tracks, reference.dataset);
+      run_standalone(input, image, interp, contrast, statistic, tdi, receiver);
+    } else {
+      Receiver_ManyPerStreamline receiver(num_tracks, num_metrics, reference.dataset);
+      run_standalone(input, image, interp, contrast, statistic, tdi, receiver);
+    }
+    return;
+  }
+
+  run_embed(reference, input, properties, num_tracks, image, interp, contrast, statistic, tdi, num_metrics);
 }

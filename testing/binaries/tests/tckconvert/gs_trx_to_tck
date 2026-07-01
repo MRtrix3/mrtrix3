@@ -1,0 +1,19 @@
+#!/bin/bash
+# Reference-data validation (TRX_DATA_DIR, tee-ar-ex gold standard): a TRX dataset
+#   reads identically whether it is a single-file archive ("gs.trx") or a directory
+#   ("gs_fldr.trx/"), and converting either to ".tck" must recover "gs.tck". TRX
+#   positions are float32 world (RASMM) coordinates — the same space as ".tck" — so
+#   the geometry round-trips essentially exactly (measured symmetric Hausdorff
+#   ~1e-6 mm).
+
+# Single-file ".trx" archive.
+tckconvert gs.trx tmp_trx_file.tck -force -quiet
+testing_diff_tck tmp_trx_file.tck gs.tck -distance 1e-4
+
+# Directory dataset, with the dps/ and dpv/ sidecar sub-directories discarded so
+#   only the geometry remains. Copy first (never mutate the reference data).
+rm -rf tmp_gs_fldr.trx
+cp -r gs_fldr.trx tmp_gs_fldr.trx
+rm -rf tmp_gs_fldr.trx/dps tmp_gs_fldr.trx/dpv
+tckconvert tmp_gs_fldr.trx tmp_trx_dir.tck -force -quiet
+testing_diff_tck tmp_trx_dir.tck gs.tck -distance 1e-4

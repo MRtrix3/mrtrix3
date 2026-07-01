@@ -1,0 +1,9 @@
+#!/bin/bash
+# Reference-data interop (VTX_DATA_DIR, rordenlab TractographyFormat): read the
+#   binary "example.vtk" (3D Slicer POLYDATA, which embeds a METADATA block the
+#   reader now skips) and confirm the recovered geometry matches "example.tck".
+tckconvert example.vtk tmp_vtk2tck.tck -force -quiet
+if cmp -s tmp_vtk2tck.tck example.tck; then
+  exit 0
+fi
+testing_diff_tck tmp_vtk2tck.tck example.tck -distance 1e-4

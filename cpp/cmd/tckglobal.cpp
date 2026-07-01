@@ -29,6 +29,7 @@
 #include "dwi/tractography/GT/internalenergy.h"
 #include "dwi/tractography/GT/mhsampler.h"
 #include "dwi/tractography/GT/particlegrid.h"
+#include "dwi/tractography/tractogram.h"
 
 using namespace MR;
 using namespace App;
@@ -353,8 +354,8 @@ void run() {
   ftfileprops.comments.push_back("T0 = " + std::to_string((long double)t0));
   ftfileprops.comments.push_back("T1 = " + std::to_string((long double)t1));
 
-  MR::DWI::Tractography::Writer<float> writer(argument[2], ftfileprops);
-  pgrid.exportTracks(writer);
+  auto output = MR::DWI::Tractography::Tractogram<float>::create(argument[2], ftfileprops);
+  pgrid.exportTracks(output);
 
   // Save fiso, tod and eext
   Header header_out(header_in);

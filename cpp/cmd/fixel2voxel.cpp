@@ -25,7 +25,7 @@
 #include "image.h"
 
 #include "dwi/tractography/file.h"
-#include "dwi/tractography/scalar_file.h"
+#include "dwi/tractography/formats/tsf.h"
 
 #include "math/SH.h"
 #include "math/entropy.h"

@@ -1,0 +1,25 @@
+#!/bin/bash
+# tcktransform handles vertices pushed outside the deformation field (mapped to a
+#   non-finite position) according to whether the OUTPUT format can represent
+#   non-finite vertex coordinates.
+# Crop the unit warp to a small sub-FoV so that many streamline vertices fall
+#   outside it and are therefore assigned a non-finite (NaN) position.
+mrgrid unit_warp.mif crop -axis 0 2,2 -axis 1 3,3 -axis 2 3,3 tmp_cw.mif -force
+
+# (1) A format that cannot represent non-finite vertices (".tck") culls them,
+#     warns quoting the number of streamlines affected, and keeps the per-vertex
+#     (.tsf) sidecar aligned with the culled result.
+tcksample tracks.tck tcksample/fa.mif tmp_in.tsf -force
+tcktransform tracks.tck tmp_cw.mif tmp_cull.tck \
+  -tsf_in tmp_in.tsf -tsf_out tmp_cull.tsf -force 2> tmp_cull.err
+grep -q "culled" tmp_cull.err
+tsfvalidate tmp_cull.tsf tmp_cull.tck
+
+# (2) A format that can represent non-finite vertices (".trx") retains them and
+#     warns quoting the number of streamlines that contain non-finite data.
+tcktransform tracks.tck tmp_cw.mif tmp_keep.trx -force 2> tmp_keep.err
+grep -q "non-finite vertex data" tmp_keep.err
+
+# The retained non-finite vertices are in turn rejected by the writer backstop of
+#   a format that cannot represent them (converting the .trx back to .tck fails).
+! tckconvert tmp_keep.trx tmp_back.tck -force 2> /dev/null

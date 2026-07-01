@@ -16,6 +16,7 @@
 
 #include <filesystem>
 #include <string>
+#include <vector>
 
 #include "command.h"
 #include "exception.h"
@@ -23,9 +24,10 @@
 #include "ordered_thread_queue.h"
 #include "types.h"
 
-#include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/roi.h"
+#include "dwi/tractography/tractogram.h"
+#include "dwi/tractography/tractogram_item.h"
 #include "dwi/tractography/weights.h"
 
 #include "dwi/tractography/editing/editing.h"
@@ -48,7 +50,18 @@ void usage() {
 
   DESCRIPTION
   + "This command can be used to perform various types of manipulations on track data."
-    " A range of such manipulations are demonstrated in the examples provided below.";
+    " A range of such manipulations are demonstrated in the examples provided below."
+
+  + "Streamlines can additionally be filtered based on arbitrary data fields carried"
+    " by the input tractogram. The -dps_min / -dps_max options threshold a named"
+    " per-streamline (data-per-streamline) field, discarding any whole streamline"
+    " whose value lies outside the requested range. The -dpv_min / -dpv_max options"
+    " instead threshold a named per-vertex (data-per-vertex) field, retaining only"
+    " those vertices whose value lies within the range; as with the -mask option,"
+    " removing interior vertices may fragment a single input streamline into several"
+    " output streamlines. Each of these options may be specified multiple times, and"
+    " the named field must be a single-column (scalar) field present in the input;"
+    " field-based filtering requires a single input track file.";
 
   EXAMPLES
   + Example ("Concatenate data from multiple track files into one",
@@ -98,6 +111,7 @@ void usage() {
   + LengthOption
   + TruncateOption
   + WeightsOption
+  + FieldFilterOption
 
   + OptionGroup ("Other options specific to tckedit")
   + Option ("inverse", "output the inverse selection of streamlines based on the criteria provided;"
@@ -106,6 +120,18 @@ void usage() {
                        " will be written to file")
 
   + Option ("ends_only", "only test the ends of each streamline against the provided include/exclude ROIs")
+
+  + Option ("out_selection", "record the streamline selection as an embedded per-streamline"
+                             " (data-per-streamline) field:"
+                             " one value (1) per streamline written to the output,"
+                             " saved as a standalone per-streamline sidecar file"
+                             " (plain-text or .npy by extension)."
+                             " When the -mask option fragments a single input streamline into"
+                             " several output streamlines, each fragment is an independent output"
+                             " streamline and is assigned its own selection value;"
+                             " any associated per-vertex (data-per-vertex) data would likewise be"
+                             " sub-sampled per fragment.")
+    + Argument ("path").type_tractogram_sidecar_out()
 
   // TODO Input weights with multiple input files currently not supported
   + OptionGroup ("Options for handling streamline weights")
@@ -132,6 +158,12 @@ void run() {
   // Make sure configuration is sensible
   if (!get_options("tck_weights_in").empty() && num_inputs > 1)
     throw Exception("Cannot use per-streamline weighting with multiple input files");
+  // Field-based thresholds resolve a named field to a registry ordinal against a
+  //   single input dataset (the ordinal need not be consistent across files).
+  const bool has_field_filters = !get_options("dps_min").empty() || !get_options("dps_max").empty() ||
+                                 !get_options("dpv_min").empty() || !get_options("dpv_max").empty();
+  if (has_field_filters && num_inputs > 1)
+    throw Exception("Cannot threshold on per-streamline / per-vertex data fields with multiple input files");
 
   // Get the consensus streamline properties from among the multiple input files
   Tractography::Properties properties;
@@ -143,7 +175,7 @@ void run() {
     input_file_list.push_back(input_path);
 
     Properties p;
-    { Reader<float> reader(input_path, p); }
+    Tractography::Tractogram<float>::open(input_path, p);
 
     for (const auto &i : p.comments) {
       bool present = false;
@@ -211,9 +243,36 @@ void run() {
   const size_t skip = get_option_value("skip", size_t(0));
 
   Loader loader(input_file_list);
-  Worker worker(properties, inverse, ends_only);
-  Receiver receiver(output_path, properties, number, skip);
+  // Resolve the named per-streamline / per-vertex field thresholds against the input
+  //   tractogram's field registry (validates field existence, role and scalar shape).
+  const FieldFilters field_filters = load_field_filters(loader.fields());
+  Worker worker(properties, inverse, ends_only, field_filters);
+  // Resolve where the output streamline weights go (external file, embedded field,
+  //   or — per the provenance default — propagated / suppressed). tckedit does not
+  //   propagate generic per-streamline / per-vertex fields, so the registry that
+  //   seeds the output starts empty.
+  const WeightOutput weight_output = plan_weight_output(FieldRegistry(), loader.weights(), output_path, properties);
 
-  Thread::run_ordered_queue(
-      loader, Thread::batch(Streamline<>()), Thread::multi(worker), Thread::batch(Streamline<>()), receiver);
+  // A vertex mask or a per-vertex (dpv) field threshold can crop a single input
+  //   streamline into several output streamlines; the worker then yields
+  //   std::vector<TractogramItem<>> on the second pipe. Without either, no
+  //   fragmentation can occur and the second pipe carries a single TractogramItem<>.
+  //   The first pipe is always TractogramItem<>.
+  const bool may_fragment = properties.mask.size() != 0 || !field_filters.dpv.empty();
+
+  Receiver receiver(output_path, properties, number, skip, weight_output, may_fragment);
+  auto selection_dps_path = get_optional<std::filesystem::path>("out_selection");
+  if (selection_dps_path.has_value())
+    receiver.set_selection_dps_path(*selection_dps_path);
+
+  if (may_fragment) {
+    Thread::run_ordered_queue(loader,
+                              Thread::batch(TractogramItem<>()),
+                              Thread::multi(worker),
+                              Thread::batch(std::vector<TractogramItem<>>()),
+                              receiver);
+  } else {
+    Thread::run_ordered_queue(
+        loader, Thread::batch(TractogramItem<>()), Thread::multi(worker), Thread::batch(TractogramItem<>()), receiver);
+  }
 }

@@ -1,0 +1,6 @@
+#!/bin/bash
+# Self round-trip at a tight 0.1 mm error, exercising the p=-1 quantization branch
+#   (snap to the 0.1 mm grid; worst-case Euclidean error sqrt(3)*0.05 ~= 0.087 mm).
+tckconvert tracks.tck tmp.zfib -zfib_max_error 0.1 -force -quiet
+tckconvert tmp.zfib tmp_back.tck -force -quiet
+testing_diff_tck tracks.tck tmp_back.tck -distance 0.15

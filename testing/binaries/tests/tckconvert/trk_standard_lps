@@ -1,0 +1,20 @@
+#!/bin/bash
+# Reference-data interop (TRK_DATA_DIR, nibabel): "standard.LPS.trk" stores the same
+#   streamlines as "standard.trk" but in an LPS voxel order. The reader honours the
+#   header's voxel_order field: the L and P (x, y) axes are mirrored about the grid
+#   extent (dim) before the vox_to_ras affine and the half-voxel corner shift are
+#   applied, recovering RAS scanner space.
+
+# Confirm via the reader's DEBUG output that the recorded vox_to_ras is parsed and is
+#   NOT the identity.
+tckconvert standard.LPS.trk tmp_lps2tck.tck -debug -force 2>tmp_lps_dbg.txt
+affine=$(sed -n 's/.*vox_to_ras affine: \[\(.*\)\].*/\1/p' tmp_lps_dbg.txt | head -1)
+[ -n "$affine" ] || { echo "no vox_to_ras DEBUG line emitted" >&2; exit 1; }
+[ "$affine" != "1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1" ] \
+  || { echo "vox_to_ras parsed as identity; expected non-identity" >&2; exit 1; }
+
+# Honouring voxel_order, the LPS file resolves to the same RAS geometry as "standard.tck".
+if cmp -s tmp_lps2tck.tck standard.tck; then
+  exit 0
+fi
+testing_diff_tck tmp_lps2tck.tck standard.tck -distance 1e-4

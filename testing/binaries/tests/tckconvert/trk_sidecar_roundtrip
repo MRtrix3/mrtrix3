@@ -1,0 +1,54 @@
+#!/bin/bash
+# Round-trip dpv (n_scalars > 0) and dps (n_properties > 0) sidecar data through
+#   the TrackVis ".trk" handler, via tckconvert's sidecar-aware generic branch.
+#
+# A hand-authored ASCII ".vtk" carries a per-vertex scalar (fa -> dpv -> ".trk"
+#   scalar) and a per-streamline scalar (streamline_weight -> dps -> ".trk"
+#   property). Converting it to ".trk" must populate the header's n_scalars /
+#   n_properties and name fields, and converting back to ".vtk" must reproduce
+#   the field values (TrackVis stores scalars/properties as float32, matching the
+#   float input here). Confirms n_scalars/n_properties > 0 round-trip.
+cat > tmp_trk_sidecar_in.vtk <<'VTK'
+# vtk DataFile Version 3.0
+trk sidecar roundtrip
+ASCII
+DATASET POLYDATA
+POINTS 5 float
+0 0 0
+1 0 0
+2 0 0
+0 1 0
+1 1 0
+LINES 2 7
+3 0 1 2
+2 3 4
+POINT_DATA 5
+SCALARS fa float 1
+LOOKUP_TABLE default
+0.125
+0.25
+0.5
+0.75
+1.0
+CELL_DATA 2
+SCALARS streamline_weight float 1
+LOOKUP_TABLE default
+1.5
+2.5
+VTK
+
+tckconvert tmp_trk_sidecar_in.vtk tmp_trk_sidecar.trk -force -quiet
+
+# The ".trk" header must declare one scalar (dpv) and one property (dps), named.
+grep -q "fa" tmp_trk_sidecar.trk
+grep -q "streamline_weight" tmp_trk_sidecar.trk
+
+# Convert back to ASCII ".vtk" and confirm the sidecar values survived.
+tckconvert tmp_trk_sidecar.trk tmp_trk_sidecar_back.vtk -force -quiet -ascii
+grep -q "SCALARS fa" tmp_trk_sidecar_back.vtk
+grep -q "SCALARS streamline_weight" tmp_trk_sidecar_back.vtk
+# The per-vertex fa values (0.125 0.25 0.5 0.75 1) and the per-streamline
+#   weights (1.5 2.5) are exactly representable in float32 and must reappear.
+grep -q "0.125" tmp_trk_sidecar_back.vtk
+grep -q "1.5" tmp_trk_sidecar_back.vtk
+grep -q "2.5" tmp_trk_sidecar_back.vtk

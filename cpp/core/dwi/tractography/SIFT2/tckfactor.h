@@ -87,8 +87,22 @@ public:
 
   void report_entropy() const;
 
-  void output_factors(const std::filesystem::path &) const;
   void output_coefficients(const std::filesystem::path &) const;
+
+  //! \brief write the estimated per-streamline weights, dispatching on \a arg's type (step 4).
+  /*! The mandatory "out_weights" argument is a tractogram-sidecar reference
+   * (§2.4) whose handling depends on the destination it names:
+   *   - a bare path that is NOT a recognised tractography format (e.g. ".csv" /
+   *     ".txt") receives the weights as a standalone numerical vector
+   *     (File::Matrix::save_vector — the historical behaviour);
+   *   - a bare path that IS a tractography format (e.g. ".trx" / ".vtk" / ".trk")
+   *     receives a copy of the input tractogram from \a input_path with the
+   *     weights embedded as a per-streamline (dps) field named "weights"; a
+   *     format that cannot carry per-streamline sidecar data (e.g. ".tck") is
+   *     rejected with a user-facing error.
+   * The qualified "DATASET::NAME" forms (embedding into a named field of a new or
+   * existing dataset) are not yet implemented and raise a clear error. */
+  void output_weights(const std::filesystem::path &input_path, std::string_view arg) const;
 
   void output_TD_images(const std::filesystem::path &, //
                         const std::filesystem::path &, //
@@ -104,6 +118,9 @@ private:
   std::filesystem::path csv_path;
 
   double data_scale_term;
+
+  //! \brief the per-streamline weights for export: exp(coefficient), or 0 at the floor / non-finite.
+  Eigen::Array<default_type, Eigen::Dynamic, 1> compute_weights() const;
 
   friend class LineSearchFunctor;
   friend class CoefficientOptimiserBase;

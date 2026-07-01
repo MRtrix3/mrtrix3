@@ -46,6 +46,7 @@ void Properties::clear() {
   ordered_include.clear();
   prior_rois.clear();
   comments.clear();
+  vertex_datatype.reset();
 }
 
 float Properties::get_stepsize() const {

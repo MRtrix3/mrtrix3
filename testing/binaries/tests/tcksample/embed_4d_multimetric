@@ -1,0 +1,9 @@
+#!/bin/bash
+# A 4D image with a per-streamline statistic embeds as a single multi-column
+#   per-streamline (dps) field (one column per volume) created within the sampling
+#   pass. Geometry must round-trip.
+rm -rf tmp_4d.trx tmp_4d_rt.tck
+mrcat tcksample/fa.mif tcksample/adc.mif -axis 3 - | \
+    tcksample tracks.tck - tmp_4d.trx::metrics -stat_tck mean -force
+tckconvert tmp_4d.trx tmp_4d_rt.tck -force
+testing_diff_tck tmp_4d_rt.tck tracks.tck

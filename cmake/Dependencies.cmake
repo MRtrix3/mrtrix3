@@ -276,3 +276,47 @@ else()
     )
     FetchContent_MakeAvailable(magic_enum)
 endif()
+
+# libzip — required by the TRX tractography format handler for reading and
+# writing (un)compressed zip archives. A system install is mandatory: the build
+# environment may be offline, so FetchContent is not used here; the system
+# package (which itself pulls in zlib for the deflate codec) is located through
+# its CMake config package where available.
+#
+# Some distributions ship a libzip CMake config package whose imported-target
+# existence checks reference the libzip command-line tools (zipcmp/zipmerge/
+# ziptool); when only the runtime library + headers are installed those checks
+# raise a fatal error on include(). We therefore probe the config package only
+# when the user opts in (MRTRIX_USE_SYSTEM_LIBZIP_CONFIG) and otherwise locate
+# the shared library and headers directly (optionally via pkg-config),
+# synthesising the libzip::zip target ourselves.
+option(MRTRIX_USE_SYSTEM_LIBZIP_CONFIG "Use the system libzip CMake config package" OFF)
+if(MRTRIX_USE_SYSTEM_LIBZIP_CONFIG)
+    find_package(libzip CONFIG REQUIRED)
+endif()
+if(NOT TARGET libzip::zip)
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(PC_LIBZIP QUIET libzip)
+    endif()
+    find_path(LIBZIP_INCLUDE_DIR
+        NAMES zip.h
+        HINTS ${PC_LIBZIP_INCLUDEDIR} ${PC_LIBZIP_INCLUDE_DIRS}
+        PATHS /usr/include /usr/local/include
+    )
+    find_library(LIBZIP_LIBRARY
+        NAMES zip
+        HINTS ${PC_LIBZIP_LIBDIR} ${PC_LIBZIP_LIBRARY_DIRS}
+        PATHS /usr/lib /usr/local/lib /usr/lib/x86_64-linux-gnu
+    )
+    if(NOT LIBZIP_INCLUDE_DIR OR NOT LIBZIP_LIBRARY)
+        message(FATAL_ERROR
+            "Could not find libzip. Install the libzip development package "
+            "(headers + shared library) or its CMake config package.")
+    endif()
+    add_library(libzip::zip UNKNOWN IMPORTED)
+    set_target_properties(libzip::zip PROPERTIES
+        IMPORTED_LOCATION "${LIBZIP_LIBRARY}"
+        INTERFACE_INCLUDE_DIRECTORIES "${LIBZIP_INCLUDE_DIR}"
+    )
+endif()

@@ -1,0 +1,23 @@
+#!/bin/bash
+# Reference-data interop (TRK_DATA_DIR, nibabel): "simple.trk" / "simple.tck" are
+#   nibabel's matched minimal exemplars. Exercise both conversion directions plus
+#   the grid-less ".trk" INFO assertion.
+
+# INFO on tck->trk (no reference grid => vox_to_ras[3][3] = 0):
+tckconvert simple.tck tmp_simple_out.trk -info -force 2>tmp_simple_info.txt
+grep -q "the voxel-to-realspace transform will not be recorded (vox_to_ras\[3\]\[3\] = 0)" tmp_simple_info.txt
+
+# Direction 1: simple.trk -> tck. The reader undoes the recorded affine with the
+#   half-voxel corner shift, recovering "simple.tck".
+tckconvert simple.trk tmp_trk2tck.tck -force -quiet
+if ! cmp -s tmp_trk2tck.tck simple.tck; then
+  testing_diff_tck tmp_trk2tck.tck simple.tck -distance 1e-4
+fi
+
+# Direction 2: simple.tck -> trk, compared to simple.trk. The bytes differ (header
+#   dims/affine/provenance), so bridge both ".trk" files through the ".tck" domain.
+if ! cmp -s tmp_simple_out.trk simple.trk; then
+  tckconvert tmp_simple_out.trk tmp_mine_dec.tck -force -quiet
+  tckconvert simple.trk tmp_ref_dec.tck -force -quiet
+  testing_diff_tck tmp_mine_dec.tck tmp_ref_dec.tck -distance 1e-4
+fi

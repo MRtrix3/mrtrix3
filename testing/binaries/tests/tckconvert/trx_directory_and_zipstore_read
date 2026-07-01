@@ -1,0 +1,28 @@
+#!/bin/bash
+# A TRX dataset may be a directory OR an (un)compressed zip archive; all three
+#   backings must read identically (D5). Write a ZIP_STORE ".trx" archive with
+#   the handler, then derive a directory dataset and a ZIP_DEFLATE archive from
+#   it, and confirm every backing reads back the same streamlines as the source.
+
+# 1) ZIP_STORE archive (the handler's native output).
+tckconvert tracks.tck tmp_store.trx -force -quiet
+tckconvert tmp_store.trx tmp_from_store.tck -force -quiet
+testing_diff_tck tracks.tck tmp_from_store.tck -distance 0.01
+
+# 2) Directory dataset: unzip the archive into a plain directory of members.
+rm -rf tmp_trx_dir
+mkdir tmp_trx_dir
+( cd tmp_trx_dir && unzip -q ../tmp_store.trx )
+# The directory (recognised by its contained "header.json") reads via the same
+#   handler with per-member memory-mapping (no extension needed).
+tckconvert tmp_trx_dir tmp_from_dir.tck -force -quiet
+testing_diff_tck tracks.tck tmp_from_dir.tck -distance 0.01
+
+# 3) ZIP_DEFLATE archive: recompress the members with deflate. The handler must
+#   detect the compressed archive, extract it to a temp dir and read it back.
+if command -v zip >/dev/null 2>&1; then
+  rm -f tmp_deflate.trx
+  ( cd tmp_trx_dir && zip -q -r -Z deflate ../tmp_deflate.trx . )
+  tckconvert tmp_deflate.trx tmp_from_deflate.tck -force -quiet
+  testing_diff_tck tracks.tck tmp_from_deflate.tck -distance 0.01
+fi

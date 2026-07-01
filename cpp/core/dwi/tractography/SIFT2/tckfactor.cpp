@@ -24,6 +24,17 @@
 #include "math/entropy.h"
 #include "math/math.h"
 
+#include "dwi/tractography/field_registry.h"
+#include "dwi/tractography/file.h"
+#include "dwi/tractography/formats/base.h"
+#include "dwi/tractography/formats/list.h"
+#include "dwi/tractography/properties.h"
+#include "dwi/tractography/sidecar.h"
+#include "dwi/tractography/sidecar_export.h"
+#include "dwi/tractography/sidecar_value.h"
+#include "dwi/tractography/tractogram.h"
+#include "dwi/tractography/tractogram_item.h"
+
 #include "dwi/tractography/SIFT2/coeff_optimiser.h"
 #include "dwi/tractography/SIFT2/fixel_updater.h"
 #include "dwi/tractography/SIFT2/reg_calculator.h"
@@ -339,19 +350,22 @@ void TckFactor::report_entropy() const {
        str(equiv_N) + " equally-weighted streamlines");
 }
 
-void TckFactor::output_factors(const std::filesystem::path &path) const {
+Eigen::Array<default_type, Eigen::Dynamic, 1> TckFactor::compute_weights() const {
   if (static_cast<size_t>(coefficients.size()) != contributions.size())
     throw Exception("Cannot output weighting factors if they have not first been estimated!");
-  decltype(coefficients) weights;
-  try {
-    weights.resize(coefficients.size());
-  } catch (...) {
-    WARN("Unable to assign memory for output factor file: \"" + path.filename().string() + "\" not created");
-    return;
-  }
+  decltype(coefficients) weights(coefficients.size());
   for (SIFT::track_t i = 0; i != num_tracks(); ++i)
     weights[i] = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ? 0.0 : std::exp(coefficients[i]);
-  File::Matrix::save_vector(weights, path);
+  return weights;
+}
+
+void TckFactor::output_weights(const std::filesystem::path &input_path, std::string_view arg) const {
+  const SidecarReference reference = parse_sidecar_reference(arg);
+  const Eigen::Array<default_type, Eigen::Dynamic, 1> weights = compute_weights();
+  // The destination form (standalone vector / embedded into a new or existing
+  //   tractogram, in place or via rewrite) is resolved by the shared exporter
+  //   from the reference and the format's capabilities (§2.7).
+  export_sidecar_column(reference, input_path, weights, "weights", {{"SIFT2_mu", str(mu())}});
 }
 
 void TckFactor::output_coefficients(const std::filesystem::path &path) const {

@@ -30,6 +30,10 @@ public:
   bool operator()(const Streamline<> &, Streamline<> &) const override;
   bool valid() const override { return (ratio >= 1); }
 
+  //! \brief downsampling retains a subset of the input vertices (§2.7; D8).
+  bool preserves_vertex_subset() const override { return true; }
+  std::vector<size_t> retained_indices(const Streamline<> &) const override;
+
   // This version guarantees that the seed point is retained, and
   //   updates the index of the seed point appropriately
   bool operator()(Tracking::GeneratedTrack &) const;

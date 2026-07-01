@@ -21,7 +21,15 @@ Usage
 Description
 -----------
 
-The program currently supports MRtrix .tck files (input/output), ascii text files (input/output), VTK polydata files (input/output), and RenderMan RIB (export only).
+The program currently supports MRtrix .tck files (input/output), ascii text files (input/output), VTK polydata files (input/output), QFib lossy compressed .qfib files (input/output), and RenderMan RIB (export only).
+
+The QFib format (Mercier et al.) stores each streamline as its first two vertices plus a sequence of quantized unit tangents. It is lossy, requires the input to be of constant step size (resample beforehand with "tckresample -step_size" otherwise), and stores geometry only: per-streamline weights and dps/dpv sidecar data are discarded.
+
+Some tractography file formats (the TrackVis ".trk" format and the TRX format) can embed per-streamline (dps) and per-vertex (dpv) sidecar data within the tractogram dataset itself. The -extract, -insert, -rename, -remove and -convert options manipulate this embedded data during conversion. Each takes a leading "dps" or "dpv" argument to disambiguate the two, since a per-streamline and a per-vertex field may legitimately share the same name. Per-streamline data is exchanged with standalone numerical files (text, ".csv" or ".npy"); per-vertex data with track scalar (".tsf") files. When a ".tsf" is produced from extracted per-vertex data, a matching "timestamp" key-value is recorded on both it and the output tractogram so the pair passes the track-scalar validation checks. Fields are always referenced by string name, never by index.
+
+By default vertex positions are read and written in MRtrix3 real (scanner) space. The -input_is_voxelspace and -input_is_imagespace options instead interpret the vertex positions of the input tractogram as voxel coordinates, or as image coordinates (in mm), of the provided reference image, converting them to real space for internal processing and output; the two are mutually exclusive. The -output_as_voxelspace option encodes the vertex positions of the output tractogram as voxel coordinates of the provided reference image rather than in real space; this requires an output format able to embed the corresponding voxel-to-real-space transform within its header (for example the TRX format), and raises an error otherwise.
+
+The -reference_image option embeds the spatial grid (the dimensions and the voxel-to-real-space transform) of the image from which the tractogram was generated into the output tractogram header as provenance metadata; unlike -output_as_voxelspace it does not alter the vertex positions, which remain in real space. It likewise requires an output format able to record that transform within its header (currently only the TRX format), and the two options are mutually exclusive.
 
 Example usages
 --------------
@@ -35,13 +43,19 @@ Example usages
 Options
 -------
 
--  **-scanner2voxel reference** if specified, the properties of this image will be used to convert track point positions from real (scanner) coordinates into voxel coordinates.
+Options to specify the coordinate space of the input and/or output vertex positions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-scanner2image reference** if specified, the properties of this image will be used to convert track point positions from real (scanner) coordinates into image coordinates (in mm).
+-  **-input_is_voxelspace reference** interpret the input tractogram vertex positions as voxel coordinates of this reference image
 
--  **-voxel2scanner reference** if specified, the properties of this image will be used to convert track point positions from voxel coordinates into real (scanner) coordinates.
+-  **-input_is_imagespace reference** interpret the input tractogram vertex positions as image coordinates (in mm) of this reference image
 
--  **-image2scanner reference** if specified, the properties of this image will be used to convert track point positions from image coordinates (in mm) into real (scanner) coordinates.
+-  **-output_as_voxelspace reference** store the output tractogram vertex positions as voxel coordinates of this reference image
+
+Options for embedding spatial metadata into the output tractogram header
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-reference_image image** embed the spatial grid of this reference image (the image from which the input tractogram was generated) into the output tractogram header
 
 Options specific to PLY writer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -64,6 +78,31 @@ Options specific to VTK writer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-ascii** write an ASCII VTK file (binary by default)
+
+Options specific to ZFIB writer
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-zfib_max_error value** the worst-case compression error in mm for lossy .zfib output (default: 0.5)
+
+Options specific to the QFib writer
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-qfib_bits depth** the per-direction quantization bit depth for lossy .qfib output, either 8 or 16 (default: 16)
+
+-  **-qfib_max_angle angle** the maximum streamline deviation angle in degrees for lossy .qfib output; defaults to the max_angle property of the input, else 90
+
+Options for manipulating embedded sidecar data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-extract type name file** *(multiple uses permitted)* extract an embedded sidecar field, referenced by name, to a standalone file
+
+-  **-insert type name file** *(multiple uses permitted)* embed a new sidecar field, read from a standalone file, into the output
+
+-  **-rename type old new** *(multiple uses permitted)* rename an embedded sidecar field
+
+-  **-remove type name** *(multiple uses permitted)* remove an embedded sidecar field
+
+-  **-convert type name datatype** *(multiple uses permitted)* change the on-disk datatype of an embedded sidecar field
 
 Standard options
 ^^^^^^^^^^^^^^^^

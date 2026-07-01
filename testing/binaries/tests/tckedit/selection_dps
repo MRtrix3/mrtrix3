@@ -1,0 +1,15 @@
+#!/bin/bash
+# Step 3: tckedit records the streamline selection as an embedded per-streamline
+#   (dps) field (-out_selection), one value per OUTPUT streamline, in addition to
+#   the output tractogram. The embedded selection must round-trip: it has exactly
+#   one entry per output streamline and every entry is 1 (selected).
+tckedit tckedit/in.tck -minlength 10 tmp.tck -out_selection tmp_sel.txt -force
+NTCK=$(tckinfo tmp.tck -count 2>/dev/null | grep -iE "actual count" | grep -oE "[0-9]+" | head -n1)
+# The selection file is a numerical per-streamline column (whitespace-separated);
+#   strip the comment header, then tokenise to count entries and check every value.
+grep -v '^#' tmp_sel.txt | tr ' \t' '\n\n' | grep -E '[0-9]' > tmp_tok.txt
+NSEL=$(grep -cE '[0-9]' tmp_tok.txt)
+echo "output streamlines: $NTCK ; selection entries: $NSEL"
+[ "$NTCK" -eq "$NSEL" ]
+# Every selection entry must be exactly 1.
+! grep -vqE '^1$' tmp_tok.txt

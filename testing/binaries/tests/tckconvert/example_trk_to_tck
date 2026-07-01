@@ -1,0 +1,11 @@
+#!/bin/bash
+# Reference-data interop (VTX_DATA_DIR, rordenlab TractographyFormat): the four
+#   "example.*" files are equivalent representations of one tractogram. Read the
+#   TrackVis "example.trk" and confirm the recovered geometry matches the canonical
+#   "example.tck". The ".trk" reader undoes the recorded vox_to_ras, applying the
+#   corner-origin (half-voxel) shift it implies, so the match is essentially exact.
+tckconvert example.trk tmp_trk2tck.tck -force -quiet
+if cmp -s tmp_trk2tck.tck example.tck; then
+  exit 0
+fi
+testing_diff_tck tmp_trk2tck.tck example.tck -distance 1e-4

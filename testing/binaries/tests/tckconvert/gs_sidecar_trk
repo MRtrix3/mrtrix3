@@ -1,0 +1,107 @@
+#!/bin/bash
+# Reference-data sidecar tests (TRX_DATA_DIR, tee-ar-ex gold standard) for the
+#   TrackVis file "gs.trk", exercising tckconvert's embedded-sidecar manipulation.
+#   gs.trk carries three per-vertex scalars (dpv "color_x/y/z") and the
+#   per-streamline "random_coord" (13x3) as three property columns. Sub-tests:
+#     1. extract the three dps columns; reassemble 13x3 and compare to
+#        streamlines_data.txt.
+#     2. extract dpv color_x/y/z to ".tsf"; compare each to points_data.txt.
+#     3. augment "gs.tck" with the (gold-equivalent) dps+dpv, write a ".trk", read
+#        it back and confirm the embedded sidecar reproduces the gold.
+#     5. strip dps/dpv (gs.trk -> ".tck"); geometry must equal "gs.tck".
+set -e
+
+# Oversight in the TRX sample data: gs.trk names only the FIRST of random_coord's
+#   three property columns ("random_coord"), leaving the other two unnamed (the
+#   MRtrix reader exposes them as the positional defaults "property_1"/"property_2").
+#   Normalise the three to "random_coordx/y/z" up front, writing an intermediate
+#   ".trk", so the sub-tests below reference meaningful field names.
+tckconvert gs.trk tmp_norm.trk \
+  -rename dps random_coord random_coordx \
+  -rename dps property_1 random_coordy \
+  -rename dps property_2 random_coordz -force -quiet
+
+# Sub-test 5: strip dps/dpv (-> ".tck"); geometry must equal "gs.tck".
+tckconvert tmp_norm.trk tmp_strip.tck -force -quiet
+testing_diff_tck tmp_strip.tck gs.tck -distance 1e-4
+
+# Sub-test 1: extract the three dps columns, reassemble 13x3 and compare to gold.
+tckconvert tmp_norm.trk tmp_s1.tck \
+  -extract dps random_coordx tmp_c0.txt -extract dps random_coordy tmp_c1.txt -extract dps random_coordz tmp_c2.txt \
+  -force -quiet
+python3 - tmp_c0.txt tmp_c1.txt tmp_c2.txt <<'PY'
+import json, sys
+def flat(path):
+    out = []
+    for line in open(path):
+        line = line.strip()
+        if line and not line.startswith('#'):
+            out += [float(x) for x in line.replace(',', ' ').split()]
+    return out
+columns = [flat(p) for p in sys.argv[1:4]]
+gold = json.load(open('streamlines_data.txt'))['random_coord']
+assert len(columns[0]) == len(gold), (len(columns[0]), len(gold))
+for i, row in enumerate(gold):
+    for c in range(3):
+        assert abs(columns[c][i] - float(row[c])) < 1e-4, (i, c, columns[c][i], row[c])
+print("dps random_coord (3 columns) matches gold")
+PY
+
+# Sub-test 2: extract the three dpv fields and compare their per-vertex values to
+#   the gold "points_data.txt".
+tckconvert tmp_norm.trk tmp_s2.tck \
+  -extract dpv color_x tmp_cx.tsf -extract dpv color_y tmp_cy.tsf -extract dpv color_z tmp_cz.tsf -force -quiet
+python3 - tmp_cx.tsf tmp_cy.tsf tmp_cz.tsf <<'PY'
+import json, struct, math, sys
+def read_tsf(path):
+    data = open(path, 'rb').read()
+    header = data[:4096].decode('latin1', 'ignore')
+    offset = None
+    for line in header.splitlines():
+        if line.startswith('file:'):
+            offset = int(line.split('.')[1])
+        if line.startswith('datatype:'):
+            assert line.split(':', 1)[1].strip() == 'Float32LE', line
+    raw = data[offset:]
+    values = struct.unpack('<%df' % (len(raw) // 4), raw[:len(raw) // 4 * 4])
+    out, current = [], []
+    for v in values:
+        if math.isinf(v):
+            break
+        if math.isnan(v):
+            out.append(current); current = []
+        else:
+            current.append(v)
+    return out
+gold = json.load(open('points_data.txt'))
+for component, path in zip(('color_x', 'color_y', 'color_z'), sys.argv[1:4]):
+    got, want = read_tsf(path), gold[component]
+    assert len(got) == len(want), (component, len(got), len(want))
+    for s in range(len(want)):
+        assert len(got[s]) == len(want[s]), (component, s, len(got[s]), len(want[s]))
+        for v in range(len(want[s])):
+            assert abs(got[s][v] - float(want[s][v][0])) < 1e-4, (component, s, v, got[s][v], want[s][v])
+print("dpv per-vertex values match gold")
+PY
+
+# Sub-test 3: augment "gs.tck" with the extracted (gold-equivalent) dps+dpv into a
+#   ".trk", read the embedded fields back and confirm they reproduce the gold.
+tckconvert gs.tck tmp_aug.trk \
+  -insert dps random_coordx tmp_c0.txt -insert dps random_coordy tmp_c1.txt -insert dps random_coordz tmp_c2.txt \
+  -insert dpv color_x tmp_cx.tsf -insert dpv color_y tmp_cy.tsf -insert dpv color_z tmp_cz.tsf -force -quiet
+tckconvert tmp_aug.trk tmp_s3.tck \
+  -extract dps random_coordx tmp_b0.txt -extract dpv color_x tmp_bx.tsf -force -quiet
+python3 - tmp_b0.txt tmp_c0.txt <<'PY'
+import sys
+def flat(path):
+    out = []
+    for line in open(path):
+        line = line.strip()
+        if line and not line.startswith('#'):
+            out += [float(x) for x in line.replace(',', ' ').split()]
+    return out
+a, b = flat(sys.argv[1]), flat(sys.argv[2])
+assert len(a) == len(b) and all(abs(x - y) < 1e-4 for x, y in zip(a, b)), "augmented dps mismatch"
+print("augmented dps matches")
+PY
+testing_diff_tsf tmp_bx.tsf tmp_cx.tsf -abs 1e-4 -noproperties

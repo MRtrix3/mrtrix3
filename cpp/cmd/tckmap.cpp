@@ -27,8 +27,8 @@
 #include "types.h"
 
 #include "dwi/gradient.h"
-#include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/tractogram.h"
 #include "dwi/tractography/weights.h"
 
 #include "dwi/tractography/mapping/loader.h"
@@ -217,7 +217,7 @@ void usage () {
     "NeuroImage, 2013, 67, 298-312 (Appendix 3)";
 
   ARGUMENTS
-  + Argument ("tracks", "the input track file.").type_file_in()
+  + Argument ("tracks", "the input track file.").type_tracks_in()
   + Argument ("output", "the output track-weighted image").type_image_out();
 
   OPTIONS
@@ -269,7 +269,9 @@ void run() {
   const std::filesystem::path output_image_path{argument[1]};
 
   Tractography::Properties properties;
-  Tractography::Reader<float> file(input_tracks_path, properties);
+  auto file = Tractography::Tractogram<float>::open(input_tracks_path, properties);
+  // Route the explicitly-specified streamline weights into Streamline::weight.
+  register_weight_input(file, input_tracks_path);
 
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t>(properties["count"]);
 

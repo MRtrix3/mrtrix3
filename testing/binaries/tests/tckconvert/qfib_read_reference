@@ -1,0 +1,21 @@
+#!/bin/bash
+# Byte-compatibility interop: decode a reference ".qfib" produced by the authors'
+#   QFib reference implementation and confirm the recovered geometry matches the
+#   source ".tck". This guards the two reconstructed numerical kernels (the
+#   octahedral packing and the Rousseau-Boubekeur cap mapping) and the assumed
+#   little-endianness against the canonical encoder. It is registered now but
+#   skips cleanly until the user supplies the reference data, at which point it
+#   activates automatically.
+#
+# REFERENCE DATA NOTE:
+#   Generate "reference.qfib" (octahedral, at 8-bit and 16-bit) from a known small
+#   constant-step tractogram using the authors' QFib reference implementation,
+#   plus the matching decompressed "reference_source.tck", and register both under
+#   the external "test_data" repository; then the comparison below activates and
+#   the test should be added to testing/binaries/CMakeLists.txt.
+if [ ! -f reference.qfib ] || [ ! -f reference_source.tck ]; then
+  echo "reference .qfib interop data not present; skipping read-reference interop test"
+  exit 0
+fi
+tckconvert reference.qfib tmp_interop.tck -force -quiet
+testing_diff_tck reference_source.tck tmp_interop.tck -distance 0.55

@@ -133,36 +133,23 @@ Tractography::Tractography(Dock *parent)
 
   main_box->addWidget(tractogram_list_view, 1);
 
-  hlayout = new HBoxLayout;
-  hlayout->setContentsMargins(0, 0, 0, 0);
-  hlayout->setSpacing(0);
+  // Builds the colour-map/scaling and threshold widgets embedded into the colour
+  //   and thresholding groups below.
+  scalar_file_options = new TrackScalarFileOptions(this);
 
-  hlayout->addWidget(new QLabel("color"));
+  // Outer group collecting the per-mechanism tractogram groups.
+  tractogram_options_groupbox = new QGroupBox("Tractogram-specific options");
+  VBoxLayout *tractogram_options_layout = new VBoxLayout;
+  tractogram_options_layout->setContentsMargins(0, 0, 0, 0);
+  tractogram_options_layout->setSpacing(0);
+  tractogram_options_groupbox->setLayout(tractogram_options_layout);
 
-  colour_combobox = new ComboBoxWithErrorMsg(this, "(variable)");
-  colour_combobox->setToolTip(tr("Set how this tractogram will be colored"));
-  colour_combobox->addItem("Direction");
-  colour_combobox->addItem("Endpoints");
-  colour_combobox->addItem("Random");
-  colour_combobox->addItem("Manual");
-  colour_combobox->addItem("File");
-  colour_combobox->setEnabled(false);
-  connect(colour_combobox, SIGNAL(activated(int)), this, SLOT(colour_mode_selection_slot(int)));
-  hlayout->addWidget(colour_combobox);
-
-  colour_button = new QColorButton;
-  colour_button->setToolTip(tr("Set the fixed colour to use for all tracks"));
-  colour_button->setEnabled(false);
-  connect(colour_button, SIGNAL(clicked()), this, SLOT(colour_button_slot()));
-  hlayout->addWidget(colour_button);
-
-  main_box->addLayout(hlayout);
-
-  hlayout = new HBoxLayout;
-  hlayout->setContentsMargins(0, 0, 0, 0);
-  hlayout->setSpacing(0);
-
-  hlayout->addWidget(new QLabel("geometry"));
+  // --- GEOMETRY group ---
+  geometry_groupbox = new QGroupBox("geometry");
+  HBoxLayout *geometry_layout = new HBoxLayout;
+  geometry_layout->setContentsMargins(0, 0, 0, 0);
+  geometry_layout->setSpacing(0);
+  geometry_groupbox->setLayout(geometry_layout);
 
   geom_type_combobox = new ComboBoxWithErrorMsg(this, "(variable)");
   geom_type_combobox->setToolTip(tr("Set the tractogram geometry type"));
@@ -171,27 +158,134 @@ Tractography::Tractography(Dock *parent)
   for (const auto &geom_type_name : magic_enum::enum_names<TrackGeometryType>())
     geom_type_combobox->addItem(qstr(geom_type_name));
   connect(geom_type_combobox, SIGNAL(activated(int)), this, SLOT(geom_type_selection_slot(int)));
-  hlayout->addWidget(geom_type_combobox);
+  geometry_layout->addWidget(geom_type_combobox);
 
-  main_box->addLayout(hlayout);
+  tractogram_options_layout->addWidget(geometry_groupbox);
+
+  // --- COLOUR group (mode selection + colour-map/scaling for scalar colouring) ---
+  colour_groupbox = new QGroupBox("colour");
+  VBoxLayout *colour_box = new VBoxLayout;
+  colour_box->setContentsMargins(0, 0, 0, 0);
+  colour_box->setSpacing(0);
+  colour_groupbox->setLayout(colour_box);
 
   hlayout = new HBoxLayout;
   hlayout->setContentsMargins(0, 0, 0, 0);
   hlayout->setSpacing(0);
+  hlayout->addWidget(new QLabel("color"));
 
+  colour_combobox = new ComboBoxWithErrorMsg(this, "(variable)");
+  colour_combobox->setToolTip(tr("Set how this tractogram will be colored"));
+  colour_combobox->addItem("Direction");
+  colour_combobox->addItem("Endpoints");
+  colour_combobox->addItem("Random");
+  colour_combobox->addItem("Manual");
+  colour_combobox->addItem("Sidecar file");
+  colour_combobox->setEnabled(false);
+  connect(colour_combobox, SIGNAL(activated(int)), this, SLOT(colour_mode_selection_slot(int)));
+  hlayout->addWidget(colour_combobox);
+
+  // The fixed-colour chooser and the colour-map menu are mutually exclusive (Manual
+  //   vs scalar colouring); each is shown only when its mode is active.
+  colour_button = new QColorButton;
+  colour_button->setToolTip(tr("Set the fixed colour to use for all tracks"));
+  colour_button->setVisible(false);
+  connect(colour_button, SIGNAL(clicked()), this, SLOT(colour_button_slot()));
+  hlayout->addWidget(colour_button);
+
+  scalar_file_options->colourmap_button->setVisible(false);
+  hlayout->addWidget(scalar_file_options->colourmap_button);
+
+  colour_box->addLayout(hlayout);
+  colour_box->addWidget(scalar_file_options->colour_scaling_widget);
+
+  tractogram_options_layout->addWidget(colour_groupbox);
+
+  // --- THRESHOLDING group ---
+  threshold_groupbox = new QGroupBox("thresholding");
+  VBoxLayout *threshold_box = new VBoxLayout;
+  threshold_box->setContentsMargins(0, 0, 0, 0);
+  threshold_box->setSpacing(0);
+  threshold_groupbox->setLayout(threshold_box);
+  threshold_box->addWidget(scalar_file_options->threshold_widget);
+
+  tractogram_options_layout->addWidget(threshold_groupbox);
+
+  // --- THICKNESS group (global slider + modulation source + offset/scale) ---
+  thickness_groupbox = new QGroupBox("thickness");
+  VBoxLayout *thickness_box = new VBoxLayout;
+  thickness_box->setContentsMargins(0, 0, 0, 0);
+  thickness_box->setSpacing(0);
+  thickness_groupbox->setLayout(thickness_box);
+
+  hlayout = new HBoxLayout;
+  hlayout->setContentsMargins(0, 0, 0, 0);
+  hlayout->setSpacing(0);
   thickness_label = new QLabel("thickness");
   hlayout->addWidget(thickness_label);
-
   thickness_slider = new QSlider(Qt::Horizontal);
   thickness_slider->setRange(-1000, 1000);
   thickness_slider->setSliderPosition(0);
   connect(thickness_slider, SIGNAL(valueChanged(int)), this, SLOT(line_thickness_slot(int)));
   hlayout->addWidget(thickness_slider);
+  thickness_box->addLayout(hlayout);
 
-  main_box->addLayout(hlayout);
+  hlayout = new HBoxLayout;
+  hlayout->setContentsMargins(0, 0, 0, 0);
+  hlayout->setSpacing(0);
+  thickness_modulation_label = new QLabel("modulate");
+  hlayout->addWidget(thickness_modulation_label);
+  thickness_modulation_combobox = new QComboBox(this);
+  thickness_modulation_combobox->setToolTip(
+      tr("Modulate streamline thickness by tractogram sidecar data"
+         " (pseudo-tube width scales as its square root, point radius as its cube root)"));
+  thickness_modulation_combobox->addItem("None");
+  thickness_modulation_combobox->addItem("Sidecar file");
+  connect(thickness_modulation_combobox, SIGNAL(activated(int)), this, SLOT(thickness_modulation_selection_slot(int)));
+  hlayout->addWidget(thickness_modulation_combobox);
+  thickness_box->addLayout(hlayout);
 
-  scalar_file_options = new TrackScalarFileOptions(this);
-  main_box->addWidget(scalar_file_options);
+  hlayout = new HBoxLayout;
+  hlayout->setContentsMargins(0, 0, 0, 0);
+  hlayout->setSpacing(0);
+  thickness_offset_label = new QLabel("offset");
+  hlayout->addWidget(thickness_offset_label);
+  thickness_offset_button = new AdjustButton(this);
+  thickness_offset_button->setToolTip(
+      tr("Sidecar value mapped to zero thickness; values below it render at zero thickness"));
+  thickness_offset_button->setValue(0.0);
+  connect(thickness_offset_button, SIGNAL(valueChanged()), this, SLOT(thickness_offset_slot()));
+  hlayout->addWidget(thickness_offset_button);
+  // Separate the offset control from the scale control so they don't run together.
+  hlayout->addSpacing(8);
+  thickness_scale_label = new QLabel("scale");
+  hlayout->addWidget(thickness_scale_label);
+  thickness_scale_button = new AdjustButton(this);
+  thickness_scale_button->setToolTip(
+      tr("Sidecar value span mapped to the unmodulated thickness"
+         " (auto-populated with the data mean so typical thickness is stable across data)"));
+  thickness_scale_button->setValue(1.0);
+  connect(thickness_scale_button, SIGNAL(valueChanged()), this, SLOT(thickness_scale_slot()));
+  hlayout->addWidget(thickness_scale_button);
+  thickness_box->addLayout(hlayout);
+
+  hlayout = new HBoxLayout;
+  hlayout->setContentsMargins(0, 0, 0, 0);
+  hlayout->setSpacing(0);
+  // Label text is set per-geometry in update_geometry_type_gui().
+  thickness_power_checkbox = new QCheckBox("value is cylinder area");
+  thickness_power_checkbox->setToolTip(
+      tr("When checked, the sidecar value is treated as cross-sectional area (pseudo-tubes) or"
+         " volume (points), so thickness scales as its square root or cube root respectively;"
+         " when unchecked, thickness is proportional to the value directly"));
+  thickness_power_checkbox->setChecked(true);
+  connect(thickness_power_checkbox, SIGNAL(stateChanged(int)), this, SLOT(thickness_power_slot(int)));
+  hlayout->addWidget(thickness_power_checkbox);
+  thickness_box->addLayout(hlayout);
+
+  tractogram_options_layout->addWidget(thickness_groupbox);
+
+  main_box->addWidget(tractogram_options_groupbox);
 
   QGroupBox *general_groupbox = new QGroupBox("General options");
   GridLayout *general_opt_grid = new GridLayout;
@@ -277,6 +371,17 @@ Tractography::Tractography(Dock *parent)
   // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
   geom_type_combobox->setCurrentIndex(*magic_enum::enum_index(Tractogram::default_tract_geom));
 
+  // CONF option: MRViewTractogramHalfPrecisionGPU
+  // CONF default: false (0)
+  // CONF Force mrview to upload tractogram vertex data to the GPU in IEEE
+  // CONF half-precision (16-bit float) regardless of the input file's on-disk
+  // CONF vertex datatype, halving the vertex buffer footprint at the cost of
+  // CONF positional precision (~0.06 mm near +/-100 mm). This is a rendering
+  // CONF representation only and never feeds quantitative paths. When unset,
+  // CONF mrview honours the on-disk datatype (Float16 -> half; Float32 -> float;
+  // CONF Float64 -> float).
+  Tractogram::force_half_precision_gpu = File::Config::get_bool("MRViewTractogramHalfPrecisionGPU", false);
+
   // In the instance where pseudotubes are _not_ the default, enable lighting by default
   if (Tractogram::default_tract_geom != TrackGeometryType::Pseudotubes) {
     use_lighting = true;
@@ -306,7 +411,7 @@ void Tractography::draw_colourbars() {
   for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
     Tractogram *tractogram = dynamic_cast<Tractogram *>(tractogram_list_model->items[i].get());
     if (tractogram->show && tractogram->get_color_type() == TrackColourType::ScalarFile &&
-        !tractogram->intensity_scalar_path.empty())
+        (!tractogram->intensity_scalar_path.empty() || tractogram->intensity_embedded_field.has_value()))
       tractogram->request_render_colourbar(*scalar_file_options);
   }
 }
@@ -318,7 +423,7 @@ size_t Tractography::visible_number_colourbars() {
     for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
       Tractogram *tractogram = dynamic_cast<Tractogram *>(tractogram_list_model->items[i].get());
       if (tractogram->show && tractogram->get_color_type() == TrackColourType::ScalarFile &&
-          !tractogram->intensity_scalar_path.empty())
+          (!tractogram->intensity_scalar_path.empty() || tractogram->intensity_embedded_field.has_value()))
         total_visible += 1;
     }
   }
@@ -398,7 +503,7 @@ void Tractography::on_crop_to_slab_slot(bool is_checked) {
 
   for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
     Tractogram *tractogram = dynamic_cast<Tractogram *>(tractogram_list_model->items[i].get());
-    tractogram->should_update_stride = true;
+    tractogram->should_update_lod = true;
   }
 
   window().updateGL();
@@ -432,7 +537,7 @@ void Tractography::line_thickness_slot(int thickness) {
   for (int i = 0; i < indices.size(); ++i) {
     Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[i]);
     tractogram->line_thickness = thickness;
-    tractogram->should_update_stride = true;
+    tractogram->should_update_lod = true;
   }
 
   window().updateGL();
@@ -449,18 +554,10 @@ void Tractography::right_click_menu_slot(const QPoint &pos) {
 
 void Tractography::colour_track_by_direction_slot() {
   QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i) {
-    Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[i]);
-    tractogram->set_color_type(TrackColourType::Direction);
-    if (tractogram->get_threshold_type() == TrackThresholdType::UseColourFile)
-      tractogram->set_threshold_type(TrackThresholdType::None);
-  }
-  colour_combobox->blockSignals(true);
-  colour_combobox->setCurrentIndex(0);
-  colour_combobox->clearError();
-  colour_combobox->blockSignals(false);
-  colour_button->setEnabled(false);
+  for (int i = 0; i < indices.size(); ++i)
+    tractogram_list_model->get_tractogram(indices[i])->set_color_type(TrackColourType::Direction);
   update_scalar_options();
+  update_colour_gui();
   window().updateGL();
 }
 
@@ -470,15 +567,9 @@ void Tractography::colour_track_by_ends_slot() {
     Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[i]);
     tractogram->set_color_type(TrackColourType::Ends);
     tractogram->load_end_colours();
-    if (tractogram->get_threshold_type() == TrackThresholdType::UseColourFile)
-      tractogram->set_threshold_type(TrackThresholdType::None);
   }
-  colour_combobox->blockSignals(true);
-  colour_combobox->setCurrentIndex(1);
-  colour_combobox->clearError();
-  colour_combobox->blockSignals(false);
-  colour_button->setEnabled(false);
   update_scalar_options();
+  update_colour_gui();
   window().updateGL();
 }
 
@@ -496,17 +587,9 @@ void Tractography::randomise_track_colour_slot() {
     tractogram->set_color_type(TrackColourType::Manual);
     QColor c(colour[0] * 255.0F, colour[1] * 255.0F, colour[2] * 255.0F);
     tractogram->set_colour(c);
-    if (tractogram->get_threshold_type() == TrackThresholdType::UseColourFile)
-      tractogram->set_threshold_type(TrackThresholdType::None);
-    if (!i)
-      colour_button->setColor(c);
   }
-  colour_combobox->blockSignals(true);
-  colour_combobox->setCurrentIndex(2);
-  colour_combobox->clearError();
-  colour_combobox->blockSignals(false);
-  colour_button->setEnabled(true);
   update_scalar_options();
+  update_colour_gui();
   window().updateGL();
 }
 
@@ -519,16 +602,9 @@ void Tractography::set_track_colour_slot() {
       Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[i]);
       tractogram->set_color_type(TrackColourType::Manual);
       tractogram->set_colour(color);
-      if (tractogram->get_threshold_type() == TrackThresholdType::UseColourFile)
-        tractogram->set_threshold_type(TrackThresholdType::None);
     }
-    colour_combobox->blockSignals(true);
-    colour_combobox->setCurrentIndex(3);
-    colour_combobox->clearError();
-    colour_combobox->blockSignals(false);
-    colour_button->setEnabled(true);
-    colour_button->setColor(color);
     update_scalar_options();
+    update_colour_gui();
   }
   window().updateGL();
 }
@@ -542,65 +618,143 @@ void Tractography::colour_by_scalar_file_slot() {
                          tr("Cannot set multiple tractograms to use the same file for streamline colouring"),
                          QMessageBox::Ok,
                          QMessageBox::Ok);
+    update_colour_gui();
     return;
   }
 
   Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[0]);
   scalar_file_options->set_tractogram(tractogram);
-  if (tractogram->intensity_scalar_path.empty()) {
-    if (!scalar_file_options->open_intensity_track_scalar_file_slot()) {
-      colour_combobox->blockSignals(true);
-      switch (tractogram->get_color_type()) {
-      case TrackColourType::Direction:
-        colour_combobox->setCurrentIndex(0);
-        break;
-      case TrackColourType::Ends:
-        colour_combobox->setCurrentIndex(1);
-        break;
-      case TrackColourType::Manual:
-        colour_combobox->setCurrentIndex(3);
-        break;
-      case TrackColourType::ScalarFile:
-        colour_combobox->setCurrentIndex(4);
-        break;
-      }
-      colour_combobox->clearError();
-      colour_combobox->blockSignals(false);
-      return;
-    }
-  }
-  tractogram->set_color_type(TrackColourType::ScalarFile);
-  colour_combobox->blockSignals(true);
-  colour_combobox->setCurrentIndex(4);
-  colour_combobox->clearError();
-  colour_combobox->blockSignals(false);
-  colour_button->setEnabled(false);
+  // Always prompt for a (possibly different) sidecar file; on success the helper
+  //   loads it and sets the colour type to ScalarFile. On cancel the colour state
+  //   is unchanged and update_colour_gui() restores the combo.
+  scalar_file_options->open_intensity_track_scalar_file_slot();
   update_scalar_options();
+  update_colour_gui();
   window().updateGL();
 }
 
 void Tractography::colour_mode_selection_slot(int) {
-  switch (colour_combobox->currentIndex()) {
+  const int index = colour_combobox->currentIndex();
+  switch (index) {
   case 0:
     colour_track_by_direction_slot();
-    break;
+    return;
   case 1:
     colour_track_by_ends_slot();
-    break;
+    return;
   case 2:
     randomise_track_colour_slot();
-    break;
+    return;
   case 3:
     set_track_colour_slot();
-    break;
+    return;
   case 4:
     colour_by_scalar_file_slot();
-    break;
-  case 5:
-    break;
+    return;
   default:
-    assert(0);
+    break;
   }
+  // Indices beyond the fixed modes are an embedded-field entry, the trailing
+  //   loaded-file label (that source is already active, so a no-op), or the
+  //   trailing "(variable)" error entry (also a no-op).
+  QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+  if (indices.size() == 1) {
+    const Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[0]);
+    const size_t entry = static_cast<size_t>(index - num_fixed_colour_modes);
+    if (entry < tractogram->embedded_scalar_fields().size())
+      colour_by_embedded_field_slot(entry);
+  }
+}
+
+void Tractography::colour_by_embedded_field_slot(const size_t entry) {
+  QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+  if (indices.size() != 1)
+    return;
+  Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[0]);
+  try {
+    tractogram->load_intensity_embedded_scalars(entry);
+    tractogram->set_color_type(TrackColourType::ScalarFile);
+  } catch (Exception &e) {
+    e.display();
+    update_colour_gui();
+    return;
+  }
+  scalar_file_options->set_tractogram(tractogram);
+  update_scalar_options();
+  update_colour_gui();
+  window().updateGL();
+}
+
+void Tractography::update_colour_gui() {
+  QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+  const bool any = !indices.empty();
+  const bool single = indices.size() == 1;
+
+  colour_combobox->blockSignals(true);
+  colour_combobox->clearError();
+  colour_combobox->setToolTip(tr("Set how this tractogram will be colored"));
+  // Strip previous embedded-field and trailing loaded-file entries.
+  while (colour_combobox->count() > num_fixed_colour_modes)
+    colour_combobox->removeItem(colour_combobox->count() - 1);
+
+  colour_combobox->setEnabled(any);
+  if (!any) {
+    colour_button->setVisible(false);
+    scalar_file_options->colourmap_button->setVisible(false);
+    colour_combobox->blockSignals(false);
+    return;
+  }
+
+  const Tractogram *first = tractogram_list_model->get_tractogram(indices[0]);
+  const TrackColourType color_type = first->get_color_type();
+  bool consistent = true;
+  for (int i = 1; i != indices.size(); ++i)
+    if (tractogram_list_model->get_tractogram(indices[i])->get_color_type() != color_type)
+      consistent = false;
+
+  // The embedded-field entries (and the trailing loaded external file) are
+  //   tractogram-specific, so only listed for a single selection.
+  if (single)
+    for (const auto &field : first->embedded_scalar_fields())
+      colour_combobox->addItem(qstr(field.label()));
+
+  // The fixed-colour chooser is shown only for Manual; the colour-map menu only
+  //   for scalar colouring; the two modes are mutually exclusive.
+  colour_button->setVisible(consistent && color_type == TrackColourType::Manual);
+  scalar_file_options->colourmap_button->setVisible(single && color_type == TrackColourType::ScalarFile);
+
+  if (!consistent) {
+    colour_combobox->setError();
+    colour_combobox->blockSignals(false);
+    return;
+  }
+
+  switch (color_type) {
+  case TrackColourType::Direction:
+    colour_combobox->setCurrentIndex(0);
+    break;
+  case TrackColourType::Ends:
+    colour_combobox->setCurrentIndex(1);
+    break;
+  case TrackColourType::Manual:
+    colour_combobox->setCurrentIndex(3);
+    colour_button->setColor(QColor(first->colour[0], first->colour[1], first->colour[2]));
+    break;
+  case TrackColourType::ScalarFile:
+    if (single && first->intensity_embedded_field.has_value()) {
+      colour_combobox->setCurrentIndex(num_fixed_colour_modes + static_cast<int>(*first->intensity_embedded_field));
+    } else if (single && !first->intensity_scalar_path.empty()) {
+      // Show the loaded external file as the final combo entry and select it; the
+      //   "Sidecar file" entry above stays available to choose a different file.
+      colour_combobox->addItem(qstr(shorten(first->intensity_scalar_path.filename().string(), 35, 0)));
+      colour_combobox->setToolTip(qstr(first->intensity_scalar_path.string()));
+      colour_combobox->setCurrentIndex(colour_combobox->count() - 1);
+    } else {
+      colour_combobox->setCurrentIndex(4);
+    }
+    break;
+  }
+  colour_combobox->blockSignals(false);
 }
 
 void Tractography::colour_button_slot() {
@@ -612,10 +766,7 @@ void Tractography::colour_button_slot() {
     QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
     for (int i = 0; i < indices.size(); ++i)
       tractogram_list_model->get_tractogram(indices[i])->set_colour(color);
-    colour_combobox->blockSignals(true);
-    colour_combobox->setCurrentIndex(3); // In case it was on random
-    colour_combobox->clearError();
-    colour_combobox->blockSignals(false);
+    update_colour_gui();
     window().updateGL();
   }
 }
@@ -637,58 +788,158 @@ void Tractography::geom_type_selection_slot(int selected_index) {
   window().updateGL();
 }
 
+void Tractography::thickness_modulation_selection_slot(int) {
+  QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+  // The control is only enabled for a single selection (an embedded field is
+  //   tractogram-specific); restore the displayed state and bail otherwise.
+  if (indices.size() != 1) {
+    rebuild_thickness_modulation_combobox();
+    return;
+  }
+
+  Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[0]);
+  const int index = thickness_modulation_combobox->currentIndex();
+
+  switch (index) {
+  case 0: // None: leave every streamline at the global thickness.
+    tractogram->set_thickness_type(TrackThicknessType::None);
+    tractogram->erase_thickness_scalar_data();
+    break;
+  case 1: { // External scalar file (.tsf per-vertex, or a per-streamline text vector).
+    std::filesystem::path file_path;
+    auto load_paths = Dialog::File::input_filepath(
+        this, "Select scalar text file or Track Scalar file (.tsf) for thickness modulation", "", current_folder);
+    if (!load_paths.empty()) {
+      current_folder = load_paths.last_directory;
+      try {
+        file_path = load_paths.single_selection;
+        tractogram->load_thickness_track_scalars(load_paths.single_selection);
+        tractogram->set_thickness_type(TrackThicknessType::SidecarData);
+      } catch (Exception &E) {
+        E.display();
+        file_path.clear();
+      }
+    }
+    if (file_path.empty()) {
+      // Cancelled or failed: restore the combo to the unchanged state.
+      rebuild_thickness_modulation_combobox();
+      return;
+    }
+  } break;
+  default: {
+    // Combo layout: [None, File, embedded fields..., (loaded file)]. Embedded
+    //   entries carry their embedded_scalar_fields() index as item user data; the
+    //   trailing loaded-file label carries none and is a no-op when re-selected.
+    const QVariant data = thickness_modulation_combobox->itemData(index);
+    if (data.isValid()) {
+      try {
+        tractogram->load_thickness_embedded_scalars(static_cast<size_t>(data.toInt()));
+        tractogram->set_thickness_type(TrackThicknessType::SidecarData);
+      } catch (Exception &E) {
+        E.display();
+        rebuild_thickness_modulation_combobox();
+        return;
+      }
+    }
+  } break;
+  }
+
+  rebuild_thickness_modulation_combobox();
+  update_geometry_type_gui();
+  window().updateGL();
+}
+
+void Tractography::thickness_offset_slot() {
+  QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+  if (indices.size() != 1)
+    return;
+  tractogram_list_model->get_tractogram(indices[0])->thickness_offset = thickness_offset_button->value();
+  window().updateGL();
+}
+
+void Tractography::thickness_scale_slot() {
+  QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+  if (indices.size() != 1)
+    return;
+  tractogram_list_model->get_tractogram(indices[0])->thickness_scale = thickness_scale_button->value();
+  window().updateGL();
+}
+
+void Tractography::thickness_power_slot(int) {
+  QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+  if (indices.size() != 1)
+    return;
+  tractogram_list_model->get_tractogram(indices[0])->thickness_power_transform = thickness_power_checkbox->isChecked();
+  window().updateGL();
+}
+
+void Tractography::rebuild_thickness_modulation_combobox() {
+  thickness_modulation_combobox->blockSignals(true);
+  thickness_modulation_combobox->clear();
+  thickness_modulation_combobox->setToolTip(QString());
+  thickness_modulation_combobox->addItem("None");
+  thickness_modulation_combobox->addItem("Sidecar file");
+
+  QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+  if (indices.size() == 1) {
+    const Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[0]);
+    // Append one entry per embedded field column (any dpv or dps), recording the
+    //   field's index into embedded_scalar_fields() as the item's user data.
+    const std::vector<EmbeddedScalarField> &fields = tractogram->embedded_scalar_fields();
+    for (size_t i = 0; i != fields.size(); ++i)
+      thickness_modulation_combobox->addItem(qstr(fields[i].label()), QVariant(static_cast<int>(i)));
+
+    switch (tractogram->get_thickness_type()) {
+    case TrackThicknessType::None:
+      thickness_modulation_combobox->setCurrentIndex(0);
+      break;
+    case TrackThicknessType::SidecarData:
+      if (tractogram->thickness_embedded_field.has_value()) {
+        const int target = static_cast<int>(*tractogram->thickness_embedded_field);
+        int found = 0;
+        for (int j = 0; j != thickness_modulation_combobox->count(); ++j) {
+          const QVariant data = thickness_modulation_combobox->itemData(j);
+          if (data.isValid() && data.toInt() == target) {
+            found = j;
+            break;
+          }
+        }
+        thickness_modulation_combobox->setToolTip(
+            qstr("Embedded field: " + fields[static_cast<size_t>(target)].label()));
+        thickness_modulation_combobox->setCurrentIndex(found);
+      } else {
+        assert(!tractogram->thickness_scalar_path.empty());
+        thickness_modulation_combobox->addItem(
+            qstr(shorten(tractogram->thickness_scalar_path.filename().string(), 35, 0)));
+        thickness_modulation_combobox->setToolTip(qstr(tractogram->thickness_scalar_path.string()));
+        thickness_modulation_combobox->setCurrentIndex(thickness_modulation_combobox->count() - 1);
+      }
+      break;
+    }
+  }
+  thickness_modulation_combobox->blockSignals(false);
+}
+
 void Tractography::selection_changed_slot(const QItemSelection &, const QItemSelection &) {
   update_scalar_options();
   update_geometry_type_gui();
+  update_colour_gui();
+  rebuild_thickness_modulation_combobox();
 
   QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-  if (indices.empty()) {
-    colour_combobox->setEnabled(false);
-    colour_button->setEnabled(false);
+  if (indices.empty())
     return;
-  }
-  colour_combobox->setEnabled(true);
 
   const Tractogram *first_tractogram = tractogram_list_model->get_tractogram(indices[0]);
 
-  TrackColourType color_type = first_tractogram->get_color_type();
-  QColor color(first_tractogram->colour[0], first_tractogram->colour[1], first_tractogram->colour[2]);
   TrackGeometryType geom_type = first_tractogram->get_geometry_type();
-  bool color_type_consistent = true, geometry_type_consistent = true;
+  bool geometry_type_consistent = true;
   float mean_thickness = first_tractogram->line_thickness;
   for (int i = 1; i != indices.size(); ++i) {
     const Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[i]);
-    if (tractogram->get_color_type() != color_type)
-      color_type_consistent = false;
     if (tractogram->get_geometry_type() != geom_type)
       geometry_type_consistent = false;
     mean_thickness += tractogram->line_thickness;
-  }
-  if (color_type_consistent) {
-    colour_combobox->blockSignals(true);
-    switch (color_type) {
-    case TrackColourType::Direction:
-      colour_combobox->setCurrentIndex(0);
-      colour_button->setEnabled(false);
-      break;
-    case TrackColourType::Ends:
-      colour_combobox->setCurrentIndex(1);
-      colour_button->setEnabled(false);
-      break;
-    case TrackColourType::Manual:
-      colour_combobox->setCurrentIndex(3);
-      colour_button->setEnabled(true);
-      colour_button->setColor(color);
-      break;
-    case TrackColourType::ScalarFile:
-      colour_combobox->setCurrentIndex(4);
-      colour_button->setEnabled(false);
-      break;
-    }
-    colour_combobox->clearError();
-    colour_combobox->blockSignals(false);
-  } else {
-    colour_combobox->setError();
   }
 
   if (geometry_type_consistent) {
@@ -725,26 +976,64 @@ void Tractography::update_scalar_options() {
 }
 
 void Tractography::update_geometry_type_gui() {
-  thickness_slider->setHidden(true);
-  thickness_label->setHidden(true);
+  QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+  const bool any = !indices.empty();
+  const bool single = indices.size() == 1;
+  const Tractogram *first_tractogram = any ? tractogram_list_model->get_tractogram(indices[0]) : nullptr;
+
+  // The outer "Tractogram-specific options" group appears with any selection.
+  tractogram_options_groupbox->setVisible(any);
+
+  // Per-mechanism groups: geometry and colour apply to any selection; thresholding
+  //   operates on a single tractogram; thickness needs a width-bearing geometry.
+  geometry_groupbox->setVisible(any);
+  colour_groupbox->setVisible(any);
+  threshold_groupbox->setVisible(single);
+  thickness_groupbox->setVisible(false);
+
+  geom_type_combobox->setEnabled(any);
   lighting_button->setEnabled(false);
   lighting_group_box->setEnabled(false);
-  geom_type_combobox->setEnabled(false);
 
-  QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-  if (indices.empty())
+  if (!first_tractogram)
     return;
 
-  geom_type_combobox->setEnabled(true);
-
-  const Tractogram *first_tractogram = tractogram_list_model->get_tractogram(indices[0]);
   const TrackGeometryType geom_type = first_tractogram->get_geometry_type();
+  if (geom_type != TrackGeometryType::Pseudotubes && geom_type != TrackGeometryType::Points)
+    return;
 
-  if (geom_type == TrackGeometryType::Pseudotubes || geom_type == TrackGeometryType::Points) {
-    thickness_slider->setHidden(false);
-    thickness_label->setHidden(false);
-    lighting_button->setEnabled(true);
-    lighting_group_box->setEnabled(true);
+  // The whole thickness group (slider, modulation combo, offset/scale) is shown
+  //   only for a width-bearing geometry, so the slider and modulation control share
+  //   visibility exactly.
+  thickness_groupbox->setVisible(true);
+  lighting_button->setEnabled(true);
+  lighting_group_box->setEnabled(true);
+
+  // Modulation needs a single selection to choose a field; offset and scale are
+  //   only meaningful while modulation is active.
+  thickness_modulation_combobox->setEnabled(single);
+  thickness_modulation_label->setEnabled(single);
+  const bool modulating = single && first_tractogram->get_thickness_type() == TrackThicknessType::SidecarData;
+  thickness_offset_label->setVisible(modulating);
+  thickness_offset_button->setVisible(modulating);
+  thickness_scale_label->setVisible(modulating);
+  thickness_scale_button->setVisible(modulating);
+  thickness_power_checkbox->setVisible(modulating);
+  if (modulating) {
+    thickness_offset_button->blockSignals(true);
+    thickness_offset_button->setRate(first_tractogram->get_thickness_offset_rate());
+    thickness_offset_button->setValue(first_tractogram->thickness_offset);
+    thickness_offset_button->blockSignals(false);
+    thickness_scale_button->blockSignals(true);
+    thickness_scale_button->setRate(first_tractogram->get_thickness_offset_rate());
+    thickness_scale_button->setValue(first_tractogram->thickness_scale);
+    thickness_scale_button->blockSignals(false);
+    thickness_power_checkbox->blockSignals(true);
+    thickness_power_checkbox->setChecked(first_tractogram->thickness_power_transform);
+    // Only the detail relevant to the current geometry is shown.
+    thickness_power_checkbox->setText(geom_type == TrackGeometryType::Pseudotubes ? "value is cylinder area"
+                                                                                  : "value is sphere volume");
+    thickness_power_checkbox->blockSignals(false);
   }
 }
 
@@ -841,8 +1130,8 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
           scalar_file_options->set_tractogram(tractogram);
           scalar_file_options->open_intensity_track_scalar_file_slot(std::string(opt[0]));
 
-          // Set the GUI to use the file for visualisation
-          colour_combobox->setCurrentIndex(4); // Set combobox to "File"
+          // Reflect the loaded file as the trailing colour-combo entry.
+          update_colour_gui();
         }
       }
     } catch (Exception &E) {
@@ -869,7 +1158,7 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
       // Set the tsf visualisation threshold
       std::vector<default_type> range;
       if (process_commandline_option_tsf_option(opt, 2, range))
-        scalar_file_options->set_threshold(TrackThresholdType::UseColourFile, range[0], range[1]);
+        scalar_file_options->set_threshold(range[0], range[1]);
     } catch (Exception &E) {
       E.display();
     }
@@ -940,10 +1229,7 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
       tractogram->set_color_type(TrackColourType::Manual);
       tractogram->set_colour(colour);
 
-      // update_color_type_gui
-      colour_combobox->setCurrentIndex(3);
-      colour_button->setEnabled(true);
-      colour_button->setColor(colour);
+      update_colour_gui();
 
     } catch (Exception &e) {
       e.display();

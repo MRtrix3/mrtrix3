@@ -1,0 +1,15 @@
+#!/bin/bash
+# When the destination EXISTS and its format cannot be augmented in place (a
+#   compressed TRX archive, written here via "-config TRXArchiveCompression
+#   deflate"), adding a field requires -force: the dataset is rewritten with the
+#   field added. Without -force the export must fail; with -force it succeeds and
+#   the streamline geometry round-trips. This also exercises the deflate write and
+#   read (extraction) paths.
+rm -rf tmp_rw.trx tmp_rw_rt.tck tmp_rw.txt
+tckconvert SIFT_phantom/tracks.tck tmp_rw.trx -config TRXArchiveCompression deflate -force
+! tcksift2 SIFT_phantom/tracks.tck SIFT_phantom/fods.mif tmp_rw.trx::w 2> tmp_rw.txt
+cat tmp_rw.txt
+grep -i "already exists" tmp_rw.txt
+tcksift2 SIFT_phantom/tracks.tck SIFT_phantom/fods.mif tmp_rw.trx::w -force
+tckconvert tmp_rw.trx tmp_rw_rt.tck -force
+testing_diff_tck tmp_rw_rt.tck SIFT_phantom/tracks.tck

@@ -19,8 +19,8 @@
 #include <sstream>
 
 #include "command.h"
+#include "dwi/tractography/formats/tsf.h"
 #include "dwi/tractography/properties.h"
-#include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/streamline.h"
 #include "file/ofstream.h"
 #include "progressbar.h"

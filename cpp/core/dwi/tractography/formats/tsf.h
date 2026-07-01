@@ -16,9 +16,12 @@
 
 #pragma once
 
+#include <cstddef>
 #include <map>
 
-#include "dwi/tractography/file_base.h"
+#include "dwi/tractography/formats/mrtrix_base.h"
+#include "dwi/tractography/formats/write_buffer.h"
+#include "dwi/tractography/nonfinite.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
 #include "file/config.h"
@@ -27,6 +30,13 @@
 #include "types.h"
 
 namespace MR::DWI::Tractography {
+
+//! \brief non-finite tolerance of the Track Scalar File (".tsf") format.
+/*! Like the ".tck" stream, ".tsf" uses NaN as the per-streamline delimiter and
+ * Inf as the end-of-data barrier, so it can carry neither in real scalar data.
+ * Broadcast here (the ".tsf" reader/writer are not Formats::Base handlers) so a
+ * producing command can poll it, and enforced by ScalarWriter::operator(). */
+inline constexpr Formats::NonFinite tsf_nonfinite_tolerance = Formats::NonFinite::Forbidden;
 
 template <typename T = float> class ScalarReader : public ReaderBase {
 public:
@@ -128,9 +138,8 @@ public:
 
   ScalarWriter(const std::filesystem::path &path, const Properties &properties)
       : WriterBase<T>(path),
-        buffer_capacity(File::Config::get_int("TrackWriterBufferSize", 16777216) / sizeof(value_type)),
-        buffer(new value_type[buffer_capacity + 1]),
-        buffer_size(0) {
+        buffer(File::Config::get_int("TrackWriterBufferSize", 16777216), sizeof(value_type)),
+        current_offset(0) {
     File::OFStream out;
     try {
       out.open(path, std::ios::out | std::ios::binary | std::ios::trunc);
@@ -144,6 +153,11 @@ public:
     create(out, properties, "track scalars");
     open_success = true;
     current_offset = out.tellp();
+
+    buffer.set_flush_callback(
+        [this](const std::byte *data, size_t size, const Formats::WriteBuffer::Counts & /*counts*/) {
+          this->flush_scalars(data, size);
+        });
   }
 
   ~ScalarWriter() {
@@ -155,13 +169,11 @@ public:
   }
 
   bool operator()(const TrackScalar<T> &tck_scalar) {
-    if (buffer_size + tck_scalar.size() > buffer_capacity)
-      commit();
-
-    for (typename std::vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i) {
-      assert(std::isfinite(*i));
+    // The ".tsf" stream uses NaN as the per-streamline delimiter and Inf as the
+    //   end-of-data barrier, so a non-finite scalar would corrupt it: reject up front.
+    enforce_scalars(tck_scalar, tsf_nonfinite_tolerance);
+    for (typename std::vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i)
       add_scalar(*i);
-    }
     add_scalar(delimiter());
     ++count;
     ++total_count;
@@ -169,12 +181,15 @@ public:
   }
 
 protected:
-  const size_t buffer_capacity;
-  std::unique_ptr<value_type[]> buffer;
-  size_t buffer_size;
+  //! format-agnostic RAM write-back buffer (Stage 2); holds formatted scalar bytes
+  Formats::WriteBuffer buffer;
   int64_t current_offset;
 
-  void add_scalar(const value_type &s) { format_scalar(s, buffer[buffer_size++]); }
+  void add_scalar(const value_type &s) {
+    value_type formatted;
+    format_scalar(s, formatted);
+    buffer.add(reinterpret_cast<const std::byte *>(&formatted), sizeof(value_type));
+  }
 
   value_type delimiter() const { return std::numeric_limits<value_type>::quiet_NaN(); }
 
@@ -186,18 +201,20 @@ protected:
       destination = BE(s);
   }
 
-  void commit() {
-    if (buffer_size == 0 || !open_success)
+  //! append the buffered scalar bytes to the data region and patch the header counts
+  void flush_scalars(const std::byte *data, size_t size) {
+    if (size == 0 || !open_success)
       return;
     File::OFStream out(path, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
     out.seekp(current_offset, out.beg);
-    out.write(reinterpret_cast<char *>(buffer.get()), sizeof(value_type) * buffer_size);
+    out.write(reinterpret_cast<const char *>(data), size);
     current_offset = static_cast<int64_t>(out.tellp());
     verify_stream(out);
     update_counts(out);
     verify_stream(out);
-    buffer_size = 0;
   }
+
+  void commit() { buffer.commit(); }
 
   ScalarWriter(const ScalarWriter &) = delete;
 };

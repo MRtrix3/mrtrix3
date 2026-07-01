@@ -1,0 +1,8 @@
+#!/bin/bash
+# Step 7: a deliberately mismatched per-vertex producer (one fewer scalar than the
+#   number of vertices per streamline) must trigger a clean, user-interpretable
+#   write-time consistency error rather than silently emitting a malformed .tsf.
+rm -f tmp.txt
+! ( tcksample tracks.tck tcksample/fa.mif tmp.tsf -deliberate_vertex_mismatch -force > tmp.txt 2>&1 )
+cat tmp.txt
+grep -i "Inconsistent per-vertex output" tmp.txt

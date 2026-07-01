@@ -24,6 +24,8 @@ Description
 
 The default mechanism by which streamlines are ascribed to connectome parcels is the "radial search" algorithm as described in reference (Smith et al., 2015), with a default maximal search distance of 4mm. For each streamline endpoint, if there is no voxel with a non-zero parcel index whose centre is closer to the streamline endpoint than the maximal search distance, then that streamline endpoint will not be assigned to any parcel, and the streamline will be omitted from the connectome matrix (unless the -keep_unassigned option is specified). The maximal search distance can be modified using the -assignment_radial_search option, or an alternative algorithm can be activated using one of the other -assignment_* options.
 
+Where a command-line argument accepts tractogram sidecar data (such as streamline weights), it may be given as: "<path>" to read from / write to a standalone external file; "<path>::<field>" to access a named field of sidecar data embedded within the specified tractogram dataset; or "::<field>" to access a named field of sidecar data embedded within the command's own input or output tractogram (the only form able to reference embedded sidecar data of a piped tractogram, which has no command-line filesystem path).
+
 Example usages
 --------------
 
@@ -90,7 +92,7 @@ Other options for tck2connectome
 
 -  **-stat_edge statistic** statistic for combining the values from all streamlines in an edge into a single scale value for that edge (options are: sum, mean, min, max; default=sum)
 
--  **-tck_weights_in path** specify a text scalar file containing the streamline weights
+-  **-tck_weights_in spec** specify the streamline weights: either a standalone scalar file, or "[<tractogram>]::<field>" naming a per-streamline field of the input tractogram (an empty <tractogram>, i.e. "::<field>", refers to the command's own input tractogram, which is the only way to name a field of a piped input)
 
 -  **-keep_unassigned** By default, the program discards the information regarding those streamlines that are not successfully assigned to a node pair. Set this option to keep these values (will be the first row/column in the output matrix)
 

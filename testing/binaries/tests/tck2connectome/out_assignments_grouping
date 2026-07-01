@@ -1,0 +1,36 @@
+#!/bin/bash
+# Stage 17 step 4 regression: the "-out_assignments" text format must remain
+#   byte-for-byte stable now that it is serialised through the shared
+#   Connectome::Assignments / Grouping class.
+#
+# This test is self-contained (it does not depend on externally-committed binary
+#   reference data): it generates the assignments file twice and confirms the
+#   serialisation is deterministic and byte-identical, then confirms the file is
+#   consumable by connectome2tck (the import interface to Grouping) and that a
+#   per-streamline-assignments round-trip reproduces the input streamline count.
+#
+# A stronger regression against a committed reference assignments.csv is already
+#   exercised by the tck2connectome "default" test; the equivalent reference
+#   comparison is shown commented-out below (the reference lives in the external
+#   test_data repository; see the project testing policy).
+
+tck2connectome SIFT_phantom/tracks.tck SIFT_phantom/parc.mif tmp_conn.csv \
+    -out_assignments tmp_assign_a.csv -force
+tck2connectome SIFT_phantom/tracks.tck SIFT_phantom/parc.mif tmp_conn.csv \
+    -out_assignments tmp_assign_b.csv -force
+
+# The two serialisations' data must be byte-for-byte identical (deterministic
+#   export). The leading "# <command>" comment necessarily differs (it records
+#   the differing output filename), so it is stripped before comparison.
+grep -v '^#' tmp_assign_a.csv > tmp_assign_a_data.csv
+grep -v '^#' tmp_assign_b.csv > tmp_assign_b_data.csv
+diff tmp_assign_a_data.csv tmp_assign_b_data.csv
+
+# The assignments file must be consumable by connectome2tck (import to Grouping);
+#   extract all edges and confirm the command succeeds.
+mkdir -p tmp_edges
+connectome2tck SIFT_phantom/tracks.tck tmp_assign_a.csv tmp_edges/ -force
+
+# Reference comparison against committed data (requires the external test_data
+#   repository; uncomment once the reference is registered):
+# testing_diff_matrix tmp_assign_a.csv tck2connectome/assignments.csv

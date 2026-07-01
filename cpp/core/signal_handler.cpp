@@ -44,10 +44,13 @@ std::vector<std::filesystem::path> marked_files;
 std::atomic_flag flag = ATOMIC_FLAG_INIT;
 
 void delete_temporary_files() noexcept {
-  // Use non-throwing version of std::filesystem::remove()
+  // Use the non-throwing recursive removal so that a marked temporary directory
+  //   (e.g. the directory into which the TRX handler extracts a compressed
+  //   archive) is removed along with its contents, as well as a plain temporary
+  //   file (remove_all() removes a single file too).
   std::error_code ec;
   for (const auto &i : marked_files)
-    std::filesystem::remove(i, ec);
+    std::filesystem::remove_all(i, ec);
   marked_files.clear();
 }
 

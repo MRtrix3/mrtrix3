@@ -74,6 +74,14 @@ void usage() {
   + Option ("out_selection", "output a text file containing the binary selection of streamlines")
     + Argument ("path").type_file_out()
 
+  + Option ("out_selection_dps", "in addition to the output tractogram,"
+                                 " record the streamline selection as an embedded per-streamline"
+                                 " (data-per-streamline) field:"
+                                 " one value (1) per streamline retained in the output,"
+                                 " written as a standalone per-streamline sidecar file"
+                                 " (plain-text or .npy by extension)")
+    + Argument ("path").type_tractogram_sidecar_out()
+
   + SIFTTermOption;
 
 }
@@ -139,6 +147,10 @@ void run() {
     opt = get_options("out_selection");
     if (!opt.empty())
       sifter.output_selection(opt[0][0]);
+
+    opt = get_options("out_selection_dps");
+    if (!opt.empty())
+      sifter.output_selection_dps(opt[0][0]);
   }
 
   auto opt = get_options("out_mu");

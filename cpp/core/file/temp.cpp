@@ -144,4 +144,28 @@ std::filesystem::path create_tempfile(int64_t size, std::string_view suffix) {
   return filepath;
 }
 
+std::filesystem::path create_tempdir(std::string_view suffix) {
+  DEBUG("creating temporary directory");
+
+  std::filesystem::path dirpath;
+  std::string random_chars(6, '\0');
+  bool created = false;
+  do {
+    for (int n = 0; n < 6; n++)
+      random_chars[n] = random_char();
+    dirpath = (tmpfile_dir() / (tmpfile_prefix() + random_chars + std::string(suffix)));
+    // mkdir fails with EEXIST when the randomly-named directory already exists,
+    //   in which case a fresh name is drawn (mirroring create_tempfile()'s
+    //   O_EXCL loop); any other error is fatal.
+    if (mkdir(dirpath.string().c_str(), S_IRWXU) == 0) {
+      created = true;
+    } else if (errno != EEXIST) {
+      throw Exception(std::string("error creating temporary directory in \"" + tmpfile_dir().string() + "\": ") +
+                      MR::C_strerror(errno));
+    }
+  } while (!created);
+
+  return dirpath;
+}
+
 } // namespace MR::File

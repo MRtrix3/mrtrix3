@@ -1,0 +1,18 @@
+#!/bin/bash
+# Round-trip via a .vtx intermediary in both encodings: vtx -> tck -> vtx must
+#   preserve the streamline data (compared in the .tck domain, which is encoding-
+#   agnostic). Exercises both the framework VTX reader and writer.
+
+# Binary intermediary (the default encoding)
+tckconvert tracks.tck tmp_b.vtx -force -quiet
+tckconvert tmp_b.vtx tmp_b1.tck -force -quiet
+tckconvert tmp_b1.tck tmp_b2.vtx -force -quiet
+tckconvert tmp_b2.vtx tmp_b2.tck -force -quiet
+testing_diff_tck tmp_b1.tck tmp_b2.tck
+
+# ASCII intermediary
+tckconvert -ascii tracks.tck tmp_a.vtx -force -quiet
+tckconvert tmp_a.vtx tmp_a1.tck -force -quiet
+tckconvert -ascii tmp_a1.tck tmp_a2.vtx -force -quiet
+tckconvert tmp_a2.vtx tmp_a2.tck -force -quiet
+testing_diff_tck tmp_a1.tck tmp_a2.tck

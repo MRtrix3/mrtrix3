@@ -1,0 +1,23 @@
+#!/bin/bash
+# Verify that embedded sidecar data survives a tckconvert -> pipe -> tckconvert
+#   round-trip. A per-streamline (dps) numerical file and a per-vertex (dpv) ".tsf"
+#   are inserted into "tracks.tck", streamed through the inter-command pipe to a
+#   second tckconvert instance, extracted back to standalone files, and must match
+#   what was injected (geometry preserved; sidecar values within tolerance).
+set -e
+
+tckconvert tracks.tck - \
+  -insert dps stat tcksample/input3d_precise_statmean.csv -insert dpv afd afd.tsf -quiet | \
+  tckconvert - tmp_pipe_out.tck \
+    -extract dps stat tmp_stat_out.csv -extract dpv afd tmp_afd_out.tsf -force -quiet
+
+# Geometry is preserved through the pipe.
+testing_diff_tck tmp_pipe_out.tck tracks.tck -distance 1e-4
+
+# The extracted per-streamline data equals the injected file (both vector form).
+testing_diff_matrix tmp_stat_out.csv tcksample/input3d_precise_statmean.csv -abs 1e-4
+
+# The extracted per-vertex ".tsf" equals the injected one in value. The round-trip
+#   restamps the output tractogram's timestamp, so the values are compared without
+#   the header-provenance cross-check.
+testing_diff_tsf tmp_afd_out.tsf afd.tsf -abs 1e-4 -noproperties

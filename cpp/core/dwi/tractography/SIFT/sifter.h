@@ -54,6 +54,12 @@ public:
   void perform_filtering();
   void output_filtered_tracks(const std::filesystem::path &, const std::filesystem::path &) const;
   void output_selection(const std::filesystem::path &) const;
+  //! \brief write the embedded per-output-streamline selection dps field (step 3).
+  /*! Writes one "selected" value (always 1) per streamline retained in the
+   * filtered output, as a standalone per-streamline dps sidecar. This is the
+   * output-embedded counterpart of output_selection(), which instead records the
+   * binary mask over the INPUT streamlines. */
+  void output_selection_dps(const std::filesystem::path &) const;
 
   // CONFIGURATION OPTIONS
   void set_term_number(const track_t i) { term_number = i; }

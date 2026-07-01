@@ -1,0 +1,14 @@
+#!/bin/bash
+# Reference-data interop (VTX_DATA_DIR, rordenlab TractographyFormat): write
+#   "example.tck" out as binary VTK POLYDATA and compare to "example.vtk".
+#
+# The bytes differ from the 3D Slicer reference (distinct header comment, no
+#   METADATA block), so the comparison bridges both files through the ".tck" domain;
+#   the geometry is pure RASMM and matches essentially exactly.
+tckconvert example.tck tmp_tck2vtk.vtk -force -quiet
+if cmp -s tmp_tck2vtk.vtk example.vtk; then
+  exit 0
+fi
+tckconvert tmp_tck2vtk.vtk tmp_mine_dec.tck -force -quiet
+tckconvert example.vtk tmp_ref_dec.tck -force -quiet
+testing_diff_tck tmp_mine_dec.tck tmp_ref_dec.tck -distance 1e-4

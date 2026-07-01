@@ -1,0 +1,30 @@
+#!/bin/bash
+# Streamline weights round-trip explicitly through a NAMED field of a .trx dataset,
+#   exercising both the embedded export and the qualified import:
+#   (1) an external weights file is embedded into a "weights" per-streamline field
+#       of a .trx output ("-tck_weights_out <dataset>::weights");
+#   (2) that field is read back as the weights ("-tck_weights_in <dataset>::weights")
+#       and written to a standalone file; the values must survive the round-trip;
+#   (3) a field is NEVER implicitly treated as the weight: a read that does not name
+#       it leaves every weight at the default 1.0.
+N=$(tckinfo tracks.tck -count 2>/dev/null | grep -iE "^[[:space:]]*count" | grep -oE "[0-9]+" | head -n1)
+rm -f tmp_w_in.txt tmp_w_out.txt tmp_w_unnamed.txt
+i=0
+while [ "$i" -lt "$N" ]; do echo "2.5" >> tmp_w_in.txt; i=$((i+1)); done
+
+# (1) External weights -> embedded "weights" field of the .trx output.
+tckresample tracks.tck tmp_embed.trx -downsample 1 \
+  -tck_weights_in tmp_w_in.txt -tck_weights_out tmp_embed.trx::weights -force
+
+# (2) Read the embedded field back as the weights -> standalone file; values survive.
+tckresample tmp_embed.trx tmp_out.tck -downsample 1 \
+  -tck_weights_in tmp_embed.trx::weights -tck_weights_out tmp_w_out.txt -force
+K=$(grep -v '^#' tmp_w_out.txt | tr ' \t,' '\n\n\n' | grep -c '^2.5$')
+echo "$K weights of 2.5 (expected $N)"
+[ "$K" -eq "$N" ]
+! grep -v '^#' tmp_w_out.txt | tr ' \t,' '\n\n\n' | grep -vqE '^(2.5|)$'
+
+# (3) Explicit-only: WITHOUT naming the field, the embedded "weights" array is not
+#   treated as the streamline weight, so every output weight is the default 1.0.
+tckresample tmp_embed.trx tmp_out2.tck -downsample 1 -tck_weights_out tmp_w_unnamed.txt -force
+! grep -v '^#' tmp_w_unnamed.txt | tr ' \t,' '\n\n\n' | grep -vqE '^(1|1.0|)$'

@@ -24,8 +24,25 @@ Description
 
 Unlike the non-linear transformation of image data, where the value of the deformation field in a destination voxel position defines the location in space from which to "pull" image data into that voxel, the non-linear transformation of streamlines data involves sampling the deformation field at each streamline vertex location to determine the new spatial location to which to "push" that vertex. As such, the appropriate deformation field to apply to streamlines data is the inverse of what would be applied to image data. So for instance, this may involve the utilisation of a template-to-subject warp field in order to transform streamlines from subject to template space.
 
+Sidecar data associated with the streamlines are passed through unchanged, since a spatial transformation relocates existing vertices without altering their number or order: per-streamline weights (-tck_weights_in/out) and per-vertex data (a track scalar file via -tsf_in / -tsf_out) remain valid for the transformed streamlines and are carried across verbatim.
+
+A streamline vertex that falls outside the field of view of the deformation field has no defined transformed location, and is assigned a non-finite (NaN) position. How such vertices are handled on output depends on whether the selected output format can represent non-finite vertex coordinates: a format that cannot (e.g. ".tck", which uses non-finite values as in-band delimiters) has those vertices culled from the output, and a warning is issued quoting the number of streamlines so affected; a format that can (e.g. ".trk", ".trx") retains those vertices in the output, and a warning is issued quoting the number of streamlines that contain non-finite vertex data.
+
+Where a command-line argument accepts tractogram sidecar data (such as streamline weights), it may be given as: "<path>" to read from / write to a standalone external file; "<path>::<field>" to access a named field of sidecar data embedded within the specified tractogram dataset; or "::<field>" to access a named field of sidecar data embedded within the command's own input or output tractogram (the only form able to reference embedded sidecar data of a piped tractogram, which has no command-line filesystem path).
+
 Options
 -------
+
+Options for handling sidecar data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-tck_weights_in spec** specify the streamline weights: either a standalone scalar file, or "[<tractogram>]::<field>" naming a per-streamline field of the input tractogram (an empty <tractogram>, i.e. "::<field>", refers to the command's own input tractogram, which is the only way to name a field of a piped input)
+
+-  **-tck_weights_out spec** specify where to write the output streamline weights: either a standalone scalar file, or "[<tractogram>]::<field>" naming a per-streamline field of the output tractogram (an empty <tractogram>, i.e. "::<field>", refers to the command's own output tractogram, which is the only way to name a field of a piped output)
+
+-  **-tsf_in path** an input track scalar file (.tsf) of per-vertex data, passed through unchanged to correspond to the transformed vertices
+
+-  **-tsf_out path** the output track scalar file (.tsf) corresponding to -tsf_in
 
 Standard options
 ^^^^^^^^^^^^^^^^

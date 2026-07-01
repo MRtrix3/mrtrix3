@@ -1,0 +1,42 @@
+#!/bin/bash
+# A per-streamline field embedded in a piped tractogram, referenced as the
+#   streamline weights via the "::<field>" self-reference, must be (a) visible to
+#   the receiving command across the pipe and (b) applied as the streamline weights
+#   — identically to the same values supplied as a standalone weights file — rather
+#   than ignored as generic per-streamline (dps) sidecar data.
+#
+# Both weighted arms read the SAME piped tractogram, so they share streamline
+#   geometry exactly and differ only in where the weights come from (an embedded
+#   field named across the pipe vs an explicit standalone file); this isolates the
+#   weight handling from any float32 geometry drift of the tck->trx conversion.
+
+# Build a non-uniform weights file (one value per streamline) and embed it as a
+#   per-streamline field "weights" in a TRX dataset.
+count=$(tckinfo tracks.tck | grep -E "^[[:space:]]*count:" | grep -oE "[0-9]+" | head -n1)
+awk -v n="$count" 'BEGIN { for (i = 0; i < n; i++) print 0.25 + (i % 4) }' > tmp_pw.txt
+tckconvert tracks.tck tmp_pw.trx -insert dps weights tmp_pw.txt -force -quiet
+
+# (1) Piped tractogram; weights from the standalone file (the explicit reference).
+tckconvert tmp_pw.trx - -quiet | \
+  tckmap - -template dwi.mif -tck_weights_in tmp_pw.txt tmp_pw_file.mif -force -quiet
+
+# (2) Piped tractogram; weights from its embedded field via the "::weights"
+#     self-reference (a piped input has no filesystem path to name).
+tckconvert tmp_pw.trx - -quiet | \
+  tckmap - -template dwi.mif -tck_weights_in ::weights tmp_pw_field.mif -force -quiet
+
+# (3) Piped tractogram; no weights option: the embedded field must NOT implicitly
+#     act as the streamline weights.
+tckconvert tmp_pw.trx - -quiet | \
+  tckmap - -template dwi.mif tmp_pw_none.mif -force -quiet
+
+# The embedded-field weighting (read across the pipe via "::weights") reproduces the
+#   explicit standalone-file weighting exactly: the field is applied AS the
+#   streamline weights, not merely carried across the pipe.
+testing_diff_image tmp_pw_field.mif tmp_pw_file.mif -abs 1e-4
+
+# ... and it differs from the unweighted map, confirming the weights take effect
+#   (a field treated as generic dps would leave the track-density map unchanged).
+testing_diff_image tmp_pw_field.mif tmp_pw_none.mif -abs 1e-4 \
+  && { echo "weighted and unweighted maps are identical; the weights were not applied"; exit 1; }
+true

@@ -1,0 +1,12 @@
+#!/bin/bash
+# Step 3 (fragmentation policy): when -mask fragments a single input streamline
+#   into several output streamlines, each fragment is an independent output
+#   streamline and is assigned its own selection value. The embedded selection
+#   dps must therefore have exactly one entry per output (fragment) streamline.
+tckedit tckedit/in.tck -mask tckedit/mask.mif tmp.tck -out_selection tmp_sel.txt -force
+NTCK=$(tckinfo tmp.tck -count 2>/dev/null | grep -iE "actual count" | grep -oE "[0-9]+" | head -n1)
+grep -v '^#' tmp_sel.txt | tr ' \t' '\n\n' | grep -E '[0-9]' > tmp_tok.txt
+NSEL=$(grep -cE '[0-9]' tmp_tok.txt)
+echo "output (fragment) streamlines: $NTCK ; selection entries: $NSEL"
+[ "$NTCK" -eq "$NSEL" ]
+! grep -vqE '^1$' tmp_tok.txt

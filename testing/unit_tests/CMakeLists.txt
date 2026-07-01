@@ -7,16 +7,25 @@ target_compile_definitions(gtest PRIVATE
 )
 
 set(UNIT_TESTS_CPP_SRCS
+    connectome_assignments_tests.cpp
     erfinv_tests.cpp
+    grouping_tests.cpp
     icls_tests.cpp
+    nonfinite_tests.cpp
     ordered_queue_tests.cpp
     parse_axes_tests.cpp
     parse_ints_tests.cpp
     platform_tests.cpp
+    qfib_codec_tests.cpp
     roi_tests.cpp
     sh_precomputer_tests.cpp
     shuffle_tests.cpp
+    sidecar_tests.cpp
     to_tests.cpp
+    tractogram_tests.cpp
+    trx_tests.cpp
+    write_buffer_tests.cpp
+    zfib_tests.cpp
 )
 
 if(MRTRIX_ENABLE_GPU)

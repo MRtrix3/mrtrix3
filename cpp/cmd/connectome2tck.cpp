@@ -28,11 +28,15 @@
 #include "connectome/connectome.h"
 #include "connectome/validate.h"
 
+#include "dwi/tractography/connectome/assignments.h"
 #include "dwi/tractography/connectome/extract.h"
 #include "dwi/tractography/connectome/streamline.h"
-#include "dwi/tractography/file.h"
+#include "dwi/tractography/formats/base.h"
+#include "dwi/tractography/formats/list.h"
+#include "dwi/tractography/grouping.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/tractogram.h"
 #include "dwi/tractography/weights.h"
 
 #include <filesystem>
@@ -43,6 +47,9 @@ using namespace MR::Connectome;
 using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Connectome;
+
+// Disambiguate from the image subsystem's MR::Formats, also in scope here.
+namespace TrackFormats = MR::DWI::Tractography::Formats;
 
 enum class FileOutput { PER_EDGE, PER_NODE, SINGLE };
 constexpr FileOutput default_file_output = FileOutput::PER_EDGE;
@@ -59,6 +66,13 @@ const OptionGroup TrackOutputOptions = OptionGroup ("Options for determining the
     + Option ("files", "select how the resulting streamlines will be grouped in output files."
                        " Options are: " + MR::Enum::join<FileOutput>(", ") + ". Default: " + MR::Enum::lowercase_name(default_file_output) + ".")
       + Argument ("option").type_choice<FileOutput>()
+
+    + Option ("file_format", "the output tractogram file format for the per-edge / per-node directory modes,"
+                             " given as a filename extension (default: tck);"
+                             " ignored for \"-files single\", where the format is taken from the output path."
+                             " A format that can store per-streamline data (e.g. trx) embeds the streamline"
+                             " weights, in which case -tck_weights_out does not apply.")
+      + Argument ("extension").type_text()
 
     + Option ("exemplars", "generate a mean connection exemplar per edge,"
                            " rather than keeping all streamlines "
@@ -102,6 +116,16 @@ void usage() {
     " into which individual output tractogram files will be written."
     " The -tck_weights_out path is interpreted in the same manner,"
     " as either a single output file or a directory of per-tract-file weight text files."
+
+  + "In the per-edge / per-node directory modes the output tractogram files are written"
+    " in the format selected by the -file_format option (default \".tck\");"
+    " with -files single the format is taken from the extension of the output path."
+    " If the selected format can store per-streamline / per-vertex data (e.g. \".trx\"),"
+    " the streamline weights are embedded within the output tractogram itself,"
+    " and the separate -tck_weights_out output does not apply;"
+    " for a vertices-only format (e.g. \".tck\") the weights are instead written as a separate sidecar file."
+    " Any per-vertex (data-per-vertex) data carried by the input tractogram propagates to the output"
+    " for formats that can embed it (e.g. \".trx\"), and is dropped for a vertices-only format."
 
   + "The -tck_weights_out option behaves similarity to the third argument as described above."
     " If option \"-files single\" is specified,"
@@ -173,7 +197,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("tracks_in",      "the input track file").type_file_in()
-  + Argument ("assignments_in", "input text file containing the node assignments for each streamline").type_file_in()
+  + Argument ("assignments_in", "input text file containing the node assignments for each streamline").type_tractogram_sidecar_in()
   + Argument ("output",         "the output tractogram file / directory path (see Description)")
               .type_directory_out(DirOutMode::MayExist).type_file_out();
 
@@ -207,44 +231,83 @@ void run() {
     std::filesystem::create_directories(output_dir);
   }
 
-  Tractography::Properties properties;
-  Tractography::Reader<float> reader(tracks_input_path, properties);
-
-  std::vector<std::vector<node_t>> assignments_lists;
-  assignments_lists.reserve(to<size_t>(properties["count"]));
-  std::vector<NodePair> assignments_pairs;
-  bool nonpair_found = false;
-  node_t max_node_index = 0;
+  // Resolve the output tractogram file format. In the directory modes the per-edge
+  //   / per-node files take the -file_format extension (default "tck"); for a single
+  //   file the format is that of the output path itself.
+  std::string out_extension = "tck";
   {
-    std::ifstream stream(assignments_input_path);
-    std::string line;
-    ProgressBar progress("reading streamline assignments file");
-    while (std::getline(stream, line)) {
-      line = strip(line.substr(0, line.find_first_of('#')));
-      if (line.empty())
-        continue;
-      std::stringstream line_stream(line);
-      std::vector<node_t> nodes;
-      while (1) {
-        node_t n;
-        line_stream >> n;
-        if (!line_stream)
-          break;
-        nodes.push_back(n);
-        max_node_index = std::max(max_node_index, n);
+    const auto opt_format = get_options("file_format");
+    if (!opt_format.empty()) {
+      if (file_format == FileOutput::SINGLE) {
+        WARN("The -file_format option has no effect with \"-files single\";" +                                  //
+             std::string(" the output format is taken from the output path \"") + output_file.string() + "\""); //
+      } else {
+        out_extension = lowercase(opt_format[0][0].as_text());
+        if (!out_extension.empty() && out_extension.front() == '.')
+          out_extension.erase(0, 1);
       }
-      if (nodes.size() != 2)
-        nonpair_found = true;
-      assignments_lists.push_back(std::move(nodes));
-      ++progress;
     }
   }
+  const std::filesystem::path format_probe =
+      (file_format == FileOutput::SINGLE) ? output_file : std::filesystem::path("x." + out_extension);
+  const TrackFormats::Base *const out_handler = TrackFormats::get_handler(format_probe);
+  if (out_handler == nullptr)
+    throw Exception("no tractography format handler recognises the output " +
+                    (file_format == FileOutput::SINGLE ? ("path \"" + output_file.string() + "\"")
+                                                       : ("file format \"" + out_extension + "\"")));
+  if (!out_handler->can_write())
+    throw Exception("tractography format \"" + out_handler->description + "\" does not support writing");
+  // A format that serialises per-streamline / per-vertex data embeds the weights
+  //   directly (and propagates any input per-vertex data); the separate-file weight
+  //   output then does not apply.
+  const bool embed = out_handler->capabilities.sidecar_data != TrackFormats::SidecarData::Unsupported;
+  if (embed) {
+    if (!get_options("tck_weights_out").empty())
+      throw Exception("output format \"" + out_handler->description + "\" embeds per-streamline weights;" + //
+                      " the -tck_weights_out option (separate weight files) does not apply");
+  }
+
+  Tractography::Properties properties;
+  auto reader = Tractography::Tractogram<float>::open(tracks_input_path, properties);
+
+  // Route "-tck_weights_in" (a standalone scalar file OR a "<dataset>::<field>" named field
+  //   of the input tractogram) into Streamline::weight as each streamline is read. The
+  //   Tractogram applies the weight on every read, so the manual per-streamline check is no
+  //   longer required; an external weight file shorter than the tractogram truncates the read
+  //   inside Tractogram::read, mirroring the legacy reader.
+  const Tractography::WeightInput weight_input = Tractography::register_weight_input(reader, tracks_input_path);
+
+  // Read the assignments through the shared Assignments class (Stage 17, step 4):
+  //   the same byte-faithful "-out_assignments" text format, now the import
+  //   interface to the canonical streamline Grouping (§2.3 / D6).
+  const Tractography::Connectome::Assignments assignments =
+      Tractography::Connectome::Assignments::load(assignments_input_path);
+  // The canonical grouping encoding (edge "<n1>-<n2>" / node "<n>" → streamline
+  //   indices), realising overlap / multi-membership; carried alongside the
+  //   per-streamline tables that drive extraction below.
+  const Tractography::Grouping grouping = assignments.to_grouping();
+  DEBUG("connectome assignments encode " + str(grouping.size()) + " streamline group(s)");
+  node_t max_node_index = assignments.max_node();
+  const bool nonpair_found = !assignments.all_pairs();
+
+  std::vector<std::vector<node_t>> assignments_lists = assignments.as_lists();
+  std::vector<NodePair> assignments_pairs;
   INFO("Maximum node index in assignments file is " + str(max_node_index));
 
-  const size_t count = to<size_t>(properties["count"]);
-  if (assignments_lists.size() != count)
+  // The streamline count drives the assignments cross-check and progress sizing.
+  //   Not every format header advertises it (e.g. TRX), so fall back to the
+  //   assignments count when the property is absent; the index-keyed routing below
+  //   does not depend on a pre-known count.
+  std::optional<size_t> header_count;
+  {
+    const auto count_it = properties.find("count");
+    if (count_it != properties.end() && !count_it->second.empty())
+      header_count = to<size_t>(count_it->second);
+  }
+  if (header_count.has_value() && assignments_lists.size() != *header_count)
     throw Exception("Assignments file contains " + str(assignments_lists.size()) + " entries;" + //
-                    " track file contains " + str(count) + " tracks");                           //
+                    " track file contains " + str(*header_count) + " tracks");                   //
+  const size_t count = header_count.value_or(assignments_lists.size());
 
   // If the node assignments have been performed in such a way that each streamline is
   //   assigned to precisely two nodes, use the assignments_pairs class which is
@@ -253,9 +316,7 @@ void run() {
   //   now supported.
   if (!nonpair_found) {
     INFO("Assignments file contains node pair for every streamline; operating accordingly");
-    assignments_pairs.reserve(assignments_lists.size());
-    for (auto i = assignments_lists.begin(); i != assignments_lists.end(); ++i)
-      assignments_pairs.push_back(NodePair((*i)[0], (*i)[1]));
+    assignments_pairs = assignments.as_pairs();
     assignments_lists.clear();
   }
 
@@ -280,6 +341,7 @@ void run() {
   const auto weights_path_for = [&](const std::string_view filename) -> std::optional<std::filesystem::path> {
     return weights_dir ? std::optional<std::filesystem::path>{*weights_dir / std::string{filename}} : std::nullopt;
   };
+
   const node_t first_node = get_options("keep_unassigned").empty() ? 1 : 0;
   const bool keep_self = !get_options("keep_self").empty();
 
@@ -378,6 +440,8 @@ void run() {
 
     // If user specifies a subset of nodes, only a subset of exemplars need to be calculated
     WriterExemplars generator(properties, nodes, exclusive, first_node, COMs);
+    if (embed)
+      generator.enable_embedding();
 
     {
       std::mutex mutex;
@@ -427,7 +491,7 @@ void run() {
             const node_t two = nodes[j];
             generator.write(one,
                             two,
-                            output_dir / (str(one) + "-" + str(two) + ".tck"),
+                            output_dir / (str(one) + "-" + str(two) + ("." + out_extension)),
                             weights_path_for(str(one) + "-" + str(two) + ".csv"));
             ++progress;
           }
@@ -439,7 +503,7 @@ void run() {
           for (size_t i = first_node; i != COMs.size(); ++i) {
             generator.write(*n,
                             i,
-                            output_dir / (str(*n) + "-" + str(i) + ".tck"),
+                            output_dir / (str(*n) + "-" + str(i) + ("." + out_extension)),
                             weights_path_for(str(*n) + "-" + str(i) + ".csv"));
             ++progress;
           }
@@ -448,7 +512,7 @@ void run() {
     } else if (file_format == FileOutput::PER_NODE) { // One file per node
       ProgressBar progress("writing exemplars to files", nodes.size());
       for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
-        generator.write(*n, output_dir / (str(*n) + ".tck"), weights_path_for(str(*n) + ".csv"));
+        generator.write(*n, output_dir / (str(*n) + ("." + out_extension)), weights_path_for(str(*n) + ".csv"));
         ++progress;
       }
     } else if (file_format == FileOutput::SINGLE) { // Single file
@@ -458,6 +522,8 @@ void run() {
   } else { // Old behaviour ie. all tracks, rather than generating exemplars
 
     WriterExtraction writer(properties, nodes, exclusive, keep_self);
+    if (embed)
+      writer.enable_embedding(reader.fields());
 
     switch (file_format) {
     case FileOutput::PER_EDGE: // One file per edge
@@ -468,7 +534,7 @@ void run() {
             const node_t two = nodes[j];
             writer.add(one,
                        two,
-                       output_dir / (str(one) + "-" + str(two) + ".tck"),
+                       output_dir / (str(one) + "-" + str(two) + ("." + out_extension)),
                        weights_path_for(str(one) + "-" + str(two) + ".csv"));
           }
         } else {
@@ -476,7 +542,7 @@ void run() {
           for (node_t two = first_node; two <= max_node_index; ++two)
             writer.add(one,
                        two,
-                       output_dir / (str(one) + "-" + str(two) + ".tck"),
+                       output_dir / (str(one) + "-" + str(two) + ("." + out_extension)),
                        weights_path_for(str(one) + "-" + str(two) + ".csv"));
         }
       }
@@ -484,7 +550,7 @@ void run() {
       break;
     case FileOutput::PER_NODE: // One file per node
       for (std::vector<node_t>::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
-        writer.add(*i, output_dir / (str(*i) + ".tck"), weights_path_for(str(*i) + ".csv"));
+        writer.add(*i, output_dir / (str(*i) + ("." + out_extension)), weights_path_for(str(*i) + ".csv"));
       INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each node)");
       break;
     case FileOutput::SINGLE: // Single file
@@ -493,18 +559,18 @@ void run() {
     }
 
     ProgressBar progress("Extracting tracks from connectome", count);
+    // Read the composite item (vertices + weight + any per-vertex / per-streamline
+    //   sidecar data) so that input dpv propagates to the output unchanged; route by
+    //   ordinal index exactly as before, passing the node assignment alongside.
+    Tractography::TractogramItem<float> item;
     if (assignments_pairs.empty()) {
-      Tractography::Connectome::Streamline_nodelist tck;
-      while (reader(tck)) {
-        tck.set_nodes(assignments_lists[tck.get_index()]);
-        writer(tck);
+      while (reader.read(item)) {
+        writer(item, assignments_lists[item.get_index()]);
         ++progress;
       }
     } else {
-      Tractography::Connectome::Streamline_nodepair tck;
-      while (reader(tck)) {
-        tck.set_nodes(assignments_pairs[tck.get_index()]);
-        writer(tck);
+      while (reader.read(item)) {
+        writer(item, assignments_pairs[item.get_index()]);
         ++progress;
       }
     }

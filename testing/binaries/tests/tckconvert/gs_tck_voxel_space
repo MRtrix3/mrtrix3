@@ -1,0 +1,23 @@
+#!/bin/bash
+# Reference-data validation (TRX_DATA_DIR, tee-ar-ex gold standard): the
+#   -output_as_voxelspace and -input_is_voxelspace options must be exact inverses about the gold
+#   grid. Encoding "gs.tck" (world / RASMM space) into the voxel space of the
+#   native grid "gs.nii" writes the streamline vertices as voxel indices into a TRX
+#   whose VOXEL_TO_RASMM header records the grid; dumping those raw stored
+#   coordinates to ASCII (one file per streamline) and concatenating them must
+#   reproduce "gs_vox_space.txt" (the gold voxel indices), and re-interpreting them
+#   with -input_is_voxelspace must recover "gs.tck".
+#
+# NOTE: voxel indices (unlike image-mm) depend on the voxel size, so this uses the
+#   NATIVE grid "gs.nii" (5x10x20, voxel 4x2x1) that "gs_vox_space.txt" was sampled
+#   on — not "gs_3mm.nii".
+tckconvert gs.tck tmp_vox.trx -output_as_voxelspace gs.nii -force -quiet
+# Recover the raw stored coordinates: TRX -> ".tck" preserves them verbatim, then
+#   ".tck" -> ASCII dumps them (TRX cannot be written straight to ASCII, as the
+#   ".txt" exporter is not a framework format).
+tckconvert tmp_vox.trx tmp_vox.tck -force -quiet
+tckconvert tmp_vox.tck 'tmp_vox-[].txt' -force -quiet
+cat $(ls tmp_vox-*.txt | sort) > tmp_vox_all.txt
+testing_diff_matrix tmp_vox_all.txt gs_vox_space.txt -abs 1e-4
+tckconvert tmp_vox.trx tmp_vox_back.tck -input_is_voxelspace gs.nii -force -quiet
+testing_diff_tck gs.tck tmp_vox_back.tck -distance 0.01

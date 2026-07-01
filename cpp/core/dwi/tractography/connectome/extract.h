@@ -17,14 +17,20 @@
 #pragma once
 
 #include <filesystem>
+#include <memory>
 #include <optional>
+#include <vector>
 
 #include "file/ofstream.h"
 
 #include "dwi/tractography/connectome/connectome.h"
 #include "dwi/tractography/connectome/exemplar.h"
-#include "dwi/tractography/file.h"
+#include "dwi/tractography/field_registry.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/sidecar_value.h"
+#include "dwi/tractography/streamline.h"
+#include "dwi/tractography/tractogram.h"
+#include "dwi/tractography/tractogram_item.h"
 
 namespace MR::DWI::Tractography::Connectome {
 
@@ -67,10 +73,24 @@ public:
   void write(const node_t, const std::filesystem::path &, const std::optional<std::filesystem::path> &);
   void write(const std::filesystem::path &, const std::optional<std::filesystem::path> &);
 
+  //! \brief embed each exemplar's weight as a "weights" per-streamline (dps) field.
+  /*! Used when the output format can serialise sidecar data (e.g. ".trx"): the
+   * exemplar weight rides inside the output tractogram rather than being written
+   * to a separate -tck_weights_out file. */
+  void enable_embedding();
+
 private:
   float step_size;
   std::vector<Selector> selectors;
   std::vector<Exemplar> exemplars;
+  bool embed = false;
+  FieldRegistry embed_registry;
+  size_t weights_ordinal = 0;
+
+  //! \brief create an output tractogram for \a path (embed-aware registry).
+  Tractography::Tractogram<float> make_writer(const std::filesystem::path &path) const;
+  //! \brief write exemplar \a i to \a output, embedding its weight where enabled.
+  void write_one(Tractography::Tractogram<float> &output, const size_t i) const;
 };
 
 class WriterExtraction {
@@ -84,8 +104,25 @@ public:
 
   void clear();
 
-  bool operator()(const Connectome::Streamline_nodepair &) const;
-  bool operator()(const Connectome::Streamline_nodelist &) const;
+  //! \brief embed per-streamline weights into the output tractograms.
+  /*! Used when the output format can serialise sidecar data (e.g. ".trx"): each
+   * streamline's weight rides as a "weights" per-streamline (dps) field instead
+   * of being written to a separate -tck_weights_out file. Any per-vertex (dpv)
+   * data present on the input items propagates natively to the output (no extra
+   * declaration is required here, as it is carried by \a input_registry — see the
+   * constructor of the output tractograms). Call once before any add().
+   *
+   * \param input_registry the read tractogram's field registry, whose dps/dpv
+   *   fields are declared on the output so that input sidecar data propagates. */
+  void enable_embedding(const Tractography::FieldRegistry &input_registry);
+
+  //! \brief extract an item routed to a node pair, propagating its sidecar payloads.
+  /*! Writes the item to every matching output file and skips it in the rest. For
+   * an embedding output format the item's per-vertex (dpv) data rides inside the
+   * output tractogram; for a vertices-only format it is dropped. */
+  bool operator()(const Tractography::TractogramItem<float> &, const NodePair &) const;
+  //! \brief extract an item routed to a node list, propagating its sidecar payloads.
+  bool operator()(const Tractography::TractogramItem<float> &, const std::vector<node_t> &) const;
 
   size_t file_count() const { return writers.size(); }
 
@@ -94,9 +131,23 @@ private:
   const std::vector<node_t> &node_list;
   const bool exclusive;
   const bool keep_self;
+  bool embed = false;
+  FieldRegistry embed_registry;
+  size_t weights_ordinal = 0;
   std::vector<Selector> selectors;
-  std::vector<std::unique_ptr<Tractography::WriterUnbuffered<float>>> writers;
-  Tractography::Streamline<> empty_tck;
+  std::vector<std::unique_ptr<Tractography::Tractogram<float>>> writers;
+
+  //! \brief create a per-file output tractogram for the just-added selector.
+  /*! The write-back buffer is created with zero capacity, so it grows only as far
+   * as the longest streamline encountered and flushes each streamline as it
+   * arrives: with one writer open per edge/node this costs a single streamline's
+   * memory per file rather than a full buffer. Each file's per-streamline weights
+   * are routed explicitly (register_weight_output_external) to a distinct path. */
+  Tractography::Tractogram<float> make_writer(const std::filesystem::path &path) const;
+  //! \brief write \a item to output file \a i, embedding its weight where enabled.
+  void write_one(size_t i, const Tractography::TractogramItem<float> &item) const;
+  //! \brief skip output file \a i in the tractogram stream.
+  void skip_one(size_t i) const;
 };
 
 } // namespace MR::DWI::Tractography::Connectome

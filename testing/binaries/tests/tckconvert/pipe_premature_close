@@ -1,0 +1,27 @@
+#!/bin/bash
+# The framework Unix-pipe reader ("-") must reject an incomplete stream cleanly:
+#   if the upstream producer dies before emitting the Inf end-of-data barrier,
+#   the truncation must surface as a non-zero exit with a user-interpretable
+#   error, never a silent short tractogram or a crash.
+
+# Capture a complete pipe stream to a regular file. With stdout redirected to a
+#   file (not a tty) the writer streams normally; the temp header file it
+#   references is left in place for a reader to consume.
+tckconvert tracks.tck - -quiet > tmp_pipe_stream.bin
+
+# Truncate the stream well before its end-of-data barrier (drop the trailing
+#   bytes that carry the final vertices, the Inf barrier and the count trailer).
+total=$(wc -c < tmp_pipe_stream.bin)
+head -c $(( total - 256 )) tmp_pipe_stream.bin > tmp_pipe_stream_trunc.bin
+
+# Feeding the truncated stream to the pipe reader must fail (non-zero exit).
+tckconvert - tmp_pipe_truncated.tck -force -quiet < tmp_pipe_stream_trunc.bin 2>/dev/null \
+  && { echo "Expected rejection of a truncated tractogram pipe stream"; exit 1; }
+
+# An empty stream (producer emitted nothing at all) must likewise be rejected
+#   rather than treated as a valid empty tractogram.
+: > tmp_pipe_empty.bin
+tckconvert - tmp_pipe_empty.tck -force -quiet < tmp_pipe_empty.bin 2>/dev/null \
+  && { echo "Expected rejection of an empty tractogram pipe stream"; exit 1; }
+
+true

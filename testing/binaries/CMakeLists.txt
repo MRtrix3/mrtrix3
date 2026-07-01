@@ -9,17 +9,26 @@ dirs_to_unix(EXEC_DIRS "${EXEC_DIRS}")
 
 include(BashTests)
 function(add_bash_binary_test file_path)
-    # Extra arguments are labels, except for the NO_FILESYSTEM_LOCK opt-out keyword
-    # which is forwarded to add_bash_test for tests that never write to disk.
-    set(extra_labels "")
+    # The NO_FILESYSTEM_LOCK opt-out keyword (for tests that never write to disk) and
+    # an optional WORKING_DIRECTORY override are parsed out; any remaining arguments
+    # are treated as additional test labels.
+    set(options NO_FILESYSTEM_LOCK)
+    set(singleValueArgs WORKING_DIRECTORY)
+    cmake_parse_arguments(ARG "${options}" "${singleValueArgs}" "" ${ARGN})
+
+    set(extra_labels ${ARG_UNPARSED_ARGUMENTS})
     set(no_filesystem_lock "")
-    foreach(arg ${ARGN})
-        if(arg STREQUAL "NO_FILESYSTEM_LOCK")
-            set(no_filesystem_lock NO_FILESYSTEM_LOCK)
-        else()
-            list(APPEND extra_labels ${arg})
-        endif()
-    endforeach()
+    if(ARG_NO_FILESYSTEM_LOCK)
+        set(no_filesystem_lock NO_FILESYSTEM_LOCK)
+    endif()
+
+    # Tests default to the in-house binaries data, but may instead nominate the
+    # location of externally-sourced reference data (e.g. ${TRX_DATA_DIR}).
+    if(ARG_WORKING_DIRECTORY)
+        set(working_directory ${ARG_WORKING_DIRECTORY})
+    else()
+        set(working_directory ${BINARY_DATA_DIR})
+    endif()
 
     # Set folder name
     string(REPLACE "/" ";" folder_list ${file_path})
@@ -28,7 +37,7 @@ function(add_bash_binary_test file_path)
     add_bash_test(
         FILE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tests/${file_path}"
         PREFIX "${folder_name}"
-        WORKING_DIRECTORY ${BINARY_DATA_DIR}
+        WORKING_DIRECTORY ${working_directory}
         EXEC_DIRECTORIES "${EXEC_DIRS}"
         LABELS "binary;${folder_name};${extra_labels}"
         ${no_filesystem_lock}
@@ -71,6 +80,9 @@ add_bash_binary_test(amp2sh/with_noise NO_FILESYSTEM_LOCK)
 add_bash_binary_test(connectome2tck/exemplars)
 add_bash_binary_test(connectome2tck/per_node)
 add_bash_binary_test(connectome2tck/single_edge)
+add_bash_binary_test(connectome2tck/sidecar_passthrough)
+add_bash_binary_test(connectome2tck/format_trx)
+add_bash_binary_test(connectome2tck/reject_embed_weights)
 
 add_bash_binary_test(connectomeedit/lower_triangular_from_asymmetric NO_FILESYSTEM_LOCK)
 add_bash_binary_test(connectomeedit/lower_triangular_from_lower_triangular)
@@ -174,6 +186,10 @@ add_bash_binary_test(fixel2sh/default NO_FILESYSTEM_LOCK)
 add_bash_binary_test(fixel2sh/lmax NO_FILESYSTEM_LOCK)
 
 add_bash_binary_test(fixel2tsf/default)
+add_bash_binary_test(fixel2tsf/embed_dpv_create)
+add_bash_binary_test(fixel2tsf/embed_append)
+add_bash_binary_test(fixel2tsf/embed_append_force)
+add_bash_binary_test(fixel2tsf/embed_rewrite_force)
 
 add_bash_binary_test(fixel2voxel/absmax NO_FILESYSTEM_LOCK)
 add_bash_binary_test(fixel2voxel/complexity NO_FILESYSTEM_LOCK)
@@ -560,26 +576,114 @@ add_bash_binary_test(shconv/msmt NO_FILESYSTEM_LOCK)
 
 add_bash_binary_test(tck2connectome/assignment_forward_search)
 add_bash_binary_test(tck2connectome/default)
+add_bash_binary_test(tck2connectome/out_assignments_grouping)
 
 add_bash_binary_test(tck2fixel/default)
 add_bash_binary_test(tck2fixel/phantom_precise)
 add_bash_binary_test(tck2fixel/phantom_unweighted)
 add_bash_binary_test(tck2fixel/phantom_weighted)
 
+add_bash_binary_test(tckconvert/input_image_roundtrip)
+add_bash_binary_test(tckconvert/output_voxel_reject)
+add_bash_binary_test(tckconvert/output_voxel_roundtrip)
 add_bash_binary_test(tckconvert/ply_write)
 add_bash_binary_test(tckconvert/rib_write)
-add_bash_binary_test(tckconvert/scanner2voxel)
 add_bash_binary_test(tckconvert/text_read_range)
 add_bash_binary_test(tckconvert/text_write)
 add_bash_binary_test(tckconvert/vtk_read_binary)
 add_bash_binary_test(tckconvert/vtk_read_empty)
 add_bash_binary_test(tckconvert/vtk_write_ascii)
 add_bash_binary_test(tckconvert/vtk_write_binary)
+add_bash_binary_test(tckconvert/vtk_roundtrip_ascii)
+add_bash_binary_test(tckconvert/vtk_roundtrip_via_tck)
+add_bash_binary_test(tckconvert/vtk_reject_nonpolyline)
+add_bash_binary_test(tckconvert/vtk_reject_nonsequential)
+add_bash_binary_test(tckconvert/vtk_sidecar_roundtrip_ascii)
+add_bash_binary_test(tckconvert/vtk_sidecar_roundtrip_binary)
+add_bash_binary_test(tckconvert/vtk_sidecar_ascii_binary_equivalence)
+add_bash_binary_test(tckconvert/vtx_write_ascii)
+add_bash_binary_test(tckconvert/vtx_write_binary)
+add_bash_binary_test(tckconvert/vtx_read_binary)
+add_bash_binary_test(tckconvert/vtx_read_empty)
+add_bash_binary_test(tckconvert/vtx_roundtrip_ascii)
+add_bash_binary_test(tckconvert/vtx_roundtrip_via_tck)
+add_bash_binary_test(tckconvert/vtx_minimal_example)
+add_bash_binary_test(tckconvert/vtx_reject_nondataset)
+add_bash_binary_test(tckconvert/tt_roundtrip_via_tck)
+add_bash_binary_test(tckconvert/tt_coordinate_conversion)
+add_bash_binary_test(tckconvert/tt_reject_malformed)
+add_bash_binary_test(tckconvert/trk_roundtrip_via_tck)
+add_bash_binary_test(tckconvert/trk_coordinate_conversion)
+add_bash_binary_test(tckconvert/trk_sidecar_roundtrip)
+add_bash_binary_test(tckconvert/trx_roundtrip_via_tck)
+add_bash_binary_test(tckconvert/trx_directory_and_zipstore_read)
+add_bash_binary_test(tckconvert/trx_sidecar_native_dtype)
+add_bash_binary_test(tckconvert/trx_float16_positions)
+add_bash_binary_test(tckconvert/trx_reject_missing_header_fields)
+add_bash_binary_test(tckconvert/zfib_roundtrip_default)
+add_bash_binary_test(tckconvert/zfib_roundtrip_tight_error)
+add_bash_binary_test(tckconvert/zfib_streamline_count_preserved)
+add_bash_binary_test(tckconvert/zfib_reject_unsupported)
+add_bash_binary_test(tckconvert/zfib_interop_decode)
+add_bash_binary_test(tckconvert/zfib_interop_encode)
+add_bash_binary_test(tckconvert/qfib_roundtrip_via_tck)
+add_bash_binary_test(tckconvert/qfib_octa8_octa16)
+add_bash_binary_test(tckconvert/qfib_reject_nonconstant_stepsize)
+# The QFib interop test is deferred until the authors' reference data is added to
+#   the external test_data repository; uncomment once reference.qfib is available:
+# add_bash_binary_test(tckconvert/qfib_read_reference)
+add_bash_binary_test(tckconvert/pipe_roundtrip)
+add_bash_binary_test(tckconvert/pipe_premature_close)
+add_bash_binary_test(tckconvert/sidecar_pipe_roundtrip)
 
+# Reference-data tests validating tckconvert against externally-sourced exemplars
+#   (the BinariesTestData "tckconvert/" subdirectory and the VTX / TRK / TRX data
+#   ExternalProjects declared in testing/CMakeLists.txt). A handful expose interop
+#   gaps that cannot be reconciled from the file alone and are registered as
+#   run-and-fail TODO markers: LPS-vs-RAS data with no in-file space signal (the
+#   ".vtk" exemplars; the ".trk" LPS voxel order with placeholder dims), the TRX
+#   dps/dpv sidecar tooling, and a directory/uint32-offsets TRX writer. (The ".trk"
+#   corner-origin half-voxel convention, the VTK METADATA block, and the vtx v3.0
+#   32-bit OFFSETS width are handled by the format readers/writer.)
+
+# Sections 1-2 (BINARY_DATA_DIR; reference files under the "tckconvert/" subdir).
+add_bash_binary_test(tckconvert/qfib_reference_reject_write)
+add_bash_binary_test(tckconvert/zfib_reference_decode)
+add_bash_binary_test(tckconvert/vtx_from_readme)
+
+# Section 3 (VTX_DATA_DIR; rordenlab TractographyFormat "example.*").
+add_bash_binary_test(tckconvert/example_trk_to_tck WORKING_DIRECTORY ${VTX_DATA_DIR})
+add_bash_binary_test(tckconvert/example_tck_to_trk WORKING_DIRECTORY ${VTX_DATA_DIR})
+add_bash_binary_test(tckconvert/example_vtk_to_tck WORKING_DIRECTORY ${VTX_DATA_DIR})
+add_bash_binary_test(tckconvert/example_tck_to_vtk WORKING_DIRECTORY ${VTX_DATA_DIR})
+add_bash_binary_test(tckconvert/example_vtx_to_tck WORKING_DIRECTORY ${VTX_DATA_DIR})
+add_bash_binary_test(tckconvert/example_tck_to_vtx WORKING_DIRECTORY ${VTX_DATA_DIR})
+
+# Section 4 (TRK_DATA_DIR; nibabel reference ".trk" / ".tck").
+add_bash_binary_test(tckconvert/trk_simple_roundtrip WORKING_DIRECTORY ${TRK_DATA_DIR})
+add_bash_binary_test(tckconvert/trk_simple_big_endian WORKING_DIRECTORY ${TRK_DATA_DIR})
+add_bash_binary_test(tckconvert/trk_standard_roundtrip WORKING_DIRECTORY ${TRK_DATA_DIR})
+add_bash_binary_test(tckconvert/trk_standard_lps WORKING_DIRECTORY ${TRK_DATA_DIR})
+
+# Section 5 (TRX_DATA_DIR; tee-ar-ex gold-standard dataset).
+add_bash_binary_test(tckconvert/gs_tck_rasmm WORKING_DIRECTORY ${TRX_DATA_DIR})
+add_bash_binary_test(tckconvert/gs_tck_voxel_space WORKING_DIRECTORY ${TRX_DATA_DIR})
+add_bash_binary_test(tckconvert/gs_trx_to_tck WORKING_DIRECTORY ${TRX_DATA_DIR})
+add_bash_binary_test(tckconvert/gs_vtk_to_tck WORKING_DIRECTORY ${TRX_DATA_DIR})
+add_bash_binary_test(tckconvert/gs_tck_to_vtk WORKING_DIRECTORY ${TRX_DATA_DIR})
+add_bash_binary_test(tckconvert/gs_tck_to_trx_dir WORKING_DIRECTORY ${TRX_DATA_DIR})
+add_bash_binary_test(tckconvert/gs_sidecar_trx_dir WORKING_DIRECTORY ${TRX_DATA_DIR})
+add_bash_binary_test(tckconvert/gs_sidecar_trx_file WORKING_DIRECTORY ${TRX_DATA_DIR})
+add_bash_binary_test(tckconvert/gs_sidecar_trk WORKING_DIRECTORY ${TRX_DATA_DIR})
+
+add_bash_binary_test(tckedit/dps_threshold)
+add_bash_binary_test(tckedit/dpv_threshold)
 add_bash_binary_test(tckedit/include_exclude_inverse)
 add_bash_binary_test(tckedit/include_mask)
 add_bash_binary_test(tckedit/length)
 add_bash_binary_test(tckedit/mask)
+add_bash_binary_test(tckedit/selection_dps)
+add_bash_binary_test(tckedit/selection_dps_fragmented)
 
 add_bash_binary_test(tckgen/act_terminations)
 add_bash_binary_test(tckgen/algorithm_ifod2)
@@ -589,6 +693,7 @@ add_bash_binary_test(tckgen/algorithm_tensorprob)
 add_bash_binary_test(tckgen/backtrack)
 add_bash_binary_test(tckgen/multithreading)
 add_bash_binary_test(tckgen/output_stats)
+add_bash_binary_test(tckgen/qfib_reject_downsample)
 add_bash_binary_test(tckgen/seed_coordinates)
 add_bash_binary_test(tckgen/seed_dynamic)
 add_bash_binary_test(tckgen/seed_gmwmi)
@@ -612,6 +717,7 @@ add_bash_binary_test(tckmap/dec NO_FILESYSTEM_LOCK)
 add_bash_binary_test(tckmap/default_template NO_FILESYSTEM_LOCK)
 add_bash_binary_test(tckmap/default_vox NO_FILESYSTEM_LOCK)
 add_bash_binary_test(tckmap/length NO_FILESYSTEM_LOCK)
+add_bash_binary_test(tckmap/piped_weights)
 add_bash_binary_test(tckmap/scalar_map NO_FILESYSTEM_LOCK)
 add_bash_binary_test(tckmap/tod NO_FILESYSTEM_LOCK)
 
@@ -620,6 +726,11 @@ add_bash_binary_test(tckresample/endpoints)
 add_bash_binary_test(tckresample/num_points)
 add_bash_binary_test(tckresample/step_size)
 add_bash_binary_test(tckresample/upsample)
+add_bash_binary_test(tckresample/dpv_subset_downsample)
+add_bash_binary_test(tckresample/dpv_subset_endpoints)
+add_bash_binary_test(tckresample/dpv_drop_interpolating)
+add_bash_binary_test(tckresample/dps_weights_preserved)
+add_bash_binary_test(tckresample/weights_embed_roundtrip)
 
 add_bash_binary_test(tcksample/input3d_interplinear_statmax)
 add_bash_binary_test(tcksample/input3d_interplinear_statmean)
@@ -645,10 +756,25 @@ add_bash_binary_test(tcksample/inputsh_interp_statnone)
 add_bash_binary_test(tcksample/inputsh_noshoption)
 add_bash_binary_test(tcksample/inputsh_precise)
 add_bash_binary_test(tcksample/interp_tdifrac)
+add_bash_binary_test(tcksample/consistency_check_pass)
+add_bash_binary_test(tcksample/consistency_check_fail)
+add_bash_binary_test(tcksample/embed_dpv_create)
+add_bash_binary_test(tcksample/embed_dps_create)
+add_bash_binary_test(tcksample/embed_append)
+add_bash_binary_test(tcksample/embed_append_force)
+add_bash_binary_test(tcksample/embed_rewrite_force)
+add_bash_binary_test(tcksample/embed_4d_multimetric)
 
 add_bash_binary_test(tcksift/default)
+add_bash_binary_test(tcksift/selection_dps)
 
 add_bash_binary_test(tcksift2/default)
+add_bash_binary_test(tcksift2/embed_weights)
+add_bash_binary_test(tcksift2/embed_qualified_create)
+add_bash_binary_test(tcksift2/append_in_place)
+add_bash_binary_test(tcksift2/append_force_required)
+add_bash_binary_test(tcksift2/rewrite_force_required)
+add_bash_binary_test(tcksift2/reject_nondps)
 
 add_bash_binary_test(tckstats/default)
 add_bash_binary_test(tckstats/dump)
@@ -656,6 +782,8 @@ add_bash_binary_test(tckstats/histogram)
 add_bash_binary_test(tckstats/output_fields)
 
 add_bash_binary_test(tcktransform/unitwarp)
+add_bash_binary_test(tcktransform/sidecar_passthrough)
+add_bash_binary_test(tcktransform/nonfinite_handling)
 
 add_bash_binary_test(tckvalidate/badcount)
 add_bash_binary_test(tckvalidate/dataaftereofdelim)
@@ -665,6 +793,9 @@ add_bash_binary_test(tckvalidate/nolastdelim)
 add_bash_binary_test(tckvalidate/novertices)
 add_bash_binary_test(tckvalidate/onevertex)
 add_bash_binary_test(tckvalidate/partialfinite)
+add_bash_binary_test(tckvalidate/sidecar_pass)
+add_bash_binary_test(tckvalidate/sidecar_dps_wrong_length)
+add_bash_binary_test(tckvalidate/sidecar_dpv_wrong_length)
 
 add_bash_binary_test(tensor2metric/adc NO_FILESYSTEM_LOCK)
 add_bash_binary_test(tensor2metric/dkt)

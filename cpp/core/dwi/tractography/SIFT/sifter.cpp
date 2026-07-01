@@ -24,6 +24,9 @@
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/selection_dps.h"
+#include "dwi/tractography/tractogram.h"
+#include "dwi/tractography/tractogram_item.h"
 
 #include "dwi/tractography/ACT/tissues.h"
 
@@ -347,20 +350,19 @@ void SIFTer::perform_filtering() {
 void SIFTer::output_filtered_tracks(const std::filesystem::path &input_path,
                                     const std::filesystem::path &output_path) const {
   Tractography::Properties p;
-  Tractography::Reader<float> reader(input_path, p);
+  auto reader = Tractography::Tractogram<float>::open(input_path, p);
   p["SIFT_mu"] = str(mu());
-  Tractography::Writer<float> writer(output_path, p);
+  auto output = Tractography::Tractogram<float>::create(output_path, p);
   track_t tck_counter = 0;
   Tractography::Streamline<> tck;
   ProgressBar progress("Writing filtered tracks output file", contributions.size());
   while (reader(tck) && tck_counter < contributions.size()) {
     if (contributions[tck_counter++])
-      writer(tck);
+      output.write(Tractography::TractogramItem<float>(tck));
     else
-      writer.skip();
+      output.note_unexported();
     ++progress;
   }
-  reader.close();
 }
 
 void SIFTer::output_selection(const std::filesystem::path &path) const {
@@ -371,6 +373,17 @@ void SIFTer::output_selection(const std::filesystem::path &path) const {
     else
       out << "0\n";
   }
+}
+
+void SIFTer::output_selection_dps(const std::filesystem::path &path) const {
+  // One value per OUTPUT streamline; only retained streamlines are written to
+  //   the filtered output, so each embedded selection value is 1.
+  std::vector<uint8_t> values;
+  for (track_t i = 0; i != contributions.size(); ++i) {
+    if (contributions[i])
+      values.push_back(1);
+  }
+  write_selection_dps(path, values);
 }
 
 void SIFTer::set_regular_outputs(const std::vector<uint32_t> &in, const std::optional<std::filesystem::path> &dirpath) {

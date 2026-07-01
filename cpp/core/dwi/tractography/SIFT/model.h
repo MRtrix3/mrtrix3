@@ -27,6 +27,8 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/tractogram.h"
+#include "dwi/tractography/tractogram_item.h"
 
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/mapper.h"
@@ -135,7 +137,7 @@ template <class Fixel> Model<Fixel>::~Model() {
 
 template <class Fixel> void Model<Fixel>::map_streamlines(const std::filesystem::path &path) {
   Tractography::Properties properties;
-  Tractography::Reader<> file(path, properties);
+  auto file = Tractography::Tractogram<float>::open(path, properties);
 
   const track_t count = (properties.find("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
   if (!count)
@@ -239,20 +241,19 @@ template <class Fixel> void Model<Fixel>::check_TD() {
 template <class Fixel>
 void Model<Fixel>::output_non_contributing_streamlines(const std::filesystem::path &output_path) const {
   Tractography::Properties p;
-  Tractography::Reader<float> reader(tck_file_path, p);
-  Tractography::Writer<float> writer(output_path, p);
+  auto reader = Tractography::Tractogram<float>::open(tck_file_path, p);
+  auto output = Tractography::Tractogram<float>::create(output_path, p);
   Tractography::Streamline<> tck;
   ProgressBar progress("Writing non-contributing streamlines output file", contributions.size());
   track_t tck_counter = 0;
   while (reader(tck) && tck_counter < contributions.size()) {
     if (contributions[tck_counter] && !contributions[tck_counter]->get_total_contribution())
-      writer(tck);
+      output.write(Tractography::TractogramItem<float>(tck));
     else
-      writer.skip();
+      output.note_unexported();
     ++tck_counter;
     ++progress;
   }
-  reader.close();
 }
 
 namespace {

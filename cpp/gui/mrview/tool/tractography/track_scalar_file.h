@@ -28,7 +28,12 @@ namespace MR::GUI::MRView::Tool {
 class Tractogram;
 class Tractography;
 
-class TrackScalarFileOptions : public QGroupBox, public ColourMapButtonObserver, public DisplayableVisitor {
+//! \brief Controller for a tractogram's colour-map/scaling and threshold controls.
+/*! No longer a group box of its own: it builds two embeddable container widgets —
+ *  \c colour_scaling_widget (placed in the toolbar's "colour" group) and
+ *  \c threshold_widget (placed in the "thresholding" group) — and owns their logic
+ *  while the toolbar owns the per-mechanism group boxes. */
+class TrackScalarFileOptions : public QObject, public ColourMapButtonObserver, public DisplayableVisitor {
   Q_OBJECT
 
 public:
@@ -37,11 +42,20 @@ public:
 
   void set_tractogram(Tractogram *selected_tractogram);
 
+  //! Scaling spin-boxes (embedded in the "colour" group; min/max for scalar colour).
+  QWidget *colour_scaling_widget;
+  //! Colour-map menu button; the toolbar places it beside the colour combo-box and
+  //!   shows it only while colouring by scalar data.
+  ColourMapButton *colourmap_button;
+  //! Threshold source combo-box and lower/upper controls (in the "thresholding" group).
+  QWidget *threshold_widget;
+
   void render_tractogram_colourbar(const Tool::Tractogram &) override;
 
   void update_UI();
   void set_scaling(default_type min, default_type max);
-  void set_threshold(GUI::MRView::Tool::TrackThresholdType dataSource, default_type min, default_type max);
+  //! Threshold using the scalar data already loaded for colouring (shared array).
+  void set_threshold(default_type min, default_type max);
   void set_colourmap(int colourmap_index) { colourmap_button->set_colourmap_index(colourmap_index); }
 
   void selected_colourmap(size_t, const ColourMapButton &) override;
@@ -63,14 +77,12 @@ private slots:
   void threshold_upper_value_changed();
 
 protected:
+  //! Number of fixed threshold-combo entries preceding any embedded-field
+  //!   entries (None, Sidecar file).
+  static constexpr int num_fixed_threshold_modes = 2;
+
   Tractography *tool;
   Tractogram *tractogram;
-  Tool::Base::VBoxLayout *main_box;
-  QGroupBox *colour_groupbox;
-  QAction *show_colour_bar;
-  QAction *invert_scale;
-  ColourMapButton *colourmap_button;
-  QPushButton *intensity_file_button;
   AdjustButton *max_entry, *min_entry;
   QComboBox *threshold_file_combobox;
   AdjustButton *threshold_lower, *threshold_upper;

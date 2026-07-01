@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "dwi/tractography/file_base.h"
+#include "dwi/tractography/formats/mrtrix_base.h"
 
 #include <cerrno>
 #include <filesystem>
@@ -62,6 +62,10 @@ void ReaderBase::open(const std::filesystem::path &file, std::string_view type, 
     throw Exception("only supported datatype for tracks file are "
                     "Float32LE, Float32BE, Float64LE & Float64BE (in " +
                     type + " file \"" + file.string() + "\")");
+
+  // Expose the on-disk vertex datatype for downstream consumers (e.g. mrview's
+  //   GPU vertex-width selection); header-only, no vertex read required.
+  properties.vertex_datatype = dtype;
 
   if (data_file.empty())
     throw Exception("missing \"files\" specification for " + type + " file \"" + file.string() + "\"");

@@ -1,0 +1,14 @@
+#!/bin/bash
+# The framework ".tt" reader must reject a malformed ".tt" file cleanly (non-zero
+#   exit, no crash). A ".tt" is a gzip-compressed MATLAB ".mat" (Level-4 as written
+#   by DSI Studio, or Level-5); a file that is neither a valid gzip stream nor a
+#   valid ".mat" container must fail the parse.
+printf 'this is not a valid tt/mat/gzip container at all' > tmp_bad.tt
+tckconvert tmp_bad.tt tmp_bad.tck -force -quiet 2>/dev/null && { echo "Expected rejection of malformed .tt"; exit 1; }
+
+# A well-formed gzip stream whose inflated content is not a valid ".mat" container
+#   must also be rejected (exercises the ".mat" parsing rather than the gzip layer).
+printf 'still not a mat container, but validly gzip-compressed' | gzip -c > tmp_bad2.tt
+tckconvert tmp_bad2.tt tmp_bad2.tck -force -quiet 2>/dev/null && { echo "Expected rejection of non-mat .tt"; exit 1; }
+
+true

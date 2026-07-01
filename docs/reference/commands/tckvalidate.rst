@@ -6,7 +6,7 @@ tckvalidate
 Synopsis
 --------
 
-Validate a tractogram (.tck) file
+Validate a tractogram file and its associated sidecar data
 
 Usage
 --------
@@ -20,14 +20,22 @@ Usage
 Description
 -----------
 
-This command checks that a tractogram file is well-formed. The binary data section of a .tck file consists of a sequence of 3-float triplets. Each triplet must be exactly one of: a regular vertex (all three components finite), an inter-streamline delimiter (all three components NaN), or the mandatory end-of-file barrier (all three components infinity). The end-of-file barrier must be the last triplet in the file.
+This command checks that a tractogram file is well-formed. For the in-house ".tck" format, the binary data section consists of a sequence of 3-float triplets, each of which must be exactly one of: a regular vertex (all three components finite), an inter-streamline delimiter (all three components NaN), or the mandatory end-of-file barrier (all three components infinity); the end-of-file barrier must be the last triplet in the file.
 
-The following hard violations cause the command to fail: (1) a triplet that is partially non-finite (i.e. not all-finite, not all-NaN, and not all-infinity); (2) any data present after the end-of-file barrier; (3) the end of the binary data section is reached without an end-of-file barrier (truncated file); (4) the last streamline body is not terminated by a NaN delimiter before the end-of-file barrier; (5) the "count" field is absent from the file header; (6) the "count" field in the file header does not match the number of streamlines actually present in the file.
+The following hard violations cause the command to fail for a ".tck" file: (1) a triplet that is partially non-finite (i.e. not all-finite, not all-NaN, and not all-infinity); (2) any data present after the end-of-file barrier; (3) the end of the binary data section is reached without an end-of-file barrier (truncated file); (4) the last streamline body is not terminated by a NaN delimiter before the end-of-file barrier; (5) the "count" field is absent from the file header; (6) the "count" field in the file header does not match the number of streamlines actually present in the file.
+
+For any supported tractography format, the entire tractogram is read and the "count" field in the header (where present) is checked against the number of streamlines actually read.
+
+Associated sidecar data can additionally be validated against the tractogram using the -tsf and -tck_weights options; every per-streamline (data-per-streamline) field must contain exactly one entry per streamline, and every per-vertex (data-per-vertex) field must contain one scalar sequence per streamline whose length matches that streamline's vertex count.
 
 The command also reports the presence of streamlines with zero vertices or exactly one vertex, which are degenerate cases that may indicate issues with the tractography algorithm that produced the file.
 
 Options
 -------
+
+-  **-tsf path** *(multiple uses permitted)* validate a per-vertex (data-per-vertex) track scalar file (.tsf) against the tractogram (may be specified multiple times)
+
+-  **-tck_weights path** *(multiple uses permitted)* validate a per-streamline (data-per-streamline) numerical sidecar file (plain-text / .csv / .npy) against the tractogram (may be specified multiple times)
 
 Standard options
 ^^^^^^^^^^^^^^^^

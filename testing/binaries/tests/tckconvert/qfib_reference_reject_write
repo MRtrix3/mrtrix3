@@ -1,0 +1,28 @@
+#!/bin/bash
+# Reference-data interop (BINARY_DATA_DIR): the truncated "tracks.tck" was passed
+#   through the authors' QFib reference encoder to produce "tracks.qfib". QFib
+#   stores each streamline as two seed vertices plus quantized unit tangents walked
+#   at a single implicit step, so it can only represent a CONSTANT-step streamline.
+#   "tracks.tck" is a raw (non-constant-step) tractogram, so the ".tck" -> ".qfib"
+#   direction is the conversion "known to not succeed based on limitations of the
+#   format": MRtrix must reject it with a specific, actionable error rather than
+#   emit a corrupt file.
+#
+# This is the only deterministic, byte-meaningful test the "tracks.qfib" exemplar
+#   supports. The reverse (".qfib" -> ".tck") decodes but, because the reference
+#   encoder was forced to quantize non-constant-step geometry, the reconstruction
+#   drifts by up to ~11 mm from "tracks.tck" (per-streamline symmetric Hausdorff
+#   measured 0.12-10.98 mm) — far beyond the 1e-4 mm exactness budget — so it
+#   cannot serve as an exact reference. "tracks.qfib" is therefore flagged for
+#   deletion by the user (see NOTE below).
+
+# The write must fail; capture stderr and confirm the constant-step diagnostic.
+if tckconvert tckconvert/tracks.tck tmp_reject.qfib -force -quiet 2>tmp_qfib_err.txt; then
+  echo "expected \"tck -> qfib\" to be rejected for non-constant step size" >&2
+  exit 1
+fi
+grep -q "constant step size" tmp_qfib_err.txt
+
+echo "NOTE (user action): \"tracks.qfib\" cannot be validated as an exact exemplar" \
+     "(QFib cannot encode the non-constant-step \"tracks.tck\"; reverse decode drifts" \
+     "up to ~11 mm) and should be deleted from the test_data repository."

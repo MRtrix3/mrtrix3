@@ -1,0 +1,11 @@
+#!/bin/bash
+# Reference-data interop (VTX_DATA_DIR, rordenlab TractographyFormat): read the
+#   binary "example.vtx" (vtx v3.0) and confirm the recovered geometry matches
+#   "example.tck". The reference declares its OFFSETS as "long" but stores them
+#   32-bit; the reader reconciles the width against the block's content (the final
+#   end-inclusive offset equals num_points - 1), so the streamlines parse correctly.
+tckconvert example.vtx tmp_vtx2tck.tck -force -quiet
+if cmp -s tmp_vtx2tck.tck example.tck; then
+  exit 0
+fi
+testing_diff_tck tmp_vtx2tck.tck example.tck -distance 1e-4

@@ -28,6 +28,7 @@
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/voxel.h"
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/weights.h"
 
 namespace MR::Fixel::Matrix {
 
@@ -192,7 +193,8 @@ private:
   auto directions_image = Fixel::find_directions_header(index_image.path().parent_path())                              \
                               .template get_image<default_type>(DirectIO{Stride::List{+2, +1}});                       \
   DWI::Tractography::Properties properties;                                                                            \
-  DWI::Tractography::Reader<float> track_file(track_filepath, properties);                                             \
+  auto track_file = DWI::Tractography::Tractogram<float>::open(track_filepath, properties);                            \
+  DWI::Tractography::register_weight_input(track_file, track_filepath);                                                \
   const uint32_t num_tracks = properties["count"].empty() ? 0 : to<uint32_t>(properties["count"]);                     \
   DWI::Tractography::Mapping::TrackLoader loader(track_file, num_tracks, "computing fixel-fixel connectivity matrix"); \
   DWI::Tractography::Mapping::TrackMapperBase mapper(index_image);                                                     \

@@ -1,0 +1,9 @@
+#!/bin/bash
+# The tcksift2 "out_weights" argument, when given a tractography format that cannot
+#   carry per-streamline sidecar data (e.g. ".tck"), must be rejected with a clear
+#   error rather than silently dropping the embedded weights. (A bare non-tractogram
+#   path such as ".csv" instead writes a plain weights vector; see the default test.)
+rm -f tmp_reject.tck tmp_reject.txt
+! tcksift2 SIFT_phantom/tracks.tck SIFT_phantom/fods.mif tmp_reject.tck -force 2> tmp_reject.txt
+cat tmp_reject.txt
+grep -i "cannot carry per-streamline sidecar data" tmp_reject.txt

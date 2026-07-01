@@ -83,11 +83,25 @@ private slots:
   void colour_mode_selection_slot(int);
   void colour_button_slot();
   void geom_type_selection_slot(int);
+  void thickness_modulation_selection_slot(int);
+  void thickness_offset_slot();
+  void thickness_scale_slot();
+  void thickness_power_slot(int);
   void selection_changed_slot(const QItemSelection &, const QItemSelection &);
 
 protected:
   AdjustButton *slab_entry;
   QMenu *track_option_menu;
+
+  // Outer group wrapping the per-mechanism groups; shown while any tractogram is
+  //   selected.
+  QGroupBox *tractogram_options_groupbox;
+  // Per-mechanism group boxes (geometry, colour, thresholding, thickness), shown
+  //   only while a relevant tractogram selection makes each mechanism applicable.
+  QGroupBox *geometry_groupbox;
+  QGroupBox *colour_groupbox;
+  QGroupBox *threshold_groupbox;
+  QGroupBox *thickness_groupbox;
 
   ComboBoxWithErrorMsg *colour_combobox;
   QColorButton *colour_button;
@@ -97,6 +111,21 @@ protected:
   QLabel *thickness_label;
   QSlider *thickness_slider;
 
+  //! Selects a sidecar source modulating streamline thickness.
+  /*! Hidden (along with the thickness slider) for the "line" geometry; disabled
+   *  whenever a single tractogram is not selected. */
+  QLabel *thickness_modulation_label;
+  QComboBox *thickness_modulation_combobox;
+  //! Sidecar value mapped to zero thickness; shown only while modulation is active.
+  QLabel *thickness_offset_label;
+  AdjustButton *thickness_offset_button;
+  //! Data value span mapping to the unmodulated thickness; shown while modulating.
+  QLabel *thickness_scale_label;
+  AdjustButton *thickness_scale_button;
+  //! Whether the sidecar value is a cross-sectional area / volume (so thickness
+  //!   scales as its square / cube root) rather than a thickness directly.
+  QCheckBox *thickness_power_checkbox;
+
   TrackScalarFileOptions *scalar_file_options;
   LightingDock *lighting_dock;
 
@@ -105,6 +134,20 @@ protected:
   QPushButton *lighting_button;
 
   QSlider *opacity_slider;
+
+  //! Number of fixed colour-combo entries preceding any embedded-field entries
+  //!   (Direction, Endpoints, Random, Manual, Sidecar file).
+  static constexpr int num_fixed_colour_modes = 5;
+  //! Colour the single selected tractogram by an embedded scalar field column.
+  /*! \a entry indexes the selected tractogram's embedded_scalar_fields(). */
+  void colour_by_embedded_field_slot(size_t entry);
+  //! Rebuild the colour combo (embedded fields + trailing loaded external file)
+  //!   and reflect the selection's colour mode, including the fixed-colour chooser
+  //!   and colour-map button visibility.
+  void update_colour_gui();
+  //! Rebuild the thickness-modulation combo (None, Sidecar file, then each embedded
+  //!   field) and reflect the selected tractogram's current source.
+  void rebuild_thickness_modulation_combobox();
 
   void dropEvent(QDropEvent *event) override;
   void update_scalar_options();

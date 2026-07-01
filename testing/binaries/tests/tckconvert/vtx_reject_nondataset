@@ -1,0 +1,7 @@
+#!/bin/bash
+# The framework .vtx reader must reject a file whose DATASET is not STREAMLINES
+#   (only POINTS + OFFSETS STREAMLINES is a tractogram representation). Construct a
+#   POLYDATA file with the .vtx suffix and confirm the conversion fails cleanly.
+printf '# vtk DataFile Version 3.0\ntest\nASCII\nDATASET POLYDATA\nPOINTS 3 float\n0 0 0\n1 0 0\n2 0 0\n' > tmp_bad_dataset.vtx
+tckconvert tmp_bad_dataset.vtx tmp_bad_dataset.tck -force -quiet 2>/dev/null && { echo "Expected rejection of non-STREAMLINES .vtx"; exit 1; }
+true

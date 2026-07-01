@@ -38,7 +38,7 @@ namespace MR::App {
  * \ref command_line_parsing page.
  * */
 
-class ArgTypeFlags : public std::bitset<15> {
+class ArgTypeFlags : public std::bitset<17> {
 public:
   ArgTypeFlags() = default;
   inline static constexpr ssize_t Text = 0;
@@ -56,6 +56,10 @@ public:
   inline static constexpr ssize_t TracksIn = 12;
   inline static constexpr ssize_t TracksOut = 13;
   inline static constexpr ssize_t Choice = 14;
+  //! input data associated with the streamlines of a tractogram (§2.4; Stage 11)
+  inline static constexpr ssize_t TractogramSidecarIn = 15;
+  //! output data associated with the streamlines of a tractogram (§2.4; Stage 11)
+  inline static constexpr ssize_t TractogramSidecarOut = 16;
 };
 
 class ArgModifierFlags {
@@ -100,6 +104,19 @@ enum class DirOutMode {
   MustNotExist,  //!< Directory must not already exist; -force overrides
   EmptyOrAbsent, //!< Directory must not exist, or exist but be empty; -force does not override
   MayExist,      //!< No pre-existence check; the command is responsible for creation and access
+};
+
+//! Specifies how a qualified "DATASET::NAME" tractogram-sidecar output is validated
+/*! Used as the parameter to Argument::type_tractogram_sidecar_out() to control the
+ *  parse-time check applied to a qualified reference whose DATASET does not yet
+ *  exist. */
+enum class TractogramSidecarOutMode {
+  //! the DATASET must already exist, or be created as a tracks output by the same
+  //!   command (the default; catches a mistyped dataset path early)
+  RequireDataset,
+  //! the command may itself create a missing DATASET (e.g. as a copy of its own
+  //!   input tractogram), so a missing DATASET is permitted
+  MayCreateDataset
 };
 
 //! A class to specify a command-line argument
@@ -152,6 +169,8 @@ public:
   std::vector<std::string> choices;
   //! for DirectoryOut arguments, specifies behaviour with respect to pre-existing directories
   DirOutMode dir_out_mode = DirOutMode::MustNotExist;
+  //! for TractogramSidecarOut arguments, whether a missing qualified DATASET may be created by the command
+  TractogramSidecarOutMode tractogram_sidecar_out_mode = TractogramSidecarOutMode::RequireDataset;
 
   template <typename T> class ScalarRange {
   public:
@@ -312,6 +331,38 @@ public:
   //! specifies that the argument should be an output tracks file
   Argument &type_tracks_out() {
     types.set(ArgTypeFlags::TracksOut);
+    return *this;
+  }
+
+  //! \brief specifies that the argument should be input data associated with
+  //!   the streamlines of a tractogram (§2.4; Stage 11).
+  /*! The argument is either a bare filesystem path to a standalone sidecar file
+   * (a per-streamline text/.csv/.npy file, or a per-vertex .tsf file) — in which
+   * case it behaves exactly as type_file_in() — or a qualified "DATASET::NAME"
+   * reference selecting a named sidecar field carried within a tractography
+   * dataset (parsed on the last "::"). Stage 11 implements the standalone-path
+   * import; the qualified form is reserved (yields a "not yet implemented"
+   * error). */
+  Argument &type_tractogram_sidecar_in() {
+    types.set(ArgTypeFlags::TractogramSidecarIn);
+    return *this;
+  }
+
+  //! \brief specifies that the argument should be output data associated with
+  //!   the streamlines of a tractogram (§2.4; Stage 11).
+  /*! The argument is either a bare filesystem path to a standalone sidecar file
+   * to be created (a per-streamline text/.csv/.npy file, or a per-vertex .tsf
+   * file) — in which case it behaves exactly as type_file_out() — or a qualified
+   * "DATASET::NAME" reference naming a sidecar field to be written into a
+   * tractography dataset (parsed on the last "::"). \a mode controls the
+   * parse-time check on a qualified reference whose DATASET does not yet exist:
+   * by default it must be created as a tracks output by the same command, but
+   * TractogramSidecarOutMode::MayCreateDataset permits a command to materialise a
+   * missing DATASET itself (e.g. tcksift2, which writes a copy of its input
+   * tractogram carrying the new field). */
+  Argument &type_tractogram_sidecar_out(TractogramSidecarOutMode mode = TractogramSidecarOutMode::RequireDataset) {
+    types.set(ArgTypeFlags::TractogramSidecarOut);
+    tractogram_sidecar_out_mode = mode;
     return *this;
   }
 

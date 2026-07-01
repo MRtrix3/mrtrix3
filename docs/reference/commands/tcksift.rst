@@ -19,6 +19,11 @@ Usage
 -  *in_fod*: input image containing the spherical harmonics of the fibre orientation distributions
 -  *out_tracks*: the output filtered tracks file
 
+Description
+-----------
+
+Where a command-line argument accepts tractogram sidecar data (such as streamline weights), it may be given as: "<path>" to read from / write to a standalone external file; "<path>::<field>" to access a named field of sidecar data embedded within the specified tractogram dataset; or "::<field>" to access a named field of sidecar data embedded within the command's own input or output tractogram (the only form able to reference embedded sidecar data of a piped tractogram, which has no command-line filesystem path).
+
 Options
 -------
 
@@ -56,6 +61,8 @@ Options to make SIFT provide additional output files
 -  **-output_debug dirpath** write to a directory various output images for assessing & debugging performance etc.
 
 -  **-out_selection path** output a text file containing the binary selection of streamlines
+
+-  **-out_selection_dps path** in addition to the output tractogram, record the streamline selection as an embedded per-streamline (data-per-streamline) field: one value (1) per streamline retained in the output, written as a standalone per-streamline sidecar file (plain-text or .npy by extension)
 
 Options to control when SIFT terminates filtering
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -29,7 +29,10 @@
 
 #include "connectome/validate.h"
 
+#include "dwi/tractography/field_registry.h"
 #include "dwi/tractography/file.h"
+#include "dwi/tractography/formats/base.h"
+#include "dwi/tractography/formats/list.h"
 #include "dwi/tractography/properties.h"
 
 #include "surface/mesh_multi.h"
@@ -4055,7 +4058,15 @@ void Connectome::get_exemplars() {
     return;
   current_folder = load_paths.last_directory;
   MR::DWI::Tractography::Properties properties;
-  MR::DWI::Tractography::Reader<float> reader(load_paths.single_selection, properties);
+  // Open the exemplar track file through the generic multi-format framework
+  //   rather than a hardcoded .tck reader.
+  const MR::DWI::Tractography::Formats::Base *const handler =
+      MR::DWI::Tractography::Formats::get_handler(load_paths.single_selection);
+  if (handler == nullptr)
+    throw Exception("unsupported tractogram format for \"" + load_paths.single_selection.string() + "\"" +
+                    " (unrecognised file extension)");
+  MR::DWI::Tractography::FieldRegistry registry;
+  auto reader = handler->read<float>(load_paths.single_selection, properties, registry);
   const size_t num_tracks = to<size_t>(properties["count"]);
   if (num_tracks != num_edges())
     throw Exception("Track file " + load_paths.single_selection.filename().string() + //
@@ -4063,7 +4074,7 @@ void Connectome::get_exemplars() {
                     " connectome expects " + str(num_edges()) + " exemplars");        //
   ProgressBar progress("Importing connection exemplars", num_edges());
   MR::DWI::Tractography::Streamline<float> tck;
-  while (reader(tck)) {
+  while ((*reader)(tck)) {
     edges[tck.get_index()].load_exemplar(tck);
     edges[tck.get_index()].create_streamline();
     ++progress;

@@ -1,0 +1,64 @@
+#!/bin/bash
+# Multi-column dps/dpv sidecar data must round-trip through TRX in its NATIVE
+#   on-disk datatype (D7): a 3-column uint8 colour (dpv) and a 2-column int32
+#   field (dps), plus scalar float dpv/dps. A hand-authored ASCII ".vtk" carries
+#   these; converting ".vtk" -> ".trx" must lay each field out as a native-dtype
+#   array under its "name.M.dtype" filename, and ".trx" -> ".vtk" must reproduce
+#   the exact integer/float values (lossless, no float detour for the integers).
+cat > tmp_trx_sc_in.vtk <<'VTK'
+# vtk DataFile Version 3.0
+trx sidecar native dtype
+ASCII
+DATASET POLYDATA
+POINTS 5 float
+0 0 0
+1 0 0
+2 0 0
+0 1 0
+1 1 0
+LINES 2 7
+3 0 1 2
+2 3 4
+POINT_DATA 5
+SCALARS fa float 1
+LOOKUP_TABLE default
+0.125
+0.25
+0.5
+0.75
+1.0
+SCALARS colour unsigned_char 3
+LOOKUP_TABLE default
+10 20 30
+40 50 60
+70 80 90
+100 110 120
+130 140 150
+CELL_DATA 2
+SCALARS streamline_weight float 1
+LOOKUP_TABLE default
+1.5
+2.5
+SCALARS node_pair int 2
+LOOKUP_TABLE default
+1 2
+3 4
+VTK
+
+# .vtk -> .trx : confirm the native-dtype member filenames are produced.
+tckconvert tmp_trx_sc_in.vtk tmp_trx_sc.trx -force -quiet
+unzip -l tmp_trx_sc.trx | grep -q "dpv/colour.3.uint8"
+unzip -l tmp_trx_sc.trx | grep -q "dpv/fa.float32"
+unzip -l tmp_trx_sc.trx | grep -q "dps/node_pair.2.int32"
+unzip -l tmp_trx_sc.trx | grep -q "dps/streamline_weight.float32"
+
+# .trx -> .vtk : every sidecar field and value must survive in native dtype.
+tckconvert tmp_trx_sc.trx tmp_trx_sc_back.vtk -force -quiet -ascii
+grep -q "SCALARS colour unsigned_char 3" tmp_trx_sc_back.vtk
+grep -q "SCALARS node_pair int 2" tmp_trx_sc_back.vtk
+# The uint8 RGB triple (lossless) and the int32 pair must reappear verbatim.
+grep -q "130 140 150" tmp_trx_sc_back.vtk
+grep -q "3 4" tmp_trx_sc_back.vtk
+# The float dpv/dps values (exactly representable) must reappear.
+grep -q "0.125" tmp_trx_sc_back.vtk
+grep -q "1.5" tmp_trx_sc_back.vtk
