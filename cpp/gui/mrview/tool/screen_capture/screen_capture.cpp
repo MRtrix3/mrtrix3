@@ -181,21 +181,21 @@ Capture::Capture(Dock *parent)
   msaa->insertItem(4, tr("16x"), 16);
   msaa->setToolTip(tr("Off-screen multi-sample anti-aliasing applied to exported images"));
   // CONF option: MRViewScreenshotMSAA
-  // CONF default: the value of MSAA
+  // CONF default: the value of config file item "MSAA" if present; 1 (ie. disabled) otherwise
   // CONF The default multi-sample anti-aliasing factor for the MRView screenshot tool.
   // CONF A value greater than one renders each exported image off-screen with this number of
   // CONF samples per pixel, smoothing edges; the value is rounded to a supported power of two.
   // CONF This off-screen setting is independent of, but defaults to, the MSAA config option
   // CONF that governs multi-sample anti-aliasing of the interactive window itself.
-  set_msaa_value(File::Config::get_int("MRViewScreenshotMSAA", File::Config::get_int("MSAA", 0)));
+  set_msaa_value(File::Config::get_int("MRViewScreenshotMSAA", File::Config::get_int("MSAA", 1)));
   output_grid_layout->addWidget(msaa, 3, 1);
 
   output_grid_layout->addWidget(new QLabel(tr("Down-sampling: ")), 4, 0);
   downsample = new SpinBox(this);
   downsample->setMinimum(1);
   downsample->setMaximum(8);
-  downsample->setToolTip(tr(
-      "Reduce exported images by this integer factor (export resolution = native x super-sampling / down-sampling)"));
+  downsample->setToolTip(tr("Reduce exported images by this integer factor"
+                            " (export resolution = native x super-sampling / down-sampling)"));
   // CONF option: MRViewScreenshotDownSample
   // CONF default: 1
   // CONF The default down-sampling factor for the MRView screenshot tool.
