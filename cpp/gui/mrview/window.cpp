@@ -15,6 +15,7 @@
  */
 
 #include <QDebug>
+#include <QImage>
 #include <algorithm>
 #include <qopenglwidget.h>
 #include <string>
@@ -1434,7 +1435,7 @@ GL::Font &Window::annotation_font(int ratio) {
       scaled.setPointSizeF(scaled.pointSizeF() * ratio);
     else if (scaled.pixelSize() > 0)
       scaled.setPixelSize(scaled.pixelSize() * ratio);
-    cached.reset(new GL::Font(scaled));
+    cached = std::make_unique<GL::Font>(scaled);
     cached->initGL();
   }
   return *cached;
@@ -1445,7 +1446,7 @@ ColourBars &Window::annotation_colourbar(int ratio) {
     return colourbar_renderer;
   std::unique_ptr<ColourBars> &cached = supersample_colourbars[ratio];
   if (!cached)
-    cached.reset(new ColourBars(ratio));
+    cached = std::make_unique<ColourBars>(ratio);
   return *cached;
 }
 
@@ -1505,9 +1506,9 @@ void Window::captureGL(const std::filesystem::path &filepath, int supersample, i
     }
 
     if (!capture_buffer)
-      capture_buffer.reset(new CaptureBuffer);
+      capture_buffer = std::make_unique<CaptureBuffer>();
     {
-      OffscreenScope scope(*this, supersample);
+      const OffscreenScope scope(*this, supersample);
       capture_buffer->ensure(base_width * supersample, base_height * supersample, msaa); // re-used across frames
       capture_buffer->bind();
       if (msaa > 1)

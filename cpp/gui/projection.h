@@ -17,6 +17,7 @@
 #pragma once
 
 #include <array>
+#include <string_view>
 
 #include "crosshair.h"
 #include "gui.h"
@@ -177,11 +178,11 @@ public:
   void render_text_align(int x, int y, std::string_view text, int halign = 0, int valign = 0) const {
     QString s(qstr(text));
 #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
-    int w = font->metric.width(s);
+    const int w = font->metric.width(s);
 #else
-    int w = font->metric.horizontalAdvance(s);
+    const int w = font->metric.horizontalAdvance(s);
 #endif
-    int h = font->metric.height();
+    const int h = font->metric.height();
     if (halign == 0)
       x -= w / 2;
     else if (halign > 0)
@@ -235,7 +236,7 @@ public:
 #endif
 
     if (position & TopEdge)
-      y = height() - 1.5 * font->metric.height() - line * font->metric.lineSpacing();
+      y = static_cast<int>(height() - 1.5 * font->metric.height() - line * font->metric.lineSpacing());
     else if (position & BottomEdge)
       y = font->metric.height() / 2 + line * font->metric.lineSpacing();
     else

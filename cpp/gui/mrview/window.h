@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <map>
 
 #include "cursor.h"
@@ -275,6 +276,8 @@ private:
     ~OffscreenScope();
     OffscreenScope(const OffscreenScope &) = delete;
     OffscreenScope &operator=(const OffscreenScope &) = delete;
+    OffscreenScope(OffscreenScope &&) = delete;
+    OffscreenScope &operator=(OffscreenScope &&) = delete;
 
   private:
     Window &window;

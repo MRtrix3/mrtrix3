@@ -16,10 +16,16 @@
 
 #include "mrview/capture_buffer.h"
 
+#include <cassert>
+
+#include <QImage>
+
+#include "opengl/glutils.h"
+
 namespace MR::GUI::MRView {
 
 void CaptureBuffer::ensure(GLsizei width, GLsizei height, GLsizei samples) {
-  if (framebuffer && width == width_ && height == height_ && samples == samples_)
+  if (static_cast<GLuint>(framebuffer) != 0 && width == width_ && height == height_ && samples == samples_)
     return;
   width_ = width;
   height_ = height;
