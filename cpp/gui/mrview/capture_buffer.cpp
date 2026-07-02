@@ -89,7 +89,12 @@ QImage CaptureBuffer::read() {
   gl::PixelStorei(gl::PACK_ALIGNMENT, 1);
   gl::ReadPixels(0, 0, width_, height_, gl::RGBA, gl::UNSIGNED_BYTE, image.bits());
   // OpenGL's origin is bottom-left; flip to raster (top-left) orientation.
+  // QImage::flipped() supersedes the deprecated QImage::mirrored() from Qt 6.9 onwards.
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
+  return image.flipped(Qt::Vertical);
+#else
   return image.mirrored(false, true);
+#endif
 }
 
 } // namespace MR::GUI::MRView
