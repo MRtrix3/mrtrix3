@@ -146,28 +146,6 @@ def eddy_binary(cuda): #pylint: disable=unused-variable
 
 
 
-# Determine whether the version of a given FSL command that is installed on the system provides the
-#   "--nthr" command-line option, which controls the number of threads used for multi-threaded execution.
-# The presence of this option depends on the version of FSL installed, and in the case of "eddy" also on
-#   whether the CPU or CUDA version of the command is being interrogated; it is therefore established by
-#   inspecting the help page of the specific executable that is to be invoked.
-def supports_nthr(exe): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  try:
-    with subprocess.Popen([exe, '--help'],
-                          stdout=subprocess.PIPE,
-                          stderr=subprocess.PIPE) as proc:
-      (stdout, stderr) = proc.communicate()
-  except OSError:
-    app.debug('Unable to execute FSL command \"' + exe + '\" to query support for \"--nthr\" option')
-    return False
-  help_text = stdout.decode('utf-8', errors='replace') + stderr.decode('utf-8', errors='replace')
-  result = '--nthr' in help_text
-  app.debug('FSL command \"' + exe + '\"' + (' provides' if result else ' does not provide') + ' \"--nthr\" option')
-  return result
-
-
-
 # Construct the "--nthr" command-line option to be appended to an invocation of an FSL command
 #   (specifically "topup", or the CPU version of "eddy") so that its multi-threaded execution is
 #   consistent with the number of threads requested for the MRtrix3 script.
@@ -185,22 +163,36 @@ def supports_nthr(exe): #pylint: disable=unused-variable
 #   as the raw string provided at the command-line (or None if not provided)
 # @return: String to be appended to the FSL command invocation; empty if the "--nthr" option
 #   is unavailable or should not be applied
-def nthr_option(exe, manual_options): #pylint: disable=unused-variable
+def nthr_option(exe, manual_options=None): #pylint: disable=unused-variable
   from mrtrix3 import app, run #pylint: disable=import-outside-toplevel
   if manual_options and any(entry == '--nthr' or entry.startswith('--nthr=') for entry in manual_options.split()):
-    app.debug('\"--nthr\" manually specified for FSL command \"' + exe + '\"; automated multi-threading control disabled')
+    app.debug('\"--nthr\" manually specified by user for FSL command \"' + exe + '\";'
+              ' automated multi-threading control disabled')
     return ''
-  if not supports_nthr(exe):
+  try:
+    with subprocess.Popen([exe, '--help'],
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE) as proc:
+      (stdout, stderr) = proc.communicate()
+  except OSError:
+    app.debug('Unable to execute FSL command \"' + exe + '\" to query support for \"--nthr\" option')
     return ''
-  num_threads = run.shared.get_num_threads()
-  if num_threads is None:
-    # No explicit user instruction regarding multi-threading;
-    #   default MRtrix3 behaviour is to utilise all threads available on the system
+  if not any(line.lstrip().startswith('--nthr') \
+             for line in \
+             (stdout.decode('utf-8', errors='replace') + stderr.decode('utf-8', errors='replace')).splitlines()):
+    app.debug('FSL command \"' + exe + '\" does not provide \"--nthr\" option')
+    return ''
+  # Default MRtrix3 behaviour is to utilise all threads available on the system if no explicit user instruction
+  if run.shared.get_num_threads() is None:
     num_threads = multiprocessing.cpu_count()
+    app.debug('FSL command \"' + exe + '\":'
+              ' requesting max hardware ' + str(num_threads) + ' thread(s) via \"--nthr\" option')
   else:
     # A request for either zero or one thread(s) disables multi-threading
-    num_threads = max(1, num_threads)
-  app.debug('FSL command \"' + exe + '\": requesting ' + str(num_threads) + ' thread(s) via \"--nthr\" option')
+    num_threads = max(1, run.shared.get_num_threads())
+    app.debug('FSL command \"' + exe + '\":'
+              ' requesting ' + str(num_threads) + ' thread(s) via \"--nthr\" option'
+              ' as per user request')
   return ' --nthr=' + str(num_threads)
 
 
