@@ -38,7 +38,7 @@ public:
   ~Capture() override;
 
   static void add_commandline_options(MR::App::OptionList &options);
-  virtual bool process_commandline_option(const MR::App::ParsedOption &opt);
+  bool process_commandline_option(const MR::App::ParsedOption &opt) override;
 
 private slots:
   void on_image_changed();

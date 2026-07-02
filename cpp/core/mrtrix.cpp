@@ -213,7 +213,8 @@ size_t dash_bytes(std::string_view arg) {
     return 1;
   if (arg.size() < 3)
     return 0;
-  std::basic_string_view<unsigned char> uarg(reinterpret_cast<const unsigned char *>(arg.data()), arg.size());
+  const std::array<uint8_t, 3> uarg{
+      static_cast<uint8_t>(arg[0]), static_cast<uint8_t>(arg[1]), static_cast<uint8_t>(arg[2])};
   if (uarg[0] == 0xE2 && uarg[1] == 0x80 && (uarg[2] >= 0x90 && uarg[2] <= 0x95))
     return 3;
   if (uarg[0] == 0xEF) {

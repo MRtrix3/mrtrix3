@@ -332,8 +332,8 @@ public:
   RenderBuffer() : id(0) {}
   ~RenderBuffer() { clear(); }
   RenderBuffer(const RenderBuffer & /*unused*/) : id(0) {}
-  RenderBuffer(RenderBuffer &&t)  noexcept : id(t.id) { t.id = 0; }
-  RenderBuffer &operator=(RenderBuffer &&t)  noexcept {
+  RenderBuffer(RenderBuffer &&t) noexcept : id(t.id) { t.id = 0; }
+  RenderBuffer &operator=(RenderBuffer &&t) noexcept {
     clear();
     id = t.id;
     t.id = 0;

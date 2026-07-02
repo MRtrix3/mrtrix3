@@ -18,10 +18,10 @@
 
 #include <cassert>
 
-#include <GL/gl.h>
 #include <QImage>
 #include <qglobal.h>
 
+#include "opengl/gl_core_3_3.h"
 #include "opengl/glutils.h"
 
 namespace MR::GUI::MRView::Tool {
