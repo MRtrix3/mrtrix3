@@ -17,7 +17,7 @@
 #ifndef __file_json_utils_h__
 #define __file_json_utils_h__
 
-#include "file/json.h"
+#include "file/json.hpp"
 #include "file/key_value.h"
 
 namespace MR
