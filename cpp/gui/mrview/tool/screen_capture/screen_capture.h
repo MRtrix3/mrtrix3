@@ -17,6 +17,8 @@
 #pragma once
 
 #include <deque>
+#include <filesystem>
+#include <memory>
 
 #include "mrview/adjust_button.h"
 #include "mrview/spin_box.h"
@@ -27,11 +29,13 @@ class AdjustButton;
 
 namespace Tool {
 
+class CaptureBuffer;
+
 class Capture : public Base {
   Q_OBJECT
 public:
   Capture(Dock *parent);
-  virtual ~Capture() {}
+  ~Capture() override;
 
   static void add_commandline_options(MR::App::OptionList &options);
   virtual bool process_commandline_option(const MR::App::ParsedOption &opt);
@@ -107,8 +111,19 @@ private:
   constexpr static size_t max_cache_size = 1;
   std::deque<CaptureState> cached_state;
 
+  // Off-screen render target used for super-sampled and/or anti-aliased exports (see capture_screenshot()).
+  std::unique_ptr<CaptureBuffer> capture_buffer;
+
   void run(bool with_capture);
   void cache_capture_state();
+
+  //! Export the current visualisation to \a filepath.
+  /*! Off-screen rendering is used when \a supersample or \a msaa exceeds unity: the scene is rendered
+   *  off-screen at \a supersample times the display resolution, optionally with \a msaa-sample
+   *  anti-aliasing, leaving the visible window untouched; otherwise the on-screen framebuffer is
+   *  grabbed directly. The captured image is finally reduced by \a downsample, so the exported
+   *  resolution is the native resolution times \a supersample divided by \a downsample. */
+  void capture_screenshot(const std::filesystem::path &filepath, int supersample, int msaa, int downsample);
 };
 
 } // namespace Tool

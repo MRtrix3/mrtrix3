@@ -24,4 +24,23 @@ namespace MR::GUI::Dialog::ProgressBar {
 void display(const ::MR::ProgressBar &p);
 void done(const ::MR::ProgressBar &p);
 
+//! An MR::ProgressBar whose dialog offers a "Cancel" button.
+/*! Constructing this type instead of a plain MR::ProgressBar is the only way to opt in to
+ *  cancellation support: MR::ProgressBar itself declares no such concept anywhere in its
+ *  interface. display() detects this type via dynamic_cast and, if the user clicks "Cancel",
+ *  records that fact directly on this instance. Because the state lives on the object itself
+ *  rather than in shared/static storage, it cannot leak onto an unrelated dialog regardless of
+ *  whether this instance's own dialog is suppressed (e.g. under -quiet), never reaches the
+ *  on-screen delay, or is destroyed having never displayed at all. */
+class Cancellable : public ::MR::ProgressBar {
+public:
+  using ::MR::ProgressBar::ProgressBar;
+
+  bool cancelled() const { return cancelled_; }
+
+private:
+  friend void display(const ::MR::ProgressBar &p);
+  mutable bool cancelled_ = false;
+};
+
 } // namespace MR::GUI::Dialog::ProgressBar

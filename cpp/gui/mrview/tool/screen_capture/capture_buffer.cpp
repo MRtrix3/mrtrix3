@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "mrview/capture_buffer.h"
+#include "mrview/tool/screen_capture/capture_buffer.h"
 
 #include <cassert>
 
@@ -24,7 +24,7 @@
 
 #include "opengl/glutils.h"
 
-namespace MR::GUI::MRView {
+namespace MR::GUI::MRView::Tool {
 
 void CaptureBuffer::ensure(GLsizei width, GLsizei height, GLsizei samples) {
   if (static_cast<GLuint>(framebuffer) != 0 && width == width_ && height == height_ && samples == samples_)
@@ -99,4 +99,4 @@ QImage CaptureBuffer::read() {
 #endif
 }
 
-} // namespace MR::GUI::MRView
+} // namespace MR::GUI::MRView::Tool

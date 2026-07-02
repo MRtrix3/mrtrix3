@@ -20,7 +20,7 @@
 
 #include "opengl/glutils.h"
 
-namespace MR::GUI::MRView {
+namespace MR::GUI::MRView::Tool {
 
 //! Off-screen render target used by the screen-capture tool to produce super-resolution images.
 /*! The visualisation window is rendered into this framebuffer at a multiple of its on-screen
@@ -65,4 +65,4 @@ private:
   void allocate();
 };
 
-} // namespace MR::GUI::MRView
+} // namespace MR::GUI::MRView::Tool

@@ -16,19 +16,23 @@
 
 #include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Geometry>
-#include <QProgressDialog>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <qnamespace.h>
 
 #include "dialog/file.h"
+#include "dialog/progress.h"
 #include "file/config.h"
 #include "file/path.h"
 #include "mrtrix.h"
 #include "mrview/mode/base.h"
-#include "mrview/tool/screen_capture.h"
+#include "mrview/tool/screen_capture/capture_buffer.h"
+#include "mrview/tool/screen_capture/screen_capture.h"
 #include "mrview/window.h"
+#include "opengl/glutils.h"
 #include "opengl/transformation.h"
+#include "progressbar.h"
 
 namespace MR::GUI::MRView::Tool {
 
@@ -177,12 +181,13 @@ Capture::Capture(Dock *parent)
   msaa->insertItem(4, tr("16x"), 16);
   msaa->setToolTip(tr("Off-screen multi-sample anti-aliasing applied to exported images"));
   // CONF option: MRViewScreenshotMSAA
-  // CONF default: 1
+  // CONF default: the value of MSAA
   // CONF The default multi-sample anti-aliasing factor for the MRView screenshot tool.
   // CONF A value greater than one renders each exported image off-screen with this number of
-  // CONF samples per pixel, smoothing edges; the value is rounded to a supported power of two and
-  // CONF the interactive window continues to render at its configured quality (see MSAA).
-  set_msaa_value(File::Config::get_int("MRViewScreenshotMSAA", 1));
+  // CONF samples per pixel, smoothing edges; the value is rounded to a supported power of two.
+  // CONF This off-screen setting is independent of, but defaults to, the MSAA config option
+  // CONF that governs multi-sample anti-aliasing of the interactive window itself.
+  set_msaa_value(File::Config::get_int("MRViewScreenshotMSAA", File::Config::get_int("MSAA", 0)));
   output_grid_layout->addWidget(msaa, 3, 1);
 
   output_grid_layout->addWidget(new QLabel(tr("Down-sampling: ")), 4, 0);
@@ -252,6 +257,10 @@ Capture::Capture(Dock *parent)
   connect(&window(), SIGNAL(imageChanged()), this, SLOT(on_image_changed()));
   on_image_changed();
 }
+
+// Defined here, rather than defaulted inline in the header, so that ~unique_ptr<CaptureBuffer>()
+// is instantiated where CaptureBuffer is a complete type.
+Capture::~Capture() = default;
 
 void Capture::on_image_changed() {
   cached_state.clear();
@@ -380,31 +389,26 @@ void Capture::run(bool with_capture) {
   const int msaa_value = msaa->currentData().toInt();
   const int downsample_value = downsample->value();
 
-  // For multi-frame captures, present a progress dialog. It is advanced only between frames, while the
-  // off-screen framebuffer is unbound, so its event processing does not interfere with the rendering of
-  // any individual image (granular progress within a single large render would require tiled rendering).
-  std::unique_ptr<QProgressDialog> progress;
-  if (with_capture && frames_value > 1) {
-    progress = std::make_unique<QProgressDialog>(
-        tr("Capturing screenshots..."), tr("Cancel"), 0, static_cast<int>(frames_value), this);
-    progress->setWindowModality(Qt::WindowModal);
-    progress->setMinimumDuration(0);
-  }
+  // For multi-frame captures, present a cancellable progress dialog. It is advanced only between
+  // frames, while the off-screen framebuffer is unbound, so its event processing does not interfere
+  // with the rendering of any individual image (granular progress within a single large render would
+  // require tiled rendering). Once shown, this dialog is the only way to interrupt the capture: it is
+  // application-modal, so the toolbar's own Stop button (see on_screen_stop()) is unreachable regardless.
+  std::optional<Dialog::ProgressBar::Cancellable> progress;
+  if (with_capture && frames_value > 1)
+    progress.emplace("Capturing screenshots", frames_value);
 
   for (size_t i = first_index; i < first_index + frames_value; ++i) {
     if (!is_playing)
       break;
 
-    if (progress) {
-      if (progress->wasCanceled()) {
-        is_playing = false;
-        break;
-      }
-      progress->setValue(static_cast<int>(i - first_index));
+    if (progress && progress->cancelled()) {
+      on_screen_stop();
+      break;
     }
 
     if (with_capture)
-      win.captureGL(current_folder / (prefix + printf("%04d.png", i)), ratio, msaa_value, downsample_value);
+      capture_screenshot(current_folder / (prefix + printf("%04d.png", i)), ratio, msaa_value, downsample_value);
 
     // Rotation
     Eigen::Quaternionf orientation(win.orientation());
@@ -481,12 +485,78 @@ void Capture::run(bool with_capture) {
     start_index->setValue(i + 1);
     this->window().updateGL();
     qApp->processEvents();
+
+    if (progress)
+      ++(*progress);
   }
 
-  if (progress)
-    progress->setValue(static_cast<int>(frames_value));
-
   is_playing = false;
+}
+
+void Capture::capture_screenshot(const std::filesystem::path &filepath, int supersample, int msaa, int downsample) {
+  supersample = std::max(1, supersample);
+  msaa = std::max(1, msaa);
+  downsample = std::max(1, downsample);
+
+  QImage image;
+
+  // Off-screen rendering is required for super-sampling and for multi-sample anti-aliasing.
+  if (window().get_current_mode() && (supersample > 1 || msaa > 1)) {
+    GL::Area *const glarea = window().glwidget();
+    glarea->makeCurrent();
+    GL::assert_context_is_current();
+
+    // Match the device-pixel scaling applied by Projection::set_viewport(), so the off-screen
+    // framebuffer dimensions equal the GL viewport that the render path will configure.
+    const int device_pixel_ratio = std::max(1, static_cast<int>(window().devicePixelRatio()));
+    const GLsizei base_width = static_cast<GLsizei>(glarea->width()) * device_pixel_ratio;
+    const GLsizei base_height = static_cast<GLsizei>(glarea->height()) * device_pixel_ratio;
+
+    // Clamp the super-sampling factor to the largest off-screen buffer the GL implementation supports.
+    GLint max_texture_size = 0;
+    GLint max_buffer_size = 0;
+    gl::GetIntegerv(gl::MAX_TEXTURE_SIZE, &max_texture_size);
+    gl::GetIntegerv(gl::MAX_RENDERBUFFER_SIZE, &max_buffer_size);
+    const GLint limit = std::min(max_texture_size, max_buffer_size);
+    if (limit > 0 && supersample * std::max(base_width, base_height) > limit) {
+      const int fit = std::max(1, static_cast<int>(limit / std::max(base_width, base_height)));
+      WARN("screenshot super-sampling factor " + str(supersample) +
+           " exceeds the maximum supported off-screen buffer size; reducing to " + str(fit));
+      supersample = fit;
+    }
+
+    // Clamp the anti-aliasing factor to the maximum multi-sample count the GL implementation supports.
+    GLint max_samples = 0;
+    gl::GetIntegerv(gl::MAX_SAMPLES, &max_samples);
+    if (max_samples > 0 && msaa > max_samples) {
+      WARN("screenshot anti-aliasing factor " + str(msaa) +
+           " exceeds the maximum supported sample count; reducing to " + str(max_samples));
+      msaa = max_samples;
+    }
+
+    if (!capture_buffer)
+      capture_buffer = std::make_unique<CaptureBuffer>();
+    capture_buffer->ensure(base_width * supersample, base_height * supersample, msaa); // re-used across frames
+    capture_buffer->bind();
+    if (msaa > 1)
+      gl::Enable(gl::MULTISAMPLE);
+    window().renderOffscreenGL(supersample);
+    image = capture_buffer->read();
+    capture_buffer->unbind();
+    glarea->doneCurrent();
+  } else {
+    // Native-resolution capture (common case, and when neither super-sampling nor anti-aliasing is requested).
+    image = window().glwidget()->grabFramebuffer();
+  }
+
+  // Reduce to the requested export resolution (native * supersample / downsample).
+  if (downsample > 1) {
+    const int target_width = std::max(1, image.width() / downsample);
+    const int target_height = std::max(1, image.height() / downsample);
+    image = image.scaled(target_width, target_height, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+  }
+
+  image.save(qstr(filepath.string()));
 }
 
 void Capture::select_output_folder_slot() {

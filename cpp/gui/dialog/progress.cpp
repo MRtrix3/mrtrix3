@@ -25,6 +25,7 @@ QProgressDialog *progress_dialog = nullptr;
 }
 
 void display(const ::MR::ProgressBar &p) {
+  const Cancellable *const cancellable = dynamic_cast<const Cancellable *>(&p);
   if (!p.data) {
     INFO(MR::App::NAME + ": " + p.text());
     assert(GUI::App::main_window);
@@ -33,13 +34,18 @@ void display(const ::MR::ProgressBar &p) {
   } else if (reinterpret_cast<Timer *>(p.data)->elapsed() > 1.0) {
     GL::Context::Grab context;
     if (!progress_dialog) {
-      progress_dialog = new QProgressDialog(
-          qstr(p.text() + p.ellipsis()), QString(), 0, p.show_percent() ? 100 : 0, GUI::App::main_window);
+      progress_dialog = new QProgressDialog(qstr(p.text() + p.ellipsis()),
+                                            cancellable ? QObject::tr("Cancel") : QString(),
+                                            0,
+                                            p.show_percent() ? 100 : 0,
+                                            GUI::App::main_window);
       progress_dialog->setWindowModality(Qt::ApplicationModal);
       progress_dialog->show();
       qApp->processEvents();
     }
     progress_dialog->setValue(p.value());
+    if (cancellable && progress_dialog->wasCanceled())
+      cancellable->cancelled_ = true;
     qApp->processEvents();
   }
 }

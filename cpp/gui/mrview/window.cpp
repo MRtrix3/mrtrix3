@@ -32,7 +32,6 @@
 #include "file/config.h"
 #include "header.h"
 #include "mrtrix.h"
-#include "mrview/capture_buffer.h"
 #include "mrview/mode/base.h"
 #include "mrview/mode/list.h"
 #include "mrview/qthelpers.h"
@@ -1466,72 +1465,9 @@ Window::OffscreenScope::~OffscreenScope() {
   window.supersample_ = previous_supersample;
 }
 
-void Window::captureGL(const std::filesystem::path &filepath, int supersample, int msaa, int downsample) {
-  supersample = std::max(1, supersample);
-  msaa = std::max(1, msaa);
-  downsample = std::max(1, downsample);
-
-  QImage image;
-
-  // Off-screen rendering is required for super-sampling and for multi-sample anti-aliasing.
-  if (mode && (supersample > 1 || msaa > 1)) {
-    glarea->makeCurrent();
-    GL::assert_context_is_current();
-
-    // Match the device-pixel scaling applied by Projection::set_viewport(), so the off-screen
-    // framebuffer dimensions equal the GL viewport that the render path will configure.
-    const int device_pixel_ratio = std::max(1, static_cast<int>(devicePixelRatio()));
-    const GLsizei base_width = static_cast<GLsizei>(glarea->width()) * device_pixel_ratio;
-    const GLsizei base_height = static_cast<GLsizei>(glarea->height()) * device_pixel_ratio;
-
-    // Clamp the super-sampling factor to the largest off-screen buffer the GL implementation supports.
-    GLint max_texture_size = 0;
-    GLint max_buffer_size = 0;
-    gl::GetIntegerv(gl::MAX_TEXTURE_SIZE, &max_texture_size);
-    gl::GetIntegerv(gl::MAX_RENDERBUFFER_SIZE, &max_buffer_size);
-    const GLint limit = std::min(max_texture_size, max_buffer_size);
-    if (limit > 0 && supersample * std::max(base_width, base_height) > limit) {
-      const int fit = std::max(1, static_cast<int>(limit / std::max(base_width, base_height)));
-      WARN("screenshot super-sampling factor " + str(supersample) +
-           " exceeds the maximum supported off-screen buffer size; reducing to " + str(fit));
-      supersample = fit;
-    }
-
-    // Clamp the anti-aliasing factor to the maximum multi-sample count the GL implementation supports.
-    GLint max_samples = 0;
-    gl::GetIntegerv(gl::MAX_SAMPLES, &max_samples);
-    if (max_samples > 0 && msaa > max_samples) {
-      WARN("screenshot anti-aliasing factor " + str(msaa) +
-           " exceeds the maximum supported sample count; reducing to " + str(max_samples));
-      msaa = max_samples;
-    }
-
-    if (!capture_buffer)
-      capture_buffer = std::make_unique<CaptureBuffer>();
-    {
-      const OffscreenScope scope(*this, supersample);
-      capture_buffer->ensure(base_width * supersample, base_height * supersample, msaa); // re-used across frames
-      capture_buffer->bind();
-      if (msaa > 1)
-        gl::Enable(gl::MULTISAMPLE);
-      paintGL();
-      image = capture_buffer->read();
-      capture_buffer->unbind();
-    }
-    glarea->doneCurrent();
-  } else {
-    // Native-resolution capture (common case, and when neither super-sampling nor anti-aliasing is requested).
-    image = glarea->grabFramebuffer();
-  }
-
-  // Reduce to the requested export resolution (native * supersample / downsample).
-  if (downsample > 1) {
-    const int target_width = std::max(1, image.width() / downsample);
-    const int target_height = std::max(1, image.height() / downsample);
-    image = image.scaled(target_width, target_height, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-  }
-
-  image.save(qstr(filepath.string()));
+void Window::renderOffscreenGL(int supersample) {
+  const OffscreenScope scope(*this, supersample);
+  paintGL();
 }
 
 void Window::initGL() {

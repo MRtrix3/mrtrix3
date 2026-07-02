@@ -484,12 +484,13 @@ List of MRtrix3 configuration file options
 
 .. option:: MRViewScreenshotMSAA
 
-    *default: 1*
+    *default: the value of MSAA*
 
      The default multi-sample anti-aliasing factor for the MRView screenshot tool.
      A value greater than one renders each exported image off-screen with this number of
-     samples per pixel, smoothing edges; the value is rounded to a supported power of two and
-     the interactive window continues to render at its configured quality (see MSAA).
+     samples per pixel, smoothing edges; the value is rounded to a supported power of two.
+     This off-screen setting is independent of, but defaults to, the MSAA config option
+     that governs multi-sample anti-aliasing of the interactive window itself.
 
 .. option:: MRViewScreenshotSuperSample
 
