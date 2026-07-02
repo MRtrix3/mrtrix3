@@ -33,21 +33,21 @@ ColourBars::ColourBars(int supersample)
       // CONF option: MRViewColourBarWidth
       // CONF default: 20
       // CONF The width of the colourbar in MRView, in pixels.
-      width(supersample * MR::File::Config::get_float("MRViewColourBarWidth", 20.0f)),
+      width(supersample * MR::File::Config::get_float("MRViewColourBarWidth", 20.0F)),
       // CONF option: MRViewColourBarHeight
       // CONF default: 100
       // CONF The height of the colourbar in MRView, in pixels.
-      height(supersample * MR::File::Config::get_float("MRViewColourBarHeight", 100.0f)),
+      height(supersample * MR::File::Config::get_float("MRViewColourBarHeight", 100.0F)),
       // CONF option: MRViewColourBarInset
       // CONF default: 20
       // CONF How far away from the edge of the main window to place the
       // CONF colourbar in MRView, in pixels.
-      inset(supersample * MR::File::Config::get_float("MRViewColourBarInset", 20.0f)),
+      inset(supersample * MR::File::Config::get_float("MRViewColourBarInset", 20.0F)),
       // CONF option: MRViewColourBarTextOffset
       // CONF default: 10
       // CONF How far away from the colourbar to place the associated text,
       // CONF in pixels.
-      text_offset(supersample * MR::File::Config::get_float("MRViewColourBarTextOffset", 10.0f)),
+      text_offset(supersample * MR::File::Config::get_float("MRViewColourBarTextOffset", 10.0F)),
       // CONF option: MRViewColourBarHorizontalPadding
       // CONF default: 100
       // CONF The width in pixels between horizontally adjacent colour bars.

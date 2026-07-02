@@ -17,6 +17,7 @@
 #include <QDebug>
 #include <QImage>
 #include <algorithm>
+#include <memory>
 #include <qopenglwidget.h>
 #include <string>
 #include <unordered_map>

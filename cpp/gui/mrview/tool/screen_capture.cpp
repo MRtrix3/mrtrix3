@@ -19,6 +19,7 @@
 #include <QProgressDialog>
 #include <filesystem>
 #include <memory>
+#include <qnamespace.h>
 
 #include "dialog/file.h"
 #include "file/config.h"

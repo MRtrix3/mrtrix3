@@ -383,7 +383,7 @@ void Overlay::render_image_colourbar(const Image &image) {
               max_value,
               image.scaling_min(),
               image.display_range,
-              Eigen::Vector3f{image.colour[0] / 255.0f, image.colour[1] / 255.0f, image.colour[2] / 255.0f});
+              Eigen::Vector3f{image.colour[0] / 255.0F, image.colour[1] / 255.0F, image.colour[2] / 255.0F});
 }
 
 void Overlay::toggle_shown_slot(const QModelIndex &index, const QModelIndex &index2) {

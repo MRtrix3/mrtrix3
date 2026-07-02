@@ -331,9 +331,9 @@ class RenderBuffer {
 public:
   RenderBuffer() : id(0) {}
   ~RenderBuffer() { clear(); }
-  RenderBuffer(const RenderBuffer &) : id(0) {}
-  RenderBuffer(RenderBuffer &&t) : id(t.id) { t.id = 0; }
-  RenderBuffer &operator=(RenderBuffer &&t) {
+  RenderBuffer(const RenderBuffer & /*unused*/) : id(0) {}
+  RenderBuffer(RenderBuffer &&t)  noexcept : id(t.id) { t.id = 0; }
+  RenderBuffer &operator=(RenderBuffer &&t)  noexcept {
     clear();
     id = t.id;
     t.id = 0;
@@ -341,14 +341,14 @@ public:
   }
   operator GLuint() const { return id; }
   void gen() {
-    if (!id) {
+    if (id == 0u) {
       check_context.set();
       gl::GenRenderbuffers(1, &id);
       GL_DEBUG("created OpenGL renderbuffer ID " + str(id));
     }
   }
   void clear() {
-    if (id) {
+    if (id != 0u) {
       check_context();
       GL_DEBUG("deleting OpenGL renderbuffer ID " + str(id));
       gl::DeleteRenderbuffers(1, &id);

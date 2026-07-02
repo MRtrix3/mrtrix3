@@ -308,7 +308,7 @@ void Fixel::render_fixel_colourbar(const Tool::BaseFixel &fixel) {
               max_value,
               fixel.scaling_min(),
               fixel.display_range,
-              Eigen::Array3f{fixel.colour[0] / 255.0f, fixel.colour[1] / 255.0f, fixel.colour[2] / 255.0f});
+              Eigen::Array3f{fixel.colour[0] / 255.0F, fixel.colour[1] / 255.0F, fixel.colour[2] / 255.0F});
   GL::assert_context_is_current();
 }
 

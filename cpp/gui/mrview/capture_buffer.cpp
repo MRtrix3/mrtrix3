@@ -18,7 +18,9 @@
 
 #include <cassert>
 
+#include <GL/gl.h>
 #include <QImage>
+#include <qglobal.h>
 
 #include "opengl/glutils.h"
 
