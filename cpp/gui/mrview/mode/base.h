@@ -174,7 +174,7 @@ public:
 
   void draw_crosshairs(const Projection &with_projection) const {
     if (window().show_crosshairs())
-      with_projection.render_crosshairs(focus());
+      with_projection.render_crosshairs(focus(), static_cast<float>(window().supersample()));
   }
 
   void draw_orientation_labels(const Projection &with_projection) const {

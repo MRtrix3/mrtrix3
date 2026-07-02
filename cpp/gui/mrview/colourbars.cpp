@@ -51,7 +51,10 @@ ColourBars::ColourBars(int supersample)
       // CONF option: MRViewColourBarHorizontalPadding
       // CONF default: 100
       // CONF The width in pixels between horizontally adjacent colour bars.
-      colourbar_padding(supersample * MR::File::Config::get_float("MRViewColourBarHorizontalPadding", 100.0f)) {
+      colourbar_padding(supersample * MR::File::Config::get_float("MRViewColourBarHorizontalPadding", 100.0f)),
+      // The yellow border enclosing each colourbar is nominally one pixel wide; scale it by the
+      // super-sampling ratio so that it retains the same on-screen proportions in a super-resolution image.
+      frame_line_width(static_cast<GLfloat>(supersample)) {
   end();
 }
 
@@ -188,7 +191,6 @@ void ColourBars::render(size_t colourmap,
   gl::BufferData(gl::ARRAY_BUFFER, sizeof(data), data.data(), gl::STREAM_DRAW);
 
   gl::DepthMask(gl::FALSE_);
-  gl::LineWidth(1.0);
   gl::Disable(gl::BLEND);
   gl::Disable(gl::DEPTH_TEST);
 
@@ -200,10 +202,26 @@ void ColourBars::render(size_t colourmap,
   gl::DrawArrays(gl::TRIANGLE_FAN, 0, 4);
   program.stop();
 
+  // The border is drawn as an explicit triangle-strip ring rather than a wide GL_LINE_LOOP:
+  // OpenGL core profiles only guarantee a line width of one pixel, so gl::LineWidth() cannot be
+  // relied upon to thicken the border in proportion to the super-sampling ratio.
+  const float x0 = x_offset;
+  const float y0 = y_offset;
+  const float x1 = x_offset + scaled_width;
+  const float y1 = y_offset + scaled_height;
+  const float half = 0.5f * frame_line_width;
+  const std::array<GLfloat, 30> frame_data = {
+      x0 - half, y0 - half, 0.0f, x0 + half, y0 + half, 0.0f,  // bottom-left corner (outer, inner)
+      x0 - half, y1 + half, 0.0f, x0 + half, y1 - half, 0.0f,  // top-left corner
+      x1 + half, y1 + half, 0.0f, x1 - half, y1 - half, 0.0f,  // top-right corner
+      x1 + half, y0 - half, 0.0f, x1 - half, y0 + half, 0.0f,  // bottom-right corner
+      x0 - half, y0 - half, 0.0f, x0 + half, y0 + half, 0.0f}; // close the ring back to bottom-left
+  gl::BufferData(gl::ARRAY_BUFFER, sizeof(frame_data), frame_data.data(), gl::STREAM_DRAW);
+
   frame_program.start();
   gl::Uniform1f(gl::GetUniformLocation(frame_program, "scale_x"), 2.0f / current_projection->width());
   gl::Uniform1f(gl::GetUniformLocation(frame_program, "scale_y"), 2.0f / current_projection->height());
-  gl::DrawArrays(gl::LINE_LOOP, 0, 4);
+  gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 10);
   frame_program.stop();
 
   current_projection->setup_render_text();

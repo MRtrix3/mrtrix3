@@ -166,7 +166,9 @@ public:
     gl::Viewport(m * viewport[0], m * viewport[1], m * viewport[2], m * viewport[3]);
   }
 
-  void render_crosshairs(const Eigen::Vector3f &focus) const { crosshair->render(focus, *this); }
+  void render_crosshairs(const Eigen::Vector3f &focus, float thickness = 1.0f) const {
+    crosshair->render(focus, *this, thickness);
+  }
 
   void setup_render_text(float red = 1.0, float green = 1.0, float blue = 0.0) const {
     font->start(width(), height(), red, green, blue);
