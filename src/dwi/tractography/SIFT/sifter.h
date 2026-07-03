@@ -22,8 +22,6 @@
 #include "image.h"
 #include "types.h"
 
-#include "math/rng.h"
-
 #include "dwi/fixel_map.h"
 #include "dwi/directions/set.h"
 #include "dwi/tractography/SIFT/fixel.h"

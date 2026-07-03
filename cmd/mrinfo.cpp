@@ -20,7 +20,7 @@
 #include "command.h"
 #include "header.h"
 #include "types.h"
-#include "file/json.h"
+#include "file/json.hpp"
 #include "file/json_utils.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"

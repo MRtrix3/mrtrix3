@@ -278,7 +278,12 @@ void run ()
       if (!M.isApprox(R*S))
         WARN ("matrix decomposition might have failed");
 
+      // eulerAngles() deprecated in 5.0.0, but canonicalEulerAngles() absent in 3.x
+#if EIGEN_MAJOR_VERSION >= 5
+      Eigen::Vector3d euler_angles = R.canonicalEulerAngles(0, 1, 2);
+#else
       Eigen::Vector3d euler_angles = R.eulerAngles(0, 1, 2);
+#endif
       assert (R.isApprox((Eigen::AngleAxisd(euler_angles[0], Eigen::Vector3d::UnitX())
               * Eigen::AngleAxisd(euler_angles[1], Eigen::Vector3d::UnitY())
               * Eigen::AngleAxisd(euler_angles[2], Eigen::Vector3d::UnitZ())).matrix()));

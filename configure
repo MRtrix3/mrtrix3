@@ -1113,7 +1113,7 @@ ld_lib_flags += zlib_ldflags
 
 compile_check ('"JSON for Modern C++" requirements', 'JSON for modern C++', \
     cpp_flags + [ '-I'+os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), 'core')) ], ld_flags, '''
-#include "''' + os.path.join('file', 'json.h') + '''"
+#include "''' + os.path.join('file', 'json.hpp') + '''"
 int main (int argc, char* argv[])
 {
   nlohmann::json json;

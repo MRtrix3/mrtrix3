@@ -70,7 +70,10 @@ namespace MR
         }
         double contributing_length_removed = 0.0, noncontributing_length_removed = 0.0;
         // Randomise the order or removal here; faster than trying to select at random later
-        std::random_shuffle (noncontributing_indices.begin(), noncontributing_indices.end());
+        {
+          Math::RNG rng;
+          std::shuffle (noncontributing_indices.begin(), noncontributing_indices.end(), rng);
+        }
 
         vector<Cost_fn_gradient_sort> gradient_vector;
         try {
