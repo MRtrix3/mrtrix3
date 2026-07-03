@@ -17,6 +17,7 @@
 #pragma once
 
 #include <array>
+#include <string_view>
 
 #include "crosshair.h"
 #include "gui.h"
@@ -149,7 +150,11 @@ protected:
 
 class Projection : public ModelViewProjection {
 public:
-  Projection(GL::Area *parent, const GL::Font &font) : glarea(parent), font(font), crosshair(new Crosshair()) {}
+  Projection(GL::Area *parent, const GL::Font &font) : glarea(parent), font(&font), crosshair(new Crosshair()) {}
+
+  //! redirect text rendering to a different font (e.g. a size-scaled font for super-resolution capture)
+  void set_font(const GL::Font &replacement) { font = &replacement; }
+  const GL::Font &get_font() const { return *font; }
 
   void set_viewport(const QWidget &frame, int x, int y, int w, int h) {
     ModelViewProjection::set_viewport(x, y, w, h);
@@ -161,23 +166,25 @@ public:
     gl::Viewport(m * viewport[0], m * viewport[1], m * viewport[2], m * viewport[3]);
   }
 
-  void render_crosshairs(const Eigen::Vector3f &focus) const { crosshair->render(focus, *this); }
+  void render_crosshairs(const Eigen::Vector3f &focus, float thickness = 1.0f) const {
+    crosshair->render(focus, *this, thickness);
+  }
 
   void setup_render_text(float red = 1.0, float green = 1.0, float blue = 0.0) const {
-    font.start(width(), height(), red, green, blue);
+    font->start(width(), height(), red, green, blue);
   }
-  void done_render_text() const { font.stop(); }
+  void done_render_text() const { font->stop(); }
 
-  void render_text(int x, int y, std::string_view text) const { font.render(text, x, y); }
+  void render_text(int x, int y, std::string_view text) const { font->render(text, x, y); }
 
   void render_text_align(int x, int y, std::string_view text, int halign = 0, int valign = 0) const {
     QString s(qstr(text));
 #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
-    int w = font.metric.width(s);
+    const int w = font->metric.width(s);
 #else
-    int w = font.metric.horizontalAdvance(s);
+    const int w = font->metric.horizontalAdvance(s);
 #endif
-    int h = font.metric.height();
+    const int h = font->metric.height();
     if (halign == 0)
       x -= w / 2;
     else if (halign > 0)
@@ -192,21 +199,21 @@ public:
   void render_text_inset(int x, int y, std::string_view text, int inset = -1) const {
     QString s(qstr(text));
     if (inset < 0)
-      inset = font.metric.height() / 2;
+      inset = font->metric.height() / 2;
     if (x < inset)
       x = inset;
 #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
-    if (x + font.metric.width(s) + inset > width())
-      x = width() - font.metric.width(s) - inset;
+    if (x + font->metric.width(s) + inset > width())
+      x = width() - font->metric.width(s) - inset;
 #else
-    if (x + font.metric.horizontalAdvance(s) + inset > width())
-      x = width() - font.metric.horizontalAdvance(s) - inset;
+    if (x + font->metric.horizontalAdvance(s) + inset > width())
+      x = width() - font->metric.horizontalAdvance(s) - inset;
 #endif
 
     if (y < inset)
       y = inset;
-    if (y + font.metric.height() + inset > height())
-      y = height() - font.metric.height() - inset;
+    if (y + font->metric.height() + inset > height())
+      y = height() - font->metric.height() - inset;
     render_text(x, y, text);
   }
 
@@ -216,26 +223,26 @@ public:
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
     if (position & RightEdge)
-      x = width() - font.metric.height() / 2 - font.metric.width(s);
+      x = width() - font->metric.height() / 2 - font->metric.width(s);
     else if (position & LeftEdge)
-      x = font.metric.height() / 2;
+      x = font->metric.height() / 2;
     else
-      x = (width() - font.metric.width(s)) / 2;
+      x = (width() - font->metric.width(s)) / 2;
 #else
     if (position & RightEdge)
-      x = width() - font.metric.height() / 2 - font.metric.horizontalAdvance(s);
+      x = width() - font->metric.height() / 2 - font->metric.horizontalAdvance(s);
     else if (position & LeftEdge)
-      x = font.metric.height() / 2;
+      x = font->metric.height() / 2;
     else
-      x = (width() - font.metric.horizontalAdvance(s)) / 2;
+      x = (width() - font->metric.horizontalAdvance(s)) / 2;
 #endif
 
     if (position & TopEdge)
-      y = height() - 1.5 * font.metric.height() - line * font.metric.lineSpacing();
+      y = static_cast<int>(height() - 1.5 * font->metric.height() - line * font->metric.lineSpacing());
     else if (position & BottomEdge)
-      y = font.metric.height() / 2 + line * font.metric.lineSpacing();
+      y = font->metric.height() / 2 + line * font->metric.lineSpacing();
     else
-      y = (height() - font.metric.height()) / 2 - line * font.metric.lineSpacing();
+      y = (height() - font->metric.height()) / 2 - line * font->metric.lineSpacing();
 
     render_text(x, y, text);
   }
@@ -258,7 +265,7 @@ public:
 
 protected:
   GL::Area *glarea;
-  const GL::Font &font;
+  const GL::Font *font;
   std::shared_ptr<Crosshair> crosshair;
 };
 

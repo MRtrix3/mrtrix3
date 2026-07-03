@@ -300,14 +300,15 @@ void Fixel::render_fixel_colourbar(const Tool::BaseFixel &fixel) {
 
   float max_value = fixel.use_discard_upper() ? fixel.scaling_max_thresholded() : fixel.scaling_max();
 
-  window().colourbar_renderer.render(
-      fixel.colourmap,
-      fixel.scale_inverted(),
-      min_value,
-      max_value,
-      fixel.scaling_min(),
-      fixel.display_range,
-      Eigen::Array3f{fixel.colour[0] / 255.0f, fixel.colour[1] / 255.0f, fixel.colour[2] / 255.0f});
+  window()
+      .annotation_colourbar(window().supersample())
+      .render(fixel.colourmap,
+              fixel.scale_inverted(),
+              min_value,
+              max_value,
+              fixel.scaling_min(),
+              fixel.display_range,
+              Eigen::Array3f{fixel.colour[0] / 255.0F, fixel.colour[1] / 255.0F, fixel.colour[2] / 255.0F});
   GL::assert_context_is_current();
 }
 

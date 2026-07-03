@@ -375,14 +375,15 @@ void Overlay::render_image_colourbar(const Image &image) {
 
   float max_value = image.use_discard_upper() ? image.scaling_max_thresholded() : image.scaling_max();
 
-  window().colourbar_renderer.render(
-      image.colourmap,
-      image.scale_inverted(),
-      min_value,
-      max_value,
-      image.scaling_min(),
-      image.display_range,
-      Eigen::Vector3f{image.colour[0] / 255.0f, image.colour[1] / 255.0f, image.colour[2] / 255.0f});
+  window()
+      .annotation_colourbar(window().supersample())
+      .render(image.colourmap,
+              image.scale_inverted(),
+              min_value,
+              max_value,
+              image.scaling_min(),
+              image.display_range,
+              Eigen::Vector3f{image.colour[0] / 255.0F, image.colour[1] / 255.0F, image.colour[2] / 255.0F});
 }
 
 void Overlay::toggle_shown_slot(const QModelIndex &index, const QModelIndex &index2) {

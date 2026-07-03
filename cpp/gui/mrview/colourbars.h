@@ -46,7 +46,9 @@ public:
     BottomRight = Bottom | Right
   };
 
-  ColourBars();
+  //! \a supersample scales all pixel dimensions, so a colourbar rendered into a super-resolution
+  //! image retains the same on-screen proportions
+  explicit ColourBars(int supersample = 1);
 
   void begin(Projection *projection, const Position position, const size_t ncolourbars) {
     current_position = position;
@@ -78,7 +80,7 @@ protected:
   GL::Shader::Program frame_program, program;
   size_t current_colourmap_index;
   bool current_colourmap_inverted;
-  const GLfloat width, height, inset, text_offset, colourbar_padding;
+  const GLfloat width, height, inset, text_offset, colourbar_padding, frame_line_width;
 
   void setup(size_t index, bool inverted);
 

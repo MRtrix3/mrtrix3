@@ -15,7 +15,9 @@
  */
 
 #include <QDebug>
+#include <QImage>
 #include <algorithm>
+#include <memory>
 #include <qopenglwidget.h>
 #include <string>
 #include <unordered_map>
@@ -1412,13 +1414,60 @@ void Window::paintGL() {
     mode->projection.done_render_text();
   }
 
-  // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
-  // otherwise we get transparent windows...
+  // Force the alpha channel to opaque. With QOpenGLWidget (Qt >= 5.4) this prevents transparent windows
+  // on-screen; it is equally required for off-screen capture, because opaque triangulated geometry is
+  // drawn by shaders that declare "out vec4 color" but write only color.rgb, leaving color.a at zero.
+  // Without this flatten such geometry would be transparent in the captured RGBA image.
   gl::ColorMask(false, false, false, true);
   gl::Clear(gl::COLOR_BUFFER_BIT);
   glColorMask(true, true, true, true);
   GL_CHECK_ERROR;
   GL::assert_context_is_current();
+}
+
+GL::Font &Window::annotation_font(int ratio) {
+  if (ratio <= 1)
+    return font;
+  std::unique_ptr<GL::Font> &cached = supersample_fonts[ratio];
+  if (!cached) {
+    QFont scaled(font.get_qfont());
+    if (scaled.pointSizeF() > 0.0)
+      scaled.setPointSizeF(scaled.pointSizeF() * ratio);
+    else if (scaled.pixelSize() > 0)
+      scaled.setPixelSize(scaled.pixelSize() * ratio);
+    cached = std::make_unique<GL::Font>(scaled);
+    cached->initGL();
+  }
+  return *cached;
+}
+
+ColourBars &Window::annotation_colourbar(int ratio) {
+  if (ratio <= 1)
+    return colourbar_renderer;
+  std::unique_ptr<ColourBars> &cached = supersample_colourbars[ratio];
+  if (!cached)
+    cached = std::make_unique<ColourBars>(ratio);
+  return *cached;
+}
+
+Window::OffscreenScope::OffscreenScope(Window &window, int supersample)
+    : window(window),
+      previous_font(window.mode ? &window.mode->projection.get_font() : nullptr),
+      previous_supersample(window.supersample_) {
+  window.supersample_ = supersample;
+  if (window.mode)
+    window.mode->projection.set_font(window.annotation_font(supersample));
+}
+
+Window::OffscreenScope::~OffscreenScope() {
+  if (window.mode && previous_font != nullptr)
+    window.mode->projection.set_font(*previous_font);
+  window.supersample_ = previous_supersample;
+}
+
+void Window::renderOffscreenGL(int supersample) {
+  const OffscreenScope scope(*this, supersample);
+  paintGL();
 }
 
 void Window::initGL() {

@@ -63,7 +63,10 @@ public:
   ProgressBar(ProgressBar &&other) noexcept;
   ProgressBar &operator=(ProgressBar &&other) noexcept;
 
-  FORCE_INLINE ~ProgressBar() { done(); }
+  //! Virtual so that GUI code can subclass ProgressBar (e.g. to opt in to cancellation support)
+  //! and have that subtype detected via dynamic_cast from within the display/done hooks, without
+  //! this class needing to declare any GUI-specific concept in its own interface.
+  virtual ~ProgressBar() { done(); }
 
   //! Create a new ProgressBar, displaying the specified text.
   /*! If \a target is unspecified or set to zero, the ProgressBar will

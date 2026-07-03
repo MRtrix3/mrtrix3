@@ -473,6 +473,34 @@ List of MRtrix3 configuration file options
      choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
      ctrl, cmd).
 
+.. option:: MRViewScreenshotDownSample
+
+    *default: 1*
+
+     The default down-sampling factor for the MRView screenshot tool.
+     The exported image resolution is the native window resolution multiplied by the
+     super-sampling factor and divided by this down-sampling factor; combining super-sampling
+     with an equal down-sampling factor yields anti-aliased images at the native resolution.
+
+.. option:: MRViewScreenshotMSAA
+
+    *default: the value of config file item "MSAA" if present; 1 (ie. disabled) otherwise*
+
+     The default multi-sample anti-aliasing factor for the MRView screenshot tool.
+     A value greater than one renders each exported image off-screen with this number of
+     samples per pixel, smoothing edges; the value is rounded to a supported power of two.
+     This off-screen setting is independent of, but defaults to, the MSAA config option
+     that governs multi-sample anti-aliasing of the interactive window itself.
+
+.. option:: MRViewScreenshotSuperSample
+
+    *default: 1*
+
+     The default super-sampling (super-resolution) factor for the MRView screenshot tool.
+     A value greater than one renders each exported image off-screen at this integer multiple
+     of the window resolution, improving image quality at the cost of additional computation
+     and graphics memory; the interactive window continues to render at native resolution.
+
 .. option:: MRViewShowColourbar
 
     *default: true*

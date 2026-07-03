@@ -28,7 +28,9 @@ class ModelViewProjection;
 class Crosshair {
 public:
   Crosshair() {}
-  void render(const Eigen::Vector3f &focus, const ModelViewProjection &MVP) const;
+  //! \a thickness scales the on-screen line width in pixels, so the focus point retains the same
+  //! proportions when rendered into a super-resolution image
+  void render(const Eigen::Vector3f &focus, const ModelViewProjection &MVP, float thickness = 1.0f) const;
 
 protected:
   mutable GL::VertexBuffer VB;

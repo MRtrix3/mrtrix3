@@ -22,7 +22,7 @@
 #include "mrview/tool/odf/odf.h"
 #include "mrview/tool/overlay.h"
 #include "mrview/tool/roi_editor/roi.h"
-#include "mrview/tool/screen_capture.h"
+#include "mrview/tool/screen_capture/screen_capture.h"
 #include "mrview/tool/tractography/tractography.h"
 #include "mrview/tool/transform.h"
 #include "mrview/tool/view.h"

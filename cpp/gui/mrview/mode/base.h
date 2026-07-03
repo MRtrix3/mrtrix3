@@ -102,8 +102,10 @@ public:
     return window().orientation();
   }
 
-  int width() const { return glarea()->width(); }
-  int height() const { return glarea()->height(); }
+  // Scaled by the active super-sampling ratio (unity except during off-screen super-resolution capture),
+  // so the entire render path (viewport, projection extent, panel layout) follows a single factor.
+  int width() const { return glarea()->width() * window().supersample(); }
+  int height() const { return glarea()->height() * window().supersample(); }
   bool snap_to_image() const { return window().snap_to_image(); }
 
   Image *image() { return window().image(); }
@@ -172,7 +174,7 @@ public:
 
   void draw_crosshairs(const Projection &with_projection) const {
     if (window().show_crosshairs())
-      with_projection.render_crosshairs(focus());
+      with_projection.render_crosshairs(focus(), static_cast<float>(window().supersample()));
   }
 
   void draw_orientation_labels(const Projection &with_projection) const {

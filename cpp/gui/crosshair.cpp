@@ -22,7 +22,7 @@
 
 namespace MR::GUI {
 
-void Crosshair::render(const Eigen::Vector3f &focus, const ModelViewProjection &MVP) const {
+void Crosshair::render(const Eigen::Vector3f &focus, const ModelViewProjection &MVP, float thickness) const {
   if (!VB || !VAO) {
     VB.gen();
     VAO.gen();
@@ -58,15 +58,23 @@ void Crosshair::render(const Eigen::Vector3f &focus, const ModelViewProjection &
   F[0] = 2.0F * F[0] / MVP.width() - 1.0F;
   F[1] = 2.0F * F[1] / MVP.height() - 1.0F;
 
-  const std::array<GLfloat, 8> data = {F[0], -1.0F, F[0], 1.0F, -1.0F, F[1], 1.0F, F[1]};
+  // The two crosshair lines are drawn as thickness-scaled quads rather than GL_LINES:
+  // OpenGL core profiles only guarantee a line width of one pixel, so gl::LineWidth() cannot be
+  // relied upon to thicken the focus point in proportion to the super-sampling ratio.
+  const float hx = thickness / MVP.width();  // half-thickness of the vertical line, in clip units
+  const float hy = thickness / MVP.height(); // half-thickness of the horizontal line, in clip units
+  const std::array<GLfloat, 24> data = {
+      -1.0F,     F[1] - hy, 1.0F,      F[1] - hy, 1.0F,      F[1] + hy, // horizontal line, first triangle
+      -1.0F,     F[1] - hy, 1.0F,      F[1] + hy, -1.0F,     F[1] + hy, // horizontal line, second triangle
+      F[0] - hx, -1.0F,     F[0] + hx, -1.0F,     F[0] + hx, 1.0F,      // vertical line, first triangle
+      F[0] - hx, -1.0F,     F[0] + hx, 1.0F,      F[0] - hx, 1.0F};     // vertical line, second triangle
   gl::BufferData(gl::ARRAY_BUFFER, sizeof(data), data.data(), gl::STATIC_DRAW);
 
   gl::DepthMask(gl::TRUE_);
   gl::Disable(gl::BLEND);
-  gl::LineWidth(1.0);
 
   program.start();
-  gl::DrawArrays(gl::LINES, 0, 4);
+  gl::DrawArrays(gl::TRIANGLES, 0, 12);
   program.stop();
 }
 
