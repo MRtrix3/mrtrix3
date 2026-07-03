@@ -18,7 +18,9 @@ function(use_compiler_cache)
     )
   endif()
 
-  find_program(CACHE_BINARY NAMES ${CACHE_OPTION_VALUES})
+  # Honour the requested tool only, so selection is deterministic and a stray
+  # sccache on a runner image can never be picked in preference to ccache.
+  find_program(CACHE_BINARY NAMES ${CACHE_OPTION})
   if(CACHE_BINARY)
     message(STATUS "${CACHE_BINARY} found and enabled")
     set(CMAKE_CXX_COMPILER_LAUNCHER

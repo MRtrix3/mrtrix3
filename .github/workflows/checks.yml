@@ -18,8 +18,11 @@ jobs:
 
     env:
       QT_SELECT: qt6
-      SCCACHE_GHA_ENABLED: "true"
-      SCCACHE_CACHE_SIZE: "2G"
+      CCACHE_SLOPPINESS: pch_defines,time_macros
+      CCACHE_DEPEND: "true"
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_COMPILERCHECK: content
+      CCACHE_MAXSIZE: 2G
 
     steps:
     - uses: actions/checkout@v1
@@ -31,8 +34,12 @@ jobs:
          sudo apt-get update
          sudo apt-get install clang qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy libpng-dev mesa-vulkan-drivers
 
-    - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.9
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.workflow }}-${{ github.job }}
+        max-size: 2G
+        verbose: 1
 
     - name: Get CMake
       uses: lukka/get-cmake@latest
@@ -85,8 +92,11 @@ jobs:
 
     env:
       QT_SELECT: qt6
-      SCCACHE_GHA_ENABLED: "true"
-      SCCACHE_CACHE_SIZE: "2G"
+      CCACHE_SLOPPINESS: pch_defines,time_macros
+      CCACHE_DEPEND: "true"
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_COMPILERCHECK: content
+      CCACHE_MAXSIZE: 2G
 
     steps:
     - uses: actions/checkout@v1
@@ -98,8 +108,12 @@ jobs:
          sudo apt-get update
          sudo apt-get install g++-9 qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy libpng-dev mesa-vulkan-drivers
 
-    - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.9
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.workflow }}-${{ github.job }}
+        max-size: 2G
+        verbose: 1
 
     - name: Get CMake
       uses: lukka/get-cmake@latest
@@ -142,8 +156,11 @@ jobs:
     runs-on: macos-latest
 
     env:
-      SCCACHE_GHA_ENABLED: "true"
-      SCCACHE_CACHE_SIZE: "2G"
+      CCACHE_SLOPPINESS: pch_defines,time_macros
+      CCACHE_DEPEND: "true"
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_COMPILERCHECK: content
+      CCACHE_MAXSIZE: 2G
 
     steps:
     - uses: actions/checkout@v1
@@ -156,8 +173,12 @@ jobs:
          brew link --force qt
          brew install numpy
 
-    - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.9
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.workflow }}-${{ github.job }}
+        max-size: 2G
+        verbose: 1
 
     - name: Get CMake
       uses: lukka/get-cmake@latest
@@ -177,7 +198,6 @@ jobs:
         -D CMAKE_FIND_FRAMEWORK=LAST
         -D MRTRIX_BUILD_TESTS=ON
         -D MRTRIX_STL_DEBUGGING=ON
-        -D MRTRIX_USE_PCH=OFF
         -D MRTRIX_WARNINGS_AS_ERRORS=ON
 
     - name: build
@@ -212,9 +232,12 @@ jobs:
     env:
       CHERE_INVOKING: enabled_from_arguments
       MINGW_PACKAGE_PREFIX: mingw-w64-ucrt-x86_64
-      SCCACHE_GHA_ENABLED: "true"
-      SCCACHE_CACHE_SIZE: "2G"
-      SCCACHE_DIR: ${{ github.workspace }}/.sccache
+      CCACHE_SLOPPINESS: pch_defines,time_macros
+      CCACHE_DEPEND: "true"
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_COMPILERCHECK: content
+      CCACHE_MAXSIZE: 2G
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
 
     steps:
       - uses: actions/checkout@v1
@@ -229,6 +252,7 @@ jobs:
             git
             python
             ${{env.MINGW_PACKAGE_PREFIX}}-bc
+            ${{env.MINGW_PACKAGE_PREFIX}}-ccache
             ${{env.MINGW_PACKAGE_PREFIX}}-cmake
             ${{env.MINGW_PACKAGE_PREFIX}}-diffutils
             ${{env.MINGW_PACKAGE_PREFIX}}-fftw
@@ -241,13 +265,13 @@ jobs:
             ${{env.MINGW_PACKAGE_PREFIX}}-qt6-svg
             ${{env.MINGW_PACKAGE_PREFIX}}-zlib
 
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.9
-
-      - name: export sccache to msys2 shell
-        run: |
-          export SCCACHE_UNIX_PATH=$(cygpath -u "$SCCACHE_PATH")
-          echo "SCCACHE_UNIX_PATH=$SCCACHE_UNIX_PATH" >> $GITHUB_ENV
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.ccache
+          key: ${{ github.workflow }}-windows-ccache-${{ github.run_id }}
+          restore-keys: |
+            ${{ github.workflow }}-windows-ccache-
 
       - name: configure
         run: >
@@ -258,8 +282,7 @@ jobs:
             -D MRTRIX_BUILD_TESTS=ON
             -D MRTRIX_STL_DEBUGGING=ON
             -D MRTRIX_WARNINGS_AS_ERRORS=ON
-            -D MRTRIX_ENABLE_GPU=OFF
-            -D CMAKE_CXX_COMPILER_LAUNCHER=${{env.SCCACHE_UNIX_PATH}} .
+            -D MRTRIX_ENABLE_GPU=OFF .
 
       - name: build
         run: cmake --build build -- -k 0
