@@ -307,8 +307,11 @@ void run() {
   const std::filesystem::path input_path(argument[0]);
   const Mapping correspondence(argument[1]);
   const metric_t metric = MR::Enum::from_name<metric_t>(argument[2]);
-  const std::filesystem::path output_directory(argument[3]);
-  const std::filesystem::path output_filename(argument[4]);
+  // "directory_out" / "data_out" are declared type_text(); take the raw string
+  //   via as_text() before constructing a path (matching voxel2fixel), as a direct
+  //   filesystem::path cast of a non-filesystem argument type trips a runtime assertion
+  const std::filesystem::path output_directory(argument[3].as_text());
+  const std::filesystem::path output_filename(argument[4].as_text());
 
   if (!std::filesystem::is_directory(output_directory))
     throw Exception("Output fixel directory \"" + output_directory.string() + "\" not found");
