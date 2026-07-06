@@ -170,8 +170,8 @@ void Matcher::operator()(Image<MR::Fixel::index_type> &voxel) {
   const index_type nfixels_target = target_fixels.size();
 
   std::vector<std::vector<Mapping::Entry>> M;
-  if (target_fixels.size()) {
-    if (source_fixels.size()) {
+  if (!target_fixels.empty()) {
+    if (!source_fixels.empty()) {
       const voxel_t v{static_cast<uint32_t>(voxel.index(0)),
                       static_cast<uint32_t>(voxel.index(1)),
                       static_cast<uint32_t>(voxel.index(2))};
