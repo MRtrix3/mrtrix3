@@ -55,6 +55,7 @@ constexpr float default_agreement_sigma = 1.0f;          // sigma (density units
 constexpr float default_agreement_complexity = 0.1f;     // beta
 constexpr float default_transportguard_mu = 1.0f;        // over-explanation weight
 constexpr float default_transportguard_rho = 2.0f;       // over-explanation density ratio
+constexpr float default_maskoverlap_gamma = 0.5f;        // mask-overlap merge/split parsimony weight
 
 constexpr index_type default_max_origins_per_target = 3;
 constexpr index_type default_max_objectives_per_source = 3;

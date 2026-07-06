@@ -180,6 +180,11 @@ void usage() {
 
   + "\"maskoverlap\": This is a combinatorial algorithm that scores correspondence by the geometric overlap between the "
     "dixel masks of the remapped subject fixels and those of the template fixels, using no FOD amplitude information. "
+    "It reuses the same cost skeleton as \"pot\" (matched density transported at a cost, surplus density created or "
+    "destroyed at unit cost, and a linear parsimony penalty on merging or splitting fixels controlled by \"gamma\"), "
+    "but the directional misalignment term is replaced by the fraction of each remapped subject lobe that is not "
+    "explained by its paired template lobe. Contributions from directions shared between multiple fixels are "
+    "down-weighted so that they are not double-counted. "
     "Both the source and target fixel directories must carry a per-fixel dixel-mask file (as exported by fod2fixel).";
 
   ARGUMENTS
@@ -209,7 +214,9 @@ void usage() {
 
   + Algorithms::AgreementOptions
 
-  + Algorithms::TransportGuardOptions;
+  + Algorithms::TransportGuardOptions
+
+  + Algorithms::MaskOverlapOptions;
 
   REFERENCES
   + "* If using -algorithm ismrm2018 or -algorithm rs2023: " // Internal
@@ -316,6 +323,8 @@ void run() {
     algorithm.reset(new Algorithms::MaskOverlap(get_option_value("max_origins", default_max_origins_per_target),
                                                 get_option_value("max_objectives", default_max_objectives_per_source),
                                                 H_cost));
+    dynamic_cast<Algorithms::MaskOverlap *>(algorithm.get())
+        ->set_gamma(get_option_value("maskoverlap_complexity", default_maskoverlap_gamma));
     break;
   default:
     assert(0);

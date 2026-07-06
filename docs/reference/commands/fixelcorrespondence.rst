@@ -38,10 +38,20 @@ Multiple algorithms are provided; a brief description of each of these is provid
 
 "pot": This is a combinatorial algorithm using a partial-optimal-transport-inspired cost function. Matched fibre density between subject and template fixels is "transported" at a cost determined by directional misalignment, while surplus density on either side is created or destroyed at unit cost; subject or template fixels with no correspondence are penalised by their density. Mapping topology (multiple subject fixels merged into one template fixel, or one subject fixel split across multiple template fixels) is penalised linearly with weight controlled by the "gamma" parameter, and the angular sensitivity is controlled by exponent "p".
 
+"transport": This is a combinatorial algorithm in which each subject fixel's fibre density is treated as mass to be transported to the template fixel(s) it is assigned to, paying an angular cost; subject mass that cannot be placed within a threshold angle is left unmatched. Crucially, template fibre density enters the cost only through template orientation, never as a matching target, so the optimal mapping does not shrink subject density toward the template and between-subject contrast is preserved.
+
+"transportdisp": As for "transport", but each remapped fixel's assembled mass is scored by the alignment of its mean direction together with an explicit penalty on the angular dispersion of the merged subject fixels. This more strongly rewards merging fixels that straddle a template direction while penalising the conflation of widely-separated populations.
+
+"agreement": A combinatorial algorithm evolving the "ismrm2018" cost. Density disagreement between remapped and template fixels is gated by angular misalignment (so it is ignored where the geometry is good) and saturates beyond a contrast-protection scale "sigma", so that genuinely differing subject densities are not dragged toward the template.
+
+"transportguard": As for "transport", but with an additional one-sided penalty that fires only when a remapped fixel accumulates substantially more mass than the corresponding template fixel plausibly holds, suppressing non-physical pile-ups from over-merging without otherwise affecting density contrast.
+
+"maskoverlap": This is a combinatorial algorithm that scores correspondence by the geometric overlap between the dixel masks of the remapped subject fixels and those of the template fixels, using no FOD amplitude information. It reuses the same cost skeleton as "pot" (matched density transported at a cost, surplus density created or destroyed at unit cost, and a linear parsimony penalty on merging or splitting fixels controlled by "gamma"), but the directional misalignment term is replaced by the fraction of each remapped subject lobe that is not explained by its paired template lobe. Contributions from directions shared between multiple fixels are down-weighted so that they are not double-counted. Both the source and target fixel directories must carry a per-fixel dixel-mask file (as exported by fod2fixel).
+
 Options
 -------
 
--  **-algorithm choice** the algorithm to use when establishing fixel correspondence; options are: all2all, legacy, ismrm2018, pot, rs2023 (default: pot)
+-  **-algorithm choice** the algorithm to use when establishing fixel correspondence; options are: all2all, legacy, ismrm2018, pot, rs2023, transport, transportdisp, agreement, transportguard, maskoverlap (default: pot)
 
 -  **-remapped path** export the remapped source fixels to a new fixel directory
 
@@ -62,14 +72,45 @@ Options applicable to all combinatorial-based algorithms
 Options specific to algorithm "pot"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-pot_steepness value** exponent "p" controlling the angular sensitivity of the directional misalignment cost (default: 1)
-
 -  **-pot_complexity value** weight "gamma" applied to the linear penalty for merging multiple subject fixels into one template fixel or splitting one subject fixel across multiple template fixels (default: 0.5)
 
 Options specific to algorithm "rs2023"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-rs2023_constants alpha beta** set values for the two constants that modulate the influence of different cost function terms in the RS2023 expression
+
+Options specific to algorithms "transport", "transportdisp" and "transportguard"
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-transport_kernel choice** the angular cost kernel a(theta): "tan" or "tan2" (default: tan2)
+
+-  **-transport_angle value** the threshold angle theta* (degrees) beyond which subject fibre density is left unplaced rather than transported to a poorly-aligned template fixel (default: 45)
+
+-  **-transport_complexity value** weight "gamma" applied to the linear parsimony penalty on fixel merging and splitting (default: 0.5)
+
+Options specific to algorithm "transportdisp" (in addition to those shared with "transport")
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-transportdisp_dispersion value** weight "lambda" applied to the within-fixel angular dispersion penalty (default: 1)
+
+Options specific to algorithm "agreement"
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-agreement_kernel choice** the angular cost kernel a(theta): "tan" or "tan2" (default: tan2)
+
+-  **-agreement_sigma value** the density-contrast protection scale "sigma" beyond which density disagreement saturates (default: 1)
+
+-  **-agreement_complexity value** weight "beta" applied to the squared parsimony penalty on fixel merging and splitting (default: 0.100000001)
+
+Options specific to algorithm "transportguard" (in addition to those shared with "transport")
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-transportguard_overexplain mu rho** set the weight "mu" and density ratio threshold "rho" of the one-sided over-explanation guard (defaults: 1 2)
+
+Options specific to algorithm "maskoverlap"
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-maskoverlap_complexity value** weight "gamma" applied to the linear penalty for merging multiple subject fixels into one template fixel or splitting one subject fixel across multiple template fixels (default: 0.5)
 
 Standard options
 ^^^^^^^^^^^^^^^^

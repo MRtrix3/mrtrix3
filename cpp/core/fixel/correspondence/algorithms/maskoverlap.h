@@ -20,7 +20,13 @@
 
 #include "fixel/correspondence/algorithms/combinatorial.h"
 
+namespace MR::App {
+class OptionGroup;
+} // namespace MR::App
+
 namespace MR::Fixel::Correspondence::Algorithms {
+
+extern App::OptionGroup MaskOverlapOptions;
 
 /// @brief Geometric dixel-mask-overlap correspondence cost function.
 ///
@@ -30,8 +36,11 @@ namespace MR::Fixel::Correspondence::Algorithms {
 ///   framework to construct remapped-subject dixel masks per candidate mapping and pass both
 ///   those and the template dixel masks to calculate().
 ///
-/// This stage provides the plumbing only: calculate() returns NaN regardless of input.
-///   The real geometric cost is implemented in a subsequent stage.
+/// The cost reuses the partial-optimal-transport family skeleton of POT (matched transport +
+///   surplus + parsimony), but replaces POT's directional (1 - |cos theta|^p) misalignment term
+///   with a mask-based (1 - overlap_fraction): the fraction of each remapped-subject lobe left
+///   unexplained by its paired template lobe. Per-dixel contributions are normalized by the
+///   number of fixels claiming that dixel, so a dixel shared across fixels is not double-counted.
 class MaskOverlap : public Combinatorial<MaskOverlap> {
 public:
   // Compile-time trait that gates dixel-mask construction in Combinatorial<MaskOverlap>.
@@ -47,6 +56,11 @@ public:
                          const Eigen::Array<int8_t, Eigen::Dynamic, 1> &origins_per_remapped_fixel,
                          const std::vector<dixel_mask_t> &rs_masks,
                          const std::vector<dixel_mask_t> &t_masks);
+
+  static void set_gamma(const float gamma);
+
+protected:
+  static float g;
 };
 
 } // namespace MR::Fixel::Correspondence::Algorithms

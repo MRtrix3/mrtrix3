@@ -1,30 +1,39 @@
 #!/bin/bash
-# Verify that the "maskoverlap" fixel-correspondence algorithm, which consumes the per-fixel
-#   dixel masks exported by fod2fixel, runs end-to-end on masked inputs without crashing.
-# This is a structural check of the plumbing: the cost function is a stub returning NaN, so
-#   the produced mapping is empty, but the command must complete and emit a valid correspondence
-#   archive and cost image. A structural check is used deliberately to avoid binary reference data.
+# Verify the "maskoverlap" fixel-correspondence algorithm end-to-end: it consumes the per-fixel
+# dixel masks exported by fod2fixel and scores correspondence by the geometric overlap of the
+# segmented lobes on the sphere, using no FOD amplitude information.
+# A structural check is used deliberately (a full numeric reference is deferred for this
+# experimental algorithm). The FOD is cropped to a small region and the per-voxel fixel count is
+# bounded, because the mask-weighted cost is evaluated for every candidate remapping.
 
-# Build two masked fixel directories carrying dixelmasks;
-#   the per-voxel fixel count is bounded to keep the combinatorial enumeration tractable.
-rm -rf tmp_maskoverlap_src/ tmp_maskoverlap_tgt/
-fod2fixel -nthreads 1 -maxnum 3 fod.mif tmp_maskoverlap_src/ -afd afd.mif -force
-fod2fixel -nthreads 1 -maxnum 3 fod.mif tmp_maskoverlap_tgt/ -afd afd.mif -force
+# Build a small pair of masked fixel directories from a cropped FOD region
+rm -rf tmp_maskoverlap_fod.mif tmp_maskoverlap_src/ tmp_maskoverlap_tgt/
+mrconvert fod.mif -coord 0 2:3 -coord 1 3:4 -coord 2 4:5 tmp_maskoverlap_fod.mif -force
+fod2fixel -nthreads 1 -maxnum 3 tmp_maskoverlap_fod.mif tmp_maskoverlap_src/ -afd afd.mif -force
+fod2fixel -nthreads 1 -maxnum 3 tmp_maskoverlap_fod.mif tmp_maskoverlap_tgt/ -afd afd.mif -force
 
 # Both inputs must carry a dixel-mask file for the algorithm to operate
 test -f tmp_maskoverlap_src/dixelmasks.mif
 test -f tmp_maskoverlap_tgt/dixelmasks.mif
 
-# The command must complete successfully and write a valid (unzip-able) correspondence archive
-#   together with an optimal-cost image spanning the fixel voxel grid
+# Self-correspondence (identical inputs): the command must complete, write a valid archive, and
+#   yield a cost image that is finite everywhere and identically zero (perfect lobe overlap)
 fixelcorrespondence tmp_maskoverlap_src/afd.mif tmp_maskoverlap_tgt/afd.mif tmp_maskoverlap.npz \
     -algorithm maskoverlap \
     -cost tmp_maskoverlap_cost.mif \
     -force
 
-rm -rf tmp_maskoverlap_mapping/
-unzip tmp_maskoverlap.npz -d tmp_maskoverlap_mapping/
-test "$(mrinfo tmp_maskoverlap_cost.mif -ndim)" = "3"
+# The cost image must contain no NaN/inf values (mrstats pads its output, so strip whitespace)
+test "$(mrcalc tmp_maskoverlap_cost.mif -finite - | mrstats - -output min | tr -d '[:space:]')" = "1"
+
+# For identical inputs the optimal cost is zero (matched mass fully explained, no surplus/parsimony);
+#   a non-zero cost here would indicate a degenerate (incomplete) mapping
+test "$(mrcalc tmp_maskoverlap_cost.mif -abs 0.00001 -gt - | mrstats - -output max | tr -d '[:space:]')" = "0"
+
+# The mapping archive must be valid and non-empty
+rm -rf tmp_maskoverlap_map/
+unzip tmp_maskoverlap.npz -d tmp_maskoverlap_map/
+test -f tmp_maskoverlap_map/indices_forward.npy
 
 # The algorithm requires dixel masks: with the source mask removed it must refuse, not proceed
 rm tmp_maskoverlap_src/dixelmasks.mif
