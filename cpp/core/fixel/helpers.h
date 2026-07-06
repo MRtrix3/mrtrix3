@@ -17,6 +17,7 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 #include <string_view>
 
 #include "algo/loop.h"
@@ -71,6 +72,22 @@ FORCE_INLINE bool is_directions_filename(const std::filesystem::path &path) {
 
 template <class HeaderType> FORCE_INLINE bool is_directions_file(const HeaderType &in) {
   return is_directions_filename(in.name()) && in.ndim() == 3 && in.size(1) == 3 && in.size(2) == 1;
+}
+
+FORCE_INLINE bool is_dixelmasks_filename(const std::filesystem::path &path) {
+  for (std::initializer_list<const std::string>::iterator it = supported_image_formats.begin();
+       it != supported_image_formats.end();
+       ++it) {
+    if (path.filename().string() == basename_dixelmasks + *it)
+      return true;
+  }
+  return false;
+}
+
+//! A dixel-mask file shares the (n x m x 1) shape of a fixel data file; the Bit datatype and the
+//! fixed filename stem are what distinguish it from a generic scalar fixel data file.
+template <class HeaderType> FORCE_INLINE bool is_dixelmasks_file(const HeaderType &in) {
+  return is_dixelmasks_filename(in.name()) && in.ndim() == 3 && in.size(2) == 1 && in.datatype() == DataType::Bit;
 }
 
 template <class HeaderType> FORCE_INLINE void check_data_file(const HeaderType &in) {
@@ -188,7 +205,10 @@ FORCE_INLINE std::vector<Header> find_data_headers(const std::filesystem::path &
         auto H = Header::open(fpath);
         if (is_data_file(H)) {
           if (fixels_match(index_header, H)) {
-            if (!is_directions_file(H) || include_directions)
+            // A dixel-mask file satisfies is_data_file() (n x m x 1), but is not a scalar data
+            // file; exclude it from generic data-file discovery unconditionally (include_directions
+            // governs only the directions file, never the mask).
+            if (!is_dixelmasks_file(H) && (!is_directions_file(H) || include_directions))
               data_headers.emplace_back(std::move(H));
           } else {
             WARN("fixel data file (" + fpath.string() + ")" +                                  //
@@ -232,6 +252,39 @@ FORCE_INLINE Header find_directions_header(const std::filesystem::path &fixel_di
     throw InvalidDirectoryException("Could not find directions image in directory " + fixel_directory_path.string());
 
   return header;
+}
+
+//! Locate the optional per-fixel dixel-mask image within a fixel directory.
+/*! The dixel-mask file is optional, so absence is expressed via a disengaged std::optional
+ * rather than throwing (unlike find_directions_header). */
+FORCE_INLINE std::optional<Header> find_dixelmasks_header(const std::filesystem::path &fixel_directory_path) {
+  check_fixel_directory(fixel_directory_path);
+  Header index_header = Fixel::find_index_header(fixel_directory_path);
+  std::optional<Header> result;
+
+  for (const auto &entry : std::filesystem::directory_iterator(fixel_directory_path)) {
+    if (is_dixelmasks_filename(entry.path().filename())) {
+      Header tmp_header = Header::open(entry.path());
+      if (is_dixelmasks_file(tmp_header)) {
+        if (fixels_match(index_header, tmp_header)) {
+          if (result)
+            throw Exception("multiple dixelmasks files found in fixel image directory: " +
+                            fixel_directory_path.string());
+          result = std::move(tmp_header);
+        } else {
+          WARN("fixel dixelmasks file (" + entry.path().string() + ")" +                     //
+               " does not contain the same number of elements as fixels in the index file"); //
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+//! Convenience presence check for the optional per-fixel dixel-mask image.
+FORCE_INLINE bool has_dixelmasks(const std::filesystem::path &fixel_directory_path) {
+  return find_dixelmasks_header(fixel_directory_path).has_value();
 }
 
 //! Generate a header for a fixel data file (Nx1x1)

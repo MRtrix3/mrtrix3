@@ -1,0 +1,21 @@
+#!/bin/bash
+# Verify that a per-fixel dixel-mask file is not mistaken for a scalar fixel data file
+#   by the generic fixel-data-file discovery (find_data_headers).
+# fixelcrop copies every discovered data file into its output directory; a dixelmasks.mif
+#   present in the input directory must therefore be excluded and absent from the cropped
+#   output, while a genuine data file (afd.mif) is still discovered and carried across.
+rm -rf tmp_in/ tmp_out/
+
+# fod2fixel unconditionally writes tmp_in/dixelmasks.mif alongside the requested afd data file
+fod2fixel -nthreads 1 fod.mif tmp_in/ -afd afd.mif -force
+
+# Crop with a low-threshold mask so that fixels survive and the crop is non-empty;
+#   correctness is then determined solely by which data files are discovered and copied
+mrthreshold tmp_in/afd.mif -abs 0.001 - | \
+fixelcrop tmp_in/ - tmp_out/ -force
+
+# The genuine data file must be discovered and carried across
+test -f tmp_out/afd.mif
+
+# The dixel-mask file must NOT be discovered as a scalar data file, hence absent from the output
+test ! -f tmp_out/dixelmasks.mif

@@ -181,6 +181,7 @@ add_bash_binary_test(fixelcorrespondence/pot)
 add_bash_binary_test(fixelcorrespondence/rs2023)
 
 add_bash_binary_test(fixelcrop/default)
+add_bash_binary_test(fixelcrop/excludes_dixelmasks)
 
 add_bash_binary_test(fixelfilter/cfe_default)
 add_bash_binary_test(fixelfilter/cfe_masked)
