@@ -216,6 +216,7 @@ add_bash_binary_test(fod2dec/noweight)
 add_bash_binary_test(fod2dec/threshold)
 
 add_bash_binary_test(fod2fixel/default)
+add_bash_binary_test(fod2fixel/dixelmasks)
 add_bash_binary_test(fod2fixel/masked)
 add_bash_binary_test(fod2fixel/nothresholds)
 

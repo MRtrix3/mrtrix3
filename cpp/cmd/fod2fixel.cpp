@@ -16,6 +16,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <sstream>
 
 #include "command.h"
 #include "dwi/directions/set.h"
@@ -108,7 +109,7 @@ class Segmented_FOD_receiver {
 
 public:
   Segmented_FOD_receiver(const Header &header, const index_type maxnum = 0, bool dir_from_peak = false)
-      : H(header), fixel_count(0), max_per_voxel(maxnum), dir_from_peak(dir_from_peak) {}
+      : H(header), fixel_count(0), max_per_voxel(maxnum), dir_from_peak(dir_from_peak), num_dirs(0) {}
 
   void commit();
 
@@ -119,6 +120,13 @@ public:
   void set_peak_amp_output(const std::filesystem::path &path) { peak_amp_path = path; }
   void set_disp_output(const std::filesystem::path &path) { disp_path = path; }
   void set_skew_output(const std::filesystem::path &path) { skew_path = path; }
+  void set_dixelmasks_output(const std::filesystem::path &path) { dixelmasks_path = path; }
+
+  //! Store the sampling direction set used for FOD segmentation
+  /*! Retains both the number of directions (the length of every per-fixel dixel mask)
+   * and the serialised Cartesian unit 3-vectors, one row per direction, for the
+   * dixel-mask image's "directions" header keyval. */
+  void set_directions(const DWI::Directions::Set &);
 
   bool operator()(const FOD_lobes &);
 
@@ -128,8 +136,11 @@ private:
     float integral;
     float max_peak_amp;
     float skew;
-    Primitive_FOD_lobe(Eigen::Vector3f dir, float integral, float max_peak_amp, float skew)
-        : dir(dir), integral(integral), max_peak_amp(max_peak_amp), skew(skew) {}
+    //! Per-direction membership of this lobe (length == number of sampling directions)
+    DWI::Directions::mask_type mask;
+    Primitive_FOD_lobe(
+        Eigen::Vector3f dir, float integral, float max_peak_amp, float skew, const DWI::Directions::mask_type &mask)
+        : dir(dir), integral(integral), max_peak_amp(max_peak_amp), skew(skew), mask(mask) {}
   };
 
   class Primitive_FOD_lobes : public std::vector<Primitive_FOD_lobe> {
@@ -141,7 +152,8 @@ private:
         this->emplace_back(dir_from_peak ? lobe.get_peak_dir(0).cast<float>() : lobe.get_mean_dir().cast<float>(),
                            lobe.get_integral(),
                            lobe.get_max_peak_value(),
-                           std::acos(std::fabs(lobe.get_peak_dir(0).dot(lobe.get_mean_dir()))));
+                           std::acos(std::fabs(lobe.get_peak_dir(0).dot(lobe.get_mean_dir()))),
+                           lobe.get_mask());
       }
     }
     Eigen::Array3i vox;
@@ -149,10 +161,15 @@ private:
 
   Header H;
   std::filesystem::path fixel_directory_path, index_path, dir_path, afd_path, peak_amp_path, disp_path, skew_path;
+  std::filesystem::path dixelmasks_path;
   std::vector<Primitive_FOD_lobes> lobes;
   index_type fixel_count;
   index_type max_per_voxel;
   bool dir_from_peak;
+  //! Number of sampling directions; equals the length of every per-fixel dixel mask
+  index_type num_dirs;
+  //! Serialised Cartesian sampling directions for the dixel-mask "directions" header keyval
+  std::string directions_keyval;
 };
 
 bool Segmented_FOD_receiver::operator()(const FOD_lobes &in) {
@@ -163,12 +180,23 @@ bool Segmented_FOD_receiver::operator()(const FOD_lobes &in) {
   return true;
 }
 
+void Segmented_FOD_receiver::set_directions(const DWI::Directions::Set &dirs) {
+  num_dirs = dirs.size();
+  Eigen::Matrix<default_type, Eigen::Dynamic, 3> directions_matrix(num_dirs, 3);
+  for (index_type i = 0; i != num_dirs; ++i)
+    directions_matrix.row(i) = dirs[i].transpose();
+  std::stringstream stream;
+  stream << directions_matrix.format(Eigen::IOFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n"));
+  directions_keyval = stream.str();
+}
+
 void Segmented_FOD_receiver::commit() {
   if (lobes.empty() || fixel_count == 0)
     return;
 
   using DataImage = Image<float>;
   using IndexImage = Image<index_type>;
+  using MaskImage = Image<bool>;
 
   const auto index_filepath = (fixel_directory_path / index_path);
 
@@ -178,6 +206,7 @@ void Segmented_FOD_receiver::commit() {
   std::unique_ptr<DataImage> peak_amp_image;
   std::unique_ptr<DataImage> disp_image;
   std::unique_ptr<DataImage> skew_image;
+  std::unique_ptr<MaskImage> dixelmasks_image;
 
   auto index_header(H);
   index_header.keyval()[Fixel::n_fixels_key] = str(fixel_count);
@@ -220,6 +249,17 @@ void Segmented_FOD_receiver::commit() {
     skew_image = std::make_unique<DataImage>(DataImage::create( //
         fixel_directory_path / skew_path,                       //
         fixel_data_header));                                    //
+
+  // The dixel-mask file is exported unconditionally on every run;
+  //   its second axis spans the FOD sampling directions rather than a single scalar.
+  assert(num_dirs != 0);
+  auto dixelmasks_header(fixel_data_header);
+  dixelmasks_header.size(1) = num_dirs;
+  dixelmasks_header.datatype() = DataType::Bit;
+  dixelmasks_header.keyval()["directions"] = directions_keyval;
+  dixelmasks_image = std::make_unique<MaskImage>(MaskImage::create( //
+      fixel_directory_path / dixelmasks_path,                       //
+      dixelmasks_header));                                          //
 
   size_t offset(0);
   for (const auto &vox_fixels : lobes) {
@@ -268,6 +308,17 @@ void Segmented_FOD_receiver::commit() {
       }
     }
 
+    if (dixelmasks_image) {
+      for (size_t i = 0; i < n_vox_fixels; ++i) {
+        dixelmasks_image->index(0) = offset + i;
+        assert(static_cast<index_type>(vox_fixels[i].mask.size()) == num_dirs);
+        for (index_type j = 0; j != num_dirs; ++j) {
+          dixelmasks_image->index(1) = j;
+          dixelmasks_image->value() = vox_fixels[i].mask[j];
+        }
+      }
+    }
+
     offset += n_vox_fixels;
   }
 
@@ -294,8 +345,10 @@ void run() {
 
   static const std::string default_index_filename("index" + file_extension);
   static const std::string default_directions_filename("directions" + file_extension);
+  const std::string default_dixelmasks_filename(Fixel::basename_dixelmasks + file_extension);
   receiver.set_index_output(default_index_filename);
   receiver.set_directions_output(default_directions_filename);
+  receiver.set_dixelmasks_output(default_dixelmasks_filename);
 
   auto opt = get_options("afd");
   if (!opt.empty())
@@ -323,6 +376,7 @@ void run() {
   FMLS::FODQueueWriter writer(fod_data, mask);
 
   const DWI::Directions::FastLookupSet dirs(1281);
+  receiver.set_directions(dirs);
   Segmenter fmls(dirs, Math::SH::LforN(H.size(3)));
   load_fmls_thresholds(fmls);
 

@@ -12,4 +12,8 @@ fod2fixel -nthreads 1 fod.mif tmp/ \
 -skew skew.mif \
 -force
 
+# The unconditionally-exported dixel-mask file is absent from the legacy reference directory;
+#   remove it so the whole-directory comparison is not perturbed
+rm -f tmp/dixelmasks.mif
+
 testing_diff_fixel -frac 10e-5 tmp/ fod2fixel/out3

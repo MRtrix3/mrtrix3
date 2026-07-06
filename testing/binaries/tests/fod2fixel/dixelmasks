@@ -1,0 +1,22 @@
+#!/bin/bash
+# Verify that fod2fixel unconditionally exports a per-fixel dixel-mask file
+#   with the expected shape (n_fixels x n_directions x 1) and bitwise datatype.
+# A structural check is used deliberately to avoid introducing binary reference data.
+rm -rf tmp/
+
+fod2fixel -nthreads 1 fod.mif tmp/ -force
+
+# The dixel-mask file must be present in the output fixel directory
+test -f tmp/dixelmasks.mif
+
+# Its first axis must span the fixel count (as reported by the directions file),
+#   its second the 1281 sampling directions, and its third must be a singleton
+nfixels=$(mrinfo tmp/directions.mif -size | cut -d' ' -f1)
+test "$(mrinfo tmp/dixelmasks.mif -size)" = "$nfixels 1281 1"
+
+# The mask must be stored with a bitwise datatype
+test "$(mrinfo tmp/dixelmasks.mif -datatype)" = "Bit"
+
+# It must carry the Cartesian sampling directions in a "directions" header keyval,
+#   as one x,y,z row per sampling direction
+test "$(mrinfo tmp/dixelmasks.mif -property directions | grep -c ',')" = "1281"
