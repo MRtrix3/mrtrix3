@@ -45,6 +45,7 @@ class TransportDisp;
 class Agreement;
 class TransportGuard;
 class MegaCost;
+class MaskOverlap;
 
 // Base class to handle the combinatorial aspects of both
 //   what was presented at ISMRM2018 and new proposed expression
@@ -66,26 +67,28 @@ public:
 
   virtual ~Combinatorial() {}
 
+  // Default compile-time trait: a cost functor consumes dixel masks only if it redefines this.
+  // Named distinctly from the runtime query requires_masks() to avoid a same-name data/function clash.
+  static constexpr bool consumes_masks = false;
+
+  // Runtime query used by the Matcher to decide whether to open and load the dixel-mask images.
+  bool requires_masks() const final { return CostFunctor::consumes_masks; }
+
   std::vector<std::vector<Mapping::Entry>> operator()(const voxel_t &v,
                                                       const std::vector<Correspondence::Fixel> &s,
                                                       const std::vector<Correspondence::Fixel> &t) const final;
+
+  std::vector<std::vector<Mapping::Entry>> operator()(const voxel_t &v,
+                                                      const std::vector<Correspondence::Fixel> &s,
+                                                      const std::vector<Correspondence::Fixel> &t,
+                                                      const std::vector<dixel_mask_t> &s_masks,
+                                                      const std::vector<dixel_mask_t> &t_masks) const final;
 
 protected:
   const index_type max_origins_per_target;
   const index_type max_objectives_per_source;
 
   static DP2Cost dp2cost;
-
-  // Derived class function to calculate cost function
-  // CRTP to template out: Can't be calling a virtual function
-  //   this regularly without severe slowdown...
-  FORCE_INLINE static float calculate(const std::vector<Correspondence::Fixel> &s,
-                                      const std::vector<Correspondence::Fixel> &rs,
-                                      const std::vector<Correspondence::Fixel> &t,
-                                      const std::vector<std::vector<index_type>> &inv_mapping,
-                                      const Eigen::Array<int8_t, Eigen::Dynamic, 1> &origins_per_remapped_fixel) {
-    return CostFunctor::calculate(s, rs, t, inv_mapping, origins_per_remapped_fixel);
-  }
 
   static std::atomic_flag fixel_count_warning_issued;
 #ifdef FIXELCORRESPONDENCE_TEST_COMBINATORICS
@@ -107,5 +110,6 @@ extern template class Combinatorial<TransportDisp>;
 extern template class Combinatorial<Agreement>;
 extern template class Combinatorial<TransportGuard>;
 extern template class Combinatorial<MegaCost>;
+extern template class Combinatorial<MaskOverlap>;
 
 } // namespace MR::Fixel::Correspondence::Algorithms

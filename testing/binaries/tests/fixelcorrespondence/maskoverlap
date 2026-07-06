@@ -1,0 +1,32 @@
+#!/bin/bash
+# Verify that the "maskoverlap" fixel-correspondence algorithm, which consumes the per-fixel
+#   dixel masks exported by fod2fixel, runs end-to-end on masked inputs without crashing.
+# This is a structural check of the plumbing: the cost function is a stub returning NaN, so
+#   the produced mapping is empty, but the command must complete and emit a valid correspondence
+#   archive and cost image. A structural check is used deliberately to avoid binary reference data.
+
+# Build two masked fixel directories carrying dixelmasks;
+#   the per-voxel fixel count is bounded to keep the combinatorial enumeration tractable.
+rm -rf tmp_maskoverlap_src/ tmp_maskoverlap_tgt/
+fod2fixel -nthreads 1 -maxnum 3 fod.mif tmp_maskoverlap_src/ -afd afd.mif -force
+fod2fixel -nthreads 1 -maxnum 3 fod.mif tmp_maskoverlap_tgt/ -afd afd.mif -force
+
+# Both inputs must carry a dixel-mask file for the algorithm to operate
+test -f tmp_maskoverlap_src/dixelmasks.mif
+test -f tmp_maskoverlap_tgt/dixelmasks.mif
+
+# The command must complete successfully and write a valid (unzip-able) correspondence archive
+#   together with an optimal-cost image spanning the fixel voxel grid
+fixelcorrespondence tmp_maskoverlap_src/afd.mif tmp_maskoverlap_tgt/afd.mif tmp_maskoverlap.npz \
+    -algorithm maskoverlap \
+    -cost tmp_maskoverlap_cost.mif \
+    -force
+
+rm -rf tmp_maskoverlap_mapping/
+unzip tmp_maskoverlap.npz -d tmp_maskoverlap_mapping/
+test "$(mrinfo tmp_maskoverlap_cost.mif -ndim)" = "3"
+
+# The algorithm requires dixel masks: with the source mask removed it must refuse, not proceed
+rm tmp_maskoverlap_src/dixelmasks.mif
+fixelcorrespondence tmp_maskoverlap_src/afd.mif tmp_maskoverlap_tgt/afd.mif tmp_maskoverlap2.npz \
+    -algorithm maskoverlap -force 2>/dev/null && exit 1 || true

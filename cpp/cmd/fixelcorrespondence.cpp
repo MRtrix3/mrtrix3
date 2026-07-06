@@ -28,6 +28,7 @@
 #include "fixel/correspondence/algorithms/ismrm2018.h"
 #include "fixel/correspondence/algorithms/kernel.h"
 #include "fixel/correspondence/algorithms/legacy.h"
+#include "fixel/correspondence/algorithms/maskoverlap.h"
 #include "fixel/correspondence/algorithms/pot.h"
 #include "fixel/correspondence/algorithms/rs2023.h"
 #include "fixel/correspondence/algorithms/transport.h"
@@ -99,7 +100,8 @@ enum class algorithm_t {
   TRANSPORT,
   TRANSPORTDISP,
   AGREEMENT,
-  TRANSPORTGUARD
+  TRANSPORTGUARD,
+  MASKOVERLAP
 };
 constexpr algorithm_t default_algorithm = algorithm_t::POT;
 
@@ -174,7 +176,11 @@ void usage() {
 
   + "\"transportguard\": As for \"transport\", but with an additional one-sided penalty that fires only when a remapped "
     "fixel accumulates substantially more mass than the corresponding template fixel plausibly holds, "
-    "suppressing non-physical pile-ups from over-merging without otherwise affecting density contrast.";
+    "suppressing non-physical pile-ups from over-merging without otherwise affecting density contrast."
+
+  + "\"maskoverlap\": This is a combinatorial algorithm that scores correspondence by the geometric overlap between the "
+    "dixel masks of the remapped subject fixels and those of the template fixels, using no FOD amplitude information. "
+    "Both the source and target fixel directories must carry a per-fixel dixel-mask file (as exported by fod2fixel).";
 
   ARGUMENTS
   + Argument ("source_density", "the input source fixel data file corresponding to the FD or FDC metric").type_image_in()
@@ -287,9 +293,10 @@ void run() {
                                          get_option_value("agreement_complexity", default_agreement_complexity));
     break;
   case algorithm_t::TRANSPORTGUARD:
-    algorithm.reset(new Algorithms::TransportGuard(get_option_value("max_origins", default_max_origins_per_target),
-                                                   get_option_value("max_objectives", default_max_objectives_per_source),
-                                                   H_cost));
+    algorithm.reset(
+        new Algorithms::TransportGuard(get_option_value("max_origins", default_max_origins_per_target),
+                                       get_option_value("max_objectives", default_max_objectives_per_source),
+                                       H_cost));
     {
       float mu = default_transportguard_mu;
       float rho = default_transportguard_rho;
@@ -301,8 +308,14 @@ void run() {
       Algorithms::TransportGuard::set_constants(get_angular_kernel("transport_kernel"),
                                                 get_option_value("transport_angle", default_transport_angle),
                                                 get_option_value("transport_complexity", default_transport_complexity),
-                                                mu, rho);
+                                                mu,
+                                                rho);
     }
+    break;
+  case algorithm_t::MASKOVERLAP:
+    algorithm.reset(new Algorithms::MaskOverlap(get_option_value("max_origins", default_max_origins_per_target),
+                                                get_option_value("max_objectives", default_max_objectives_per_source),
+                                                H_cost));
     break;
   default:
     assert(0);

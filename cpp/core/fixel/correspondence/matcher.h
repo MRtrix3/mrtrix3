@@ -53,6 +53,16 @@ public:
                   index_type &offset_source,
                   index_type &offset_target);
 
+  // Mask-carrying overload: additionally fills the per-fixel dixel masks for the voxel.
+  //   Only valid when the selected algorithm requires masks (the mask images are then open).
+  void load_voxel(Image<index_type> &voxel,
+                  std::vector<Correspondence::Fixel> &source_fixels,
+                  std::vector<Correspondence::Fixel> &target_fixels,
+                  index_type &offset_source,
+                  index_type &offset_target,
+                  std::vector<dixel_mask_t> &source_masks,
+                  std::vector<dixel_mask_t> &target_masks);
+
   // Use this to get a template image in order to loop over voxels
   Image<index_type> get_template() const { return Image<index_type>(target_index); }
 
@@ -72,6 +82,10 @@ private:
   Image<index_type> source_index, target_index;
   Image<float> source_directions, target_directions, remapped_directions;
   Image<float> source_data, target_data, remapped_data;
+
+  // Per-fixel dixel masks; only opened when the selected algorithm requires them
+  //   ([n_fixels x d x 1], DataType::Bit). Invalid otherwise.
+  Image<bool> source_dixelmasks, target_dixelmasks;
 
   std::shared_ptr<MR::Fixel::Correspondence::Mapping> mapping;
 

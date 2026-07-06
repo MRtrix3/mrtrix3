@@ -19,6 +19,7 @@
 #include "app.h"
 #include "fixel/correspondence/algorithms/agreement.h"
 #include "fixel/correspondence/algorithms/ismrm2018.h"
+#include "fixel/correspondence/algorithms/maskoverlap.h"
 #include "fixel/correspondence/algorithms/megacost.h"
 #include "fixel/correspondence/algorithms/pot.h"
 #include "fixel/correspondence/algorithms/rs2023.h"
@@ -33,6 +34,19 @@ using namespace App;
 template <class CostFunctor>
 std::vector<std::vector<Mapping::Entry>> Combinatorial<CostFunctor>::operator()(
     const voxel_t &v, const std::vector<Correspondence::Fixel> &s, const std::vector<Correspondence::Fixel> &t) const {
+  // Mask-agnostic entry point: forward to the mask-carrying implementation with empty masks.
+  //   For functors with consumes_masks == false the mask-construction branch below is discarded,
+  //   so the empty vectors are never dereferenced.
+  return (*this)(v, s, t, {}, {});
+}
+
+template <class CostFunctor>
+std::vector<std::vector<Mapping::Entry>>
+Combinatorial<CostFunctor>::operator()(const voxel_t &v,
+                                       const std::vector<Correspondence::Fixel> &s,
+                                       const std::vector<Correspondence::Fixel> &t,
+                                       const std::vector<dixel_mask_t> &s_masks,
+                                       const std::vector<dixel_mask_t> &t_masks) const {
   if (std::max(s.size(), t.size()) > max_fixels_for_no_combinatorial_warning &&
       !fixel_count_warning_issued.test_and_set(std::memory_order_relaxed)) {
     WARN("Excessive fixel counts can currently lead to prohibitively long execution times; "
@@ -146,6 +160,9 @@ std::vector<std::vector<Mapping::Entry>> Combinatorial<CostFunctor>::operator()(
   float cost;
   dir_t mean_direction;
   float sum_densities;
+  // Remapped-subject dixel masks; only populated (and only meaningful) when the cost functor
+  //   sets consumes_masks == true. Declared once and reassigned per candidate to avoid churn.
+  std::vector<dixel_mask_t> rs_masks;
 
   // Required for enforcing the criterion where if a single source fixel maps to
   //   multiple template fixels, those template fixels must not be disconnected
@@ -159,7 +176,10 @@ std::vector<std::vector<Mapping::Entry>> Combinatorial<CostFunctor>::operator()(
   uint64_t skipped_entirely_counter = 0;
 #endif
 
-  std::vector<std::vector<Mapping::Entry>> result;
+  // One (initially empty) mapping per target fixel. If no candidate yields a finite cost
+  //   (e.g. every cost is NaN/inf), each target fixel is left with an empty mapping,
+  //   preserving the caller's invariant that the result has one entry per target fixel.
+  std::vector<std::vector<Mapping::Entry>> result(t.size());
   float min_cost = std::numeric_limits<float>::infinity();
 
   do {
@@ -290,7 +310,27 @@ std::vector<std::vector<Mapping::Entry>> Combinatorial<CostFunctor>::operator()(
         origins_per_remapped_fixel[rs_index] = origin_fixels.size();
       }
 
-      cost = static_cast<const CostFunctor *const>(this)->calculate(s, rs, t, inv_mapping, origins_per_remapped_fixel);
+      // Trait-gated extra work: build the remapped-subject dixel masks for this candidate.
+      //   Compiled only for functors that consume masks; other functors' code is unchanged.
+      if constexpr (CostFunctor::consumes_masks) {
+        rs_masks.assign(t.size(), dixel_mask_t());
+        for (index_type rs_index = 0; rs_index != t.size(); ++rs_index) {
+          const std::vector<index_type> &origin_fixels(remapping_origins[mapping[rs_index]]);
+          dixel_mask_t m; // empty until the first origin sizes it
+          for (const auto &s_index : origin_fixels) {
+            if (m.size() == 0)
+              m = s_masks[s_index];
+            else
+              m = m || s_masks[s_index]; // element-wise OR (union) of the merged source masks
+          }
+          rs_masks[rs_index] = std::move(m); // may be size 0 for a remapped fixel with no origins
+        }
+        cost = static_cast<const CostFunctor *const>(this)->calculate(
+            s, rs, t, inv_mapping, origins_per_remapped_fixel, rs_masks, t_masks);
+      } else {
+        cost =
+            static_cast<const CostFunctor *const>(this)->calculate(s, rs, t, inv_mapping, origins_per_remapped_fixel);
+      }
 
       if (cost < min_cost) {
         min_cost = cost;
@@ -358,6 +398,7 @@ template class Combinatorial<TransportDisp>;
 template class Combinatorial<Agreement>;
 template class Combinatorial<TransportGuard>;
 template class Combinatorial<MegaCost>;
+template class Combinatorial<MaskOverlap>;
 
 // clang-format off
 OptionGroup CombinatorialOptions = OptionGroup("Options applicable to all combinatorial-based algorithms")

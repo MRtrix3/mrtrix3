@@ -27,6 +27,11 @@ using index_type = MR::Fixel::index_type;
 using dir_t = Eigen::Matrix<float, 3, 1>;
 using voxel_t = Eigen::Array<uint32_t, 3, 1>;
 
+/// @brief Per-fixel dixel mask: element j is true if sampling direction j belongs to the fixel's lobe.
+/// Masks travel as a std::vector<dixel_mask_t> parallel to the source/target Fixel vectors,
+///   not as a member of Correspondence::Fixel (which is kept lean).
+using dixel_mask_t = Eigen::Array<bool, Eigen::Dynamic, 1>;
+
 /// @brief Integer type used for CSR indptr and indices arrays in .npz correspondence files.
 using npz_index_type = uint32_t;
 /// @brief Value type used for CSR data arrays in .npz correspondence files.
@@ -43,13 +48,13 @@ constexpr float default_pot_gamma = 0.5f;
 constexpr float default_nearest_maxangle = 45.0f;
 
 // Defaults for the proposed transport-family and agreement cost functions
-constexpr float default_transport_angle = 45.0f;          // theta* (degrees)
-constexpr float default_transport_complexity = 0.5f;      // gamma
-constexpr float default_transportdisp_dispersion = 1.0f;  // lambda
-constexpr float default_agreement_sigma = 1.0f;           // sigma (density units)
-constexpr float default_agreement_complexity = 0.1f;      // beta
-constexpr float default_transportguard_mu = 1.0f;         // over-explanation weight
-constexpr float default_transportguard_rho = 2.0f;        // over-explanation density ratio
+constexpr float default_transport_angle = 45.0f;         // theta* (degrees)
+constexpr float default_transport_complexity = 0.5f;     // gamma
+constexpr float default_transportdisp_dispersion = 1.0f; // lambda
+constexpr float default_agreement_sigma = 1.0f;          // sigma (density units)
+constexpr float default_agreement_complexity = 0.1f;     // beta
+constexpr float default_transportguard_mu = 1.0f;        // over-explanation weight
+constexpr float default_transportguard_rho = 2.0f;       // over-explanation density ratio
 
 constexpr index_type default_max_origins_per_target = 3;
 constexpr index_type default_max_objectives_per_source = 3;

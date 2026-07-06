@@ -177,6 +177,7 @@ add_bash_binary_test(fixelconnectivity/weighted)
 
 add_bash_binary_test(fixelcorrespondence/ismrm2018)
 add_bash_binary_test(fixelcorrespondence/legacy)
+add_bash_binary_test(fixelcorrespondence/maskoverlap)
 add_bash_binary_test(fixelcorrespondence/pot)
 add_bash_binary_test(fixelcorrespondence/rs2023)
 

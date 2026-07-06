@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <string_view>
+#include <filesystem>
 
 #include "image.h"
 #include "types.h"
@@ -32,7 +32,7 @@ public:
   Base() = default;
   virtual ~Base() = default;
 
-  void export_cost_image(std::string_view path) {
+  void export_cost_image(const std::filesystem::path &path) {
     if (!cost_image.valid())
       return;
     Image<float> output(Image<float>::create(path, cost_image));
@@ -42,6 +42,23 @@ public:
   virtual std::vector<std::vector<Mapping::Entry>> operator()(const voxel_t &v,
                                                               const std::vector<Correspondence::Fixel> &s,
                                                               const std::vector<Correspondence::Fixel> &t) const = 0;
+
+  /// @brief Whether this algorithm consumes per-fixel dixel masks.
+  /// When true, the Matcher opens the dixel-mask images and calls the mask-carrying operator() overload.
+  virtual bool requires_masks() const { return false; }
+
+  /// @brief Mask-carrying entry point.
+  /// The default ignores the masks and forwards to the 3-argument form, so mask-agnostic
+  ///   algorithms (e.g. All2All, Legacy) need no modification.
+  virtual std::vector<std::vector<Mapping::Entry>> operator()(const voxel_t &v,
+                                                              const std::vector<Correspondence::Fixel> &s,
+                                                              const std::vector<Correspondence::Fixel> &t,
+                                                              const std::vector<dixel_mask_t> &s_masks,
+                                                              const std::vector<dixel_mask_t> &t_masks) const {
+    (void)s_masks;
+    (void)t_masks;
+    return (*this)(v, s, t);
+  }
 
 protected:
   Image<float> cost_image;
