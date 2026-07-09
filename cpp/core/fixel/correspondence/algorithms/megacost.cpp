@@ -260,14 +260,17 @@ std::vector<CostConfig> build_configs() {
   std::vector<CostConfig> c;
 
   // -- ismrm2018: no internal parameters -------------------------------------
+/*
   {
     CostConfig cfg;
     cfg.family = CostConfig::Family::ISMRM2018;
     cfg.name = "ismrm2018";
     c.push_back(cfg);
   }
+*/
 
   // -- pot: complexity gamma --------------------------------------------------
+/*
   for (const float gamma : {0.0f, 0.1f, 0.2f, 0.35f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f}) {
     CostConfig cfg;
     cfg.family = CostConfig::Family::POT;
@@ -275,8 +278,10 @@ std::vector<CostConfig> build_configs() {
     cfg.name = "pot_g" + fnum(gamma);
     c.push_back(cfg);
   }
+*/
 
   // -- rs2023: density-difference weight alpha, parsimony weight beta ---------
+/*
   for (const float alpha : {0.0f, 0.1f, 0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f}) {
     for (const float beta : {0.0f, 0.1f, 0.25f, 0.5f, 0.75f, 1.0f}) {
       CostConfig cfg;
@@ -287,8 +292,10 @@ std::vector<CostConfig> build_configs() {
       c.push_back(cfg);
     }
   }
+*/
 
   // -- transport: kernel, threshold angle theta*, complexity gamma -----------
+/*
   for (const AngularKernel kernel : {AngularKernel::TAN, AngularKernel::TAN2}) {
     for (const float angle : {30.0f, 45.0f, 60.0f}) {
       for (const float gamma : {0.0f, 0.1f, 0.20f, 0.35f, 0.5f, 0.75f, 1.0f}) {
@@ -303,23 +310,31 @@ std::vector<CostConfig> build_configs() {
       }
     }
   }
+*/
 
   // -- transportdisp: + dispersion weight lambda -----------------------------
-  for (const float gamma : {0.0f, 0.1f, 0.2f, 0.35f, 0.5f, 0.75f, 1.0f}) {
-    for (const float lambda : {0.1f, 0.2f, 0.35f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f}) {
-      CostConfig cfg;
-      cfg.family = CostConfig::Family::TRANSPORTDISP;
-      cfg.kernel = AngularKernel::TAN2;
-      cfg.angle = 45.0f;
-      cfg.cap = angle_to_cap(45.0f, AngularKernel::TAN2);
-      cfg.gamma = gamma;
-      cfg.lambda = lambda;
-      cfg.name = "transportdisp_tan2_ang45_g" + fnum(gamma) + "_l" + fnum(lambda);
-      c.push_back(cfg);
+  // TODO Manually run a second time using tan rather than tan^2
+  for (const float gamma : {0.00f, 0.01f, 0.02f, 0.035f, 0.05f, 0.075f, 0.10f}) {
+    for (const float lambda : {0.50f, 0.75f, 1.00f, 1.25f, 1.50f, 2.00f}) {
+      for (const float angle : {30.0f, 35.0f, 40.0f, 45.0f, 50.0f, 55.0f, 60.0f}) {
+        auto kernel = AngularKernel::TAN2;
+        //for (const AngularKernel kernel : {AngularKernel::TAN, AngularKernel::TAN2}) {
+          CostConfig cfg;
+          cfg.family = CostConfig::Family::TRANSPORTDISP;
+          cfg.kernel = kernel;
+          cfg.angle = angle;
+          cfg.cap = angle_to_cap(angle, kernel);
+          cfg.gamma = gamma;
+          cfg.lambda = lambda;
+          cfg.name = "transportdisp_" + kernel_name(kernel) + "_ang" + fnum(angle) + "_g" + fnum(gamma) + "_l" + fnum(lambda);
+          c.push_back(cfg);
+        //}
+      }
     }
   }
 
   // -- agreement: contrast-protection scale sigma, parsimony weight beta -----
+/*
   for (const float sigma : {0.1f, 0.2f, 0.35f, 0.5f, 0.75f, 1.0f, 2.0f, 4.0f}) {
     for (const float beta : {0.0f, 0.1f, 0.2f, 0.35f, 0.5f}) {
       CostConfig cfg;
@@ -331,8 +346,10 @@ std::vector<CostConfig> build_configs() {
       c.push_back(cfg);
     }
   }
+*/
 
   // -- transportguard: + over-explanation weight mu, density ratio rho -------
+/*
   for (const float mu : {0.1f, 0.2f, 0.35f, 0.5f, 0.75f, 1.0f, 2.0f, 4.0f}) {
     for (const float rho : {1.0f, 1.5f, 2.0f, 3.0f, 4.0f}) {
       CostConfig cfg;
@@ -347,6 +364,7 @@ std::vector<CostConfig> build_configs() {
       c.push_back(cfg);
     }
   }
+*/
 
   return c;
 }

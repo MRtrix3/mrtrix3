@@ -31,6 +31,7 @@
 #include "fixel/correspondence/algorithms/maskoverlap.h"
 #include "fixel/correspondence/algorithms/pot.h"
 #include "fixel/correspondence/algorithms/rs2023.h"
+#include "fixel/correspondence/algorithms/softoverlap.h"
 #include "fixel/correspondence/algorithms/transport.h"
 #include "fixel/correspondence/algorithms/transportdisp.h"
 #include "fixel/correspondence/algorithms/transportguard.h"
@@ -101,7 +102,8 @@ enum class algorithm_t {
   TRANSPORTDISP,
   AGREEMENT,
   TRANSPORTGUARD,
-  MASKOVERLAP
+  MASKOVERLAP,
+  SOFTOVERLAP
 };
 constexpr algorithm_t default_algorithm = algorithm_t::POT;
 
@@ -185,6 +187,18 @@ void usage() {
     "but the directional misalignment term is replaced by the fraction of each remapped subject lobe that is not "
     "explained by its paired template lobe. Contributions from directions shared between multiple fixels are "
     "down-weighted so that they are not double-counted. "
+    "Both the source and target fixel directories must carry a per-fixel dixel-mask file (as exported by fod2fixel)."
+
+  + "\"softoverlap\": Like \"maskoverlap\", this algorithm scores correspondence by the geometric overlap between the "
+    "per-fixel dixel masks of the source and target fixels, using no FOD amplitude information; but unlike the "
+    "combinatorial algorithms it does not select a single discrete mapping in which each source fixel's density is "
+    "divided equally between the target fixels it is assigned to. Instead it performs a direct, data-driven fractional "
+    "attribution: each source fixel distributes the entirety of its fibre density across the target fixels with which "
+    "its dixel mask overlaps, in proportion to the magnitude of each overlap. A source fixel that overlaps only one "
+    "target fixel therefore contributes all of its density to that target, however small the overlap, whereas a source "
+    "fixel straddling multiple target fixels is split between them according to their relative overlaps. Because the "
+    "attribution weights are normalised by each source fixel's total overlap, they are not a Dice-style similarity: "
+    "they depend only on the relative overlaps across candidate targets, not on the absolute sizes of the lobes. "
     "Both the source and target fixel directories must carry a per-fixel dixel-mask file (as exported by fod2fixel).";
 
   ARGUMENTS
@@ -325,6 +339,9 @@ void run() {
                                                 H_cost));
     dynamic_cast<Algorithms::MaskOverlap *>(algorithm.get())
         ->set_gamma(get_option_value("maskoverlap_complexity", default_maskoverlap_gamma));
+    break;
+  case algorithm_t::SOFTOVERLAP:
+    algorithm.reset(new Algorithms::SoftOverlap());
     break;
   default:
     assert(0);

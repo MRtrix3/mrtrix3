@@ -48,10 +48,12 @@ Multiple algorithms are provided; a brief description of each of these is provid
 
 "maskoverlap": This is a combinatorial algorithm that scores correspondence by the geometric overlap between the dixel masks of the remapped subject fixels and those of the template fixels, using no FOD amplitude information. It reuses the same cost skeleton as "pot" (matched density transported at a cost, surplus density created or destroyed at unit cost, and a linear parsimony penalty on merging or splitting fixels controlled by "gamma"), but the directional misalignment term is replaced by the fraction of each remapped subject lobe that is not explained by its paired template lobe. Contributions from directions shared between multiple fixels are down-weighted so that they are not double-counted. Both the source and target fixel directories must carry a per-fixel dixel-mask file (as exported by fod2fixel).
 
+"softoverlap": Like "maskoverlap", this algorithm scores correspondence by the geometric overlap between the per-fixel dixel masks of the source and target fixels, using no FOD amplitude information; but unlike the combinatorial algorithms it does not select a single discrete mapping in which each source fixel's density is divided equally between the target fixels it is assigned to. Instead it performs a direct, data-driven fractional attribution: each source fixel distributes the entirety of its fibre density across the target fixels with which its dixel mask overlaps, in proportion to the magnitude of each overlap. A source fixel that overlaps only one target fixel therefore contributes all of its density to that target, however small the overlap, whereas a source fixel straddling multiple target fixels is split between them according to their relative overlaps. Because the attribution weights are normalised by each source fixel's total overlap, they are not a Dice-style similarity: they depend only on the relative overlaps across candidate targets, not on the absolute sizes of the lobes. Both the source and target fixel directories must carry a per-fixel dixel-mask file (as exported by fod2fixel).
+
 Options
 -------
 
--  **-algorithm choice** the algorithm to use when establishing fixel correspondence; options are: all2all, legacy, ismrm2018, pot, rs2023, transport, transportdisp, agreement, transportguard, maskoverlap (default: pot)
+-  **-algorithm choice** the algorithm to use when establishing fixel correspondence; options are: all2all, legacy, ismrm2018, pot, rs2023, transport, transportdisp, agreement, transportguard, maskoverlap, softoverlap (default: pot)
 
 -  **-remapped path** export the remapped source fixels to a new fixel directory
 

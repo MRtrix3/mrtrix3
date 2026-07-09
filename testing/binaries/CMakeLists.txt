@@ -180,6 +180,7 @@ add_bash_binary_test(fixelcorrespondence/legacy)
 add_bash_binary_test(fixelcorrespondence/maskoverlap)
 add_bash_binary_test(fixelcorrespondence/pot)
 add_bash_binary_test(fixelcorrespondence/rs2023)
+add_bash_binary_test(fixelcorrespondence/softoverlap)
 
 add_bash_binary_test(fixelcrop/default)
 add_bash_binary_test(fixelcrop/excludes_dixelmasks)

@@ -1,0 +1,50 @@
+#!/bin/bash
+# Verify the "softoverlap" fixel-correspondence algorithm end-to-end: like "maskoverlap" it consumes
+# the per-fixel dixel masks exported by fod2fixel, but instead of the combinatorial framework it
+# performs a direct fractional attribution, distributing each source fixel's density across the
+# target fixels it overlaps in proportion to the overlap magnitude (a source overlapping a single
+# target contributes its full density to that target). A structural / invariant check is used
+# deliberately (a full numeric reference is deferred for this experimental algorithm).
+
+# Build a small pair of masked fixel directories from a cropped FOD region
+rm -rf tmp_softoverlap_fod.mif tmp_softoverlap_src/ tmp_softoverlap_tgt/ tmp_softoverlap_coarse/ \
+       tmp_softoverlap_remapped/ tmp_softoverlap_map/
+mrconvert fod.mif -coord 0 2:3 -coord 1 3:4 -coord 2 4:5 tmp_softoverlap_fod.mif -force
+fod2fixel -nthreads 1 -maxnum 3 tmp_softoverlap_fod.mif tmp_softoverlap_src/ -afd afd.mif -force
+fod2fixel -nthreads 1 -maxnum 3 tmp_softoverlap_fod.mif tmp_softoverlap_tgt/ -afd afd.mif -force
+
+# Both inputs must carry a dixel-mask file for the algorithm to operate
+test -f tmp_softoverlap_src/dixelmasks.mif
+test -f tmp_softoverlap_tgt/dixelmasks.mif
+
+# Self-correspondence (identical inputs): each source lobe's mask overlaps only the identical
+#   target lobe (FMLS masks are mutually exclusive within a voxel), so its full density is
+#   attributed to that one target with weight 1.0. The command must complete and write a valid
+#   archive, and the remapped source density must reproduce the target density exactly.
+fixelcorrespondence tmp_softoverlap_src/afd.mif tmp_softoverlap_tgt/afd.mif tmp_softoverlap.npz \
+    -algorithm softoverlap \
+    -remapped tmp_softoverlap_remapped/ \
+    -force
+
+# The mapping archive must be valid and non-empty
+unzip tmp_softoverlap.npz -d tmp_softoverlap_map/
+test -f tmp_softoverlap_map/indices_forward.npy
+
+# Density is conserved for self-correspondence: remapped source density equals target density
+test "$(mrcalc tmp_softoverlap_remapped/fd.mif tmp_softoverlap_tgt/afd.mif -subtract -abs 0.00001 -gt - | mrstats - -output max | tr -d '[:space:]')" = "0"
+
+# Fractional attribution path: segment the source more coarsely (one lobe per voxel) so that a
+#   single source lobe overlaps several finer target lobes and its density is split between them.
+#   The command must complete and write a valid archive over this split geometry.
+fod2fixel -nthreads 1 -maxnum 1 tmp_softoverlap_fod.mif tmp_softoverlap_coarse/ -afd afd.mif -force
+fixelcorrespondence tmp_softoverlap_coarse/afd.mif tmp_softoverlap_tgt/afd.mif tmp_softoverlap2.npz \
+    -algorithm softoverlap \
+    -force
+rm -rf tmp_softoverlap_map2/
+unzip tmp_softoverlap2.npz -d tmp_softoverlap_map2/
+test -f tmp_softoverlap_map2/data_forward.npy
+
+# The algorithm requires dixel masks: with the source mask removed it must refuse, not proceed
+rm tmp_softoverlap_src/dixelmasks.mif
+fixelcorrespondence tmp_softoverlap_src/afd.mif tmp_softoverlap_tgt/afd.mif tmp_softoverlap3.npz \
+    -algorithm softoverlap -force 2>/dev/null && exit 1 || true
