@@ -1,4 +1,4 @@
-q/* Copyright (c) 2008-2026 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,7 +16,12 @@ q/* Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 #include "dwi/fmls.h"
 
+#include <Eigen/src/Core/Matrix.h>
+#include <cmath>
+#include <cstddef>
+
 #include "math/SH.h"
+#include "math/math.h"
 #include "math/sphere.h"
 
 namespace MR::DWI::FMLS {
