@@ -16,6 +16,9 @@
 
 #include "dwi/fmls.h"
 
+#include "math/SH.h"
+#include "math/sphere.h"
+
 namespace MR::DWI::FMLS {
 
 // clang-format off
@@ -84,35 +87,15 @@ void load_fmls_thresholds(Segmenter &segmenter) {
 }
 
 IntegrationWeights::IntegrationWeights(const DWI::Directions::Set &dirs) : data(dirs.size()) {
-  // Calibrate weights
-  const size_t calibration_lmax = Math::SH::LforN(dirs.size()) + 2;
-  Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_in_pairs(dirs.size(), 2);
-  for (size_t row = 0; row != dirs.size(); ++row) {
-    const auto d = dirs.get_dir(row);
-    az_in_pairs(row, 0) = std::atan2(d[1], d[0]);
-    az_in_pairs(row, 1) = std::acos(d[2]);
-  }
-  auto calibration_SH2A = Math::SH::init_transform(az_in_pairs, calibration_lmax);
-  const size_t num_basis_fns = calibration_SH2A.cols();
-
-  // Integrating an FOD with constant amplitude 1 (l=0 term = sqrt(4pi) should produce a value of 4pi
-  // Every other integral should produce zero
-  Eigen::Matrix<default_type, Eigen::Dynamic, 1> integral_results =
-      Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Zero(num_basis_fns);
-  integral_results[0] = 2.0 * sqrt(Math::pi);
-
-  // Problem matrix: One row for each SH basis function, one column for each samping direction
-  Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> A;
-  A.resize(num_basis_fns, dirs.size());
-
-  for (size_t basis_fn_index = 0; basis_fn_index != num_basis_fns; ++basis_fn_index) {
-    Eigen::Matrix<default_type, Eigen::Dynamic, 1> SH_in =
-        Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Zero(num_basis_fns);
-    SH_in[basis_fn_index] = 1.0;
-    A.row(basis_fn_index) = calibration_SH2A * SH_in;
-  }
-
-  data = A.householderQr().solve(integral_results);
+  const size_t calibration_lmax = Math::SH::LforN((3 * dirs.size()) / 4);
+  Eigen::Matrix<default_type, Eigen::Dynamic, 3> cartesian(dirs.size(), 3);
+  for (size_t row = 0; row != dirs.size(); ++row)
+    cartesian.row(row) = dirs[row];
+  const Eigen::MatrixXd SH2At =
+      Math::SH::init_transform(Math::Sphere::cartesian2spherical(cartesian), calibration_lmax).transpose();
+  Eigen::VectorXd integrals = Eigen::VectorXd::Zero(SH2At.rows());
+  integrals[0] = 2.0 * std::sqrt(Math::pi);
+  data = SH2At.completeOrthogonalDecomposition().solve(integrals).array();
 }
 
 Segmenter::Segmenter(const DWI::Directions::FastLookupSet &directions, const size_t l)

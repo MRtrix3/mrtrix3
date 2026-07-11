@@ -12,4 +12,4 @@ fod2fixel -nthreads 1 fod.mif tmp/ \
 -skew skew.mif \
 -force
 
-testing_diff_fixel -frac 10e-5 tmp/ fod2fixel/default
+testing_diff_fixel -frac 1e-5 tmp/ fod2fixel/default
