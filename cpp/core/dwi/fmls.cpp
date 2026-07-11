@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2026 the MRtrix3 contributors.
+q/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -322,6 +322,12 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
     }
   }
 
+  // GCC -O3 value-range analysis emits a spurious -Walloc-size-larger-than= for the
+  //   Eigen::Array<bool> allocations in this block
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Walloc-size-larger-than="
+#endif
   if (create_null_lobe) {
     mask_type nonnull_mask(mask_type::Zero(dirs.size()));
     for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
@@ -331,6 +337,9 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
         (Eigen::Array<uint8_t, Eigen::Dynamic, 1>::Ones(dirs.size()) - nonnull_mask.cast<uint8_t>()).cast<bool>();
     out.push_back(FOD_lobe(null_mask));
   }
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
   return true;
 }
