@@ -115,8 +115,21 @@ namespace MR {
   type* name = &__vla__ ## name[0]
 # define VLA_MAX(name, type, num, max) type name[max]
 #else
-# define VLA(name, type, num) type name[num]
-# define VLA_MAX(name, type, num, max) type name[num]
+# if defined(__clang__) // Silence clang warning about VLA:
+#  define VLA(name, type, num) \
+  _Pragma("clang diagnostic push") \
+  _Pragma("clang diagnostic ignored \"-Wvla-extension\"") \
+  type name[num] \
+  _Pragma("clang diagnostic pop")
+#  define VLA_MAX(name, type, num, max) \
+  _Pragma("clang diagnostic push") \
+  _Pragma("clang diagnostic ignored \"-Wvla-extension\"") \
+  type name[num] \
+  _Pragma("clang diagnostic pop")
+# else
+#  define VLA(name, type, num) type name[num]
+#  define VLA_MAX(name, type, num, max) type name[num]
+# endif
 #endif
 
 
@@ -144,8 +157,21 @@ namespace MR {
   type* name = &__vla__ ## name[0]
 # define NON_POD_VLA_MAX(name, type, num, max) type name[max]
 #else
-# define NON_POD_VLA(name, type, num) type name[num]
-# define NON_POD_VLA_MAX(name, type, num, max) type name[num]
+# if defined(__clang__) // Silence clang warning about VLA:
+#  define NON_POD_VLA(name, type, num) \
+  _Pragma("clang diagnostic push") \
+  _Pragma("clang diagnostic ignored \"-Wvla-extension\"") \
+  type name[num] \
+  _Pragma("clang diagnostic pop")
+#  define NON_POD_VLA_MAX(name, type, num, max) \
+  _Pragma("clang diagnostic push") \
+  _Pragma("clang diagnostic ignored \"-Wvla-extension\"") \
+  type name[num] \
+  _Pragma("clang diagnostic pop")
+# else
+#  define NON_POD_VLA(name, type, num) type name[num]
+#  define NON_POD_VLA_MAX(name, type, num, max) type name[num]
+# endif
 #endif
 
 //! \}
