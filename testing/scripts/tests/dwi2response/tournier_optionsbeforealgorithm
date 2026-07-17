@@ -1,0 +1,21 @@
+#!/bin/bash
+# Verify that command-line options specified prior to the algorithm name are honoured
+# Both a standard option (-force) and options common to all dwi2response algorithms
+#   (-fslgrad, -mask) are here provided before "tournier" rather than after it
+# The output file is created in advance of the command,
+#   such that the command can only succeed if -force is itself honoured
+# The result must be identical to that of the "tournier_mask" test,
+#   against the reference data of which the outputs are compared
+
+touch tmp_out.txt
+
+dwi2response -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz \
+-voxels tmp_voxels.mif \
+tournier BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp_out.txt \
+-number 20 \
+-iter_voxels 200
+
+testing_diff_matrix tmp_out.txt dwi2response/tournier/masked.txt -abs 1e-2
+testing_diff_image tmp_voxels.mif dwi2response/tournier/masked.mif.gz

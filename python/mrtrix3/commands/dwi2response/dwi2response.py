@@ -24,8 +24,9 @@ def usage(cmdline): #pylint: disable=unused-variable
                      ' and Thijs Dhollander (thijs.dhollander@gmail.com)')
   cmdline.set_synopsis('Estimate response function(s) for spherical deconvolution')
   cmdline.add_description('dwi2response offers different algorithms for performing various types of response function estimation. '
-                          'The name of the algorithm must appear as the first argument on the command-line after "dwi2response". '
-                          'The subsequent arguments and options depend on the particular algorithm being invoked.')
+                          'The name of the algorithm must appear before any other argument on the command-line after "dwi2response", '
+                          'since the arguments expected depend on the particular algorithm being invoked; '
+                          'command-line options may however be provided either before or after the algorithm name.')
   cmdline.add_description('Each algorithm available has its own help page,'
                           ' including necessary references;'
                           ' e.g. to see the help page of the "fa" algorithm,'

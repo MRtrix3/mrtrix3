@@ -31,9 +31,11 @@ def usage(cmdline): #pylint: disable=unused-variable
                           ' A range of different algorithms are available for completing this task.'
                           ' When using this script,'
                           ' the name of the algorithm to be used must appear'
-                          ' as the first argument on the command-line after "5ttgen".'
-                          ' The subsequent compulsory arguments and options available'
-                          ' depend on the particular algorithm being invoked.')
+                          ' before any other argument on the command-line after "5ttgen",'
+                          ' since the compulsory arguments expected'
+                          ' depend on the particular algorithm being invoked;'
+                          ' command-line options may however be provided'
+                          ' either before or after the algorithm name.')
   cmdline.add_description('Each algorithm available also has its own help page,'
                           ' including necessary references;'
                           ' e.g. to see the help page of the "fsl" algorithm, type "5ttgen fsl".')
