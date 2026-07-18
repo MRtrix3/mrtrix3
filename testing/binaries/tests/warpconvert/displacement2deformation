@@ -3,5 +3,5 @@
 # Converting the displacement field originally computed from deformation field warp.mif
 #   back to a deformation field should recover the original deformation field
 
-warpconvert warpconvert/displacement.mif displacement2deformation - | \
+warpconvert displacement2deformation warpconvert/displacement.mif - | \
 testing_diff_image - warp.mif -abs 1e-5

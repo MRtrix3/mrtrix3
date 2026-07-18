@@ -94,7 +94,11 @@ public:
 class Example {
 public:
   Example(std::string_view title, std::string_view code, std::string_view description);
-  const std::string title, code, description;
+  // Non-const so that ExampleList (and hence Subcommand) is copy-assignable, as required
+  //   by the hierarchical-command machinery; treat as immutable after construction.
+  std::string title;
+  std::string code;
+  std::string description;
 
   operator std::string() const;
   std::string syntax(const bool format) const;
@@ -128,6 +132,114 @@ public:
   OptionGroup &back();
 
   std::string syntax(const bool format) const;
+};
+
+//! A single sub-interface of a hierarchical command (a mode / algorithm / operation)
+/*! A hierarchical command dispatches to one of several sub-interfaces selected by the
+ *  first positional command-line token (see \ref command_line_parsing). Each Subcommand
+ *  carries its own synopsis, positional arguments, options, examples and references, in
+ *  the same manner as an ordinary command's usage() globals. The command declares an
+ *  ordered list of these in the SUBCOMMANDS global; the selected sub-interface is then
+ *  merged with the command's common options (those declared in OPTIONS) and the standard
+ *  options. Options preceding the selection token are interpreted by the selected
+ *  sub-interface, i.e. they are permutable with, and reachable across, the selection.
+ *
+ *  The builder idiom mirrors the global usage() blocks, e.g.:
+ *  \code
+ *  SUBCOMMANDS_SELECTOR = "operation";
+ *  SUBCOMMANDS
+ *  + Subcommand("import")
+ *      .set_synopsis("Import external data")
+ *      .set_arguments(ArgumentList()
+ *        + Argument("in", "the input").type_file_in()
+ *        + Argument("out", "the output").type_file_out())
+ *      .set_options(OptionList()
+ *        + Option("scale", "scale factor")
+ *          + Argument("value").type_float());
+ *  \endcode */
+class Subcommand {
+public:
+  explicit Subcommand(std::string name) : id(std::move(name)) {}
+
+  //! the selection token (matched exactly; no prefix abbreviation)
+  std::string id;
+  //! one-sentence synopsis of this sub-interface
+  std::string synopsis;
+  //! author of this sub-interface (falls back to the command's AUTHOR when empty)
+  std::string author;
+  //! copyright of this sub-interface (falls back to the command's COPYRIGHT when empty)
+  std::string copyright;
+  //! extended description of this sub-interface
+  Description description;
+  //! example usages of this sub-interface
+  ExampleList examples;
+  //! positional arguments of this sub-interface
+  ArgumentList arguments;
+  //! options specific to this sub-interface
+  OptionList options;
+  //! references specific to this sub-interface (appended to the command-level REFERENCES)
+  Description references;
+
+  Subcommand &set_synopsis(std::string text) {
+    synopsis = std::move(text);
+    return *this;
+  }
+  Subcommand &set_author(std::string text) {
+    author = std::move(text);
+    return *this;
+  }
+  Subcommand &set_copyright(std::string text) {
+    copyright = std::move(text);
+    return *this;
+  }
+  Subcommand &set_description(Description text) {
+    description = std::move(text);
+    return *this;
+  }
+  Subcommand &set_examples(ExampleList list) {
+    examples = std::move(list);
+    return *this;
+  }
+  Subcommand &set_arguments(ArgumentList list) {
+    arguments = std::move(list);
+    return *this;
+  }
+  Subcommand &set_options(OptionList list) {
+    options = std::move(list);
+    return *this;
+  }
+  Subcommand &set_references(Description text) {
+    references = std::move(text);
+    return *this;
+  }
+
+  bool is(std::string_view name) const { return name == id; }
+};
+
+//! an ordered list of a hierarchical command's Subcommand sub-interfaces
+class SubcommandList : public std::vector<Subcommand> {
+public:
+  SubcommandList &operator+(const Subcommand &sub) {
+    push_back(sub);
+    return *this;
+  }
+
+  //! locate a sub-interface by exact id, or nullptr if none matches
+  const Subcommand *find(std::string_view name) const {
+    for (const auto &sub : *this)
+      if (sub.is(name))
+        return &sub;
+    return nullptr;
+  }
+
+  //! the ordered list of sub-interface ids (declaration order)
+  std::vector<std::string> ids() const {
+    std::vector<std::string> result;
+    result.reserve(size());
+    for (const auto &sub : *this)
+      result.push_back(sub.id);
+    return result;
+  }
 };
 
 void check_overwrite(const std::filesystem::path &path);
@@ -313,6 +425,23 @@ extern ArgumentList ARGUMENTS;
  * \endcode
  */
 extern OptionList OPTIONS;
+
+//! the ordered sub-interfaces of a hierarchical command
+/*! Populated within a command's usage() function to make it hierarchical: the
+ * sub-interface is selected by the first positional command-line token. A command
+ * that declares SUBCOMMANDS must declare no top-level ARGUMENTS; any options declared
+ * in OPTIONS are treated as common to (and available within) every sub-interface. */
+extern SubcommandList SUBCOMMANDS;
+
+//! the displayed name of a hierarchical command's selection positional
+/*! Defaults to "algorithm"; a command may set this (e.g. "operation", "filter") to
+ * describe the nature of its sub-interface selection in help and export output. */
+extern std::string SUBCOMMANDS_SELECTOR;
+
+//! the id of the sub-interface selected on the command-line, for a hierarchical command
+/*! Valid within run(); empty for non-hierarchical commands. A hierarchical command's
+ * run() reads this to dispatch to the selected sub-interface's implementation. */
+std::string get_subcommand();
 
 //! set to false if command can operate with no arguments
 /*! By default, the help page is shown command is invoked without

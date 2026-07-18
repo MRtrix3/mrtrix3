@@ -42,8 +42,13 @@ Description DESCRIPTION;
 ExampleList EXAMPLES;
 ArgumentList ARGUMENTS;
 OptionList OPTIONS;
+SubcommandList SUBCOMMANDS;
+std::string SUBCOMMANDS_SELECTOR = "algorithm";
+std::string SUBCOMMAND_SELECTED_ID;
 Description REFERENCES;
 bool REQUIRES_AT_LEAST_ONE_ARGUMENT = true;
+
+std::string get_subcommand() { return SUBCOMMAND_SELECTED_ID; }
 
 const std::string help_command = "less -X";
 
@@ -195,6 +200,129 @@ std::string underline(std::string_view text, bool ignore_whitespace = false) {
 
 } // namespace
 
+// ---------------------------------------------------------------------------------------
+// Hierarchical-command (subparser-equivalent) machinery.
+//   A hierarchical command declares an ordered SUBCOMMANDS list; the sub-interface is
+//   selected by the first positional command-line token. The selected sub-interface is
+//   "installed" over the usage() globals (merged with the command's common options and
+//   the standard options), so that the ordinary parser, help renderer and export
+//   renderers operate on it unchanged. The command's common interface is snapshotted
+//   first so it can be re-installed for each sub-interface (e.g. when rendering the
+//   concatenated top-level export).
+// ---------------------------------------------------------------------------------------
+
+//! the machine-readable / human export format requested for a (sub-)interface
+enum class ExportFormat { FullUsage, Markdown, Rst };
+
+namespace {
+
+//! snapshot of a hierarchical command's common (top-level) interface
+struct TopLevelInterface {
+  bool captured{false};
+  OptionList common_options;
+  Description references;
+  std::string author;
+  std::string copyright;
+};
+TopLevelInterface top_level_interface;
+
+//! indefinite article appropriate to the selection-positional noun
+std::string selector_article() {
+  if (!SUBCOMMANDS_SELECTOR.empty()) {
+    switch (std::tolower(static_cast<unsigned char>(SUBCOMMANDS_SELECTOR.front()))) {
+    case 'a':
+    case 'e':
+    case 'i':
+    case 'o':
+    case 'u':
+      return "an";
+    default:
+      break;
+    }
+  }
+  return "a";
+}
+
+//! the fixed selection help string presented for the selection positional
+std::string selection_help_string() {
+  return "Select the " + SUBCOMMANDS_SELECTOR + " to be used;" +                         //
+         " additional details and options become available once " + selector_article() + //
+         " " + SUBCOMMANDS_SELECTOR + " is nominated. Options are: " +                   //
+         join(SUBCOMMANDS.ids(), ", ");                                                  //
+}
+
+//! snapshot the common interface before any sub-interface is installed over the globals
+void capture_top_level_interface() {
+  if (top_level_interface.captured)
+    return;
+  top_level_interface.common_options = OPTIONS;
+  top_level_interface.references = REFERENCES;
+  top_level_interface.author = AUTHOR;
+  top_level_interface.copyright = COPYRIGHT;
+  top_level_interface.captured = true;
+}
+
+//! install a sub-interface over the usage() globals, merged with common + standard options
+void install_subcommand(const Subcommand &sub) {
+  capture_top_level_interface();
+  SYNOPSIS = sub.synopsis;
+  AUTHOR = sub.author.empty() ? top_level_interface.author : sub.author;
+  COPYRIGHT = sub.copyright.empty() ? top_level_interface.copyright : sub.copyright;
+  DESCRIPTION = sub.description;
+  EXAMPLES = sub.examples;
+  ARGUMENTS = sub.arguments;
+  OPTIONS = OptionList();
+  for (const auto &group : sub.options)
+    OPTIONS.push_back(group);
+  for (const auto &group : top_level_interface.common_options)
+    OPTIONS.push_back(group);
+  REFERENCES = top_level_interface.references;
+  for (const auto &reference : sub.references)
+    REFERENCES.push_back(reference);
+}
+
+const Option *standard_option(const char *id) { // check_syntax off
+  for (const auto &opt : _standard_options)
+    if (opt.is(id))
+      return &opt;
+  return nullptr;
+}
+
+enum class HelpVersion { None, Help, Version };
+
+//! detect a -help / -version request among tokens, resolved against the current option set
+/*! Per-token matching mirrors the Python parser: unknown-option matches are ignored so
+ *  that -help / -version take precedence over otherwise-invalid content. */
+HelpVersion prescan_help_version(const std::vector<std::string> &tokens) {
+  const Option *const help_opt = standard_option("help");
+  const Option *const version_opt = standard_option("version");
+  for (const auto &token : tokens) {
+    const Option *opt = nullptr;
+    try {
+      opt = match_option(token);
+    } catch (Exception &) {
+      continue;
+    }
+    if (opt != nullptr && opt == help_opt)
+      return HelpVersion::Help;
+    if (opt != nullptr && opt == version_opt)
+      return HelpVersion::Version;
+  }
+  return HelpVersion::None;
+}
+
+} // namespace
+
+// forward declarations (mutual references between the exporters and per-sub rendering)
+std::string full_usage();
+std::string markdown_usage();
+std::string restructured_text_usage();
+std::string get_help_string(const bool format);
+namespace {
+std::string render_subcommand(const Subcommand &sub, ExportFormat format);
+std::string subcommand_rst_section(const Subcommand &sub);
+} // namespace
+
 std::string help_head(const bool format) {
   if (!format) {
     return std::string(NAME) + ": " +
@@ -260,7 +388,14 @@ std::string usage_syntax(const bool format) {
     s = bold(s) + "\n\n     ";
   else
     s += ": ";
-  s += (format ? underline(NAME, true) : NAME) + " [ options ]";
+  s += (format ? underline(NAME, true) : NAME);
+
+  // A hierarchical command presents the selection positional first, with a trailing
+  //   ellipsis standing in for the selected sub-interface's arguments and options.
+  if (!SUBCOMMANDS.empty())
+    return s + " " + SUBCOMMANDS_SELECTOR + " [ options ] ...\n\n";
+
+  s += " [ options ]";
 
   for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
 
@@ -499,7 +634,17 @@ std::string Option::usage() const {
 }
 
 std::string get_help_string(const bool format) {
-  return help_head(format) + help_synopsis(format) + usage_syntax(format) + ARGUMENTS.syntax(format) +
+  // For a hierarchical command the sole leading positional is the sub-interface selection,
+  //   rendered from the fixed selection help string in place of any real ARGUMENTS.
+  std::string arguments_section;
+  if (SUBCOMMANDS.empty()) {
+    arguments_section = ARGUMENTS.syntax(format);
+  } else {
+    ArgumentList selection;
+    selection.push_back(Argument(SUBCOMMANDS_SELECTOR, selection_help_string()));
+    arguments_section = selection.syntax(format);
+  }
+  return help_head(format) + help_synopsis(format) + usage_syntax(format) + arguments_section +
          DESCRIPTION.syntax(format) + EXAMPLES.syntax(format) + OPTIONS.syntax(format) +
          _standard_options.header(format) + _standard_options.contents(format) + MR::App::OptionGroup::footer(format) +
          help_tail(format);
@@ -562,8 +707,15 @@ std::string full_usage() {
   for (size_t i = 0; i < EXAMPLES.size(); ++i)
     s += std::string(EXAMPLES[i]) + std::string("\n");
 
-  for (size_t i = 0; i < ARGUMENTS.size(); ++i)
-    s += ARGUMENTS[i].usage();
+  // For a hierarchical command the sole positional is the sub-interface selection,
+  //   emitted as a CHOICE argument enumerating the sub-interface ids (no following help
+  //   line, no per-sub-interface recursion at top level).
+  if (SUBCOMMANDS.empty()) {
+    for (size_t i = 0; i < ARGUMENTS.size(); ++i)
+      s += ARGUMENTS[i].usage();
+  } else {
+    s += "ARGUMENT " + SUBCOMMANDS_SELECTOR + " 0 0 CHOICE " + join(SUBCOMMANDS.ids(), " ") + "\n";
+  }
 
   for (size_t i = 0; i < OPTIONS.size(); ++i)
     for (size_t j = 0; j < OPTIONS[i].size(); ++j)
@@ -589,30 +741,38 @@ std::string markdown_usage() {
     + _standard_options.footer (format)
     + help_tail (format);
   */
+  const bool hierarchical = !SUBCOMMANDS.empty();
   std::string s = std::string("## Synopsis\n\n") + SYNOPSIS + "\n\n";
 
-  s += "## Usage\n\n    " + std::string(NAME) + " [ options ] ";
+  if (hierarchical) {
+    // A hierarchical command presents the sub-interface selection in place of any
+    //   positional arguments (of which the top-level command has none).
+    s += "## Usage\n\n    " + std::string(NAME) + " " + SUBCOMMANDS_SELECTOR + " [ options ] ...\n\n";
+    s += std::string("-  *") + SUBCOMMANDS_SELECTOR + "*: " + selection_help_string() + "\n";
+  } else {
+    s += "## Usage\n\n    " + std::string(NAME) + " [ options ] ";
 
-  // Syntax line:
-  for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+    // Syntax line:
+    for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
 
-    if (ARGUMENTS[i].flags.optional())
-      s += "[";
-    s += std::string(" ") + ARGUMENTS[i].id;
+      if (ARGUMENTS[i].flags.optional())
+        s += "[";
+      s += std::string(" ") + ARGUMENTS[i].id;
 
-    if (ARGUMENTS[i].flags.allow_multiple()) {
-      if (ARGUMENTS[i].flags.required())
-        s += std::string(" [ ") + ARGUMENTS[i].id;
-      s += " ...";
+      if (ARGUMENTS[i].flags.allow_multiple()) {
+        if (ARGUMENTS[i].flags.required())
+          s += std::string(" [ ") + ARGUMENTS[i].id;
+        s += " ...";
+      }
+      if (ARGUMENTS[i].flags.any())
+        s += " ]";
     }
-    if (ARGUMENTS[i].flags.any())
-      s += " ]";
-  }
-  s += "\n\n";
+    s += "\n\n";
 
-  // Argument description:
-  for (size_t i = 0; i < ARGUMENTS.size(); ++i)
-    s += std::string("- *") + ARGUMENTS[i].id + "*: " + ARGUMENTS[i].desc + "\n";
+    // Argument description:
+    for (size_t i = 0; i < ARGUMENTS.size(); ++i)
+      s += std::string("- *") + ARGUMENTS[i].id + "*: " + ARGUMENTS[i].desc + "\n";
+  }
 
   if (!DESCRIPTION.empty()) {
     s += "\n## Description\n\n";
@@ -676,6 +836,14 @@ std::string markdown_usage() {
   s += std::string("**Author:** ") + AUTHOR + "\n\n";
   s += std::string("**Copyright:** ") + COPYRIGHT + "\n\n";
 
+  // Append one complete page per sub-interface, in declaration order. Iterate over a copy,
+  //   since render_subcommand() clears and restores the global SUBCOMMANDS while rendering.
+  if (hierarchical) {
+    const SubcommandList subcommands = SUBCOMMANDS;
+    for (const auto &sub : subcommands)
+      s += render_subcommand(sub, ExportFormat::Markdown);
+  }
+
   return s;
 }
 
@@ -694,26 +862,8 @@ std::string restructured_text_usage() {
     + help_tail (format);
   */
 
+  const bool hierarchical = !SUBCOMMANDS.empty();
   std::string s = std::string("Synopsis\n--------\n\n") + SYNOPSIS + "\n\n";
-
-  s += "Usage\n--------\n\n::\n\n    " + std::string(NAME) + " [ options ] ";
-
-  // Syntax line:
-  for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-
-    if (ARGUMENTS[i].flags.optional())
-      s += "[";
-    s += std::string(" ") + ARGUMENTS[i].id;
-
-    if (ARGUMENTS[i].flags.allow_multiple()) {
-      if (ARGUMENTS[i].flags.required())
-        s += std::string(" [ ") + ARGUMENTS[i].id;
-      s += " ...";
-    }
-    if (ARGUMENTS[i].flags.any())
-      s += " ]";
-  }
-  s += "\n\n";
 
   // Will need more sophisticated escaping of special characters
   //   if they start popping up in argument / option descriptions
@@ -726,15 +876,41 @@ std::string restructured_text_usage() {
     return text;
   };
 
-  // Argument description:
-  for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-    auto desc = split_lines(escape_special(ARGUMENTS[i].desc), false);
-    s += std::string("-  *") + ARGUMENTS[i].id + "*: " + desc[0];
-    for (size_t n = 1; n < desc.size(); ++n)
-      s += " |br|\n   " + desc[n];
+  if (hierarchical) {
+    // A hierarchical command presents the sub-interface selection in place of any
+    //   positional arguments (of which the top-level command has none).
+    s += "Usage\n--------\n\n::\n\n    " + std::string(NAME) + " " + SUBCOMMANDS_SELECTOR + " [ options ] ...\n\n";
+    s += std::string("-  *") + SUBCOMMANDS_SELECTOR + "*: " + selection_help_string() + "\n\n";
+  } else {
+    s += "Usage\n--------\n\n::\n\n    " + std::string(NAME) + " [ options ] ";
+
+    // Syntax line:
+    for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+
+      if (ARGUMENTS[i].flags.optional())
+        s += "[";
+      s += std::string(" ") + ARGUMENTS[i].id;
+
+      if (ARGUMENTS[i].flags.allow_multiple()) {
+        if (ARGUMENTS[i].flags.required())
+          s += std::string(" [ ") + ARGUMENTS[i].id;
+        s += " ...";
+      }
+      if (ARGUMENTS[i].flags.any())
+        s += " ]";
+    }
+    s += "\n\n";
+
+    // Argument description:
+    for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+      auto desc = split_lines(escape_special(ARGUMENTS[i].desc), false);
+      s += std::string("-  *") + ARGUMENTS[i].id + "*: " + desc[0];
+      for (size_t n = 1; n < desc.size(); ++n)
+        s += " |br|\n   " + desc[n];
+      s += "\n";
+    }
     s += "\n";
   }
-  s += "\n";
 
   if (!DESCRIPTION.empty()) {
     s += "Description\n-----------\n\n";
@@ -810,8 +986,77 @@ std::string restructured_text_usage() {
 
   s += std::string("--------------\n\n") + "\n\n**Author:** " + AUTHOR + "\n\n**Copyright:** " + COPYRIGHT + "\n\n";
 
+  // Append one complete section per sub-interface, in declaration order; each section
+  //   carries its own RST label and title (the top-level command's own label and title
+  //   are added by the documentation generator, matching every C++ command).
+  if (hierarchical) {
+    const SubcommandList subcommands = SUBCOMMANDS;
+    for (const auto &sub : subcommands)
+      s += subcommand_rst_section(sub);
+  }
+
   return s;
 }
+
+namespace {
+
+//! render one sub-interface's export page in isolation, as an ordinary command page
+/*! The sub-interface is installed over the globals (with its NAME set to
+ *  "<command> <sub-interface>") and SUBCOMMANDS temporarily cleared so the renderer
+ *  treats it as an ordinary, non-hierarchical command; all globals are restored on
+ *  return. */
+std::string render_subcommand(const Subcommand &sub, const ExportFormat format) {
+  const std::string saved_synopsis = SYNOPSIS;
+  const std::string saved_author = AUTHOR;
+  const std::string saved_copyright = COPYRIGHT;
+  const Description saved_description = DESCRIPTION;
+  const ExampleList saved_examples = EXAMPLES;
+  const ArgumentList saved_arguments = ARGUMENTS;
+  const OptionList saved_options = OPTIONS;
+  const Description saved_references = REFERENCES;
+  const std::string saved_name = NAME;
+  const SubcommandList saved_subcommands = SUBCOMMANDS;
+
+  install_subcommand(sub);
+  SUBCOMMANDS = SubcommandList();
+  NAME = saved_name + " " + sub.id;
+
+  std::string out;
+  switch (format) {
+  case ExportFormat::FullUsage:
+    out = full_usage();
+    break;
+  case ExportFormat::Markdown:
+    out = markdown_usage();
+    break;
+  case ExportFormat::Rst:
+    out = restructured_text_usage();
+    break;
+  }
+
+  SYNOPSIS = saved_synopsis;
+  AUTHOR = saved_author;
+  COPYRIGHT = saved_copyright;
+  DESCRIPTION = saved_description;
+  EXAMPLES = saved_examples;
+  ARGUMENTS = saved_arguments;
+  OPTIONS = saved_options;
+  REFERENCES = saved_references;
+  NAME = saved_name;
+  SUBCOMMANDS = saved_subcommands;
+  return out;
+}
+
+//! a sub-interface's RST section: its own label and title, then its full page
+std::string subcommand_rst_section(const Subcommand &sub) {
+  const std::string title = std::string(NAME) + " " + sub.id;
+  std::string s = ".. _" + std::string(NAME) + "_" + sub.id + ":\n\n";
+  s += title + "\n" + std::string(title.size(), '=') + "\n\n";
+  s += render_subcommand(sub, ExportFormat::Rst);
+  return s;
+}
+
+} // namespace
 
 const Option *match_option(std::string_view arg) {
   auto no_dash_arg = without_leading_dash(arg);
@@ -893,34 +1138,168 @@ void verify_usage() {
     throw Exception("No author specified for command " + std::string(NAME));
   if (SYNOPSIS.empty())
     throw Exception("No synopsis specified for command " + std::string(NAME));
+  if (!SUBCOMMANDS.empty()) {
+    if (!ARGUMENTS.empty())
+      throw Exception("A hierarchical command must not declare top-level ARGUMENTS"
+                      " (the sub-interface selection is the sole leading positional)");
+    if (SUBCOMMANDS_SELECTOR.empty())
+      throw Exception("A hierarchical command must specify a non-empty SUBCOMMANDS_SELECTOR");
+    for (const auto &sub : SUBCOMMANDS) {
+      if (sub.id.empty())
+        throw Exception("A sub-interface of command " + std::string(NAME) + " has no name");
+      if (sub.synopsis.empty())
+        throw Exception("Sub-interface \"" + sub.id + "\" of command " + std::string(NAME) + " has no synopsis");
+      if (SUBCOMMANDS.find(sub.id) != &sub)
+        throw Exception("Duplicate sub-interface name \"" + sub.id + "\" in command " + std::string(NAME));
+    }
+  }
 }
 
+namespace {
+
+//! emit a top-level machine-readable export for the current (possibly hierarchical) command
+[[noreturn]] void emit_top_level_export(const ExportFormat format, const bool synopsis) {
+  if (synopsis)
+    print(SYNOPSIS);
+  else
+    switch (format) {
+    case ExportFormat::FullUsage:
+      print(full_usage());
+      break;
+    case ExportFormat::Markdown:
+      print(markdown_usage());
+      break;
+    case ExportFormat::Rst:
+      print(restructured_text_usage());
+      break;
+    }
+  throw 0;
+}
+
+} // namespace
+
 void parse_special_options() {
-  // special options are only accessible as the first argument
-  if (raw_arguments_list.size() != 1)
+  if (raw_arguments_list.empty())
     return;
 
-  if (raw_arguments_list.front() == "__print_full_usage__") {
-    print(full_usage());
+  bool synopsis = false;
+  ExportFormat format = ExportFormat::FullUsage;
+  const std::string_view last = raw_arguments_list.back();
+  if (last == "__print_full_usage__") {
+    format = ExportFormat::FullUsage;
+  } else if (last == "__print_usage_markdown__") {
+    format = ExportFormat::Markdown;
+  } else if (last == "__print_usage_rst__") {
+    format = ExportFormat::Rst;
+  } else if (last == "__print_synopsis__") {
+    synopsis = true;
+  } else {
+    return;
+  }
+
+  if (!SUBCOMMANDS.empty()) {
+    // A per-sub-interface export is requested as "<command> <sub-interface> <keyword>";
+    //   any other keyword-terminated form (including __print_synopsis__) emits the
+    //   top-level page. This mirrors the Python parser's dispatch on the second-to-last
+    //   command-line token.
+    if (!synopsis && raw_arguments_list.size() >= 2) {
+      const Subcommand *sub = SUBCOMMANDS.find(raw_arguments_list[raw_arguments_list.size() - 2]);
+      if (sub != nullptr) {
+        // The rst form carries the sub-interface's own label and title (a complete section);
+        //   markdown / full_usage emit the sub-interface page alone.
+        print(format == ExportFormat::Rst ? subcommand_rst_section(*sub) : render_subcommand(*sub, format));
+        throw 0;
+      }
+    }
+    emit_top_level_export(format, synopsis);
+  }
+
+  // Non-hierarchical commands: the keyword is special only as the solitary argument.
+  if (raw_arguments_list.size() != 1)
+    return;
+  emit_top_level_export(format, synopsis);
+}
+
+//! select and install a hierarchical command's sub-interface from the command-line
+/*! Identifies the selection token (the first token that is neither an option nor an
+ *  argument consumed by a preceding option, resolved against the command's common and
+ *  standard options), installs the selected sub-interface over the usage() globals, and
+ *  removes the selection token from the argument list so that ordinary parsing proceeds
+ *  on the sub-interface. Handles -help / -version (routed to the sub-interface when one
+ *  is selected, else to the top-level command) and the no-/unknown-selection errors. */
+void select_subcommand() {
+  capture_top_level_interface();
+  const std::vector<std::string> ids = SUBCOMMANDS.ids();
+
+  // A completely empty command-line prints the top-level help page (as every command does).
+  if (raw_arguments_list.empty()) {
+    if (REQUIRES_AT_LEAST_ONE_ARGUMENT) {
+      print_help();
+      throw 0;
+    }
+    throw Exception("no algorithm selected (expected one of: " + join(ids, ", ") + ")");
+  }
+
+  // Locate the selection token: the first token that is not an option nor an option's
+  //   argument. match_option() throws on an unrecognised dashed token (e.g. a
+  //   sub-interface-specific option placed before the selection), which propagates as the
+  //   parse error, matching the Python parser.
+  std::optional<std::string> selection;
+  std::optional<size_t> selection_index;
+  for (size_t i = 0; i < raw_arguments_list.size();) {
+    const Option *opt = match_option(raw_arguments_list[i]);
+    if (opt == nullptr) {
+      selection = raw_arguments_list[i];
+      selection_index = i;
+      break;
+    }
+    i += 1 + opt->size();
+  }
+
+  const Subcommand *sub = selection.has_value() ? SUBCOMMANDS.find(*selection) : nullptr;
+
+  if (sub != nullptr) {
+    install_subcommand(*sub);
+    SUBCOMMAND_SELECTED_ID = sub->id;
+    SUBCOMMANDS = SubcommandList();
+    raw_arguments_list.erase(raw_arguments_list.begin() + *selection_index);
+    // Route -help / -version to the selected sub-interface, giving per-sub-interface help.
+    const HelpVersion help_version = prescan_help_version(raw_arguments_list);
+    if (help_version == HelpVersion::Help) {
+      NAME = std::string(NAME) + " " + SUBCOMMAND_SELECTED_ID;
+      print_help();
+      throw 0;
+    }
+    if (help_version == HelpVersion::Version) {
+      NAME = std::string(NAME) + " " + SUBCOMMAND_SELECTED_ID;
+      print(version_string());
+      throw 0;
+    }
+    return;
+  }
+
+  // No valid sub-interface selected: -help / -version are routed to the top-level command,
+  //   taking precedence over the no-/unknown-selection errors.
+  const HelpVersion help_version = prescan_help_version(raw_arguments_list);
+  if (help_version == HelpVersion::Help) {
+    print_help();
     throw 0;
   }
-  if (raw_arguments_list.front() == "__print_usage_markdown__") {
-    print(markdown_usage());
+  if (help_version == HelpVersion::Version) {
+    print(version_string());
     throw 0;
   }
-  if (raw_arguments_list.front() == "__print_usage_rst__") {
-    print(restructured_text_usage());
-    throw 0;
-  }
-  if (raw_arguments_list.front() == "__print_synopsis__") {
-    print(SYNOPSIS);
-    throw 0;
-  }
+  if (!selection.has_value())
+    throw Exception("no algorithm selected (expected one of: " + join(ids, ", ") + ")");
+  throw Exception("unknown algorithm \"" + *selection + "\" (expected one of: " + join(ids, ", ") + ")");
 }
 
 void parse() {
   argument.clear();
   option.clear();
+
+  if (!SUBCOMMANDS.empty())
+    select_subcommand();
 
   sort_arguments(raw_arguments_list);
 
