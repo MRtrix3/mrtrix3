@@ -1530,7 +1530,63 @@ class Parser: # pylint: disable=too-many-public-methods
     sys.stdout.flush()
 
   def print_usage_markdown(self):
-    self._export_placeholder('__print_usage_markdown__', 4)
+    text = '## Synopsis\n\n'
+    text += f'{self._synopsis}\n\n'
+    text += '## Usage\n\n'
+    text += f'    {self.format_usage()}\n\n'
+    for argument in self._positional_args:
+      name = argument.metavar if argument.metavar else argument.name
+      text += f'-  *{name}*: {argument.help}\n\n'
+    if self._description:
+      text += '## Description\n\n'
+      for line in self._description:
+        text += f'{line}\n\n'
+    if self._examples:
+      text += '## Example usages\n\n'
+      for example in self._examples:
+        text += f'__{example[0]}:__\n'
+        text += f'`$ {example[1]}`\n'
+        if example[2]:
+          text += f'{example[2]}\n'
+        text += '\n'
+    text += '## Options\n\n'
+
+    # Render one option group as markdown.
+    #   The double dash in the emitted option name (e.g. "--grad") is a faithful
+    #   reproduction of the pre-overhaul baseline: the former renderer joined the
+    #   already-dashed option_strings ("-grad") and prefixed a further "-".
+    def print_group_options(group):
+      group_text = ''
+      for option in group.options:
+        option_text = '-' + option.name + Parser._option_metavar(option)
+        option_text = option_text.replace('<', '\\<').replace('>', '\\>')
+        group_text += f'+ **-{option_text}**'
+        if option.repeatable:
+          group_text += '  *(multiple uses permitted)*'
+        group_text += f'<br>{option.help}\n\n'
+      return group_text
+
+    # Ungrouped options first (no heading), then the named groups in reverse order of
+    #   definition, matching the terminal help traversal and the pre-overhaul baseline.
+    if self._ungrouped.options:
+      text += print_group_options(self._ungrouped)
+    for group in reversed(self._option_groups[1:]):
+      if group.options:
+        text += f'#### {group.name}\n\n'
+        text += print_group_options(group)
+    text += '## References\n\n'
+    for entry in self._citation_list:
+      ref_text = ''
+      if entry[0]:
+        ref_text += f'{entry[0]}: '
+      ref_text += entry[1]
+      text += f'{ref_text}\n\n'
+    text += f'{_MRTRIX3_CORE_REFERENCE}\n\n'
+    text += '---\n\n'
+    text += f'**Author:** {self._author}\n\n'
+    text += f'**Copyright:** {self._copyright}\n\n'
+    sys.stdout.write(text)
+    sys.stdout.flush()
 
   def print_usage_rst(self):
     self._export_placeholder('__print_usage_rst__', 5)
