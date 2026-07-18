@@ -85,36 +85,42 @@ void usage() {
 
   OPTIONS
   + Option ("plane", "fill one or more planes perpendicular to the specified axis").allow_multiple()
-    + Argument ("axis").type_integer (0, 2)
-    + Argument ("coord").type_sequence_float()
-    + Argument ("value").type_float()
+    + Argument ("axis_coord_value")
+        .type_tuple({Argument ("axis",  "the axis perpendicular to the plane(s)").type_integer (0, 2),
+                     Argument ("coord", "the coordinate(s) along that axis at which to fill").type_sequence_float(),
+                     Argument ("value", "the intensity value to set").type_float()})
 
   + Option ("sphere", "draw a sphere of the specified radius").allow_multiple()
-    + Argument ("position").type_sequence_float()
-    + Argument ("radius").type_float()
-    + Argument ("value").type_float()
+    + Argument ("position_radius_value")
+        .type_tuple({Argument ("position", "the centre of the sphere").type_sequence_float(),
+                     Argument ("radius",   "the radius of the sphere").type_float(),
+                     Argument ("value",    "the intensity value to set").type_float()})
 
   + Option ("ellipsoid", "draw an ellipsoid"
                          " (a single radius value yields a sphere)").allow_multiple()
-    + Argument ("position").type_sequence_float()
-    + Argument ("radii").type_sequence_float()
-    + Argument ("value").type_float()
+    + Argument ("position_radii_value")
+        .type_tuple({Argument ("position", "the centre of the ellipsoid").type_sequence_float(),
+                     Argument ("radii",    "the radii of the ellipsoid").type_sequence_float(),
+                     Argument ("value",    "the intensity value to set").type_float()})
 
   + Option ("cuboid", "draw a rectangular cuboid"
                       " (a single side-length value yields a cube)").allow_multiple()
-    + Argument ("position").type_sequence_float()
-    + Argument ("size").type_sequence_float()
-    + Argument ("value").type_float()
+    + Argument ("position_size_value")
+        .type_tuple({Argument ("position", "the centre of the cuboid").type_sequence_float(),
+                     Argument ("size",     "the side length(s) of the cuboid").type_sequence_float(),
+                     Argument ("value",    "the intensity value to set").type_float()})
 
   + Option ("line", "draw a single-voxel-thick line between two points"
                     " using Bresenham's algorithm").allow_multiple()
-    + Argument ("first").type_sequence_float()
-    + Argument ("second").type_sequence_float()
-    + Argument ("value").type_float()
+    + Argument ("first_second_value")
+        .type_tuple({Argument ("first",  "the first end-point of the line").type_sequence_float(),
+                     Argument ("second", "the second end-point of the line").type_sequence_float(),
+                     Argument ("value",  "the intensity value to set").type_float()})
 
   + Option ("voxel", "change the image value within a single voxel").allow_multiple()
-    + Argument ("position").type_sequence_float()
-    + Argument ("value").type_float()
+    + Argument ("position_value")
+        .type_tuple({Argument ("position", "the position of the voxel").type_sequence_float(),
+                     Argument ("value",    "the intensity value to set").type_float()})
 
   + Option ("scanner", "interpret all stencil positions, sizes and orientations in scanner space (mm),"
                        " rather than with respect to the voxel grid");

@@ -71,8 +71,11 @@ void usage() {
             " the input and output images are provided as a consecutive pair.");
 
   ARGUMENTS
-  + Argument("input output", "list of all input and output tissue compartment files"
-                             " (see example usage).").type_image_in().type_image_out().allow_multiple();
+  + Argument("input_output", "list of all input and output tissue compartment files"
+                             " (see example usage).")
+      .type_tuple({Argument("input",  "an input tissue compartment image").type_image_in(),
+                   Argument("output", "the corresponding output tissue compartment image").type_image_out()})
+      .allow_multiple();
 
   OPTIONS
   + Option("mask", "the mask defines the data used to compute the intensity normalisation."

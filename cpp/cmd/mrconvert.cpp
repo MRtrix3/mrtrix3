@@ -191,8 +191,9 @@ void usage() {
             " in the selection along the specified axis."
             " The selection argument expects a number sequence,"
             " which can also include the 'end' keyword.").allow_multiple()
-    + Argument ("axis").type_integer (0)
-    + Argument ("selection").type_sequence_int()
+    + Argument ("axis_selection")
+        .type_tuple({Argument ("axis",      "the image axis along which to make the selection").type_integer (0),
+                     Argument ("selection", "the coordinates to retain along that axis").type_sequence_int()})
 
   + Option ("vox",
             "change the voxel dimensions reported in the output image header")
@@ -227,14 +228,16 @@ void usage() {
 
   + Option ("set_property",
             "set the value of the specified key in the image header.").allow_multiple()
-  + Argument ("key").type_text()
-  + Argument ("value").type_text()
+  + Argument ("key_value")
+      .type_tuple({Argument ("key",   "the header key to set").type_text(),
+                   Argument ("value", "the value to assign to that key").type_text()})
 
   + Option ("append_property",
             "append the given value to the specified key in the image header"
             " (this adds the value specified as a new line in the header value).").allow_multiple()
-  + Argument ("key").type_text()
-  + Argument ("value").type_text()
+  + Argument ("key_value")
+      .type_tuple({Argument ("key",   "the header key to append to").type_text(),
+                   Argument ("value", "the value to append to that key").type_text()})
 
   + Option ("copy_properties",
             "copy all properties from the image / JSON file specified into the output image header"

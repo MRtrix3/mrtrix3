@@ -26,7 +26,10 @@ https://mrtrix.readthedocs.io/en/3.0.8/fixel_based_analysis/fixel_directory_form
 Options
 -------
 
--  **-fc template_fixel_directory output_fixel_directory output_fixel_data** use an input template fixel image to define fibre orientations and output a fixel image describing the change in fibre cross-section (FC) in the perpendicular plane to the fixel orientation.
+-  **-fc template_fixel_directory output_fixel_directory output_fixel_data** use an input template fixel image to define fibre orientations and output a fixel image describing the change in fibre cross-section (FC) in the perpendicular plane to the fixel orientation. |br|
+   *template_fixel_directory*: the input template fixel directory defining fibre orientations |br|
+   *output_fixel_directory*: the output fixel directory |br|
+   *output_fixel_data*: the output fixel data file describing the FC
 
 -  **-jmat output** output a Jacobian matrix image stored in column-major order along the 4th dimension. Note the output jacobian describes the warp gradient w.r.t the scanner space coordinate system
 

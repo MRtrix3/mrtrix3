@@ -70,8 +70,9 @@ void usage ()
 
     + Option ("ivim", "also estimate IVIM parameters in 2-stage fit, "
                       "yielding two images encoding signal fraction and diffusivity respectively of perfusion1 component")
-      + Argument("fraction").type_image_out()
-      + Argument("diffusivity").type_image_out()
+      + Argument("fraction_diffusivity")
+          .type_tuple({Argument("fraction",    "the output perfusion signal fraction image").type_image_out(),
+                       Argument("diffusivity", "the output perfusion diffusivity image").type_image_out()})
 
     + Option ("cutoff", "minimum b-value for ADC estimation in IVIM fit "
                         "(default = " + str(ivim_cutoff_default) + " s/mm^2).")

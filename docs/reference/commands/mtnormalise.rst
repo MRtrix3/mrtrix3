@@ -15,7 +15,9 @@ Usage
 
     mtnormalise [ options ]  input output [ input output ... ]
 
--  *input output*: list of all input and output tissue compartment files (see example usage).
+-  *input output*: list of all input and output tissue compartment files (see example usage). |br|
+   *input*: an input tissue compartment image |br|
+   *output*: the corresponding output tissue compartment image
 
 Description
 -----------

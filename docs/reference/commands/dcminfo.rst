@@ -26,7 +26,9 @@ Options
 
 -  **-phoenix** print Siemens Phoenix protocol information
 
--  **-tag group element** *(multiple uses permitted)* print field specified by the group & element tags supplied. Tags should be supplied as Hexadecimal (i.e. as they appear in the -all listing).
+-  **-tag group element** *(multiple uses permitted)* print field specified by the group & element tags supplied. Tags should be supplied as Hexadecimal (i.e. as they appear in the -all listing). |br|
+   *group*: the hexadecimal DICOM group of the tag |br|
+   *element*: the hexadecimal DICOM element of the tag
 
 Standard options
 ^^^^^^^^^^^^^^^^

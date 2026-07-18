@@ -32,7 +32,9 @@ Options
 
 -  **-szero image** export image of S(0); that is, the model-estimated signal intensity in the absence of diffusion weighting
 
--  **-ivim fraction diffusivity** also estimate IVIM parameters in 2-stage fit, yielding two images encoding signal fraction and diffusivity respectively of perfusion1 component
+-  **-ivim fraction diffusivity** also estimate IVIM parameters in 2-stage fit, yielding two images encoding signal fraction and diffusivity respectively of perfusion1 component |br|
+   *fraction*: the output perfusion signal fraction image |br|
+   *diffusivity*: the output perfusion diffusivity image
 
 -  **-cutoff bval** minimum b-value for ADC estimation in IVIM fit (default = 120 s/mm^2).
 

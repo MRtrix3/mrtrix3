@@ -30,17 +30,34 @@ Unlike most MRtrix3 commands, the order in which editing options are provided on
 Options
 -------
 
--  **-plane axis coord value** *(multiple uses permitted)* fill one or more planes perpendicular to the specified axis
+-  **-plane axis coord value** *(multiple uses permitted)* fill one or more planes perpendicular to the specified axis |br|
+   *axis*: the axis perpendicular to the plane(s) |br|
+   *coord*: the coordinate(s) along that axis at which to fill |br|
+   *value*: the intensity value to set
 
--  **-sphere position radius value** *(multiple uses permitted)* draw a sphere of the specified radius
+-  **-sphere position radius value** *(multiple uses permitted)* draw a sphere of the specified radius |br|
+   *position*: the centre of the sphere |br|
+   *radius*: the radius of the sphere |br|
+   *value*: the intensity value to set
 
--  **-ellipsoid position radii value** *(multiple uses permitted)* draw an ellipsoid (a single radius value yields a sphere)
+-  **-ellipsoid position radii value** *(multiple uses permitted)* draw an ellipsoid (a single radius value yields a sphere) |br|
+   *position*: the centre of the ellipsoid |br|
+   *radii*: the radii of the ellipsoid |br|
+   *value*: the intensity value to set
 
--  **-cuboid position size value** *(multiple uses permitted)* draw a rectangular cuboid (a single side-length value yields a cube)
+-  **-cuboid position size value** *(multiple uses permitted)* draw a rectangular cuboid (a single side-length value yields a cube) |br|
+   *position*: the centre of the cuboid |br|
+   *size*: the side length(s) of the cuboid |br|
+   *value*: the intensity value to set
 
--  **-line first second value** *(multiple uses permitted)* draw a single-voxel-thick line between two points using Bresenham's algorithm
+-  **-line first second value** *(multiple uses permitted)* draw a single-voxel-thick line between two points using Bresenham's algorithm |br|
+   *first*: the first end-point of the line |br|
+   *second*: the second end-point of the line |br|
+   *value*: the intensity value to set
 
--  **-voxel position value** *(multiple uses permitted)* change the image value within a single voxel
+-  **-voxel position value** *(multiple uses permitted)* change the image value within a single voxel |br|
+   *position*: the position of the voxel |br|
+   *value*: the intensity value to set
 
 -  **-scanner** interpret all stencil positions, sizes and orientations in scanner space (mm), rather than with respect to the voxel grid
 

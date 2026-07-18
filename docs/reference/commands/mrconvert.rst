@@ -92,7 +92,9 @@ Options
 Options for manipulating fundamental image properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-coord axis selection** *(multiple uses permitted)* retain data from the input image only at the coordinates specified in the selection along the specified axis. The selection argument expects a number sequence, which can also include the 'end' keyword.
+-  **-coord axis selection** *(multiple uses permitted)* retain data from the input image only at the coordinates specified in the selection along the specified axis. The selection argument expects a number sequence, which can also include the 'end' keyword. |br|
+   *axis*: the image axis along which to make the selection |br|
+   *selection*: the coordinates to retain along that axis
 
 -  **-vox sizes** change the voxel dimensions reported in the output image header
 
@@ -114,9 +116,13 @@ Options to modify generic header entries
 
 -  **-clear_properties** remove all pre-existing key-value entries from the image header
 
--  **-set_property key value** *(multiple uses permitted)* set the value of the specified key in the image header.
+-  **-set_property key value** *(multiple uses permitted)* set the value of the specified key in the image header. |br|
+   *key*: the header key to set |br|
+   *value*: the value to assign to that key
 
--  **-append_property key value** *(multiple uses permitted)* append the given value to the specified key in the image header (this adds the value specified as a new line in the header value).
+-  **-append_property key value** *(multiple uses permitted)* append the given value to the specified key in the image header (this adds the value specified as a new line in the header value). |br|
+   *key*: the header key to append to |br|
+   *value*: the value to append to that key
 
 -  **-copy_properties source** copy all properties from the image / JSON file specified into the output image header (combine with -clear_properties to keep *only* the properties from this image / file)
 

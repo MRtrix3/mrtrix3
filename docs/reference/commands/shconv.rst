@@ -15,7 +15,9 @@ Usage
 
     shconv [ options ]  odf response [ odf response ... ] SH_out
 
--  *odf response*: pairs of input ODF image and corresponding responses
+-  *odf response*: pairs of input ODF image and corresponding responses |br|
+   *odf*: an input ODF image |br|
+   *response*: the corresponding response function
 -  *SH_out*: the output spherical harmonics coefficients image.
 
 Description

@@ -344,7 +344,16 @@ public:
   //! the index of this option in the raw command-line arguments list
   size_t index;
 
+  //! the value supplied for the num-th sub-argument (leaf) of this option
+  /*! Tuple arguments are flattened: num indexes the option's leaf sub-arguments in
+   * command-line order, so opt[0] is the first token, opt[1] the second, and so on,
+   * irrespective of whether those tokens belong to a tuple or to separate arguments. */
   ParsedArgument operator[](size_t num) const;
+
+  //! the value supplied for the sub-argument (leaf) whose id matches the supplied name
+  /*! Convenience accessor for reading a tuple's fields by name rather than by position,
+   * e.g. opt[0]["bvecs"]. The name must match one of the option's leaf sub-argument ids. */
+  ParsedArgument operator[](std::string_view name) const;
 
   //! check whether this option matches the name supplied
   bool operator==(std::string_view match) const;
@@ -501,7 +510,7 @@ template <typename T> inline T get_option_value(std::string_view name, const T d
   case 0:
     return default_value;
   case 1:
-    if (opt[0].opt->size() == 1)
+    if (opt[0].opt->arity() == 1)
       return opt[0][0];
   default:
     assert(false);
@@ -522,7 +531,7 @@ template <typename Enum> inline Enum get_option_choice(std::string_view name, co
   case 0:
     return default_value;
   case 1:
-    if (opt[0].opt->size() == 1)
+    if (opt[0].opt->arity() == 1)
       return MR::Enum::from_name<Enum>(std::string_view(opt[0][0]));
   default:
     assert(false);

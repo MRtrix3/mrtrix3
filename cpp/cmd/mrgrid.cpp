@@ -187,8 +187,9 @@ void usage() {
         " and negative range specifier trigger padding."
         " Note that the deprecated commands 'mrcrop' and 'mrpad'"
         " used range-based and delta-based -axis indices, respectively.").allow_multiple()
-      + Argument ("index").type_integer(0)
-      + Argument ("spec").type_text()
+      + Argument ("index_spec")
+          .type_tuple({Argument ("index", "the index of the axis to pad or crop").type_integer(0),
+                       Argument ("spec",  "the delta (lower,upper) or range (start:stop) specifier").type_text()})
 
     + Option ("all_axes", "Crop or pad all, not just spatial axes.")
 

@@ -36,7 +36,10 @@ Options
 
 -  **-id text** replace all ID tags with string supplied. This consists of tags (0010, 0020) PatientID and (0010, 1000) OtherPatientIDs
 
--  **-tag group element newvalue** *(multiple uses permitted)* replace specific tag.
+-  **-tag group element newvalue** *(multiple uses permitted)* replace specific tag. |br|
+   *group*: the DICOM group of the tag to be replaced |br|
+   *element*: the DICOM element of the tag to be replaced |br|
+   *newvalue*: the new value to assign to the tag
 
 Standard options
 ^^^^^^^^^^^^^^^^

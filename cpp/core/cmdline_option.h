@@ -315,6 +315,40 @@ public:
     return *this;
   }
 
+  //! for a tuple argument, the ordered list of typed sub-arguments
+  /*! When non-empty, this Argument is a "tuple": a single logical, permutable
+   * command-line argument that consumes elements.size() tokens, one per sub-argument,
+   * each validated against that sub-argument's type. Each sub-argument carries its own
+   * id, description and type. A tuple must not itself contain a tuple (one level only). */
+  std::vector<Argument> elements;
+
+  //! true if this argument is a tuple (an ordered group of sub-arguments)
+  bool is_tuple() const { return !elements.empty(); }
+
+  //! the number of command-line tokens this argument consumes
+  /*! 1 for a scalar argument; the number of sub-arguments for a tuple. */
+  size_t arity() const { return elements.empty() ? size_t(1) : elements.size(); }
+
+  //! specifies that the argument is a tuple of ordered, individually-typed sub-arguments
+  /*! Each sub-argument is provided with its own id, description and type. The tuple is
+   * consumed as a single logical argument of fixed arity (equal to the number of
+   * sub-arguments) that remains permutable with the other arguments and options. A tuple
+   * positional argument may be declared .allow_multiple() to accept repeated groups of
+   * sub-arguments (e.g. repeated input/output pairs).
+   * \note sub-arguments must be scalar; a tuple cannot itself contain a tuple. */
+  Argument &type_tuple(std::vector<Argument> subarguments) {
+    assert(!subarguments.empty());
+    for (const auto &element : subarguments)
+      assert(!element.is_tuple());
+    elements = std::move(subarguments);
+    return *this;
+  }
+
+  //! the display representation of this argument's identifier(s)
+  /*! For a scalar argument this is simply its id; for a tuple it is the space-joined
+   * ids of its sub-arguments, so that the command-line syntax lines read naturally. */
+  std::string syntax_id() const;
+
   std::string syntax(const bool format) const;
   std::string usage() const;
 };
@@ -403,6 +437,34 @@ public:
   }
 
   bool is(std::string_view name) const { return name == id; }
+
+  //! the total number of command-line tokens consumed by this option's arguments
+  /*! Equal to the number of arguments for an option of scalar arguments; a tuple
+   * argument contributes as many tokens as it has sub-arguments. This is the count of
+   * tokens the parser consumes immediately following the option on the command-line. */
+  size_t arity() const {
+    size_t total = 0;
+    for (const auto &arg : *this)
+      total += arg.arity();
+    return total;
+  }
+
+  //! the flattened list of scalar (leaf) sub-arguments of this option
+  /*! Tuple arguments are expanded into their constituent sub-arguments; scalar arguments
+   * map to themselves. The k-th leaf corresponds to the k-th command-line token consumed
+   * by the option, i.e. to ParsedOption::operator[](k). */
+  std::vector<const Argument *> leaves() const {
+    std::vector<const Argument *> result;
+    result.reserve(arity());
+    for (const auto &arg : *this) {
+      if (arg.is_tuple())
+        for (const auto &element : arg.elements)
+          result.push_back(&element);
+      else
+        result.push_back(&arg);
+    }
+    return result;
+  }
 
   std::string syntax(const bool format) const;
   std::string usage() const;

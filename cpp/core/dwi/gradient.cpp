@@ -44,8 +44,8 @@ OptionGroup GradImportOptions() {
                " in FSL bvecs/bvals format files."
                " If a diffusion gradient scheme is present in the input image header,"
                " the data provided with this option will be instead used.")
-        + Argument("bvecs").type_file_in()
-        + Argument("bvals").type_file_in();
+        + Argument("bvecs_bvals")
+            .type_tuple({Argument("bvecs").type_file_in(), Argument("bvals").type_file_in()});
 }
 
 OptionGroup GradExportOptions() {
@@ -56,8 +56,8 @@ OptionGroup GradExportOptions() {
 
       + Option("export_grad_fsl",
                "export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format")
-        + Argument("bvecs_path").type_file_out()
-        + Argument("bvals_path").type_file_out();
+        + Argument("bvecs_bvals_path")
+            .type_tuple({Argument("bvecs_path").type_file_out(), Argument("bvals_path").type_file_out()});
 }
 
 const Option bvalue_scaling_option = Option("bvalue_scaling",
@@ -262,7 +262,7 @@ Eigen::MatrixXd get_raw_DW_scheme(const Header &header) {
     if (!opt_mrtrix.empty())
       throw Exception("Diffusion gradient table can be provided using either -grad or -fslgrad option,"
                       " but NOT both");
-    grad = load_bvecs_bvals(header, opt_fsl[0][0], opt_fsl[0][1]);
+    grad = load_bvecs_bvals(header, opt_fsl[0]["bvecs"], opt_fsl[0]["bvals"]);
   }
 
   // otherwise use the information from the header:
@@ -354,7 +354,7 @@ void export_grad_commandline(const Header &header) {
 
   opt = get_options("export_grad_fsl");
   if (!opt.empty())
-    save_bvecs_bvals(check(header), opt[0][0], opt[0][1]);
+    save_bvecs_bvals(check(header), opt[0]["bvecs_path"], opt[0]["bvals_path"]);
 }
 
 } // namespace MR::DWI

@@ -17,7 +17,9 @@ Usage
 
 -  *algorithm*: the algorithm to use for FOD estimation. (options are: csd, msmt_csd)
 -  *dwi*: the input diffusion-weighted image
--  *response odf*: pairs of input tissue response and output ODF images
+-  *response odf*: pairs of input tissue response and output ODF images |br|
+   *response*: an input tissue response function |br|
+   *odf*: the corresponding output ODF image
 
 Description
 -----------
