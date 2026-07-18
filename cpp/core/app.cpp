@@ -15,11 +15,13 @@
  */
 
 #include <algorithm>
+#include <array>
 #include <cerrno>
 #include <clocale>
 #include <cstddef>
 #include <fcntl.h>
 #include <filesystem>
+#include <functional>
 #include <locale>
 #include <unistd.h>
 
@@ -67,13 +69,11 @@ const std::string core_reference =
     "NeuroImage, 2019, 202, 116137";                                                                          //
 
 // clang-format off
+// The verbosity trio (-info / -quiet / -debug) is nested as a "Verbosity options" sub-group
+//   within Standard options, demonstrating the hierarchical-option-group mechanism. A group's
+//   own direct options render before its sub-groups, so the trio follows the remaining
+//   standard options in every export and in the terminal help.
 const OptionGroup _standard_options = OptionGroup("Standard options")
-  + Option("info", "display information messages.")
-  + Option("quiet",
-           "do not display information messages or progress status; "
-           "alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable"
-           " to a non-empty string.")
-  + Option("debug", "display debugging messages & debug input data.")
   + Option("force",
            "force overwrite of output files"
            " (caution: using the same file as input and output might cause unexpected behaviour).")
@@ -84,7 +84,14 @@ const OptionGroup _standard_options = OptionGroup("Standard options")
   + Option("config", "temporarily set the value of an MRtrix config file entry.").allow_multiple()
     + Argument("key_value").type_tuple({Argument("key").type_text(), Argument("value").type_text()})
   + Option("help", "display this information page and exit.")
-  + Option("version", "display version information and exit.");
+  + Option("version", "display version information and exit.")
+  + (OptionGroup("Verbosity options")
+     + Option("info", "display information messages.")
+     + Option("quiet",
+              "do not display information messages or progress status; "
+              "alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable"
+              " to a non-empty string.")
+     + Option("debug", "display debugging messages & debug input data."));
 // clang-format on
 
 std::string AUTHOR{};
@@ -136,9 +143,10 @@ void (*check_overwrite_files_func)(const std::filesystem::path &name) = nullptr;
 namespace {
 
 inline void get_matches(std::vector<const Option *> &candidates, const OptionGroup &group, std::string_view stub) {
-  for (size_t i = 0; i < group.size(); ++i) {
-    if (stub.compare(0, stub.size(), std::string(group[i].id), 0, stub.size()) == 0)
-      candidates.push_back(&group[i]);
+  // Recurse through nested sub-groups so options at any depth are matchable.
+  for (const Option *const opt : group.all_options()) {
+    if (stub.compare(0, stub.size(), std::string(opt->id), 0, stub.size()) == 0)
+      candidates.push_back(opt);
   }
 }
 
@@ -281,10 +289,8 @@ void install_subcommand(const Subcommand &sub) {
 }
 
 const Option *standard_option(const char *id) { // check_syntax off
-  for (const auto &opt : _standard_options)
-    if (opt.is(id))
-      return &opt;
-  return nullptr;
+  // Recurses into nested sub-groups (e.g. the verbosity sub-group of Standard options).
+  return _standard_options.find(id);
 }
 
 enum class HelpVersion { None, Help, Version };
@@ -546,14 +552,21 @@ std::string Option::syntax(const bool format) const {
   return opt;
 }
 
-std::string OptionGroup::header(const bool format) const {
-  return format ? bold(name) + "\n\n" : std::string(name) + ":\n";
+std::string OptionGroup::header(const bool format, const size_t depth) const {
+  // Nested sub-groups are indented by two spaces per level of depth to convey the hierarchy.
+  const std::string indent(2 * depth, ' ');
+  return format ? indent + bold(name) + "\n\n" : indent + std::string(name) + ":\n";
 }
 
-std::string OptionGroup::contents(const bool format) const {
+std::string OptionGroup::contents(const bool format, const size_t depth) const {
   std::string s;
   for (size_t i = 0; i < size(); ++i)
     s += (*this)[i].syntax(format);
+  // Nested child groups follow this group's own options, each with its own (deeper) header.
+  for (const auto &subgroup : subgroups) {
+    s += subgroup.header(format, depth + 1);
+    s += subgroup.contents(format, depth + 1);
+  }
   return s;
 }
 
@@ -760,12 +773,14 @@ std::string full_usage() {
     s += "ARGUMENT " + SUBCOMMANDS_SELECTOR + " 0 0 CHOICE " + join(SUBCOMMANDS.ids(), " ") + "\n";
   }
 
-  for (size_t i = 0; i < OPTIONS.size(); ++i)
-    for (size_t j = 0; j < OPTIONS[i].size(); ++j)
-      s += OPTIONS[i][j].usage();
+  // full_usage is a flat machine format with no group headings; nested sub-group options are
+  //   emitted alongside their parent's options via all_options() so no option is ever dropped.
+  for (const auto &og : OPTIONS)
+    for (const Option *const opt : og.all_options())
+      s += opt->usage();
 
-  for (size_t i = 0; i < _standard_options.size(); ++i)
-    s += _standard_options[i].usage();
+  for (const Option *const opt : _standard_options.all_options())
+    s += opt->usage();
 
   return s;
 }
@@ -861,6 +876,18 @@ std::string markdown_usage() {
     return f;
   };
 
+  // A nested child group is rendered as a deeper Markdown heading (one extra '#' per level),
+  //   its own options, then recursively its own child groups. Depth 0 == a top-level group's
+  //   sub-group, i.e. heading level "#####".
+  std::function<void(const OptionGroup &, size_t)> render_subgroups = [&](const OptionGroup &group, size_t depth) {
+    for (const auto &subgroup : group.subgroups) {
+      s += std::string(5 + depth, '#') + " " + subgroup.name + "\n\n";
+      for (size_t o = 0; o < subgroup.size(); ++o)
+        s += format_option(subgroup[o]);
+      render_subgroups(subgroup, depth + 1);
+    }
+  };
+
   s += "\n## Options\n\n";
   for (size_t i = 0; i < group_names.size(); ++i) {
     size_t n = i;
@@ -872,6 +899,7 @@ std::string markdown_usage() {
       if (OPTIONS[n].name == group_names[i]) {
         for (size_t o = 0; o < OPTIONS[n].size(); ++o)
           s += format_option(OPTIONS[n][o]);
+        render_subgroups(OPTIONS[n], 0);
       }
       ++n;
     }
@@ -880,6 +908,7 @@ std::string markdown_usage() {
   s += "#### Standard options\n\n";
   for (size_t i = 0; i < _standard_options.size(); ++i)
     s += format_option(_standard_options[i]);
+  render_subgroups(_standard_options, 0);
 
   s += std::string("## References\n\n");
   for (size_t i = 0; i < REFERENCES.size(); ++i)
@@ -1028,6 +1057,22 @@ std::string restructured_text_usage() {
     return f;
   };
 
+  // Top-level option groups are underlined with '^' (a sub-section of "Options"); a nested
+  //   child group descends one further RST heading level per depth. The underline character
+  //   is chosen by depth so Sphinx infers the correct nesting.
+  auto subgroup_underline = [](size_t depth) -> char {
+    static const std::array<char, 3> chars = {'"', '\'', '~'};
+    return chars[std::min<size_t>(depth, chars.size() - 1)];
+  };
+  std::function<void(const OptionGroup &, size_t)> render_subgroups = [&](const OptionGroup &group, size_t depth) {
+    for (const auto &subgroup : group.subgroups) {
+      s += subgroup.name + std::string("\n") + std::string(subgroup.name.size(), subgroup_underline(depth)) + "\n\n";
+      for (size_t o = 0; o < subgroup.size(); ++o)
+        s += format_option(subgroup[o]);
+      render_subgroups(subgroup, depth + 1);
+    }
+  };
+
   s += "Options\n-------\n\n";
   for (size_t i = 0; i < group_names.size(); ++i) {
     size_t n = i;
@@ -1039,6 +1084,7 @@ std::string restructured_text_usage() {
       if (OPTIONS[n].name == group_names[i]) {
         for (size_t o = 0; o < OPTIONS[n].size(); ++o)
           s += format_option(OPTIONS[n][o]);
+        render_subgroups(OPTIONS[n], 0);
       }
       ++n;
     }
@@ -1047,6 +1093,7 @@ std::string restructured_text_usage() {
   s += "Standard options\n^^^^^^^^^^^^^^^^\n\n";
   for (size_t i = 0; i < _standard_options.size(); ++i)
     s += format_option(_standard_options[i]);
+  render_subgroups(_standard_options, 0);
 
   s += std::string("References\n^^^^^^^^^^\n\n");
   for (size_t i = 0; i < REFERENCES.size(); ++i) {
@@ -1433,8 +1480,8 @@ void parse() {
       std::vector<std::string> potential_options;
       for (const auto &a : argument) {
         for (const auto &og : OPTIONS) {
-          for (const auto &o : og) {
-            if (std::string(a) == std::string(o.id))
+          for (const Option *const o : og.all_options()) {
+            if (std::string(a) == std::string(o->id))
               potential_options.push_back("'-" + std::string(a) + "'");
           }
         }
@@ -1467,19 +1514,19 @@ void parse() {
     assert(n == argument.size());
   }
 
-  // check for multiple instances of options:
-  for (size_t i = 0; i < OPTIONS.size(); ++i) {
-    for (size_t j = 0; j < OPTIONS[i].size(); ++j) {
+  // check for multiple instances of options (recursing into nested sub-groups):
+  for (const auto &og : OPTIONS) {
+    for (const Option *const opt : og.all_options()) {
       size_t count = 0;
       for (size_t k = 0; k < option.size(); ++k)
-        if (option[k].opt == &OPTIONS[i][j])
+        if (option[k].opt == opt)
           count++;
 
-      if (count < 1 && OPTIONS[i][j].flags.required())
-        throw Exception(std::string("mandatory option \"-") + OPTIONS[i][j].id + "\" must be specified");
+      if (count < 1 && opt->flags.required())
+        throw Exception(std::string("mandatory option \"-") + opt->id + "\" must be specified");
 
-      if (count > 1 && !OPTIONS[i][j].flags.allow_multiple())
-        throw Exception(std::string("multiple instances of option \"-") + OPTIONS[i][j].id + "\" are not allowed");
+      if (count > 1 && !opt->flags.allow_multiple())
+        throw Exception(std::string("multiple instances of option \"-") + opt->id + "\" are not allowed");
     }
   }
 

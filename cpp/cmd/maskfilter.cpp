@@ -104,11 +104,12 @@ void usage() {
   + Argument("output", "the output mask.").type_image_out();
 
   OPTIONS
-  + CleanOption
-  + ConnectOption
-  + DilateErodeOption
-  + FillOption
-  + MedianOption
+  + (OptionGroup ("Filter-specific options")
+     + CleanOption
+     + ConnectOption
+     + DilateErodeOption
+     + FillOption
+     + MedianOption)
 
   + Stride::Options;
 

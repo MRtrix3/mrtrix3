@@ -470,8 +470,13 @@ public:
   std::string usage() const;
 };
 
-//! a class to hold a named list of Option's
-/*! the name is used as the section heading for the options that follow.
+//! a class to hold a named list of Option's, optionally with nested child groups
+/*! the name is used as the section heading for the options that follow. A group may in
+ * addition contain nested child groups (sub-groups), forming a hierarchy of option
+ * sections; a child group is appended with the same operator+() idiom used for options,
+ * the operand being an OptionGroup rather than an Option. Each surface (terminal help and
+ * the machine-readable exports) conveys the nesting by increasing depth (indentation /
+ * heading level). A group's own direct options are always rendered before its sub-groups.
  * For example:
  * \code
  * void usage () {
@@ -481,7 +486,12 @@ public:
  *
  *   + OptionGroup ("Special options")
  *   + Option ("option1", ...)
- *   + Option ("option2", ...);
+ *   + Option ("option2", ...)
+ *
+ *   + (OptionGroup ("Parent group")
+ *      + Option ("direct_option", ...)
+ *      + (OptionGroup ("Nested child group")
+ *         + Option ("nested_option", ...)));
  * }
  * \endcode
  */
@@ -489,6 +499,9 @@ class OptionGroup : public std::vector<Option> {
 public:
   OptionGroup(std::string group_name = "OPTIONS") : name(std::move(group_name)) {}
   std::string name;
+
+  //! nested child groups (empty for a flat group)
+  std::vector<OptionGroup> subgroups;
 
   OptionGroup &operator+(const Option &option) {
     push_back(option);
@@ -501,14 +514,62 @@ public:
     return *this;
   }
 
+  //! nest a child group within this group
+  OptionGroup &operator+(const OptionGroup &subgroup) {
+    subgroups.push_back(subgroup);
+    return *this;
+  }
+
   Option &back() {
     if (empty())
       push_back(Option());
     return std::vector<Option>::back();
   }
 
-  std::string header(const bool format) const;
-  std::string contents(const bool format) const;
+  //! the flattened list of all options in this group and, recursively, its sub-groups
+  /*! Own direct options first, then those of each sub-group in order. The returned pointers
+   * address the options in place, so they retain the identity used by the parser / matchers. */
+  std::vector<const Option *> all_options() const {
+    std::vector<const Option *> result;
+    for (const auto &option : *this)
+      result.push_back(&option);
+    for (const auto &subgroup : subgroups) {
+      const std::vector<const Option *> nested = subgroup.all_options();
+      result.insert(result.end(), nested.begin(), nested.end());
+    }
+    return result;
+  }
+
+  //! recursively locate an option by exact id within this group or its sub-groups
+  const Option *find(std::string_view option_name) const {
+    for (const auto &option : *this) {
+      if (option.is(option_name))
+        return &option;
+    }
+    for (const auto &subgroup : subgroups) {
+      if (const Option *const match = subgroup.find(option_name))
+        return match;
+    }
+    return nullptr;
+  }
+
+  //! true if the given option pointer refers to an option in this group or a sub-group
+  bool contains(const Option *ptr) const {
+    for (const auto &option : *this) {
+      if (&option == ptr)
+        return true;
+    }
+    for (const auto &subgroup : subgroups) {
+      if (subgroup.contains(ptr))
+        return true;
+    }
+    return false;
+  }
+
+  //! the section heading for this group; depth controls the indentation / heading level
+  std::string header(const bool format, const size_t depth = 0) const;
+  //! this group's options followed by its sub-groups (each headed and rendered recursively)
+  std::string contents(const bool format, const size_t depth = 0) const;
   static std::string footer(const bool format);
 };
 

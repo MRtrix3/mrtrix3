@@ -27,13 +27,16 @@ Many filters have their own unique set of optional parameters; see the option gr
 Options
 -------
 
+Filter-specific options
+^^^^^^^^^^^^^^^^^^^^^^^
+
 Options for mask cleaning filter
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""
 
 -  **-scale value** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. (Default: 2)
 
 Options for connected-component filter
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""""""""
 
 -  **-axes axes** specify which axes should be included in the connected components. By default only the first 3 axes are included. The axes should be provided as a comma-separated list of values.
 
@@ -44,19 +47,19 @@ Options for connected-component filter
 -  **-minsize value** impose minimum size of segmented components (Default: select all components)
 
 Options for dilate / erode filters
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""""
 
 -  **-npass value** the number of times to repeatedly apply the filter
 
 Options for interior-filling filter
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""""""""""""
 
 -  **-axes axes** specify which axes should be included in the connected components. By default only the first 3 axes are included. The axes should be provided as a comma-separated list of values.
 
 -  **-connectivity** use 26-voxel-neighbourhood connectivity (Default is 6-voxel-neighbourhood)
 
 Options for median filter
-^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""
 
 -  **-extent voxels** specify the extent (width) of kernel size in voxels. This can be specified either as a single value to be used for all axes, or as a comma-separated list of the extent for each axis. The default is 3x3x3.
 
@@ -68,12 +71,6 @@ Stride options
 Standard options
 ^^^^^^^^^^^^^^^^
 
--  **-info** display information messages.
-
--  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-
--  **-debug** display debugging messages & debug input data.
-
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
@@ -83,6 +80,15 @@ Standard options
 -  **-help** display this information page and exit.
 
 -  **-version** display version information and exit.
+
+Verbosity options
+"""""""""""""""""
+
+-  **-info** display information messages.
+
+-  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+
+-  **-debug** display debugging messages & debug input data.
 
 References
 ^^^^^^^^^^

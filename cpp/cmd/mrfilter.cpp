@@ -139,13 +139,14 @@ void usage() {
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
-  + DemodulateOption
-  + FFTOption
-  + GradientOption
-  + MedianOption
-  + NormaliseOption
-  + SmoothOption
-  + ZcleanOption
+  + (OptionGroup ("Filter-specific options")
+     + DemodulateOption
+     + FFTOption
+     + GradientOption
+     + MedianOption
+     + NormaliseOption
+     + SmoothOption
+     + ZcleanOption)
   + Stride::Options;
 
 }

@@ -734,9 +734,8 @@ void Window::parse_arguments() {
       const auto last_arg_pos = MR::App::argument.back().index();
 
       const auto is_non_standard_option = [](const MR::App::ParsedOption &option) {
-        return std::none_of(MR::App::_standard_options.begin(),
-                            MR::App::_standard_options.end(),
-                            [&option](const auto &standard_option) { return option.opt == &standard_option; });
+        // Recurses into nested sub-groups (e.g. the verbosity sub-group of Standard options).
+        return !MR::App::_standard_options.contains(option.opt);
       };
 
       const auto first_non_standard_option =

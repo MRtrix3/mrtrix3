@@ -35,15 +35,18 @@ For 4D images, each 3D volume is processed independently.
 Options
 -------
 
+Filter-specific options
+^^^^^^^^^^^^^^^^^^^^^^^
+
 Options for demodulate filter
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""""""
 
 -  **-axes list** the axes along which to demodulate; by default, this will be chosen based on the presence / content of header field SliceEncodingDirection: two spatial axes if present, three spatial axes if absent
 
 -  **-linear** demodulate using only a linear phase ramp, rather than the default non-linear phase map
 
 Options for FFT filter
-^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""
 
 -  **-axes list** the axes along which to apply the Fourier Transform. By default, the transform is applied along the three spatial axes. Provide as a comma-separate list of axis indices.
 
@@ -56,7 +59,7 @@ Options for FFT filter
 -  **-centre_zero** re-arrange the FFT results so that the zero-frequency component appears in the centre of the image, rather than at the edges
 
 Options for gradient filter
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""""
 
 -  **-stdev sigma** the standard deviation of the Gaussian kernel used to  smooth the input image (in mm). The image is smoothed to reduced large spurious gradients caused by noise. Use this option to override the default stdev of 1 voxel. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values (one for each axis).
 
@@ -65,17 +68,17 @@ Options for gradient filter
 -  **-scanner** define the gradient with respect to the scanner coordinate frame of reference.
 
 Options for median filter
-^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""
 
 -  **-extent size** specify extent of median filtering neighbourhood in voxels. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values (one for each axis) (default: 3x3x3).
 
 Options for normalisation filter
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""
 
 -  **-extent size** specify extent of normalisation filtering neighbourhood in voxels.This can be specified either as a single value to be used for all 3 axes,or as a comma-separated list of 3 values (one for each axis) (default: 3x3x3).
 
 Options for smooth filter
-^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""
 
 -  **-stdev mm** apply Gaussian smoothing with the specified standard deviation. The standard deviation is defined in mm (Default 1 voxel). This can be specified either as a single value to be used for all axes, or as a comma-separated list of the stdev for each axis.
 
@@ -84,7 +87,7 @@ Options for smooth filter
 -  **-extent voxels** specify the extent (width) of kernel size in voxels. This can be specified either as a single value to be used for all axes, or as a comma-separated list of the extent for each axis. The default extent is 2 * ceil(2.5 * stdev / voxel_size) - 1.
 
 Options for zclean filter
-^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""
 
 -  **-zupper num** define high intensity outliers; default: 2.5
 
@@ -104,12 +107,6 @@ Stride options
 Standard options
 ^^^^^^^^^^^^^^^^
 
--  **-info** display information messages.
-
--  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-
--  **-debug** display debugging messages & debug input data.
-
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
@@ -119,6 +116,15 @@ Standard options
 -  **-help** display this information page and exit.
 
 -  **-version** display version information and exit.
+
+Verbosity options
+"""""""""""""""""
+
+-  **-info** display information messages.
+
+-  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+
+-  **-debug** display debugging messages & debug input data.
 
 References
 ^^^^^^^^^^
