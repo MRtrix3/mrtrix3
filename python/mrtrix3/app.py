@@ -1524,7 +1524,10 @@ class Parser: # pylint: disable=too-many-public-methods
     sys.stdout.flush()
 
   def print_synopsis(self):
-    self._export_placeholder('__print_synopsis__', 3)
+    # Emit the stored synopsis string verbatim, with no trailing newline (matching the
+    #   pre-overhaul baseline that inline-wrote CMDLINE._synopsis).
+    sys.stdout.write(self._synopsis)
+    sys.stdout.flush()
 
   def print_usage_markdown(self):
     self._export_placeholder('__print_usage_markdown__', 4)
