@@ -4,7 +4,7 @@
 #   invert it, then convert back to a deformation field;
 #   the result should match the original identity warp
 
-warpconvert unit_warp.mif deformation2displacement - | \
+warpconvert deformation2displacement unit_warp.mif - | \
 warpinvert - -displacement - | \
-warpconvert - displacement2deformation - | \
+warpconvert displacement2deformation - - | \
 testing_diff_image - unit_warp.mif -abs 1e-5

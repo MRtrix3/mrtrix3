@@ -10,7 +10,7 @@ testing_diff_image - unit_warp.mif -abs 0.001
 # Also ensure that when the inversion is applied to an intermediate displacement field,
 #   the same result manifests
 
-warpconvert unit_warp.mif deformation2displacement - | \
+warpconvert deformation2displacement unit_warp.mif - | \
 warpinvert - -displacement - | \
-warpconvert - displacement2deformation - | \
+warpconvert displacement2deformation - - | \
 testing_diff_image - unit_warp.mif -abs 0.001
