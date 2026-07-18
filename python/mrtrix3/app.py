@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import inspect, math, os, pathlib, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time
+import importlib, inspect, math, os, pathlib, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils, version
 
@@ -918,7 +918,7 @@ class Parser: # pylint: disable=too-many-public-methods
 
 
 
-  def __init__(self):
+  def __init__(self, parents=None):
     self._author = None
     self._citation_list = [ ]
     self._copyright = _DEFAULT_COPYRIGHT
@@ -936,6 +936,31 @@ class Parser: # pylint: disable=too-many-public-methods
     self._option_groups = [ self._ungrouped ]
     self._help_option = None
     self._version_option = None
+    # Populated by add_subparsers() on a multi-algorithm command's top-level parser;
+    #   remains None both for single-level commands and for the base / per-algorithm
+    #   parsers constructed underneath a subparser command.
+    self._subparsers = None
+    # A parser constructed with parents (the per-algorithm sub-parsers and the shared base
+    #   parser) inherits the standard-option groups, ungrouped options, help/version option
+    #   handles and citation list of its parent(s) rather than creating its own; this
+    #   reinstates the citation- and option-inheritance that the argparse "parents="
+    #   mechanism formerly provided (see stage 6 of the CLI overhaul).
+    if parents is not None:
+      for parent in parents:
+        self._citation_list.extend(parent._citation_list)
+        self._external_citations = self._external_citations or parent._external_citations
+        self._ungrouped.options.extend(parent._ungrouped.options)
+        for group in parent._option_groups[1:]:
+          self._option_groups.append(group)
+        if parent._help_option is not None:
+          self._help_option = parent._help_option
+        if parent._version_option is not None:
+          self._version_option = parent._version_option
+      # The project / version metadata is identical to that of the parent(s); copy it
+      #   rather than re-invoking "git describe" once per sub-parser.
+      self._is_project = parents[0]._is_project
+      self._git_version = parents[0]._git_version
+      return
     standard_options = self.add_argument_group('Standard options')
     standard_options.add_argument('-info',
                                   action='store_true',
@@ -1114,14 +1139,51 @@ class Parser: # pylint: disable=too-many-public-methods
     self._positional_args.append(argument)
     return argument
 
-  # Subparsers (per-algorithm sub-commands) are reintroduced in stage 6 of the CLI
-  #   overhaul; until then the five subparser commands intentionally fail to construct.
+  # Registry of a multi-algorithm command's per-algorithm sub-parsers.
+  #   Replaces the former argparse "_SubParsersAction". Each algorithm module's
+  #   usage(base_parser, subparsers) function calls add_parser() to register its
+  #   sub-interface; the resulting Parser inherits the base parser's options and
+  #   citations via the "parents=" mechanism (see Parser.__init__).
+  class _SubParsers:
+    def __init__(self, base_parser, algorithms):
+      self._base_parser = base_parser
+      self.dest = 'algorithm'
+      self.algorithms = list(algorithms)
+      self.choices = { }  # ordered name -> Parser, in ALGORITHMS order
+      self.help = ('Select the algorithm to be used; '
+                   'additional details and options become available once an algorithm is nominated. '
+                   'Options are: ' + ', '.join(self.algorithms))
+    def add_parser(self, name, parents=None): # pylint: disable=unused-variable
+      child = Parser(parents=parents if parents is not None else [self._base_parser])
+      child.prog = f'{EXEC_NAME} {name}'
+      self.choices[name] = child
+      return child
+
+  # Reintroduce algorithm-dispatch sub-parsers (stage 6 of the CLI overhaul). Invoked from
+  #   the "usage" function of a multi-algorithm command, after that command has registered
+  #   any options common to all its algorithms. Builds a base parser carrying the standard
+  #   options plus those common options, then lets each algorithm register its own
+  #   sub-interface against that base via its usage(base_parser, subparsers) function.
   def add_subparsers(self): # pylint: disable=unused-variable
-    raise NotImplementedError('Command-line subparsers are not available in this build; '
-                              'their reimplementation is scheduled for stage 6 of the '
-                              'MRtrix3 CLI overhaul (retire-argparse effort)')
+    module_name = os.path.dirname(inspect.getouterframes(inspect.currentframe())[1].filename).split(os.sep)[-1]
+    module = sys.modules[f'mrtrix3.commands.{module_name}']
+    # The base parser inherits, via the parents= mechanism, the standard options, this
+    #   command's common options (registered on "self" before add_subparsers() was called)
+    #   and the top-level citations; each per-algorithm parser in turn inherits from it.
+    base_parser = Parser(parents=[self])
+    self._subparsers = Parser._SubParsers(base_parser, module.ALGORITHMS)
+    for algorithm in module.ALGORITHMS:
+      algorithm_module = importlib.import_module(f'.{algorithm}', f'mrtrix3.commands.{module_name}')
+      algorithm_module.usage(base_parser, self._subparsers)
 
   def print_citation_warning(self):
+    # If a subparser was invoked, defer to the chosen algorithm's parser, since it may
+    #   carry additional (possibly external) citations beyond those of the top-level command.
+    if self._subparsers is not None:
+      chosen = getattr(ARGS, self._subparsers.dest, None)
+      if chosen is not None and chosen in self._subparsers.choices:
+        self._subparsers.choices[chosen].print_citation_warning()
+        return
     if not self._external_citations:
       return
     console('')
@@ -1198,23 +1260,74 @@ class Parser: # pylint: disable=too-many-public-methods
     sys.stderr.flush()
     sys.exit(1)
 
+  # -help / -version take precedence and short-circuit, so that they operate even in the
+  #   presence of otherwise-invalid command-line content (matching the C++ parser). The
+  #   options are matched against, and the resulting page rendered from, "target" — which
+  #   is the top-level parser for a single-level command, or the selected algorithm's
+  #   sub-parser once an algorithm has been identified (giving per-algorithm -help).
+  @staticmethod
+  def _prescan_help_version(tokens, target):
+    for token in tokens:
+      try:
+        option = target._match_option(token) # pylint: disable=protected-access
+      except Parser.ArgumentError:
+        option = None
+      if option is not None and option is target._help_option: # pylint: disable=protected-access
+        target.print_help()
+        sys.exit(0)
+      if option is not None and option is target._version_option: # pylint: disable=protected-access
+        target.print_version()
+        sys.exit(0)
+
   def parse_args(self):
     assert self._author, 'Script author MUST be set in script\'s usage() function'
     assert self._synopsis, 'Script synopsis MUST be set in script\'s usage() function'
     tokens = sys.argv[1:]
-    # -help / -version take precedence and short-circuit, so that they operate even in the
-    #   presence of otherwise-invalid command-line content (matching the C++ parser).
-    for token in tokens:
-      try:
-        option = self._match_option(token)
-      except Parser.ArgumentError:
-        option = None
-      if option is not None and option is self._help_option:
-        self.print_help()
-        sys.exit(0)
-      if option is not None and option is self._version_option:
-        self.print_version()
-        sys.exit(0)
+    if self._subparsers is not None:
+      return self._parse_subparser_args(tokens)
+    Parser._prescan_help_version(tokens, self)
+    return self._parse_tokens(tokens)
+
+  # Locate the algorithm token: the first token that is not an option nor an argument to a
+  #   preceding option. Options preceding the algorithm are recognised (and their arguments
+  #   skipped) via the top-level parser's option set (the standard + common options), which
+  #   is exactly the set permitted before the algorithm; this is what makes those options
+  #   permutable with, and reachable by, the selected algorithm. Returns (name, index), or
+  #   (None, None) if no algorithm token is present.
+  def _find_algorithm(self, tokens):
+    index = 0
+    while index < len(tokens):
+      option = self._match_option(tokens[index])
+      if option is None:
+        return tokens[index], index
+      index += 1 if option.is_flag else 1 + len(option.args)
+    return None, None
+
+  def _parse_subparser_args(self, tokens):
+    algorithm, algorithm_index = None, None
+    try:
+      algorithm, algorithm_index = self._find_algorithm(tokens)
+    except Parser.ArgumentError as exception:
+      self._error(str(exception))
+    # Route -help / -version to the selected algorithm's sub-parser when one has been
+    #   identified, else to the top-level command.
+    if algorithm is not None and algorithm in self._subparsers.choices:
+      Parser._prescan_help_version(tokens, self._subparsers.choices[algorithm])
+    else:
+      Parser._prescan_help_version(tokens, self)
+    if algorithm is None:
+      self._error(f'no algorithm selected (expected one of: {", ".join(self._subparsers.algorithms)})')
+    if algorithm not in self._subparsers.choices:
+      self._error(f'unknown algorithm "{algorithm}" (expected one of: {", ".join(self._subparsers.algorithms)})')
+    child = self._subparsers.choices[algorithm]
+    # All tokens except the algorithm name itself are parsed by the algorithm's sub-parser,
+    #   so options given either side of the algorithm name reach the algorithm's execute().
+    algorithm_tokens = tokens[:algorithm_index] + tokens[algorithm_index + 1:]
+    namespace = child._parse_tokens(algorithm_tokens) # pylint: disable=protected-access
+    setattr(namespace, self._subparsers.dest, algorithm)
+    return namespace
+
+  def _parse_tokens(self, tokens):
     namespace = Parser.Namespace()
     for option in self._iter_options():
       setattr(namespace, option.dest, option.default)
@@ -1296,12 +1409,18 @@ class Parser: # pylint: disable=too-many-public-methods
 
   def format_usage(self):
     argument_list = [ ]
+    trailing_ellipsis = ''
+    # A multi-algorithm command presents the algorithm as its (only) leading positional,
+    #   with a trailing ellipsis standing in for the algorithm-specific arguments/options.
+    if self._subparsers is not None:
+      argument_list.append(self._subparsers.dest)
+      trailing_ellipsis = ' ...'
     for argument in self._positional_args:
       if argument.metavar:
         argument_list.append(argument.metavar)
       else:
         argument_list.append(argument.name)
-    return f'{self.prog} {" ".join(argument_list)} [ options ]'
+    return f'{self.prog} {" ".join(argument_list)} [ options ]{trailing_ellipsis}'
 
   # Metavar string for an option, rendered for the terminal help page.
   #   Returns '' for a boolean flag, otherwise a leading-space-prefixed, space-separated
@@ -1355,15 +1474,26 @@ class Parser: # pylint: disable=too-many-public-methods
     text += bold('USAGE') + '\n'
     text += '\n'
     usage = self.prog + ' '
-    usage += '[ options ]'
-    # Find compulsory input arguments
-    for argument in self._positional_args:
-      usage += f' {argument.name}'
+    # A multi-algorithm command presents the compulsory algorithm selection in place of
+    #   fixed positional arguments; the algorithm-specific arguments/options are then
+    #   summarised by the trailing ellipsis.
+    if self._subparsers is not None:
+      usage += f'{self._subparsers.dest} [ options ] ...'
+    else:
+      usage += '[ options ]'
+      # Find compulsory input arguments
+      for argument in self._positional_args:
+        usage += f' {argument.name}'
     # Unfortunately this can line wrap early because textwrap is counting each
     #   underlined character as 3 characters when calculating when to wrap
     # Fix by underlining after the fact
     text += wrapper_other.fill(usage).replace(self.prog, underline(self.prog), 1) + '\n'
     text += '\n'
+    if self._subparsers is not None:
+      dest = self._subparsers.dest
+      text += '        ' + wrapper_args.fill(
+        dest + ' '*(max(13-len(dest), 1)) + self._subparsers.help).replace(dest, underline(dest), 1) + '\n'
+      text += '\n'
     for argument in self._positional_args:
       line = '        '
       name = argument.metavar if argument.metavar else argument.name
@@ -1468,6 +1598,11 @@ class Parser: # pylint: disable=too-many-public-methods
     sys.stderr.flush()
 
   def print_full_usage(self):
+    # A per-algorithm interface is requested as "<command> <algorithm> __print_full_usage__";
+    #   dispatch to that algorithm's sub-parser and emit its interface alone.
+    if self._subparsers is not None and len(sys.argv) >= 3 and sys.argv[-2] in self._subparsers.choices:
+      self._subparsers.choices[sys.argv[-2]].print_full_usage()
+      return
     sys.stdout.write(f'{self._synopsis}\n')
     for line in self._description:
       sys.stdout.write(f'{line}\n')
@@ -1495,12 +1630,17 @@ class Parser: # pylint: disable=too-many-public-methods
         return type(argtype)._legacytypestring() # pylint: disable=protected-access
       return argtype._legacytypestring() # pylint: disable=protected-access
 
-    # Positional arguments: the allow_multiple field is 1 only for variable-count
-    #   positionals (former nargs='+'/'*'); the "optional" field is always 0.
-    for argument in self._positional_args:
-      allow_multiple = '1' if argument.allow_multiple else '0'
-      sys.stdout.write(f'ARGUMENT {argument.name} 0 {allow_multiple} {arg2str(argument)}\n')
-      sys.stdout.write(f'{argument.help}\n')
+    # For a multi-algorithm command, the sole positional is the algorithm selection,
+    #   emitted as a CHOICE argument enumerating the available algorithm names; otherwise
+    #   the command's own positional arguments are emitted. The allow_multiple field is 1
+    #   only for variable-count positionals (former nargs='+'/'*'); "optional" is always 0.
+    if self._subparsers is not None:
+      sys.stdout.write(f'ARGUMENT {self._subparsers.dest} 0 0 CHOICE {" ".join(self._subparsers.choices)}\n')
+    else:
+      for argument in self._positional_args:
+        allow_multiple = '1' if argument.allow_multiple else '0'
+        sys.stdout.write(f'ARGUMENT {argument.name} 0 {allow_multiple} {arg2str(argument)}\n')
+        sys.stdout.write(f'{argument.help}\n')
 
     # Options: the required field is inverted (0 if required, else 1); the option-level
     #   allow_multiple field is always 0 (repeatable/append options are NOT flagged here);
@@ -1530,10 +1670,19 @@ class Parser: # pylint: disable=too-many-public-methods
     sys.stdout.flush()
 
   def print_usage_markdown(self):
+    # A per-algorithm interface is requested as "<command> <algorithm> __print_usage_markdown__";
+    #   dispatch to that algorithm's sub-parser and emit its interface alone.
+    if self._subparsers is not None and len(sys.argv) >= 3 and sys.argv[-2] in self._subparsers.choices:
+      self._subparsers.choices[sys.argv[-2]].print_usage_markdown()
+      return
     text = '## Synopsis\n\n'
     text += f'{self._synopsis}\n\n'
     text += '## Usage\n\n'
     text += f'    {self.format_usage()}\n\n'
+    # For a multi-algorithm command the algorithm selection is described in place of any
+    #   positional arguments (of which the top-level command has none).
+    if self._subparsers is not None:
+      text += f'-  *{self._subparsers.dest}*: {self._subparsers.help}\n'
     for argument in self._positional_args:
       name = argument.metavar if argument.metavar else argument.name
       text += f'-  *{name}*: {argument.help}\n\n'
@@ -1587,8 +1736,18 @@ class Parser: # pylint: disable=too-many-public-methods
     text += f'**Copyright:** {self._copyright}\n\n'
     sys.stdout.write(text)
     sys.stdout.flush()
+    # Append one complete section per algorithm, reproducing the pre-overhaul behaviour of
+    #   re-invoking the executable once per algorithm (done here in-process on the model).
+    if self._subparsers is not None:
+      for child in self._subparsers.choices.values():
+        child.print_usage_markdown()
 
   def print_usage_rst(self):
+    # A per-algorithm interface is requested as "<command> <algorithm> __print_usage_rst__";
+    #   dispatch to that algorithm's sub-parser and emit its interface alone.
+    if self._subparsers is not None and len(sys.argv) >= 3 and sys.argv[-2] in self._subparsers.choices:
+      self._subparsers.choices[sys.argv[-2]].print_usage_rst()
+      return
     text = f'.. _{self.prog.replace(" ", "_")}:\n\n'
     text += f'{self.prog}\n'
     text += f'{"="*len(self.prog)}\n\n'
@@ -1599,6 +1758,10 @@ class Parser: # pylint: disable=too-many-public-methods
     text += '-----\n\n'
     text += '::\n\n'
     text += f'    {self.format_usage()}\n\n'
+    # For a multi-algorithm command the algorithm selection is described in place of any
+    #   positional arguments (of which the top-level command has none).
+    if self._subparsers is not None:
+      text += f'-  *{self._subparsers.dest}*: {self._subparsers.help}\n'
     for argument in self._positional_args:
       name = argument.metavar if argument.metavar else argument.name
       arg_help = argument.help.replace('|', '\\|')
@@ -1662,6 +1825,11 @@ class Parser: # pylint: disable=too-many-public-methods
     text += f'**Copyright:** {self._copyright}\n\n'
     sys.stdout.write(text)
     sys.stdout.flush()
+    # Append one complete section per algorithm, reproducing the pre-overhaul behaviour of
+    #   re-invoking the executable once per algorithm (done here in-process on the model).
+    if self._subparsers is not None:
+      for child in self._subparsers.choices.values():
+        child.print_usage_rst()
 
   def print_version(self):
     text = f'== {self.prog} {self._git_version if self._is_project else version.VERSION} ==\n'
