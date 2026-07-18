@@ -66,15 +66,6 @@ CCuussttoomm  ttyyppeess
 
 CCoommpplleexx  iinntteerrffaacceess;;  nnaarrggss,,  mmeettaavvaarr,,  eettcc..
 
-  _-_n_a_r_g_s___p_l_u_s string <space-separated list of additional strings>
-     A command-line option with nargs="+", no metavar
-
-  _-_n_a_r_g_s___a_s_t_e_r_i_s_k <space-separated list of strings>
-     A command-line option with nargs="*", no metavar
-
-  _-_n_a_r_g_s___q_u_e_s_t_i_o_n <optional string>
-     A command-line option with nargs="?", no metavar
-
   _-_n_a_r_g_s___t_w_o string string
      A command-line option with nargs=2, no metavar
 
