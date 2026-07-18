@@ -82,12 +82,6 @@ Test operation of the Python command-line interface
 
 #### Standard options
 
-+ **--info**<br>display information messages.
-
-+ **--quiet**<br>do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-
-+ **--debug**<br>display debugging messages & debug input data.
-
 + **--force**<br>force overwrite of output files.
 
 + **--nthreads number**<br>use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
@@ -97,6 +91,14 @@ Test operation of the Python command-line interface
 + **--help**<br>display this information page and exit.
 
 + **--version**<br>display version information and exit.
+
+##### Verbosity options
+
++ **--info**<br>display information messages.
+
++ **--quiet**<br>do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+
++ **--debug**<br>display debugging messages & debug input data.
 
 ## References
 

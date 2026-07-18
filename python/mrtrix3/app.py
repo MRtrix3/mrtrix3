@@ -591,9 +591,9 @@ class Parser: # pylint: disable=too-many-public-methods
   #   - Option   : a named command-line option; its ordered list of Arguments defines its
   #                fixed arity (an empty list == a boolean flag).
   #   - OptionGroup : a named, ordered collection of Options.
-  #   Seams intentionally left for later stages:
-  #     * subparsers (stage 6): Parser.add_subparsers() is a placeholder;
-  #     * nested option groups (stage 11): OptionGroup is presently flat.
+  #   OptionGroup supports nesting (stage 11): a group owns an ordered list of child groups,
+  #   with the invariant that a group's own direct options render before its sub-groups at
+  #   every depth (see OptionGroup below).
   # -------------------------------------------------------------------------------------
 
   class Argument:
@@ -664,13 +664,35 @@ class Parser: # pylint: disable=too-many-public-methods
         result.extend(arg.leaves())
       return result
 
+  # A named, ordered collection of Options that additionally owns an ordered list of nested
+  #   child groups (sub-groups), mirroring the C++ OptionGroup (cpp/core/cmdline_option.h).
+  #   A flat group has an empty "subgroups" list, so all pre-existing command usage() blocks
+  #   behave identically. Nesting rule (the single ordering invariant, applied at every depth):
+  #   a group's own direct options always render before its sub-groups; sub-groups render in
+  #   declaration order.
   class OptionGroup:
     def __init__(self, parser, name):
       self._parser = parser
       self.name = name
       self.options = []
+      self.subgroups = []
     def add_argument(self, *name_or_flags, **kwargs):
       return self._parser._add_argument(self, *name_or_flags, **kwargs) # pylint: disable=protected-access
+    # Nest a child group within this group, returning the new sub-group so that its own
+    #   options (and any deeper sub-groups) can be registered against it.
+    def add_subgroup(self, name):
+      subgroup = Parser.OptionGroup(self._parser, name)
+      self.subgroups.append(subgroup)
+      return subgroup
+    # Flattened list of all options in this group and, recursively, its sub-groups, in
+    #   depth-first order: own direct options first, then each sub-group in declaration order.
+    #   Every parse/match/check site iterates this so options at any depth are matchable,
+    #   parseable and checkable (mirrors the C++ OptionGroup::all_options()).
+    def all_options(self):
+      result = list(self.options)
+      for subgroup in self.subgroups:
+        result.extend(subgroup.all_options())
+      return result
 
   # Simple attribute container returned by parse_args(); replaces argparse.Namespace.
   #   Supports vars()/getattr()/hasattr() and in-place attribute reassignment,
@@ -1023,22 +1045,6 @@ class Parser: # pylint: disable=too-many-public-methods
       self._git_version = parents[0]._git_version
       return
     standard_options = self.add_argument_group('Standard options')
-    standard_options.add_argument('-info',
-                                  action='store_true',
-                                  default=None,
-                                  help='display information messages.')
-    standard_options.add_argument('-quiet',
-                                  action='store_true',
-                                  default=None,
-                                  help='do not display information messages or progress status. '
-                                       'Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.')
-    standard_options.add_argument('-debug',
-                                  action='store_true',
-                                  default=None,
-                                  help='display debugging messages & debug input data.')
-    # The verbosity mutex ( -info / -quiet / -debug ) is deliberately NOT registered here;
-    #   the ad-hoc mutual-exclusion mechanism is removed in this stage and reinstated as a
-    #   principled group constraint in stages 12/13.
     standard_options.add_argument('-force',
                                   action='store_true',
                                   default=None,
@@ -1062,6 +1068,25 @@ class Parser: # pylint: disable=too-many-public-methods
                                   action='store_true',
                                   default=None,
                                   help='display version information and exit.')
+    # The verbosity trio ( -info / -quiet / -debug ) is nested as a "Verbosity options"
+    #   sub-group of Standard options (mirroring the C++ parser); per the ordering invariant
+    #   it therefore renders after the remaining standard options above. The former ad-hoc
+    #   mutual-exclusion of the trio is reinstated as a principled group constraint in
+    #   stages 12/13.
+    verbosity_options = standard_options.add_subgroup('Verbosity options')
+    verbosity_options.add_argument('-info',
+                                  action='store_true',
+                                  default=None,
+                                  help='display information messages.')
+    verbosity_options.add_argument('-quiet',
+                                  action='store_true',
+                                  default=None,
+                                  help='do not display information messages or progress status. '
+                                       'Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.')
+    verbosity_options.add_argument('-debug',
+                                  action='store_true',
+                                  default=None,
+                                  help='display debugging messages & debug input data.')
     script_options = self.add_argument_group('Additional standard options for Python scripts')
     script_options.add_argument('-nocleanup',
                                 action='store_true',
@@ -1277,8 +1302,10 @@ class Parser: # pylint: disable=too-many-public-methods
   # -------------------------------------------------------------------------------------
 
   def _iter_options(self):
+    # Recurses into nested sub-groups (all_options()) so that options at any depth
+    #   (e.g. the nested verbosity trio) are matchable, parseable and checkable.
     for group in self._option_groups:
-      yield from group.options
+      yield from group.all_options()
 
   @staticmethod
   def _without_leading_dashes(token):
@@ -1664,18 +1691,34 @@ class Parser: # pylint: disable=too-many-public-methods
         group_text += '\n'
       return group_text
 
+    # Render a group's nested child groups after its own options: each sub-group's bold
+    #   header is indented by two spaces per level of depth (the depth cue; the nested
+    #   options themselves are not further indented), then its options, then recursively
+    #   its own sub-groups. "depth" is the parent group's depth.
+    def print_subgroups(group, depth):
+      subgroup_text = ''
+      for subgroup in group.subgroups:
+        subgroup_text += '  ' * (depth + 1) + bold(subgroup.name) + '\n'
+        subgroup_text += '\n'
+        subgroup_text += print_group_options(subgroup)
+        subgroup_text += print_subgroups(subgroup, depth + 1)
+      return subgroup_text
+
     # Before printing named option groups, print any command-line options that were not
     #   explicitly placed into a group (the ungrouped 'OPTIONS' group).
-    if self._ungrouped.options:
+    if self._ungrouped.options or self._ungrouped.subgroups:
       text += bold('OPTIONS') + '\n'
       text += '\n'
       text += print_group_options(self._ungrouped)
-    # Named option groups, in reverse order of definition (matching prior behaviour).
+      text += print_subgroups(self._ungrouped, 0)
+    # Named option groups, in reverse order of definition (matching prior behaviour);
+    #   within each group, sub-groups render in declaration order after the group's options.
     for group in reversed(self._option_groups[1:]):
-      if group.options:
+      if group.options or group.subgroups:
         text += bold(group.name) + '\n'
         text += '\n'
         text += print_group_options(group)
+        text += print_subgroups(group, 0)
     text += bold('AUTHOR') + '\n'
     text += wrapper_other.fill(self._author) + '\n'
     text += '\n'
@@ -1775,8 +1818,12 @@ class Parser: # pylint: disable=too-many-public-methods
     #   allow_multiple field is always 0 (repeatable/append options are NOT flagged here);
     #   one ARGUMENT line per argument slot, using each slot's metavar (falling back to the
     #   option name) and its own type token.
+    # full_usage is deliberately flat: it carries no group headings (it never encoded even
+    #   flat groups), so nesting adds nothing structurally; every option across the whole
+    #   subtree is emitted via all_options() (own options first, then each sub-group's), in
+    #   the same depth-first order the terminal/markdown/RST exports render them.
     def print_group_options(group):
-      for option in group.options:
+      for option in group.all_options():
         required = '0' if option.required else '1'
         sys.stdout.write(f'OPTION -{option.name} {required} 0\n')
         sys.stdout.write(f'{option.help}\n')
@@ -1855,14 +1902,28 @@ class Parser: # pylint: disable=too-many-public-methods
           group_text += '\n'.join(field_lines) + '\n'
       return group_text
 
+    # A nested child group renders as a deeper Markdown heading (one extra '#' per level of
+    #   depth), then its own options, then recursively its own child groups. "depth" is 0 for
+    #   a top-level group's sub-groups, i.e. heading level "#####".
+    def print_subgroups(group, depth):
+      subgroup_text = ''
+      for subgroup in group.subgroups:
+        subgroup_text += f'{"#" * (5 + depth)} {subgroup.name}\n\n'
+        subgroup_text += print_group_options(subgroup)
+        subgroup_text += print_subgroups(subgroup, depth + 1)
+      return subgroup_text
+
     # Ungrouped options first (no heading), then the named groups in reverse order of
-    #   definition, matching the terminal help traversal and the pre-overhaul baseline.
-    if self._ungrouped.options:
+    #   definition, matching the terminal help traversal and the pre-overhaul baseline;
+    #   within each group, sub-groups render in declaration order after the group's options.
+    if self._ungrouped.options or self._ungrouped.subgroups:
       text += print_group_options(self._ungrouped)
+      text += print_subgroups(self._ungrouped, 0)
     for group in reversed(self._option_groups[1:]):
-      if group.options:
+      if group.options or group.subgroups:
         text += f'#### {group.name}\n\n'
         text += print_group_options(group)
+        text += print_subgroups(group, 0)
     text += '## References\n\n'
     for entry in self._citation_list:
       ref_text = ''
@@ -1953,16 +2014,35 @@ class Parser: # pylint: disable=too-many-public-methods
         group_text += '\n'
       return group_text
 
+    # A nested child group descends one further RST heading level per depth, its underline
+    #   character chosen so Sphinx infers the correct nesting: depth 0 -> '"', 1 -> "'",
+    #   2+ -> '~' ("depth" being 0 for a top-level group's sub-groups). Own options first,
+    #   then recursively the child's own sub-groups.
+    def subgroup_underline(depth):
+      return '"\'~'[min(depth, 2)]
+    def print_subgroups(group, depth):
+      subgroup_text = ''
+      for subgroup in group.subgroups:
+        subgroup_text += '\n'
+        subgroup_text += f'{subgroup.name}\n'
+        subgroup_text += f'{subgroup_underline(depth) * len(subgroup.name)}\n'
+        subgroup_text += print_group_options(subgroup)
+        subgroup_text += print_subgroups(subgroup, depth + 1)
+      return subgroup_text
+
     # Ungrouped options first (no heading), then the named groups in reverse order of
-    #   definition, matching the terminal help traversal and the pre-overhaul baseline.
-    if self._ungrouped.options:
+    #   definition, matching the terminal help traversal and the pre-overhaul baseline;
+    #   within each group, sub-groups render in declaration order after the group's options.
+    if self._ungrouped.options or self._ungrouped.subgroups:
       text += print_group_options(self._ungrouped)
+      text += print_subgroups(self._ungrouped, 0)
     for group in reversed(self._option_groups[1:]):
-      if group.options:
+      if group.options or group.subgroups:
         text += '\n'
         text += f'{group.name}\n'
         text += f'{"^"*len(group.name)}\n'
         text += print_group_options(group)
+        text += print_subgroups(group, 0)
     text += '\n'
     text += 'References\n'
     text += '^^^^^^^^^^\n\n'

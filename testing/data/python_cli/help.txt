@@ -119,17 +119,6 @@ AAddddiittiioonnaall  ssttaannddaarrdd  ooppttiioonns
 
 SSttaannddaarrdd  ooppttiioonnss
 
-  _-_i_n_f_o
-     display information messages.
-
-  _-_q_u_i_e_t
-     do not display information messages or progress status. Alternatively, this
-     can be achieved by setting the MRTRIX_QUIET environment variable to a non-
-     empty string.
-
-  _-_d_e_b_u_g
-     display debugging messages & debug input data.
-
   _-_f_o_r_c_e
      force overwrite of output files.
 
@@ -145,6 +134,19 @@ SSttaannddaarrdd  ooppttiioonnss
 
   _-_v_e_r_s_i_o_n
      display version information and exit.
+
+  VVeerrbboossiittyy  ooppttiioonnss
+
+  _-_i_n_f_o
+     display information messages.
+
+  _-_q_u_i_e_t
+     do not display information messages or progress status. Alternatively, this
+     can be achieved by setting the MRTRIX_QUIET environment variable to a non-
+     empty string.
+
+  _-_d_e_b_u_g
+     display debugging messages & debug input data.
 
 AAUUTTHHOORR
      Robert E. Smith (robert.smith@florey.edu.au)

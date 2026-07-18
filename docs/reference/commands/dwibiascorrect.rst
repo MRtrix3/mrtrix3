@@ -52,12 +52,6 @@ Additional standard options for Python scripts
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-info** display information messages.
-
-- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-
-- **-debug** display debugging messages & debug input data.
-
 - **-force** force overwrite of output files.
 
 - **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
@@ -67,6 +61,15 @@ Standard options
 - **-help** display this information page and exit.
 
 - **-version** display version information and exit.
+
+Verbosity options
+"""""""""""""""""
+
+- **-info** display information messages.
+
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+
+- **-debug** display debugging messages & debug input data.
 
 References
 ^^^^^^^^^^
@@ -152,12 +155,6 @@ Additional standard options for Python scripts
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-info** display information messages.
-
-- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-
-- **-debug** display debugging messages & debug input data.
-
 - **-force** force overwrite of output files.
 
 - **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
@@ -167,6 +164,15 @@ Standard options
 - **-help** display this information page and exit.
 
 - **-version** display version information and exit.
+
+Verbosity options
+"""""""""""""""""
+
+- **-info** display information messages.
+
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+
+- **-debug** display debugging messages & debug input data.
 
 References
 ^^^^^^^^^^
@@ -250,12 +256,6 @@ Additional standard options for Python scripts
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-info** display information messages.
-
-- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-
-- **-debug** display debugging messages & debug input data.
-
 - **-force** force overwrite of output files.
 
 - **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
@@ -265,6 +265,15 @@ Standard options
 - **-help** display this information page and exit.
 
 - **-version** display version information and exit.
+
+Verbosity options
+"""""""""""""""""
+
+- **-info** display information messages.
+
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+
+- **-debug** display debugging messages & debug input data.
 
 References
 ^^^^^^^^^^
@@ -359,12 +368,6 @@ Additional standard options for Python scripts
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-info** display information messages.
-
-- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-
-- **-debug** display debugging messages & debug input data.
-
 - **-force** force overwrite of output files.
 
 - **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
@@ -374,6 +377,15 @@ Standard options
 - **-help** display this information page and exit.
 
 - **-version** display version information and exit.
+
+Verbosity options
+"""""""""""""""""
+
+- **-info** display information messages.
+
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+
+- **-debug** display debugging messages & debug input data.
 
 References
 ^^^^^^^^^^
