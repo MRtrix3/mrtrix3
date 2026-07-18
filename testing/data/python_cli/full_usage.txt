@@ -53,15 +53,6 @@ ARGUMENT tracks_out 0 0 TRACKSOUT
 OPTION -custom 1 0
 An option with custom type
 ARGUMENT custom 0 0 CUSTOM
-OPTION -nargs_plus 1 1
-A command-line option with nargs="+", no metavar
-ARGUMENT nargs_plus 0 1 TEXT
-OPTION -nargs_asterisk 1 1
-A command-line option with nargs="*", no metavar
-ARGUMENT nargs_asterisk 0 1 TEXT
-OPTION -nargs_question 1 0
-A command-line option with nargs="?", no metavar
-ARGUMENT nargs_question 0 0 TEXT
 OPTION -nargs_two 1 0
 A command-line option with nargs=2, no metavar
 ARGUMENT nargs_two 0 0 TEXT

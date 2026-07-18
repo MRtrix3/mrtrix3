@@ -1468,7 +1468,60 @@ class Parser: # pylint: disable=too-many-public-methods
     sys.stderr.flush()
 
   def print_full_usage(self):
-    self._export_placeholder('__print_full_usage__', 2)
+    sys.stdout.write(f'{self._synopsis}\n')
+    for line in self._description:
+      sys.stdout.write(f'{line}\n')
+    for example in self._examples:
+      sys.stdout.write(f'{example[0]}: $ {example[1]}')
+      if example[2]:
+        sys.stdout.write(f'; {example[2]}')
+      sys.stdout.write('\n')
+
+    # Machine-readable type token for a single argument slot (positional Argument or an
+    #   Option's argument slot). Mirrors the field semantics of the pre-overhaul argparse
+    #   walker: choices take precedence, builtin int/float/str/None map to fixed strings,
+    #   and CustomTypeBase instances defer to their _legacytypestring().
+    def arg2str(spec):
+      if spec.choices:
+        return f'CHOICE {" ".join(spec.choices)}'
+      argtype = spec.argtype
+      if argtype is int:
+        return f'INT {-sys.maxsize - 1} {sys.maxsize}'
+      if argtype is float:
+        return 'FLOAT -inf inf'
+      if argtype is str or argtype is None:
+        return 'TEXT'
+      if isinstance(argtype, Parser.CustomTypeBase):
+        return type(argtype)._legacytypestring() # pylint: disable=protected-access
+      return argtype._legacytypestring() # pylint: disable=protected-access
+
+    # Positional arguments: the allow_multiple field is 1 only for variable-count
+    #   positionals (former nargs='+'/'*'); the "optional" field is always 0.
+    for argument in self._positional_args:
+      allow_multiple = '1' if argument.allow_multiple else '0'
+      sys.stdout.write(f'ARGUMENT {argument.name} 0 {allow_multiple} {arg2str(argument)}\n')
+      sys.stdout.write(f'{argument.help}\n')
+
+    # Options: the required field is inverted (0 if required, else 1); the option-level
+    #   allow_multiple field is always 0 (repeatable/append options are NOT flagged here);
+    #   one ARGUMENT line per argument slot, using each slot's metavar (falling back to the
+    #   option name) and its own type token.
+    def print_group_options(group):
+      for option in group.options:
+        required = '0' if option.required else '1'
+        sys.stdout.write(f'OPTION -{option.name} {required} 0\n')
+        sys.stdout.write(f'{option.help}\n')
+        for slot in option.args:
+          metavar_string = slot.metavar if slot.metavar else option.name
+          sys.stdout.write(f'ARGUMENT {metavar_string} 0 0 {arg2str(slot)}\n')
+
+    # Ungrouped options first (no heading), then the named groups in reverse order of
+    #   definition, matching the terminal help traversal and the pre-overhaul baseline.
+    if self._ungrouped.options:
+      print_group_options(self._ungrouped)
+    for group in reversed(self._option_groups[1:]):
+      print_group_options(group)
+    sys.stdout.flush()
 
   def print_synopsis(self):
     self._export_placeholder('__print_synopsis__', 3)
