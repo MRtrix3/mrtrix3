@@ -39,7 +39,7 @@ The available substitutions are listed below (note that the -test command-line o
 
    - UNI:  The unique part of the input after removing any common prefix and common suffix. For example, if the target list contains files: "folder/001dwi.mif", "folder/002dwi.mif", "folder/003dwi.mif", any occurrence of "UNI" will be substituted with "001", "002", "003".
 
-Note that due to a limitation of the Python "argparse" module, any command-line OPTIONS that the user intends to provide specifically to the for_each script must appear BEFORE providing the list of inputs on which for_each is intended to operate. While command-line options provided as such will be interpreted specifically by the for_each script, any command-line options that are provided AFTER the COLON separator will form part of the executed COMMAND, and will therefore be interpreted as command-line options having been provided to that underlying command.
+Note that the compulsory colon (":") separator determines how command-line tokens are interpreted: every token that precedes the colon is interpreted by the for_each script itself (whether it be one of the inputs on which for_each is to operate, or a command-line option to for_each), whereas every token that follows the colon forms part of the COMMAND that for_each executes for each input, and is therefore interpreted as being provided to that underlying command (including any command-line options intended for that command).
 
 Example usages
 --------------

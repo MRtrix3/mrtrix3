@@ -61,12 +61,6 @@ Custom types
 Complex interfaces; nargs, metavar, etc.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-nargs_plus string <space-separated list of additional strings>** A command-line option with nargs="+", no metavar
-
-- **-nargs_asterisk <space-separated list of strings>** A command-line option with nargs="*", no metavar
-
-- **-nargs_question <optional string>** A command-line option with nargs="?", no metavar
-
 - **-nargs_two string string** A command-line option with nargs=2, no metavar
 
 - **-metavar_one metavar** A command-line option with nargs=1 and metavar="metavar"

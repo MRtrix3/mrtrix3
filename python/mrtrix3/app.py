@@ -1589,7 +1589,79 @@ class Parser: # pylint: disable=too-many-public-methods
     sys.stdout.flush()
 
   def print_usage_rst(self):
-    self._export_placeholder('__print_usage_rst__', 5)
+    text = f'.. _{self.prog.replace(" ", "_")}:\n\n'
+    text += f'{self.prog}\n'
+    text += f'{"="*len(self.prog)}\n\n'
+    text += 'Synopsis\n'
+    text += '--------\n\n'
+    text += f'{self._synopsis}\n\n'
+    text += 'Usage\n'
+    text += '-----\n\n'
+    text += '::\n\n'
+    text += f'    {self.format_usage()}\n\n'
+    for argument in self._positional_args:
+      name = argument.metavar if argument.metavar else argument.name
+      arg_help = argument.help.replace('|', '\\|')
+      text += f'-  *{name}*: {arg_help}\n'
+    text += '\n'
+    if self._description:
+      text += 'Description\n'
+      text += '-----------\n\n'
+      for line in self._description:
+        text += f'{line}\n\n'
+    if self._examples:
+      text += 'Example usages\n'
+      text += '--------------\n\n'
+      for example in self._examples:
+        text += f'-   *{example[0]}*::\n\n'
+        text += f'        $ {example[1]}\n\n'
+        if example[2]:
+          text += f'    {example[2]}\n\n'
+    text += 'Options\n'
+    text += '-------\n'
+
+    # Render one option group as RST.
+    #   Each option is preceded by a blank line; a single-spelling option renders as
+    #   "-name", its per-slot metavars follow, and repeatable (append) options are
+    #   annotated with "*(multiple uses permitted)*". Pipe characters in help text are
+    #   escaped for RST inline-markup safety, matching the pre-overhaul baseline.
+    def print_group_options(group):
+      group_text = ''
+      for option in group.options:
+        option_text = '-' + option.name + Parser._option_metavar(option)
+        group_text += '\n'
+        group_text += f'- **{option_text}**'
+        if option.repeatable:
+          group_text += '  *(multiple uses permitted)*'
+        option_help = option.help.replace('|', '\\|')
+        group_text += f' {option_help}\n'
+      return group_text
+
+    # Ungrouped options first (no heading), then the named groups in reverse order of
+    #   definition, matching the terminal help traversal and the pre-overhaul baseline.
+    if self._ungrouped.options:
+      text += print_group_options(self._ungrouped)
+    for group in reversed(self._option_groups[1:]):
+      if group.options:
+        text += '\n'
+        text += f'{group.name}\n'
+        text += f'{"^"*len(group.name)}\n'
+        text += print_group_options(group)
+    text += '\n'
+    text += 'References\n'
+    text += '^^^^^^^^^^\n\n'
+    for entry in self._citation_list:
+      ref_text = '* '
+      if entry[0]:
+        ref_text += f'{entry[0]}: '
+      ref_text += entry[1]
+      text += f'{ref_text}\n\n'
+    text += f'{_MRTRIX3_CORE_REFERENCE}\n\n'
+    text += '--------------\n\n\n\n'
+    text += f'**Author:** {self._author}\n\n'
+    text += f'**Copyright:** {self._copyright}\n\n'
+    sys.stdout.write(text)
+    sys.stdout.flush()
 
   def print_version(self):
     text = f'== {self.prog} {self._git_version if self._is_project else version.VERSION} ==\n'
