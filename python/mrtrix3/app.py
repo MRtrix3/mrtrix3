@@ -601,8 +601,14 @@ class Parser: # pylint: disable=too-many-public-methods
     #   None or the builtin "str" -> free text; the builtins "int"/"float"; or an
     #   instance of a Parser.CustomTypeBase subclass. Preserved verbatim so that the
     #   machine-readable exporters (stages 2-5) can reproduce the legacy type strings.
+    #
+    #   A tuple argument owns an ordered list of typed scalar sub-arguments ("elements"),
+    #   mirroring the C++ Argument tuple model (cpp/core/cmdline_option.h): its "arity" is
+    #   the number of command-line tokens it consumes (1 for a scalar, len(elements) for a
+    #   tuple), and a multi-argument option is refactored to hold a single tuple argument
+    #   whose elements are the former separate argument slots. Tuples do not nest.
     def __init__(self, name, *, help_text='', argtype=None, choices=None, metavar=None,
-                 default=None, optional=False, allow_multiple=False):
+                 default=None, optional=False, allow_multiple=False, elements=None):
       self.name = name
       self.help = help_text
       self.argtype = argtype
@@ -611,6 +617,23 @@ class Parser: # pylint: disable=too-many-public-methods
       self.default = default
       self.optional = optional
       self.allow_multiple = allow_multiple
+      self.elements = list(elements) if elements else []
+      assert not any(element.is_tuple for element in self.elements), \
+          'Argument tuples must not nest'
+
+    @property
+    def is_tuple(self):
+      return bool(self.elements)
+
+    @property
+    def arity(self):
+      # Number of command-line tokens consumed: 1 for a scalar, len(elements) for a tuple.
+      return len(self.elements) if self.elements else 1
+
+    def leaves(self):
+      # Flattened scalar sub-arguments (this argument itself when scalar); the k-th leaf
+      #   corresponds to the k-th consumed token.
+      return list(self.elements) if self.elements else [self]
 
   class Option:
     def __init__(self, name, *, help_text='', required=False, repeatable=False, dest=None,
@@ -621,10 +644,25 @@ class Parser: # pylint: disable=too-many-public-methods
       self.repeatable = repeatable  # former action='append': may be provided repeatedly
       self.dest = dest if dest is not None else name.replace('-', '_')
       self.default = default
-      self.args = []               # list[Parser.Argument]; len() == arity; [] == flag
+      self.args = []               # list[Parser.Argument]; a multi-argument option holds a
+                                   #   single tuple argument (its fields); [] == flag
     @property
     def is_flag(self):
       return not self.args
+    @property
+    def is_tuple(self):
+      return any(arg.is_tuple for arg in self.args)
+    @property
+    def arity(self):
+      # Total command-line tokens consumed: sum of the member arguments' arities.
+      return sum(arg.arity for arg in self.args)
+    def leaves(self):
+      # Flattened scalar sub-arguments (tuples expanded); the k-th leaf corresponds to the
+      #   k-th consumed token, so index-based readers address tuple fields positionally.
+      result = []
+      for arg in self.args:
+        result.extend(arg.leaves())
+      return result
 
   class OptionGroup:
     def __init__(self, parser, name):
@@ -644,6 +682,29 @@ class Parser: # pylint: disable=too-many-public-methods
   class Namespace:
     def __getattr__(self, name):
       raise AttributeError(f"'Namespace' object has no attribute '{name}'")
+
+  # Parsed value of a tuple (multi-argument) option or positional: an ordered list of the
+  #   converted field values that additionally supports look-up by field id. Mirrors the
+  #   C++ ParsedOption accessors (opt[k] by index / opt["field"] by name): integer indexing
+  #   addresses the flattened leaves exactly as a plain list, so every pre-existing
+  #   index-based reader (opt[0], opt[1], ...) keeps working unchanged, whilst the by-name
+  #   accessor (opt["bvecs"]) is available where field ids are meaningful.
+  class _OptionTuple(list):
+    def __init__(self, values, field_names):
+      super().__init__(values)
+      self._field_names = list(field_names)
+    def __getitem__(self, key):
+      if isinstance(key, str):
+        try:
+          key = self._field_names.index(key)
+        except ValueError as exc:
+          raise KeyError(key) from exc
+      return super().__getitem__(key)
+
+  # Display id of a single leaf (scalar) argument: its metavar, falling back to its name.
+  @staticmethod
+  def _leaf_id(leaf):
+    return leaf.metavar if leaf.metavar else leaf.name
 
   # Function that will create a new class,
   #   which will derive from both pathlib.Path (which itself through __new__() could be Posix or Windows)
@@ -1107,18 +1168,30 @@ class Parser: # pylint: disable=too-many-public-methods
              'declare a fixed number of arguments, each with its own type and help')
         arity = nargs if isinstance(nargs, int) else 1
         metavar_tuple = metavar if isinstance(metavar, tuple) else None
-        for slot_index in range(arity):
+        def make_slot(slot_index):
           if metavar_tuple is not None:
             slot_metavar = metavar_tuple[slot_index]
           elif isinstance(metavar, str):
             slot_metavar = metavar
           else:
             slot_metavar = None
+          # A tuple element carries no per-field help (the Python author API supplies a
+          #   single option-level help string); the field-description rendering therefore
+          #   emits nothing for these options, keeping their exports byte-identical.
+          return Parser.Argument(opt_name,
+                                 help_text='' if arity > 1 else help_text,
+                                 argtype=argtype,
+                                 choices=choices,
+                                 metavar=slot_metavar)
+        if arity > 1:
+          # Multi-argument option: a single tuple argument whose elements are the fields.
           option.args.append(Parser.Argument(opt_name,
                                               help_text=help_text,
                                               argtype=argtype,
                                               choices=choices,
-                                              metavar=slot_metavar))
+                                              elements=[make_slot(i) for i in range(arity)]))
+        else:
+          option.args.append(make_slot(0))
       group.options.append(option)
       return option
 
@@ -1300,7 +1373,7 @@ class Parser: # pylint: disable=too-many-public-methods
       option = self._match_option(tokens[index])
       if option is None:
         return tokens[index], index
-      index += 1 if option.is_flag else 1 + len(option.args)
+      index += 1 if option.is_flag else 1 + option.arity
     return None, None
 
   def _parse_subparser_args(self, tokens):
@@ -1347,21 +1420,29 @@ class Parser: # pylint: disable=too-many-public-methods
           setattr(namespace, option.dest, True)
           index += 1
           continue
-        arity = len(option.args)
+        arity = option.arity
         if index + arity >= len(tokens):
           raise Parser.ArgumentError(f'not enough parameters to option "-{option.name}"')
         raw = tokens[index + 1 : index + 1 + arity]
         context = f'error parsing argument to option "-{option.name}"'
-        converted = [self._convert_value(slot, value, context)
-                     for slot, value in zip(option.args, raw)]
+        converted = [self._convert_value(leaf, value, context)
+                     for leaf, value in zip(option.leaves(), raw)]
+        # A tuple option's parsed value is an _OptionTuple (index- and name-addressable);
+        #   a scalar single-argument option yields its lone converted value. Repeatable
+        #   options accumulate one entry per use (the historical list form is preserved
+        #   for scalar repeatable options such as for_each's -exclude).
+        if option.is_tuple:
+          value = Parser._OptionTuple(converted, [Parser._leaf_id(leaf) for leaf in option.leaves()])
+        else:
+          value = converted if option.repeatable else converted[0]
         if option.repeatable:
           existing = getattr(namespace, option.dest)
           if existing is None:
             existing = [ ]
             setattr(namespace, option.dest, existing)
-          existing.append(converted)
+          existing.append(value)
         else:
-          setattr(namespace, option.dest, converted[0] if arity == 1 else converted)
+          setattr(namespace, option.dest, value)
         index += 1 + arity
       self._assign_positionals(namespace, positional_tokens)
       for option in self._iter_options():
@@ -1372,40 +1453,78 @@ class Parser: # pylint: disable=too-many-public-methods
     return namespace
 
   def _assign_positionals(self, namespace, values):
+    # Counting is done in tokens: each positional spec consumes "arity" tokens (a tuple
+    #   consumes one token per field), reducing to the historical argument-count algorithm
+    #   when every arity is 1. Mirrors the C++ arity-aware positional handling
+    #   (cpp/core/app.cpp): a repeatable spec absorbs surplus tokens in whole groups of its
+    #   arity, and an indivisible surplus is an error.
     specs = self._positional_args
     count = len(values)
+
+    # Bind one positional spec to its list of raw tokens, converting each leaf. A tuple
+    #   spec yields one _OptionTuple per group of "arity" tokens (fields bound cyclically);
+    #   a scalar spec yields a single value, or a flat list when repeatable.
+    def assign(spec, tokens):
+      context = f'error parsing argument "{spec.name}"'
+      if spec.is_tuple:
+        leaves = spec.leaves()
+        names = [Parser._leaf_id(leaf) for leaf in leaves]
+        groups = [Parser._OptionTuple([self._convert_value(leaves[offset], tokens[base + offset], context)
+                                       for offset in range(spec.arity)],
+                                      names)
+                  for base in range(0, len(tokens), spec.arity)]
+        if spec.allow_multiple:
+          setattr(namespace, spec.name, groups)
+        elif groups:
+          setattr(namespace, spec.name, groups[0])
+      else:
+        converted = [self._convert_value(spec, token, context) for token in tokens]
+        if spec.allow_multiple:
+          setattr(namespace, spec.name, converted)
+        elif converted:
+          setattr(namespace, spec.name, converted[0])
+
     multi_index = next((i for i, spec in enumerate(specs) if spec.allow_multiple), None)
     if multi_index is None:
-      required = [spec for spec in specs if not spec.optional]
-      if count < len(required):
-        raise Parser.ArgumentError(f'expected {len(required)} positional argument'
-                                   f'{"s" if len(required) != 1 else ""}, received {count}')
-      if count > len(specs):
-        raise Parser.ArgumentError(f'expected at most {len(specs)} positional argument'
-                                   f'{"s" if len(specs) != 1 else ""}, received {count}')
-      for spec, value in zip(specs, values):
-        setattr(namespace, spec.name,
-                self._convert_value(spec, value, f'error parsing argument "{spec.name}"'))
+      required_tokens = sum(spec.arity for spec in specs if not spec.optional)
+      total_tokens = sum(spec.arity for spec in specs)
+      if count < required_tokens:
+        raise Parser.ArgumentError(f'expected {required_tokens} positional argument'
+                                   f'{"s" if required_tokens != 1 else ""}, received {count}')
+      if count > total_tokens:
+        raise Parser.ArgumentError(f'expected at most {total_tokens} positional argument'
+                                   f'{"s" if total_tokens != 1 else ""}, received {count}')
+      index = 0
+      for spec in specs:
+        if index + spec.arity <= count:
+          assign(spec, values[index : index + spec.arity])
+          index += spec.arity
+        else:
+          # A trailing optional spec with no remaining tokens keeps its default.
+          break
     else:
       before = specs[:multi_index]
       after = specs[multi_index + 1:]
       multi = specs[multi_index]
-      minimum = len(before) + len(after) + (0 if multi.optional else 1)
+      before_tokens = sum(spec.arity for spec in before)
+      after_tokens = sum(spec.arity for spec in after)
+      minimum = before_tokens + after_tokens + (0 if multi.optional else multi.arity)
       if count < minimum:
         raise Parser.ArgumentError(f'not enough positional arguments '
                                    f'(expected at least {minimum}, received {count})')
-      before_values = values[:len(before)]
-      after_values = values[count - len(after):] if after else [ ]
-      multi_values = values[len(before) : count - len(after)]
-      for spec, value in zip(before, before_values):
-        setattr(namespace, spec.name,
-                self._convert_value(spec, value, f'error parsing argument "{spec.name}"'))
-      setattr(namespace, multi.name,
-              [self._convert_value(multi, value, f'error parsing argument "{multi.name}"')
-               for value in multi_values])
-      for spec, value in zip(after, after_values):
-        setattr(namespace, spec.name,
-                self._convert_value(spec, value, f'error parsing argument "{spec.name}"'))
+      multi_token_count = count - before_tokens - after_tokens
+      if multi_token_count % multi.arity != 0:
+        raise Parser.ArgumentError('number of optional arguments provided '
+                                   'are not equal for all arguments')
+      index = 0
+      for spec in before:
+        assign(spec, values[index : index + spec.arity])
+        index += spec.arity
+      assign(multi, values[index : index + multi_token_count])
+      index += multi_token_count
+      for spec in after:
+        assign(spec, values[index : index + spec.arity])
+        index += spec.arity
 
   def format_usage(self):
     argument_list = [ ]
@@ -1430,7 +1549,7 @@ class Parser: # pylint: disable=too-many-public-methods
     if option.is_flag:
       return ''
     parts = [ ]
-    for slot in option.args:
+    for slot in option.leaves():
       if slot.metavar is not None:
         parts.append(slot.metavar)
       elif slot.choices is not None:
@@ -1523,6 +1642,7 @@ class Parser: # pylint: disable=too-many-public-methods
     # This is used in two separate locations:
     #   - First printing any ungrouped command-line options;
     #   - Printing all contents of each named option group.
+    wrapper_field = textwrap.TextWrapper(width=80, initial_indent='       ', subsequent_indent='       ')
     def print_group_options(group):
       group_text = ''
       for option in group.options:
@@ -1532,6 +1652,15 @@ class Parser: # pylint: disable=too-many-public-methods
           group_text += '  (multiple uses permitted)'
         group_text += '\n'
         group_text += wrapper_other.fill(option.help) + '\n'
+        # A described tuple field is listed beneath the option (indented past the option
+        #   help); scalar options and undescribed fields add nothing.
+        for arg in option.args:
+          if not arg.is_tuple:
+            continue
+          for leaf in arg.elements:
+            if leaf.help:
+              leaf_id = Parser._leaf_id(leaf)
+              group_text += wrapper_field.fill(f'{leaf_id}: {leaf.help}') + '\n'
         group_text += '\n'
       return group_text
 
@@ -1651,9 +1780,14 @@ class Parser: # pylint: disable=too-many-public-methods
         required = '0' if option.required else '1'
         sys.stdout.write(f'OPTION -{option.name} {required} 0\n')
         sys.stdout.write(f'{option.help}\n')
-        for slot in option.args:
-          metavar_string = slot.metavar if slot.metavar else option.name
-          sys.stdout.write(f'ARGUMENT {metavar_string} 0 0 {arg2str(slot)}\n')
+        for arg in option.args:
+          for leaf in arg.leaves():
+            metavar_string = leaf.metavar if leaf.metavar else option.name
+            sys.stdout.write(f'ARGUMENT {metavar_string} 0 0 {arg2str(leaf)}\n')
+            # A described tuple field emits its description on the following line, matching
+            #   the C++ full-usage rendering; scalar options and undescribed fields emit none.
+            if arg.is_tuple and leaf.help:
+              sys.stdout.write(f'{leaf.help}\n')
 
     # Ungrouped options first (no heading), then the named groups in reverse order of
     #   definition, matching the terminal help traversal and the pre-overhaul baseline.
@@ -1713,6 +1847,12 @@ class Parser: # pylint: disable=too-many-public-methods
         if option.repeatable:
           group_text += '  *(multiple uses permitted)*'
         group_text += f'<br>{option.help}\n\n'
+        # Described tuple fields render as an indented markdown sub-list beneath the option.
+        field_lines = [f'    - *{Parser._leaf_id(leaf)}*: {leaf.help}'
+                       for arg in option.args if arg.is_tuple
+                       for leaf in arg.elements if leaf.help]
+        if field_lines:
+          group_text += '\n'.join(field_lines) + '\n'
       return group_text
 
     # Ungrouped options first (no heading), then the named groups in reverse order of
@@ -1797,7 +1937,20 @@ class Parser: # pylint: disable=too-many-public-methods
         if option.repeatable:
           group_text += '  *(multiple uses permitted)*'
         option_help = option.help.replace('|', '\\|')
-        group_text += f' {option_help}\n'
+        group_text += f' {option_help}'
+        # Described tuple fields follow the summary on " |br|" continuation lines, matching
+        #   the C++ RST rendering; scalar options and undescribed fields add nothing.
+        field_lines = [ ]
+        for arg in option.args:
+          if not arg.is_tuple:
+            continue
+          for leaf in arg.elements:
+            if leaf.help:
+              leaf_help = leaf.help.replace('|', '\\|')
+              field_lines.append(f'   *{Parser._leaf_id(leaf)}*: {leaf_help}')
+        if field_lines:
+          group_text += ' |br|\n' + ' |br|\n'.join(field_lines)
+        group_text += '\n'
       return group_text
 
     # Ungrouped options first (no heading), then the named groups in reverse order of
@@ -1860,7 +2013,7 @@ def dwgrad_import_options(): #pylint: disable=unused-variable
   if ARGS.grad:
     return ['-grad', ARGS.grad]
   if ARGS.fslgrad:
-    return ['-fslgrad', ARGS.fslgrad[0], ARGS.fslgrad[1]]
+    return ['-fslgrad', ARGS.fslgrad['bvecs'], ARGS.fslgrad['bvals']]
   return []
 
 
@@ -1875,7 +2028,7 @@ def add_dwgrad_export_options(cmdline): #pylint: disable=unused-variable
   options.add_argument('-export_grad_fsl',
                        type=Parser.FileOut(),
                        nargs=2,
-                       metavar=('bvecs', 'bvals'),
+                       metavar=('bvecs_path', 'bvals_path'),
                        help='Export the final gradient table in FSL bvecs/bvals format')
 
 def dwgrad_export_options(): #pylint: disable=unused-variable
@@ -1883,7 +2036,7 @@ def dwgrad_export_options(): #pylint: disable=unused-variable
   if ARGS.export_grad_mrtrix:
     return ['-export_grad_mrtrix', ARGS.export_grad_mrtrix]
   if ARGS.export_grad_fsl:
-    return ['-export_grad_fsl', ARGS.export_grad_fsl[0], ARGS.export_grad_fsl[1]]
+    return ['-export_grad_fsl', ARGS.export_grad_fsl['bvecs_path'], ARGS.export_grad_fsl['bvals_path']]
   return []
 
 

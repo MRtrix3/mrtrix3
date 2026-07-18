@@ -100,7 +100,7 @@ Options for exporting the diffusion gradient table
 
 - **-export_grad_mrtrix grad** Export the final gradient table in MRtrix format
 
-- **-export_grad_fsl bvecs bvals** Export the final gradient table in FSL bvecs/bvals format
+- **-export_grad_fsl bvecs_path bvals_path** Export the final gradient table in FSL bvecs/bvals format
 
 Options for utilising EddyQC
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
