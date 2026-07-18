@@ -72,7 +72,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                           ' (rigid and/or affine, both by default),'
                           ' then non-linear registration is used to optimise the template further.')
   cmdline.add_argument('input_dir',
-                       nargs='+',
+                       allow_multiple=True,
                        type=DirectoryInOrImageOut(),
                        help='Input directory containing all images of a given contrast')
   cmdline.add_argument('template',

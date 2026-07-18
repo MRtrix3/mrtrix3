@@ -38,7 +38,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                             'responsemean subject-*/response.txt output_average_response.txt')
   cmdline.add_argument('inputs',
                        type=app.Parser.FileIn(),
-                       nargs='+',
+                       allow_multiple=True,
                        help='The input response function files')
   cmdline.add_argument('output',
                        type=app.Parser.FileOut(),

@@ -107,7 +107,6 @@ def usage(cmdline): #pylint: disable=unused-variable
                        help='Do not evaluate possibility of requiring transform of peak orientations'
                             ' from image to real / scanner space;'
                             ' only consider prospective shuffles of axes or angles')
-  cmdline.flag_mutually_exclusive_options(['noshuffle', 'notransform'])
   cmdline.add_argument('-all',
                        action='store_true',
                        help='Print table containing all results to standard output')

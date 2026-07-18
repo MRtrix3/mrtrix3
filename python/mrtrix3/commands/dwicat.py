@@ -45,7 +45,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                           ' In this scenario the script will determine the appropriate way to combine the input series,'
                           ' ideally only manipulating header transformations and avoiding image interpolation if possible.')
   cmdline.add_argument('inputs',
-                       nargs='+',
+                       allow_multiple=True,
                        type=app.Parser.ImageIn(),
                        help='Multiple input diffusion MRI series')
   cmdline.add_argument('output',

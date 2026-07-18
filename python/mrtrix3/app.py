@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import argparse, importlib, inspect, math, os, pathlib, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time
+import inspect, math, os, pathlib, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils, version
 
@@ -139,7 +139,7 @@ def _execute(usage_function, execute_function): #pylint: disable=unused-variable
     CMDLINE.print_full_usage()
     sys.exit(0)
   elif sys.argv[-1] == '__print_synopsis__':
-    sys.stdout.write(CMDLINE._synopsis) #pylint: disable=protected-access
+    CMDLINE.print_synopsis()
     sys.exit(0)
   elif sys.argv[-1] == '__print_usage_markdown__':
     CMDLINE.print_usage_markdown()
@@ -157,10 +157,9 @@ def _execute(usage_function, execute_function): #pylint: disable=unused-variable
   if hasattr(ARGS, 'help') and ARGS.help:
     CMDLINE.print_help()
     sys.exit(0)
-  # Can't activate -version here: argparse.parse_args() will fail first
-  #if hasattr(ARGS, 'version') and ARGS.version:
-  #  CMDLINE.print_version()
-  #  sys.exit(0)
+  # Note that -help and -version are both handled directly within Parser.parse_args()
+  #   (short-circuiting before this point), so that they operate even in the presence of
+  #   otherwise-invalid command-line content; the -help check above is a redundant guard.
   if hasattr(ARGS, 'force') and ARGS.force:
     FORCE_OVERWRITE = True
   if hasattr(ARGS, 'nocleanup') and ARGS.nocleanup:
@@ -571,12 +570,80 @@ class ProgressBar: #pylint: disable=unused-variable
 
 
 # The Parser class is responsible for setting up command-line parsing for the script.
-#   This includes proper configuration of the argparse functionality, adding standard options
-#   that are common for all scripts, providing a custom help page that is consistent with the
-#   MRtrix3 binaries, and defining functions for exporting the help page for the purpose of
-#   automated self-documentation.
+#   It implements a from-scratch MRtrix3 command-line parser that mimics the C++ parser
+#   (cpp/core/app.cpp), adding standard options that are common for all scripts, providing a
+#   custom help page that is consistent with the MRtrix3 binaries, and defining functions for
+#   exporting the help page for the purpose of automated self-documentation.
 
-class Parser(argparse.ArgumentParser):
+class Parser: # pylint: disable=too-many-public-methods
+
+  # Native exception raised by the type layer (and the parser) when a command-line
+  #   token cannot be interpreted. Replaces the former reliance on
+  #   Parser.ArgumentError. External command modules that invoke a type callable
+  #   directly (e.g. dwifslpreproc) catch app.Parser.ArgumentError.
+  class ArgumentError(MRtrixError):
+    pass
+
+  # -------------------------------------------------------------------------------------
+  # Native command-line data model, mirroring the C++ interface (cpp/core/cmdline_option.h).
+  #   - Argument : one positional argument, OR one argument-slot within an Option;
+  #                carries its own type, choices, metavar and help.
+  #   - Option   : a named command-line option; its ordered list of Arguments defines its
+  #                fixed arity (an empty list == a boolean flag).
+  #   - OptionGroup : a named, ordered collection of Options.
+  #   Seams intentionally left for later stages:
+  #     * subparsers (stage 6): Parser.add_subparsers() is a placeholder;
+  #     * nested option groups (stage 11): OptionGroup is presently flat.
+  # -------------------------------------------------------------------------------------
+
+  class Argument:
+    # "argtype" is the raw type as supplied by the command author:
+    #   None or the builtin "str" -> free text; the builtins "int"/"float"; or an
+    #   instance of a Parser.CustomTypeBase subclass. Preserved verbatim so that the
+    #   machine-readable exporters (stages 2-5) can reproduce the legacy type strings.
+    def __init__(self, name, *, help_text='', argtype=None, choices=None, metavar=None,
+                 default=None, optional=False, allow_multiple=False):
+      self.name = name
+      self.help = help_text
+      self.argtype = argtype
+      self.choices = choices
+      self.metavar = metavar
+      self.default = default
+      self.optional = optional
+      self.allow_multiple = allow_multiple
+
+  class Option:
+    def __init__(self, name, *, help_text='', required=False, repeatable=False, dest=None,
+                 default=None):
+      self.name = name             # canonical spelling, WITHOUT the leading dash
+      self.help = help_text
+      self.required = required
+      self.repeatable = repeatable  # former action='append': may be provided repeatedly
+      self.dest = dest if dest is not None else name.replace('-', '_')
+      self.default = default
+      self.args = []               # list[Parser.Argument]; len() == arity; [] == flag
+    @property
+    def is_flag(self):
+      return not self.args
+
+  class OptionGroup:
+    def __init__(self, parser, name):
+      self._parser = parser
+      self.name = name
+      self.options = []
+    def add_argument(self, *name_or_flags, **kwargs):
+      return self._parser._add_argument(self, *name_or_flags, **kwargs) # pylint: disable=protected-access
+
+  # Simple attribute container returned by parse_args(); replaces argparse.Namespace.
+  #   Supports vars()/getattr()/hasattr() and in-place attribute reassignment,
+  #   matching how command modules consume app.ARGS.
+  #   Defining __getattr__ (a) preserves AttributeError semantics for genuinely-absent
+  #   attributes so hasattr() behaves as it did with argparse.Namespace, and (b) marks
+  #   the container as dynamically-populated, which suppresses spurious static-analysis
+  #   no-member warnings on the many app.ARGS.<option> accesses across command modules.
+  class Namespace:
+    def __getattr__(self, name):
+      raise AttributeError(f"'Namespace' object has no attribute '{name}'")
 
   # Function that will create a new class,
   #   which will derive from both pathlib.Path (which itself through __new__() could be Posix or Windows)
@@ -638,7 +705,7 @@ class Parser(argparse.ArgumentParser):
             raise FileExistsError(f'Output directory "{str(self)}" already exists '
                                   '(use -force option to force overwrite)')
 
-  # Various callable types for use as argparse argument types
+  # Various callable types for use as command-line argument types
   class CustomTypeBase:
     @staticmethod
     def _legacytypestring():
@@ -657,7 +724,7 @@ class Parser(argparse.ArgumentParser):
       try:
         processed_value = int(processed_value)
       except ValueError as exc:
-        raise argparse.ArgumentTypeError(f'Could not interpret "{input_value}" as boolean value') from exc
+        raise Parser.ArgumentError(f'Could not interpret "{input_value}" as boolean value') from exc
       return bool(processed_value)
     @staticmethod
     def _legacytypestring():
@@ -675,11 +742,11 @@ class Parser(argparse.ArgumentParser):
         try:
           value = int(input_value)
         except ValueError as exc:
-          raise argparse.ArgumentTypeError(f'Could not interpret "{input_value}" as integer value') from exc
+          raise Parser.ArgumentError(f'Could not interpret "{input_value}" as integer value') from exc
         if min_value is not None and value < min_value:
-          raise argparse.ArgumentTypeError(f'Input value "{input_value}" less than minimum permissible value {min_value}')
+          raise Parser.ArgumentError(f'Input value "{input_value}" less than minimum permissible value {min_value}')
         if max_value is not None and value > max_value:
-          raise argparse.ArgumentTypeError(f'Input value "{input_value}" greater than maximum permissible value {max_value}')
+          raise Parser.ArgumentError(f'Input value "{input_value}" greater than maximum permissible value {max_value}')
         return value
       @staticmethod
       def _legacytypestring():
@@ -698,11 +765,11 @@ class Parser(argparse.ArgumentParser):
         try:
           value = float(input_value)
         except ValueError as exc:
-          raise argparse.ArgumentTypeError(f'Could not interpret "{input_value}" as floating-point value') from exc
+          raise Parser.ArgumentError(f'Could not interpret "{input_value}" as floating-point value') from exc
         if min_value is not None and value < min_value:
-          raise argparse.ArgumentTypeError(f'Input value "{input_value}" less than minimum permissible value {min_value}')
+          raise Parser.ArgumentError(f'Input value "{input_value}" less than minimum permissible value {min_value}')
         if max_value is not None and value > max_value:
-          raise argparse.ArgumentTypeError(f'Input value "{input_value}" greater than maximum permissible value {max_value}')
+          raise Parser.ArgumentError(f'Input value "{input_value}" greater than maximum permissible value {max_value}')
         return value
       @staticmethod
       def _legacytypestring():
@@ -717,7 +784,7 @@ class Parser(argparse.ArgumentParser):
       try:
         return [int(i) for i in input_value.split(',')]
       except ValueError as exc:
-        raise argparse.ArgumentTypeError(f'Could not interpret "{input_value}" as integer sequence') from exc
+        raise Parser.ArgumentError(f'Could not interpret "{input_value}" as integer sequence') from exc
     @staticmethod
     def _legacytypestring():
       return 'ISEQ'
@@ -730,7 +797,7 @@ class Parser(argparse.ArgumentParser):
       try:
         return [float(i) for i in input_value.split(',')]
       except ValueError as exc:
-        raise argparse.ArgumentTypeError(f'Could not interpret "{input_value}" as floating-point sequence') from exc
+        raise Parser.ArgumentError(f'Could not interpret "{input_value}" as floating-point sequence') from exc
     @staticmethod
     def _legacytypestring():
       return 'FSEQ'
@@ -742,9 +809,9 @@ class Parser(argparse.ArgumentParser):
     def __call__(self, input_value):
       abspath = Parser.make_userpath_object(Parser._UserPathExtras, input_value)
       if not abspath.exists():
-        raise argparse.ArgumentTypeError(f'Input directory "{input_value}" does not exist')
+        raise Parser.ArgumentError(f'Input directory "{input_value}" does not exist')
       if not abspath.is_dir():
-        raise argparse.ArgumentTypeError(f'Input path "{input_value}" is not a directory')
+        raise Parser.ArgumentError(f'Input path "{input_value}" is not a directory')
       return abspath
     @staticmethod
     def _legacytypestring():
@@ -768,9 +835,9 @@ class Parser(argparse.ArgumentParser):
     def __call__(self, input_value):
       abspath = Parser.make_userpath_object(Parser._UserPathExtras, input_value)
       if not abspath.exists():
-        raise argparse.ArgumentTypeError(f'Input file "{input_value}" does not exist')
+        raise Parser.ArgumentError(f'Input file "{input_value}" does not exist')
       if not abspath.is_file():
-        raise argparse.ArgumentTypeError(f'Input path "{input_value}" is not a file')
+        raise Parser.ArgumentError(f'Input path "{input_value}" is not a file')
       return abspath
     @staticmethod
     def _legacytypestring():
@@ -825,7 +892,7 @@ class Parser(argparse.ArgumentParser):
     def __call__(self, input_value):
       filepath = Parser.FileIn()(input_value)
       if filepath.suffix.lower() != '.tck':
-        raise argparse.ArgumentTypeError(f'Input tractogram file "{filepath}" is not a valid track file')
+        raise Parser.ArgumentError(f'Input tractogram file "{filepath}" is not a valid track file')
       return filepath
     @staticmethod
     def _legacytypestring():
@@ -838,7 +905,7 @@ class Parser(argparse.ArgumentParser):
     def __call__(self, input_value):
       filepath = Parser.FileOut()(input_value)
       if filepath.suffix.lower() != '.tck':
-        raise argparse.ArgumentTypeError(f'Output tractogram path "{filepath}" does not use the requisite ".tck" suffix')
+        raise Parser.ArgumentError(f'Output tractogram path "{filepath}" does not use the requisite ".tck" suffix')
       return filepath
     @staticmethod
     def _legacytypestring():
@@ -851,78 +918,81 @@ class Parser(argparse.ArgumentParser):
 
 
 
-  # pylint: disable=protected-access
-  def __init__(self, *args_in, **kwargs_in):
+  def __init__(self):
     self._author = None
     self._citation_list = [ ]
     self._copyright = _DEFAULT_COPYRIGHT
     self._description = [ ]
     self._examples = [ ]
     self._external_citations = False
-    self._mutually_exclusive_option_groups = [ ]
     self._synopsis = None
-    kwargs_in['add_help'] = False
-    argparse.ArgumentParser.__init__(self, *args_in, **kwargs_in)
-    if 'parents' in kwargs_in:
-      for parent in kwargs_in['parents']:
-        self._citation_list.extend(parent._citation_list)
-        self._external_citations = self._external_citations or parent._external_citations
-    else:
-      standard_options = self.add_argument_group('Standard options')
-      standard_options.add_argument('-info',
-                                    action='store_true',
-                                    default=None,
-                                    help='display information messages.')
-      standard_options.add_argument('-quiet',
-                                    action='store_true',
-                                    default=None,
-                                    help='do not display information messages or progress status. '
-                                         'Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.')
-      standard_options.add_argument('-debug',
-                                    action='store_true',
-                                    default=None,
-                                    help='display debugging messages & debug input data.')
-      self.flag_mutually_exclusive_options( [ 'info', 'quiet', 'debug' ] )
-      standard_options.add_argument('-force',
-                                    action='store_true',
-                                    default=None,
-                                    help='force overwrite of output files.')
-      standard_options.add_argument('-nthreads',
-                                    metavar='number',
-                                    type=Parser.Int(0),
-                                    help='use this number of threads in multi-threaded applications '
-                                         '(set to 0 to disable multi-threading).')
-      standard_options.add_argument('-config',
-                                    action='append',
-                                    type=str,
-                                    metavar=('key', 'value'),
-                                    nargs=2,
-                                    help='temporarily set the value of an MRtrix config file entry.')
-      standard_options.add_argument('-help',
-                                    action='store_true',
-                                    default=None,
-                                    help='display this information page and exit.')
-      standard_options.add_argument('-version',
-                                    action='store_true',
-                                    default=None,
-                                    help='display version information and exit.')
-      script_options = self.add_argument_group('Additional standard options for Python scripts')
-      script_options.add_argument('-nocleanup',
+    self.prog = EXEC_NAME
+    self._positional_args = [ ]
+    # Ordered option groups. Index 0 is the "ungrouped" group, whose options are rendered
+    #   first and without a group heading (matching the former argparse default options
+    #   group). Standard-option groups follow; command-specific groups are appended by
+    #   add_argument_group().
+    self._ungrouped = Parser.OptionGroup(self, 'OPTIONS')
+    self._option_groups = [ self._ungrouped ]
+    self._help_option = None
+    self._version_option = None
+    standard_options = self.add_argument_group('Standard options')
+    standard_options.add_argument('-info',
                                   action='store_true',
                                   default=None,
-                                  help='do not delete intermediate files during script execution, '
-                                       'and do not delete scratch directory at script completion.')
-      script_options.add_argument('-scratch',
-                                  type=Parser.DirectoryIn(),
-                                  metavar='/path/to/scratch/',
-                                  help='manually specify an existing directory in which to generate the scratch directory.')
-      script_options.add_argument('-continue',
+                                  help='display information messages.')
+    standard_options.add_argument('-quiet',
+                                  action='store_true',
+                                  default=None,
+                                  help='do not display information messages or progress status. '
+                                       'Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.')
+    standard_options.add_argument('-debug',
+                                  action='store_true',
+                                  default=None,
+                                  help='display debugging messages & debug input data.')
+    # The verbosity mutex ( -info / -quiet / -debug ) is deliberately NOT registered here;
+    #   the ad-hoc mutual-exclusion mechanism is removed in this stage and reinstated as a
+    #   principled group constraint in stages 12/13.
+    standard_options.add_argument('-force',
+                                  action='store_true',
+                                  default=None,
+                                  help='force overwrite of output files.')
+    standard_options.add_argument('-nthreads',
+                                  metavar='number',
+                                  type=Parser.Int(0),
+                                  help='use this number of threads in multi-threaded applications '
+                                       '(set to 0 to disable multi-threading).')
+    standard_options.add_argument('-config',
+                                  action='append',
+                                  type=str,
+                                  metavar=('key', 'value'),
                                   nargs=2,
-                                  dest='cont',
-                                  metavar=('ScratchDir', 'LastFile'),
-                                  help='continue the script from a previous execution; '
-                                       'must provide the scratch directory path, '
-                                       'and the name of the last successfully-generated file.')
+                                  help='temporarily set the value of an MRtrix config file entry.')
+    self._help_option = standard_options.add_argument('-help',
+                                  action='store_true',
+                                  default=None,
+                                  help='display this information page and exit.')
+    self._version_option = standard_options.add_argument('-version',
+                                  action='store_true',
+                                  default=None,
+                                  help='display version information and exit.')
+    script_options = self.add_argument_group('Additional standard options for Python scripts')
+    script_options.add_argument('-nocleanup',
+                                action='store_true',
+                                default=None,
+                                help='do not delete intermediate files during script execution, '
+                                     'and do not delete scratch directory at script completion.')
+    script_options.add_argument('-scratch',
+                                type=Parser.DirectoryIn(),
+                                metavar='/path/to/scratch/',
+                                help='manually specify an existing directory in which to generate the scratch directory.')
+    script_options.add_argument('-continue',
+                                nargs=2,
+                                dest='cont',
+                                metavar=('ScratchDir', 'LastFile'),
+                                help='continue the script from a previous execution; '
+                                     'must provide the scratch directory path, '
+                                     'and the name of the last successfully-generated file.')
     module_file = os.path.realpath (inspect.getsourcefile(inspect.stack()[-1][0]))
     self._is_project = os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir, 'lib', 'mrtrix3', 'app.py')) != os.path.abspath(__file__)
     try:
@@ -963,49 +1033,95 @@ class Parser(argparse.ArgumentParser):
   def set_copyright(self, text): #pylint: disable=unused-variable
     self._copyright = text
 
-  # Mutually exclusive options need to be added before the command-line input is parsed
-  def flag_mutually_exclusive_options(self, options, required=False): #pylint: disable=unused-variable
-    assert isinstance(options, list) and isinstance(options[0], str), \
-        'Parser.flagMutuallyExclusiveOptions() only accepts a list of strings'
-    self._mutually_exclusive_option_groups.append( (options, required) )
+  def add_argument_group(self, name): #pylint: disable=unused-variable
+    group = Parser.OptionGroup(self, name)
+    self._option_groups.append(group)
+    return group
 
-  def add_subparsers(self): # pylint: disable=arguments-differ
-    # Import the command-line settings for all algorithms in the relevant sub-directories
-    # This is expected to be being called from the 'usage' module of the relevant command
-    module_name = os.path.dirname(inspect.getouterframes(inspect.currentframe())[1].filename).split(os.sep)[-1]
-    module = sys.modules['mrtrix3.commands.' + module_name]
-    base_parser = Parser(description='Base parser for construction of subparsers', parents=[self])
-    subparsers = super().add_subparsers(title='Algorithm choices',
-                                        help='Select the algorithm to be used; '
-                                             'additional details and options become available once an algorithm is nominated. '
-                                             'Options are: ' + ', '.join(module.ALGORITHMS),
-                                        dest='algorithm')
-    for algorithm in module.ALGORITHMS:
-      algorithm_module = importlib.import_module('.' + algorithm, 'mrtrix3.commands.' + module_name)
-      algorithm_module.usage(base_parser, subparsers)
+  def add_argument(self, *name_or_flags, **kwargs): #pylint: disable=unused-variable
+    # Options added directly on the parser (rather than on a group returned by
+    #   add_argument_group()) land in the ungrouped 'OPTIONS' group; positional
+    #   arguments are always collected on the parser regardless of the group used.
+    return self._add_argument(self._ungrouped, *name_or_flags, **kwargs)
 
-  def parse_args(self, args=None, namespace=None):
-    assert self._author, 'Script author MUST be set in script\'s usage() function'
-    assert self._synopsis, 'Script synopsis MUST be set in script\'s usage() function'
-    if '-version' in args if args else '-version' in sys.argv[1:]:
-      self.print_version()
-      sys.exit(0)
-    result = super().parse_args(args, namespace)
-    self._check_mutex_options(result)
-    if self._subparsers:
-      for alg in self._subparsers._group_actions[0].choices:
-        self._subparsers._group_actions[0].choices[alg]._check_mutex_options(result)
-    return result
+  # Unified constructor for both positional Arguments and Options, preserving the
+  #   command-author keyword protocol that argparse previously supplied. Recognised
+  #   keywords: help, type, nargs, metavar, action, default, choices, dest, allow_multiple.
+  def _add_argument(self, group, *name_or_flags, **kwargs):
+    assert len(name_or_flags) == 1, \
+        'MRtrix3 add_argument() accepts exactly one argument/option name'
+    name = name_or_flags[0]
+    help_text = kwargs.pop('help', None)
+    argtype = kwargs.pop('type', None)
+    nargs = kwargs.pop('nargs', None)
+    metavar = kwargs.pop('metavar', None)
+    action = kwargs.pop('action', None)
+    default = kwargs.pop('default', None)
+    choices = kwargs.pop('choices', None)
+    dest = kwargs.pop('dest', None)
+    allow_multiple = kwargs.pop('allow_multiple', False)
+    assert not kwargs, f'Unsupported keyword arguments to add_argument({name}): {kwargs}'
+    assert action in (None, 'store_true', 'append'), \
+        f'Unsupported action "{action}" for add_argument({name})'
+    if choices is not None:
+      choices = list(choices)
+
+    if name.startswith('-'):
+      # ---- Command-line option ----
+      opt_name = name.lstrip('-')
+      option = Parser.Option(opt_name,
+                             help_text=help_text,
+                             repeatable=action == 'append',
+                             dest=dest,
+                             default=default)
+      if action == 'store_true':
+        assert nargs in (None, 0), f'store_true option {name} cannot take arguments'
+      else:
+        assert nargs not in ('+', '*', '?'), \
+            (f'Arbitrary-arity options are not supported (option {name}, nargs={nargs!r}); '
+             'declare a fixed number of arguments, each with its own type and help')
+        arity = nargs if isinstance(nargs, int) else 1
+        metavar_tuple = metavar if isinstance(metavar, tuple) else None
+        for slot_index in range(arity):
+          if metavar_tuple is not None:
+            slot_metavar = metavar_tuple[slot_index]
+          elif isinstance(metavar, str):
+            slot_metavar = metavar
+          else:
+            slot_metavar = None
+          option.args.append(Parser.Argument(opt_name,
+                                              help_text=help_text,
+                                              argtype=argtype,
+                                              choices=choices,
+                                              metavar=slot_metavar))
+      group.options.append(option)
+      return option
+
+    # ---- Positional argument ----
+    # Variable-count positionals ( former nargs='+'/'*' ) are expressed natively via
+    #   allow_multiple, mirroring the C++ Argument::allow_multiple(); at most one
+    #   positional per command may be variable-count.
+    if nargs in ('+', '*'):
+      allow_multiple = True
+    argument = Parser.Argument(dest if dest is not None else name,
+                               help_text=help_text,
+                               argtype=argtype,
+                               choices=choices,
+                               metavar=metavar if isinstance(metavar, str) else None,
+                               default=default,
+                               optional=nargs in ('?', '*'),
+                               allow_multiple=allow_multiple)
+    self._positional_args.append(argument)
+    return argument
+
+  # Subparsers (per-algorithm sub-commands) are reintroduced in stage 6 of the CLI
+  #   overhaul; until then the five subparser commands intentionally fail to construct.
+  def add_subparsers(self): # pylint: disable=unused-variable
+    raise NotImplementedError('Command-line subparsers are not available in this build; '
+                              'their reimplementation is scheduled for stage 6 of the '
+                              'MRtrix3 CLI overhaul (retire-argparse effort)')
 
   def print_citation_warning(self):
-    # If a subparser has been invoked, the subparser's function should instead be called,
-    #   since it might have had additional citations appended
-    if self._subparsers:
-      subparser = getattr(ARGS, self._subparsers._group_actions[0].dest)
-      for alg in self._subparsers._group_actions[0].choices:
-        if alg == subparser:
-          self._subparsers._group_actions[0].choices[alg].print_citation_warning()
-          return
     if not self._external_citations:
       return
     console('')
@@ -1018,90 +1134,197 @@ class Parser(argparse.ArgumentParser):
     console('Consult the help page (-help option) for more information.')
     console('')
 
-  # Overloads argparse.ArgumentParser function to give a better error message on failed parsing
-  def error(self, message):
-    for entry in sys.argv:
-      if '-help'.startswith(entry):
-        self.print_help()
-        sys.exit(0)
-    if self.prog and len(shlex.split(self.prog)) == len(sys.argv): # No arguments provided to subparser
-      self.print_help()
-      sys.exit(0)
-    usage = self.format_usage()
-    if self._subparsers:
-      for alg in self._subparsers._group_actions[0].choices:
-        if alg == sys.argv[1]:
-          usage = self._subparsers._group_actions[0].choices[alg].format_usage()
-          continue
-    sys.stderr.write(f'\nError: {message}\n')
-    sys.stderr.write(f'Usage: {usage}\n')
-    sys.stderr.write(f'       (Run {self.prog} -help for more information)\n\n')
-    sys.stderr.flush()
-    sys.exit(2)
+  # -------------------------------------------------------------------------------------
+  # Command-line parsing, mimicking the C++ parser (cpp/core/app.cpp):
+  #   single-dash whole-word options, bulk leading-dash stripping, unambiguous-prefix
+  #   matching (exact beats ambiguous), fixed-arity consumption, permutability of options
+  #   amongst positionals, and '-'/negative-number passthrough.
+  # -------------------------------------------------------------------------------------
 
-  def _check_mutex_options(self, args_in):
-    for group in self._mutually_exclusive_option_groups:
-      count = 0
-      for option in group[0]:
-        # Checking its presence is not adequate; by default, argparse adds these members to the namespace
-        # Need to test if more than one of these options DIFFERS FROM ITS DEFAULT
-        # Will need to loop through actions to find it manually
-        if hasattr(args_in, option):
-          for arg in self._actions:
-            if arg.dest == option:
-              if not getattr(args_in, option) == arg.default:
-                count += 1
-              break
-      if count > 1:
-        sys.stderr.write(f'\nError: You cannot use more than one of the following options: {", ".join([ "-" + o for o in group[0] ])}\n')
-        sys.stderr.write(f'(Consult the help page for more information: {self.prog} -help)\n\n')
-        sys.stderr.flush()
-        sys.exit(1)
-      if group[1] and not count:
-        sys.stderr.write(f'\nError: One of the following options must be provided: {", ".join([ "-" + o for o in group[0] ])}\n')
-        sys.stderr.write(f'(Consult the help page for more information: {self.prog} -help)\n\n')
-        sys.stderr.flush()
-        sys.exit(1)
+  def _iter_options(self):
+    for group in self._option_groups:
+      yield from group.options
 
   @staticmethod
-  def _option2metavar(option):
-    if option.metavar is not None:
-      if isinstance(option.metavar, tuple):
-        return f' {" ".join(option.metavar)}'
-      text = option.metavar
-    elif option.choices is not None:
-      return ' choice'
-    elif isinstance(option.type, Parser.CustomTypeBase):
-      text = option.type._metavar()
-    elif option.type is not None:
-      text = option.type.__name__.lower()
-    elif option.nargs == 0:
-      return ''
+  def _without_leading_dashes(token):
+    index = 0
+    while index < len(token) and token[index] == '-':
+      index += 1
+    return token[index:]
+
+  # Returns the matched Option, or None when the token is not option-like (no leading
+  #   dash, a bare '-', or a value beginning with a digit or '.', all of which pass
+  #   through as positional content). Raises ArgumentError for an unknown or ambiguous
+  #   option, using the same wording as the C++ parser.
+  def _match_option(self, token):
+    root = self._without_leading_dashes(token)
+    if len(root) == len(token) or not root or root[0].isdigit() or root[0] == '.':
+      return None
+    candidates = [option for option in self._iter_options() if option.name.startswith(root)]
+    if not candidates:
+      raise Parser.ArgumentError(f'unknown option "-{root}"')
+    if len(candidates) == 1:
+      return candidates[0]
+    for candidate in candidates:
+      if candidate.name == root:
+        return candidate
+    first_name = candidates[0].name
+    if all(candidate.name == first_name for candidate in candidates):
+      return candidates[0]
+    quoted = '", "-'.join(candidate.name for candidate in candidates)
+    raise Parser.ArgumentError(f'several matches possible for option "-{root}": "-{quoted}"')
+
+  @staticmethod
+  def _convert_value(spec, value, context):
+    if spec.choices is not None and value not in spec.choices:
+      raise Parser.ArgumentError(f'{context}: unexpected value "{value}"; '
+                                 f'expected one of: {", ".join(spec.choices)}')
+    argtype = spec.argtype
+    if argtype is None or argtype is str:
+      return value
+    # A Parser.ArgumentError raised by the type callable propagates unchanged (it is not a
+    #   ValueError/TypeError); builtin int()/float() failures are wrapped for context.
+    try:
+      return argtype(value)
+    except (ValueError, TypeError) as exc:
+      raise Parser.ArgumentError(f'{context}: {exc}') from exc
+
+  def _error(self, message):
+    sys.stderr.write('\n')
+    sys.stderr.write(f'{self.prog}: {ANSI.error}[ERROR] {message}{ANSI.clear}\n')
+    sys.stderr.write(f'{self.prog}: {ANSI.console}Usage: {self.format_usage()}{ANSI.clear}\n')
+    sys.stderr.write(f'{self.prog}: {ANSI.console}       '
+                     f'(Run {self.prog} -help for more information){ANSI.clear}\n')
+    sys.stderr.flush()
+    sys.exit(1)
+
+  def parse_args(self):
+    assert self._author, 'Script author MUST be set in script\'s usage() function'
+    assert self._synopsis, 'Script synopsis MUST be set in script\'s usage() function'
+    tokens = sys.argv[1:]
+    # -help / -version take precedence and short-circuit, so that they operate even in the
+    #   presence of otherwise-invalid command-line content (matching the C++ parser).
+    for token in tokens:
+      try:
+        option = self._match_option(token)
+      except Parser.ArgumentError:
+        option = None
+      if option is not None and option is self._help_option:
+        self.print_help()
+        sys.exit(0)
+      if option is not None and option is self._version_option:
+        self.print_version()
+        sys.exit(0)
+    namespace = Parser.Namespace()
+    for option in self._iter_options():
+      setattr(namespace, option.dest, option.default)
+    for argument in self._positional_args:
+      setattr(namespace, argument.name, [] if argument.allow_multiple else argument.default)
+    positional_tokens = [ ]
+    try:
+      index = 0
+      while index < len(tokens):
+        token = tokens[index]
+        option = self._match_option(token)
+        if option is None:
+          positional_tokens.append(token)
+          index += 1
+          continue
+        if option.is_flag:
+          setattr(namespace, option.dest, True)
+          index += 1
+          continue
+        arity = len(option.args)
+        if index + arity >= len(tokens):
+          raise Parser.ArgumentError(f'not enough parameters to option "-{option.name}"')
+        raw = tokens[index + 1 : index + 1 + arity]
+        context = f'error parsing argument to option "-{option.name}"'
+        converted = [self._convert_value(slot, value, context)
+                     for slot, value in zip(option.args, raw)]
+        if option.repeatable:
+          existing = getattr(namespace, option.dest)
+          if existing is None:
+            existing = [ ]
+            setattr(namespace, option.dest, existing)
+          existing.append(converted)
+        else:
+          setattr(namespace, option.dest, converted[0] if arity == 1 else converted)
+        index += 1 + arity
+      self._assign_positionals(namespace, positional_tokens)
+      for option in self._iter_options():
+        if option.required and getattr(namespace, option.dest) is None:
+          raise Parser.ArgumentError(f'mandatory option "-{option.name}" was not provided')
+    except Parser.ArgumentError as exception:
+      self._error(str(exception))
+    return namespace
+
+  def _assign_positionals(self, namespace, values):
+    specs = self._positional_args
+    count = len(values)
+    multi_index = next((i for i, spec in enumerate(specs) if spec.allow_multiple), None)
+    if multi_index is None:
+      required = [spec for spec in specs if not spec.optional]
+      if count < len(required):
+        raise Parser.ArgumentError(f'expected {len(required)} positional argument'
+                                   f'{"s" if len(required) != 1 else ""}, received {count}')
+      if count > len(specs):
+        raise Parser.ArgumentError(f'expected at most {len(specs)} positional argument'
+                                   f'{"s" if len(specs) != 1 else ""}, received {count}')
+      for spec, value in zip(specs, values):
+        setattr(namespace, spec.name,
+                self._convert_value(spec, value, f'error parsing argument "{spec.name}"'))
     else:
-      text = 'string'
-    if option.nargs:
-      if isinstance(option.nargs, int) and option.nargs > 1:
-        text = ((f' {text}') * option.nargs).lstrip()
-      elif option.nargs == '*':
-        text = f'<space-separated list of {text}s>'
-      elif option.nargs == '+':
-        text = f'{text} <space-separated list of additional {text}s>'
-      elif option.nargs == '?':
-        text = f'<optional {text}>'
-    return f' {text}'
+      before = specs[:multi_index]
+      after = specs[multi_index + 1:]
+      multi = specs[multi_index]
+      minimum = len(before) + len(after) + (0 if multi.optional else 1)
+      if count < minimum:
+        raise Parser.ArgumentError(f'not enough positional arguments '
+                                   f'(expected at least {minimum}, received {count})')
+      before_values = values[:len(before)]
+      after_values = values[count - len(after):] if after else [ ]
+      multi_values = values[len(before) : count - len(after)]
+      for spec, value in zip(before, before_values):
+        setattr(namespace, spec.name,
+                self._convert_value(spec, value, f'error parsing argument "{spec.name}"'))
+      setattr(namespace, multi.name,
+              [self._convert_value(multi, value, f'error parsing argument "{multi.name}"')
+               for value in multi_values])
+      for spec, value in zip(after, after_values):
+        setattr(namespace, spec.name,
+                self._convert_value(spec, value, f'error parsing argument "{spec.name}"'))
 
   def format_usage(self):
     argument_list = [ ]
-    trailing_ellipsis = ''
-    if self._subparsers:
-      argument_list.append(self._subparsers._group_actions[0].dest)
-      trailing_ellipsis = ' ...'
-    for arg in self._positionals._group_actions:
-      if arg.metavar:
-        argument_list.append(' '.join(arg.metavar))
+    for argument in self._positional_args:
+      if argument.metavar:
+        argument_list.append(argument.metavar)
       else:
-        argument_list.append(arg.dest)
-    return f'{self.prog} {" ".join(argument_list)} [ options ]{trailing_ellipsis}'
+        argument_list.append(argument.name)
+    return f'{self.prog} {" ".join(argument_list)} [ options ]'
+
+  # Metavar string for an option, rendered for the terminal help page.
+  #   Returns '' for a boolean flag, otherwise a leading-space-prefixed, space-separated
+  #   list of per-argument metavars.
+  @staticmethod
+  def _option_metavar(option):
+    if option.is_flag:
+      return ''
+    parts = [ ]
+    for slot in option.args:
+      if slot.metavar is not None:
+        parts.append(slot.metavar)
+      elif slot.choices is not None:
+        parts.append('choice')
+      elif isinstance(slot.argtype, Parser.CustomTypeBase):
+        parts.append(slot.argtype._metavar()) # pylint: disable=protected-access
+      elif slot.argtype in (int, float):
+        parts.append(slot.argtype.__name__.lower())
+      elif slot.argtype is str:
+        parts.append('str')
+      else:
+        parts.append('string')
+    return ' ' + ' '.join(parts)
 
   def print_help(self, file=None):
     def bold(text):
@@ -1132,34 +1355,19 @@ class Parser(argparse.ArgumentParser):
     text += bold('USAGE') + '\n'
     text += '\n'
     usage = self.prog + ' '
-    # Compulsory subparser algorithm selection (if present)
-    if self._subparsers:
-      usage += f'{self._subparsers._group_actions[0].dest} [ options ] ...'
-    else:
-      usage += '[ options ]'
-      # Find compulsory input arguments
-      for arg in self._positionals._group_actions:
-        usage += f' {arg.dest}'
+    usage += '[ options ]'
+    # Find compulsory input arguments
+    for argument in self._positional_args:
+      usage += f' {argument.name}'
     # Unfortunately this can line wrap early because textwrap is counting each
     #   underlined character as 3 characters when calculating when to wrap
     # Fix by underlining after the fact
     text += wrapper_other.fill(usage).replace(self.prog, underline(self.prog), 1) + '\n'
     text += '\n'
-    if self._subparsers:
-      text += '        ' + wrapper_args.fill(
-        self._subparsers._group_actions[0].dest
-        + ' '*(max(13-len(self._subparsers._group_actions[0].dest), 1))
-        + self._subparsers._group_actions[0].help).replace(self._subparsers._group_actions[0].dest,
-                                                           underline(self._subparsers._group_actions[0].dest), 1) \
-           + '\n'
-      text += '\n'
-    for arg in self._positionals._group_actions:
+    for argument in self._positional_args:
       line = '        '
-      if arg.metavar:
-        name = ' '.join(arg.metavar)
-      else:
-        name = arg.dest
-      line += f'{name}{" "*(max(13-len(name), 1))}{arg.help}'
+      name = argument.metavar if argument.metavar else argument.name
+      line += f'{name}{" "*(max(13-len(name), 1))}{argument.help}'
       text += wrapper_args.fill(line).replace(name, underline(name), 1) + '\n'
       text += '\n'
     if self._description:
@@ -1181,35 +1389,32 @@ class Parser(argparse.ArgumentParser):
           text += wrapper_other.fill(example[2]) + '\n'
         text += '\n'
 
-    # Define a function for printing all text for a given option
-    # This will be used in two separate locations:
-    #   - First locating and printing any ungrouped command-line options
-    #   - Printing all contents of option groups
+    # Define a function for printing all text for a given option group.
+    # This is used in two separate locations:
+    #   - First printing any ungrouped command-line options;
+    #   - Printing all contents of each named option group.
     def print_group_options(group):
       group_text = ''
-      for option in group._group_actions:
-        group_text += '  ' + underline('/'.join(option.option_strings))
-        group_text += Parser._option2metavar(option)
-        # Any options that haven't tripped one of the conditions above should be a store_true or store_false, and
-        #   therefore there's nothing to be appended to the option instruction
-        if isinstance(option, argparse._AppendAction):
+      for option in group.options:
+        group_text += '  ' + underline('-' + option.name)
+        group_text += Parser._option_metavar(option)
+        if option.repeatable:
           group_text += '  (multiple uses permitted)'
         group_text += '\n'
         group_text += wrapper_other.fill(option.help) + '\n'
         group_text += '\n'
       return group_text
 
-    # Before printing option groups, find any command-line options that have not explicitly been
-    #   placed into an option group, and print those first
-    ungrouped_options = self._get_ungrouped_options()
-    if ungrouped_options and ungrouped_options._group_actions:
+    # Before printing named option groups, print any command-line options that were not
+    #   explicitly placed into a group (the ungrouped 'OPTIONS' group).
+    if self._ungrouped.options:
       text += bold('OPTIONS') + '\n'
       text += '\n'
-      text += print_group_options(ungrouped_options)
-    # Option groups
-    for group in reversed(self._action_groups):
-      if self._is_option_group(group):
-        text += bold(group.title) + '\n'
+      text += print_group_options(self._ungrouped)
+    # Named option groups, in reverse order of definition (matching prior behaviour).
+    for group in reversed(self._option_groups[1:]):
+      if group.options:
+        text += bold(group.name) + '\n'
         text += '\n'
         text += print_group_options(group)
     text += bold('AUTHOR') + '\n'
@@ -1242,233 +1447,37 @@ class Parser(argparse.ArgumentParser):
         sys.stdout.write(text)
         sys.stdout.flush()
 
+  # -------------------------------------------------------------------------------------
+  # Machine-readable export formats.
+  #   Stage 1 of the CLI overhaul deliberately leaves the four export special functions as
+  #   placeholders; each is reimplemented, and verified byte-compatible with the captured
+  #   baseline, one per stage (stages 2-5):
+  #     __print_full_usage__     -> stage 2
+  #     __print_synopsis__       -> stage 3
+  #     __print_usage_markdown__ -> stage 4
+  #     __print_usage_rst__      -> stage 5
+  #   The native data model above (positional arguments, option groups, and all metadata
+  #   slots) already carries everything these exporters will need to render.
+  # -------------------------------------------------------------------------------------
+
+  def _export_placeholder(self, keyword, stage):
+    sys.stderr.write(f'{self.prog}: {ANSI.error}[ERROR] machine-readable export '
+                     f'"{keyword}" is not implemented in this build; its reimplementation '
+                     f'is scheduled for stage {stage} of the MRtrix3 CLI overhaul '
+                     f'(retire-argparse effort){ANSI.clear}\n')
+    sys.stderr.flush()
+
   def print_full_usage(self):
-    if self._subparsers and len(sys.argv) == 3:
-      for alg in self._subparsers._group_actions[0].choices:
-        if alg == sys.argv[1]:
-          self._subparsers._group_actions[0].choices[alg].print_full_usage()
-          return
-      self.error('Invalid subparser nominated')
-    sys.stdout.write(f'{self._synopsis}\n')
-    if self._description:
-      if isinstance(self._description, list):
-        for line in self._description:
-          sys.stdout.write(f'{line}\n')
-      else:
-        sys.stdout.write(f'{self._description}\n')
-    for example in self._examples:
-      sys.stdout.write(f'{example[0]}: $ {example[1]}')
-      if example[2]:
-        sys.stdout.write(f'; {example[2]}')
-      sys.stdout.write('\n')
+    self._export_placeholder('__print_full_usage__', 2)
 
-    def arg2str(arg):
-      if arg.choices:
-        return f'CHOICE {" ".join(arg.choices)}'
-      if isinstance(arg.type, int) or arg.type is int:
-        return f'INT {-sys.maxsize - 1} {sys.maxsize}'
-      if isinstance(arg.type, float) or arg.type is float:
-        return 'FLOAT -inf inf'
-      if isinstance(arg.type, str) or arg.type is str or arg.type is None:
-        return 'TEXT'
-      if isinstance(arg.type, Parser.CustomTypeBase):
-        return type(arg.type)._legacytypestring()
-      return arg.type._legacytypestring()
-
-    def allow_multiple(nargs):
-      return '1' if nargs in ('*', '+') else '0'
-
-    if self._subparsers:
-      sys.stdout.write(f'ARGUMENT algorithm 0 0 CHOICE {" ".join(self._subparsers._group_actions[0].choices)}\n')
-    else:
-      for arg in self._positionals._group_actions:
-        sys.stdout.write(f'ARGUMENT {arg.dest} 0 {allow_multiple(arg.nargs)} {arg2str(arg)}\n')
-        sys.stdout.write(f'{arg.help}\n')
-
-    def print_group_options(group):
-      for option in group._group_actions:
-        sys.stdout.write(f'OPTION {"/".join(option.option_strings)} {"0" if option.required else "1"} {allow_multiple(option.nargs)}\n')
-        sys.stdout.write(f'{option.help}\n')
-        if option.nargs == 0:
-          continue
-        if option.metavar and isinstance(option.metavar, tuple):
-          assert len(option.metavar) == option.nargs
-          for arg in option.metavar:
-            sys.stdout.write(f'ARGUMENT {arg} 0 0 {arg2str(option)}\n')
-        else:
-          multiple = allow_multiple(option.nargs)
-          nargs = 1 if multiple == '1' else (option.nargs if isinstance(option.nargs, int) else 1)
-          for _ in range(0, nargs):
-            metavar_string = option.metavar if option.metavar else '/'.join(opt.lstrip('-') for opt in option.option_strings)
-            sys.stdout.write(f'ARGUMENT {metavar_string} 0 {multiple} {arg2str(option)}\n')
-
-    ungrouped_options = self._get_ungrouped_options()
-    if ungrouped_options and ungrouped_options._group_actions:
-      print_group_options(ungrouped_options)
-    for group in reversed(self._action_groups):
-      if self._is_option_group(group):
-        print_group_options(group)
-    sys.stdout.flush()
+  def print_synopsis(self):
+    self._export_placeholder('__print_synopsis__', 3)
 
   def print_usage_markdown(self):
-    if self._subparsers and len(sys.argv) == 3:
-      for alg in self._subparsers._group_actions[0].choices:
-        if alg == sys.argv[-2]:
-          self._subparsers._group_actions[0].choices[alg].print_usage_markdown()
-          return
-      self.error('Invalid subparser nominated')
-    text = '## Synopsis\n\n'
-    text += f'{self._synopsis}\n\n'
-    text += '## Usage\n\n'
-    text += f'    {self.format_usage()}\n\n'
-    if self._subparsers:
-      text += f'-  *{self._subparsers._group_actions[0].dest}*: {self._subparsers._group_actions[0].help}\n'
-    for arg in self._positionals._group_actions:
-      if arg.metavar:
-        name = arg.metavar
-      else:
-        name = arg.dest
-      text += f'-  *{name}*: {arg.help}\n\n'
-    if self._description:
-      text += '## Description\n\n'
-      for line in self._description:
-        text += f'{line}\n\n'
-    if self._examples:
-      text += '## Example usages\n\n'
-      for example in self._examples:
-        text += f'__{example[0]}:__\n'
-        text += f'`$ {example[1]}`\n'
-        if example[2]:
-          text += f'{example[2]}\n'
-        text += '\n'
-    text += '## Options\n\n'
-
-    def print_group_options(group):
-      group_text = ''
-      for option in group._group_actions:
-        option_text = '/'.join(option.option_strings)
-        option_text += Parser._option2metavar(option)
-        option_text = option_text.replace("<", "\\<").replace(">", "\\>")
-        group_text += f'+ **-{option_text}**'
-        if isinstance(option, argparse._AppendAction):
-          group_text += '  *(multiple uses permitted)*'
-        group_text += f'<br>{option.help}\n\n'
-      return group_text
-
-    ungrouped_options = self._get_ungrouped_options()
-    if ungrouped_options and ungrouped_options._group_actions:
-      text += print_group_options(ungrouped_options)
-    for group in reversed(self._action_groups):
-      if self._is_option_group(group):
-        text += f'#### {group.title}\n\n'
-        text += print_group_options(group)
-    text += '## References\n\n'
-    for ref in self._citation_list:
-      ref_text = ''
-      if ref[0]:
-        ref_text += f'{ref[0]}: '
-      ref_text += ref[1]
-      text += f'{ref_text}\n\n'
-    text += f'{_MRTRIX3_CORE_REFERENCE}\n\n'
-    text += '---\n\n'
-    text += f'**Author:** {self._author}\n\n'
-    text += f'**Copyright:** {self._copyright}\n\n'
-    sys.stdout.write(text)
-    sys.stdout.flush()
-    if self._subparsers:
-      for alg in self._subparsers._group_actions[0].choices:
-        subprocess.call ([sys.executable,
-                          os.path.realpath(sys.argv[0]),
-                          alg,
-                          '__print_usage_markdown__'])
+    self._export_placeholder('__print_usage_markdown__', 4)
 
   def print_usage_rst(self):
-    # Need to check here whether it's the documentation for a particular subparser that's being requested
-    if self._subparsers and len(sys.argv) == 3:
-      for alg in self._subparsers._group_actions[0].choices:
-        if alg == sys.argv[-2]:
-          self._subparsers._group_actions[0].choices[alg].print_usage_rst()
-          return
-      self.error(f'Invalid subparser nominated: {sys.argv[-2]}')
-    text = f'.. _{self.prog.replace(" ", "_")}:\n\n'
-    text += f'{self.prog}\n'
-    text += f'{"="*len(self.prog)}\n\n'
-    text += 'Synopsis\n'
-    text += '--------\n\n'
-    text += f'{self._synopsis}\n\n'
-    text += 'Usage\n'
-    text += '-----\n\n'
-    text += '::\n\n'
-    text += f'    {self.format_usage()}\n\n'
-    if self._subparsers:
-      text += f'-  *{self._subparsers._group_actions[0].dest}*: {self._subparsers._group_actions[0].help}\n'
-    for arg in self._positionals._group_actions:
-      if arg.metavar:
-        name = arg.metavar
-      else:
-        name = arg.dest
-      arg_help = arg.help.replace('|', '\\|')
-      text += f'-  *{" ".join(name) if isinstance(name, tuple) else name}*: {arg_help}\n'
-    text += '\n'
-    if self._description:
-      text += 'Description\n'
-      text += '-----------\n\n'
-      for line in self._description:
-        text += f'{line}\n\n'
-    if self._examples:
-      text += 'Example usages\n'
-      text += '--------------\n\n'
-      for example in self._examples:
-        text += f'-   *{example[0]}*::\n\n'
-        text += f'        $ {example[1]}\n\n'
-        if example[2]:
-          text += f'    {example[2]}\n\n'
-    text += 'Options\n'
-    text += '-------\n'
-
-    def print_group_options(group):
-      group_text = ''
-      for option in group._group_actions:
-        option_text = '/'.join(option.option_strings)
-        option_text += Parser._option2metavar(option)
-        group_text += '\n'
-        group_text += f'- **{option_text}**'
-        if isinstance(option, argparse._AppendAction):
-          group_text += '  *(multiple uses permitted)*'
-        option_help = option.help.replace('|', '\\|')
-        group_text += f' {option_help}\n'
-      return group_text
-
-    ungrouped_options = self._get_ungrouped_options()
-    if ungrouped_options and ungrouped_options._group_actions:
-      text += print_group_options(ungrouped_options)
-    for group in reversed(self._action_groups):
-      if self._is_option_group(group):
-        text += '\n'
-        text += f'{group.title}\n'
-        text += f'{"^"*len(group.title)}\n'
-        text += print_group_options(group)
-    text += '\n'
-    text += 'References\n'
-    text += '^^^^^^^^^^\n\n'
-    for ref in self._citation_list:
-      ref_text = '* '
-      if ref[0]:
-        ref_text += f'{ref[0]}: '
-      ref_text += ref[1]
-      text += f'{ref_text}\n\n'
-    text += f'{_MRTRIX3_CORE_REFERENCE}\n\n'
-    text += '--------------\n\n\n\n'
-    text += f'**Author:** {self._author}\n\n'
-    text += f'**Copyright:** {self._copyright}\n\n'
-    sys.stdout.write(text)
-    sys.stdout.flush()
-    if self._subparsers:
-      for alg in self._subparsers._group_actions[0].choices:
-        subprocess.call ([sys.executable,
-                          os.path.realpath(sys.argv[0]),
-                          alg,
-                          '__print_usage_rst__'])
+    self._export_placeholder('__print_usage_rst__', 5)
 
   def print_version(self):
     text = f'== {self.prog} {self._git_version if self._is_project else version.VERSION} ==\n'
@@ -1478,20 +1487,6 @@ class Parser(argparse.ArgumentParser):
     text += f'{self._copyright}\n'
     sys.stdout.write(text)
     sys.stdout.flush()
-
-  def _get_ungrouped_options(self):
-    return next((group for group in self._action_groups if group.title in ( 'options', 'optional arguments') ), None)
-
-  def _is_option_group(self, group):
-    # * Don't display empty groups
-    # * Don't display the subparser option; that's dealt with in the usage
-    # * Don't re-display any compulsory positional arguments; they're also dealt with in the usage
-    # * Don't display any ungrouped options; those are dealt with explicitly
-    return group._group_actions and \
-           not (len(group._group_actions) == 1 and \
-           isinstance(group._group_actions[0], argparse._SubParsersAction)) and \
-           not group == self._positionals and \
-           group.title not in ( 'options', 'optional arguments' )
 
 
 
@@ -1507,7 +1502,6 @@ def add_dwgrad_import_options(cmdline): #pylint: disable=unused-variable
                        nargs=2,
                        metavar=('bvecs', 'bvals'),
                        help='Provide the diffusion gradient table in FSL bvecs/bvals format')
-  cmdline.flag_mutually_exclusive_options( [ 'grad', 'fslgrad' ] )
 
 def dwgrad_import_options(): #pylint: disable=unused-variable
   assert ARGS
@@ -1531,7 +1525,6 @@ def add_dwgrad_export_options(cmdline): #pylint: disable=unused-variable
                        nargs=2,
                        metavar=('bvecs', 'bvals'),
                        help='Export the final gradient table in FSL bvecs/bvals format')
-  cmdline.flag_mutually_exclusive_options( [ 'export_grad_mrtrix', 'export_grad_fsl' ] )
 
 def dwgrad_export_options(): #pylint: disable=unused-variable
   assert ARGS

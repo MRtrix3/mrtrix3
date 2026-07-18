@@ -33,8 +33,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options = parser.add_argument_group('Options specific to the "consensus" algorithm')
   options.add_argument('-algorithms',
                        type=str,
-                       nargs='+',
-                       help='Provide a (space- or comma-separated) list '
+                       help='Provide a comma-separated list '
                             'of dwi2mask algorithms that are to be utilised')
   options.add_argument('-masks',
                        type=app.Parser.ImageOut(),
@@ -59,9 +58,7 @@ def execute(): #pylint: disable=unused-variable
   app.debug(str(algorithm_list))
 
   if app.ARGS.algorithms:
-    user_algorithms = app.ARGS.algorithms
-    if len(user_algorithms) == 1:
-      user_algorithms = user_algorithms[0].split(',')
+    user_algorithms = app.ARGS.algorithms.split(',')
     if 'consensus' in user_algorithms:
       raise MRtrixError('Cannot provide "consensus" in list of dwi2mask algorithms to utilise')
     invalid_algs = [entry for entry in user_algorithms if entry not in algorithm_list]

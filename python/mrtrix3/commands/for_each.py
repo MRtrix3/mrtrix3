@@ -18,7 +18,7 @@ import os, re, stat, sys, threading
 
 
 
-# Since we're going to capture everything after the colon character and "hide" it from argparse,
+# Since we capture everything after the colon character and "hide" it from the command-line parser,
 #   we need to store the contents from there in a global so as for it to be accessible from execute()
 CMDSPLIT = [ ]
 
@@ -64,12 +64,12 @@ def usage(cmdline): #pylint: disable=unused-variable
                           'The unique part of the input after removing any common prefix and common suffix. '
                           'For example, if the target list contains files: "folder/001dwi.mif", "folder/002dwi.mif", "folder/003dwi.mif", '
                           'any occurrence of "UNI" will be substituted with "001", "002", "003".')
-  cmdline.add_description('Note that due to a limitation of the Python "argparse" module,'
-                          ' any command-line OPTIONS that the user intends to provide specifically to the for_each script'
-                          ' must appear BEFORE providing the list of inputs on which for_each is intended to operate.'
-                          ' While command-line options provided as such will be interpreted specifically by the for_each script,'
-                          ' any command-line options that are provided AFTER the COLON separator will form part of the executed COMMAND,'
-                          ' and will therefore be interpreted as command-line options having been provided to that underlying command.')
+  cmdline.add_description('Note that the compulsory colon (":") separator determines how command-line tokens are interpreted:'
+                          ' every token that precedes the colon is interpreted by the for_each script itself'
+                          ' (whether it be one of the inputs on which for_each is to operate, or a command-line option to for_each),'
+                          ' whereas every token that follows the colon forms part of the COMMAND that for_each executes for each input,'
+                          ' and is therefore interpreted as being provided to that underlying command'
+                          ' (including any command-line options intended for that command).')
   cmdline.add_example_usage('Demonstration of basic usage syntax',
                             'for_each folder/*.mif : mrinfo IN',
                             'This will run the "mrinfo" command for every .mif file present in "folder/".'
@@ -128,7 +128,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                             ' a part of the command string that is executed multiple times by the for_each script,'
                             ' it must be escaped using double-quotes.')
   cmdline.add_argument('inputs',
-                       nargs='+',
+                       allow_multiple=True,
                        help='Each of the inputs for which processing should be run')
   cmdline.add_argument('colon',
                        type=str,
@@ -151,7 +151,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                             ' by printing the command strings following string substitution but not actually executing them')
 
   # Usage of for_each needs to be handled slightly differently here:
-  # We want argparse to parse only the contents of the command-line before the colon symbol,
+  # We want the parser to interpret only the contents of the command-line before the colon symbol,
   #   as these are the items that pertain to the invocation of the for_each script;
   #   anything after the colon should instead form a part of the command that
   #   for_each is responsible for executing
@@ -216,7 +216,7 @@ def execute(): #pylint: disable=unused-variable
   app.debug(f'CMDSPLIT: {CMDSPLIT}')
 
   if app.ARGS.exclude:
-    app.ARGS.exclude = [ exclude[0] for exclude in app.ARGS.exclude ] # To deal with argparse's action=append. Always guaranteed to be only one argument since nargs=1
+    app.ARGS.exclude = [ exclude[0] for exclude in app.ARGS.exclude ] # action='append' yields a list per occurrence; each has exactly one argument (arity 1)
     app.debug(f'To exclude: {app.ARGS.exclude}')
     exclude_unmatched = [ ]
     to_exclude = [ ]

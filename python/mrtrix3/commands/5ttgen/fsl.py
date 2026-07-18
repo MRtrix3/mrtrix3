@@ -58,7 +58,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                        action='store_true',
                        default=None,
                        help='Indicate that brain masking has already been applied to the input image')
-  parser.flag_mutually_exclusive_options( [ 'mask', 'premasked' ] )
 
 
 

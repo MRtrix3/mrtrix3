@@ -54,15 +54,6 @@ def usage(cmdline): #pylint: disable=unused-variable
                         help='A floating-point; built-in type')
 
   complex_types = cmdline.add_argument_group('Complex interfaces; nargs, metavar, etc.')
-  complex_types.add_argument('-nargs_plus',
-                             nargs='+',
-                             help='A command-line option with nargs="+", no metavar')
-  complex_types.add_argument('-nargs_asterisk',
-                             nargs='*',
-                             help='A command-line option with nargs="*", no metavar')
-  complex_types.add_argument('-nargs_question',
-                             nargs='?',
-                             help='A command-line option with nargs="?", no metavar')
   complex_types.add_argument('-nargs_two',
                              nargs=2,
                              help='A command-line option with nargs=2, no metavar')
