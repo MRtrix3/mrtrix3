@@ -63,16 +63,9 @@ void load_act_properties(Properties &properties) {
     opt = get_options("sgm_truncation");
     if (!opt.empty())
       properties["sgm_truncation"] = opt[0][0].as_text();
-
-  } else {
-
-    if (!get_options("backtrack").empty())
-      WARN("ignoring -backtrack option: only valid if using ACT");
-    if (!get_options("crop_at_gmwmi").empty())
-      WARN("ignoring -crop_at_gmwmi option: only valid if using ACT");
-    if (!get_options("sgm_truncation").empty())
-      WARN("ignoring -sgm_truncation option: only valid if using ACT");
   }
+  // When ACT is not in use, -backtrack / -crop_at_gmwmi / -sgm_truncation are never read; the
+  //   unused-option check reports any of them that the user nonetheless specified.
 }
 
 } // namespace MR::DWI::Tractography::ACT

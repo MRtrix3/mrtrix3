@@ -297,10 +297,9 @@ void run() {
 
   // Perform permutation testing
   if (get_options("notest").empty()) {
-    const bool fwe_strong = !get_options("strong").empty();
-    if (fwe_strong && num_hypotheses == 1) {
-      WARN("Option -strong has no effect when testing a single hypothesis only");
-    }
+    // Strong FWE control is only meaningful across multiple hypotheses; when there is only one,
+    //   -strong is left unread so that the unused-option check reports it if specified.
+    const bool fwe_strong = (num_hypotheses > 1) && !get_options("strong").empty();
 
     std::shared_ptr<Stats::EnhancerBase> enhancer;
     matrix_type null_distribution, uncorrected_pvalues;

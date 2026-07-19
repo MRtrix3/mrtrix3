@@ -1,0 +1,16 @@
+#!/bin/bash
+# Verify the automatic unused-option tracking added to the command-line parser:
+#   an option that is specified but never consulted by the executing command
+#   (for example, one that is not applicable to the selected mode of operation)
+#   is reported once execution completes,
+#   whereas options that are genuinely consumed produce no such warning.
+
+# The -colour option only applies to the 'colour' colourmap; specifying it alongside a
+#   standard colourmap leaves it unread, so it must be reported as having had no effect.
+mrcolour dwi_mean.mif gray -colour 1,0,0 tmp_unused.mif -force 2>tmp_unused_stderr.txt
+grep -F 'Command-line option "-colour" was specified but had no effect' tmp_unused_stderr.txt
+
+# Normal usage, in which -lower and -upper are genuinely consumed, must NOT emit any
+#   unused-option warning.
+mrcolour dwi_mean.mif gray -lower 40 -upper 80 tmp_used.mif -force 2>tmp_used_stderr.txt
+! grep -F 'was specified but had no effect' tmp_used_stderr.txt

@@ -146,12 +146,11 @@ void load_streamline_properties_and_rois(Properties &properties) {
 
   load_rois(properties); // rois must be loaded before stop parameter in order to check its validity
 
-  opt = get_options("stop");
-  if (!opt.empty()) {
-    if (properties.include.size() || properties.ordered_include.size())
+  // -stop is only meaningful when inclusion regions are specified; without them it is left unread,
+  //   so the unused-option check reports it if specified.
+  if (properties.include.size() || properties.ordered_include.size()) {
+    if (!get_options("stop").empty())
       properties["stop_on_all_include"] = "1";
-    else
-      WARN("-stop option ignored - no inclusion regions specified");
   }
 
   opt = get_options("downsample");

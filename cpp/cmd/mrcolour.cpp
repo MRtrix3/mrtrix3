@@ -93,15 +93,13 @@ void run() {
   } else if (colourmap.is_rgb) {
     if (!(H_in.ndim() == 4 && H_in.size(3) == 3))
       throw Exception("\'rgb\' colourmap only applies to 4D images with 3 volumes");
-    if (!get_options("lower").empty()) {
-      WARN("Option -lower ignored: not compatible with \'rgb\' colourmap (a minimum of 0.0 is assumed)");
-    }
+    // -lower is not read for the 'rgb' colourmap (a minimum of 0.0 is assumed); the unused-option
+    //   check reports it if specified.
   } else {
     if (!(H_in.ndim() == 3 || (H_in.ndim() == 4 && H_in.size(3) == 1)))
       throw Exception("For standard colour maps, command expects a 3D image as input");
-    if (!get_options("colour").empty()) {
-      WARN("Option -colour ignored: only applies if \'colour\' colourmap is used");
-    }
+    // -colour only applies to the 'colour' colourmap, so it is not read here; the unused-option
+    //   check reports it if specified.
   }
 
   auto in = H_in.get_image<float>();

@@ -538,14 +538,13 @@ void run() {
     break;
   }
 
-  opt = get_options("fill");
+  // -fill only applies to the "none" operation; for any other operation it is left unread, so the
+  //   unused-option check reports it if specified.
   float fill_value = 0.0;
-  if (!opt.empty()) {
-    if (op == Operation::NONE) {
+  if (op == Operation::NONE) {
+    opt = get_options("fill");
+    if (!opt.empty())
       fill_value = opt[0][0];
-    } else {
-      WARN("Option -fill ignored; only applicable to \"none\" operation");
-    }
   }
 
   auto out = Image<float>::create(argument[2], H_out);

@@ -58,27 +58,19 @@ void load_fmls_thresholds(Segmenter &segmenter) {
     segmenter.set_peak_value_threshold(0.0);
   }
 
-  auto opt = get_options("fmls_integral");
-  if (!opt.empty()) {
-    if (no_thresholds) {
-      WARN("Option -fmls_integral ignored:"
-           " -fmls_no_thresholds overrides this");
-    } else {
+  // -fmls_no_thresholds overrides both -fmls_integral and -fmls_peak_value; when it is set, those
+  //   two options are left unread, so the unused-option check reports either that was specified.
+  if (!no_thresholds) {
+    auto opt = get_options("fmls_integral");
+    if (!opt.empty())
       segmenter.set_integral_threshold(static_cast<default_type>(opt[0][0]));
-    }
-  }
 
-  opt = get_options("fmls_peak_value");
-  if (!opt.empty()) {
-    if (no_thresholds) {
-      WARN("Option -fmls_peak_value ignored:"
-           " -fmls_no_thresholds overrides this");
-    } else {
+    opt = get_options("fmls_peak_value");
+    if (!opt.empty())
       segmenter.set_peak_value_threshold(static_cast<default_type>(opt[0][0]));
-    }
   }
 
-  opt = get_options("fmls_lobe_merge_ratio");
+  auto opt = get_options("fmls_lobe_merge_ratio");
   if (!opt.empty())
     segmenter.set_lobe_merge_ratio(static_cast<default_type>(opt[0][0]));
 }

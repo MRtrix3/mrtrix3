@@ -357,6 +357,21 @@ public:
 
   //! check whether this option matches the name supplied
   bool operator==(std::string_view match) const;
+
+  //! flag this parsed option as having been read by the executing command
+  /*! Called from every option-reading path (the get_options() family and both operator[]
+   * overloads) so that, once run() has returned, any user-specified option that was never
+   * read can be reported (see App::check_unused_options()). Marking is intentionally a
+   * "was this option consulted at all" signal: merely testing an option's presence counts
+   * as reading it. */
+  void mark_accessed() const noexcept { accessed = true; }
+
+  //! whether any code path has consulted this option's presence or value
+  bool was_accessed() const noexcept { return accessed; }
+
+private:
+  //! whether the executing command has consulted this option (see mark_accessed())
+  mutable bool accessed{false};
 };
 
 //! the list of arguments parsed from the command-line
@@ -587,6 +602,15 @@ typename std::enable_if<std::is_enum_v<Enum>, std::optional<Enum>>::type get_opt
     throw Exception("Internal error parsing command-line option \"-" + name + "\"");
   }
 }
+
+//! warn about any user-specified option that the command never consulted [used internally]
+/*! Called from the command driver once run() has returned. Every option-reading path
+ * (the get_options() family and ParsedOption::operator[]) flags the option it reads as
+ * accessed; any explicitly-specified option that remains unaccessed is reported, since it
+ * had no bearing on execution (for example, an option that is not applicable to the
+ * requested mode of operation). Standard options are exempt, as the framework consumes
+ * them uniformly and lazily. */
+void check_unused_options();
 
 //! convenience function provided mostly to ease writing Exception strings
 std::string operator+(const char *const left, const App::ParsedArgument &right); // check_syntax off

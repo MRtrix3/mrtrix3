@@ -23,6 +23,7 @@
 #include <filesystem>
 #include <functional>
 #include <locale>
+#include <set>
 #include <unistd.h>
 
 #include "app.h"
@@ -1729,7 +1730,10 @@ void parse() {
   for (const auto &i : option) {
     const std::vector<const Argument *> leaves = i.opt->leaves();
     for (size_t j = 0; j != leaves.size(); ++j) {
-      const ParsedArgument parg = i[j];
+      // Construct the ParsedArgument directly rather than via ParsedOption::operator[]: this
+      //   parse-time type/existence validation is framework bookkeeping, not the command reading
+      //   the option, so it must not mark the option as accessed for the unused-option check.
+      const ParsedArgument parg(i.opt, leaves[j], i.args[j], i.index + j + 1);
       const Argument &arg = *leaves[j];
       assert(arg.types.any());
       {
@@ -1889,10 +1893,39 @@ std::vector<ParsedOption> get_options(std::string_view name) {
   std::vector<ParsedOption> matches;
   for (size_t i = 0; i < option.size(); ++i) {
     assert(option[i].opt);
-    if (option[i].opt->is(name))
+    if (option[i].opt->is(name)) {
+      // Querying an option by name — even purely to test its presence — counts as reading it,
+      //   so mark the underlying global entry accessed for the unused-option check.
+      option[i].mark_accessed();
       matches.push_back({option[i].opt, option[i].args, option[i].index});
+    }
   }
   return matches;
+}
+
+void check_unused_options() {
+  // First pass: an option may be specified multiple times (allow_multiple), or read via more
+  //   than one path; treat an Option as consulted if any of its parsed instances was accessed.
+  std::set<const Option *> accessed_options;
+  for (const ParsedOption &parsed : option)
+    if (parsed.was_accessed())
+      accessed_options.insert(parsed.opt);
+
+  // Second pass: warn once per Option that was specified yet never consulted. Standard options
+  //   are exempt: the framework consumes them uniformly (and, for e.g. -nthreads, lazily), so a
+  //   command that does not exercise that machinery must not be reported as ignoring them.
+  std::set<const Option *> reported;
+  for (const ParsedOption &parsed : option) {
+    if (_standard_options.contains(parsed.opt))
+      continue;
+    if (accessed_options.find(parsed.opt) != accessed_options.end())
+      continue;
+    if (!reported.insert(parsed.opt).second)
+      continue;
+    WARN(std::string("Command-line option \"-") + parsed.opt->id +
+         "\" was specified but had no effect"
+         " (it may not be applicable to the operation being performed).");
+  }
 }
 
 int64_t App::ParsedArgument::as_int() const {
@@ -2146,12 +2179,14 @@ ParsedOption::ParsedOption(const Option *option, const std::vector<std::string> 
 }
 
 ParsedArgument ParsedOption::operator[](size_t num) const {
+  mark_accessed();
   const std::vector<const Argument *> leaves = opt->leaves();
   assert(num < leaves.size());
   return ParsedArgument(opt, leaves[num], args[num], index + num + 1);
 }
 
 ParsedArgument ParsedOption::operator[](std::string_view name) const {
+  mark_accessed();
   const std::vector<const Argument *> leaves = opt->leaves();
   for (size_t num = 0; num != leaves.size(); ++num)
     if (leaves[num]->id == name)

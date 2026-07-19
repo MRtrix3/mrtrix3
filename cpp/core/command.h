@@ -72,6 +72,7 @@ extern "C" void R_main(int *cmdline_argc, char **cmdline_argv) { // check_syntax
     ::MR::App::init(*cmdline_argc, cmdline_argv);
     ::MR::App::parse();
     run();
+    ::MR::App::check_unused_options();
   } catch (int retval) {
     return;
   } catch (MR::Exception &E) {
@@ -169,6 +170,7 @@ int main(int cmdline_argc, char **cmdline_argv) { // check_syntax off
       return 0;
     }
     run();
+    ::MR::App::check_unused_options();
   } catch (int retval) {
     return retval;
   } catch (::MR::Exception &E) {

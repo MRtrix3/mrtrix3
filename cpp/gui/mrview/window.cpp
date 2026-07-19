@@ -1699,6 +1699,10 @@ void Window::register_camera_interactor(Tool::CameraInteractor *agent) {
 
 void Window::process_commandline_option() {
   auto &opt(MR::App::option[current_option]);
+  // MRView consumes every command-line option as a scripted action processed here in sequence;
+  //   flag it accessed so that no-argument actions (which never invoke ParsedOption::operator[])
+  //   are not misreported by the unused-option check once the window closes.
+  opt.mark_accessed();
 
 #undef TOOL
 #define TOOL(classname, name, description)                                                                             \

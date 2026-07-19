@@ -201,14 +201,11 @@ void run() {
     std::shared_ptr<Stats::TFCE::EnhancerBase> base(new MR::Connectome::Enhance::NBS(num_nodes));
     enhancer.reset(new Stats::TFCE::Wrapper(base));
     load_tfce_parameters(*(dynamic_cast<Stats::TFCE::Wrapper *>(enhancer.get())));
-    if (!get_options("threshold").empty())
-      WARN(MR::Enum::lowercase_name(Algorithm::TFNBS) + " is a threshold-free algorithm;" + //
-           " -threshold option ignored");                                                   //
+    // -threshold is threshold-free here, hence never read; the unused-option check reports it.
   } break;
   case Algorithm::None: {
     enhancer.reset(new MR::Connectome::Enhance::PassThrough());
-    if (!get_options("threshold").empty())
-      WARN("No enhancement algorithm being used; -threshold option ignored");
+    // No enhancement algorithm reads -threshold; the unused-option check reports it if specified.
   } break;
   default:
     throw Exception("Unknown enhancement algorithm");
@@ -375,10 +372,9 @@ void run() {
   // Perform permutation testing
   if (get_options("notest").empty()) {
 
-    const bool fwe_strong = !get_options("strong").empty();
-    if (fwe_strong && num_hypotheses == 1) {
-      WARN("Option -strong has no effect when testing a single hypothesis only");
-    }
+    // Strong FWE control is only meaningful across multiple hypotheses; when there is only one,
+    //   -strong is left unread so that the unused-option check reports it if specified.
+    const bool fwe_strong = (num_hypotheses > 1) && !get_options("strong").empty();
 
     matrix_type null_distribution, uncorrected_pvalues;
     count_matrix_type null_contributions;

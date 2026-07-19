@@ -330,14 +330,12 @@ void run() {
                     "Gaussian kernel using the -fwhm option");
   }
 
-  bool backtrack = false;
-  if (!get_options("backtrack").empty()) {
-    if (stat_tck == tck_stat_t::ENDS_CORR || stat_tck == tck_stat_t::ENDS_MAX || stat_tck == tck_stat_t::ENDS_MEAN ||
-        stat_tck == tck_stat_t::ENDS_MIN || stat_tck == tck_stat_t::ENDS_PROD)
-      backtrack = true;
-    else
-      WARN("-backtrack option ignored; only applicable to endpoint-based track statistics");
-  }
+  // -backtrack only applies to endpoint-based track statistics; for any other statistic it is
+  //   left unread (short-circuited below), so the unused-option check reports it if specified.
+  const bool is_endpoint_statistic =
+      (stat_tck == tck_stat_t::ENDS_CORR || stat_tck == tck_stat_t::ENDS_MAX || stat_tck == tck_stat_t::ENDS_MEAN ||
+       stat_tck == tck_stat_t::ENDS_MIN || stat_tck == tck_stat_t::ENDS_PROD);
+  const bool backtrack = is_endpoint_statistic && !get_options("backtrack").empty();
 
   // Determine the dimensionality of the output image
   writer_dim writer_type = writer_dim::GREYSCALE;

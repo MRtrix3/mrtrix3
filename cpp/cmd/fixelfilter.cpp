@@ -97,16 +97,6 @@ void run() {
   const FilterType filter_type = MR::Enum::from_name<FilterType>(argument[1]);
   const std::filesystem::path output_path{argument[2]};
 
-  std::set<std::string> option_list{"cfe_dh",
-                                    "cfe_e",
-                                    "cfe_h",
-                                    "cfe_c",
-                                    "cfe_legacy",
-                                    "threhsold_value",
-                                    "threshold_connectivity",
-                                    "fwhm",
-                                    "minweight"};
-
   Image<float> single_file;
   std::vector<Header> multiple_files;
   std::unique_ptr<Fixel::Filter::Base> filter;
@@ -176,11 +166,6 @@ void run() {
       const value_type cfe_c = get_option_value("cfe_c", Fixel::Filter::cfe_default_c);
       const bool cfe_legacy = get_options("cfe_legacy").size();
       filter.reset(new Fixel::Filter::CFE(matrix, cfe_dh, cfe_e, cfe_h, cfe_c, !cfe_legacy));
-      option_list.erase("cfe_dh");
-      option_list.erase("cfe_e");
-      option_list.erase("cfe_h");
-      option_list.erase("cfe_c");
-      option_list.erase("cfe_legacy");
     } break;
     case FilterType::CONNECT: {
       const float value = get_option_value("threshold_value", Fixel::Filter::Connect::default_value_threshold);
@@ -190,25 +175,19 @@ void run() {
       filter.reset(new Fixel::Filter::Connect(matrix, value, connect));
       output_header.datatype() = DataType::UInt32;
       output_header.datatype().set_byte_order_native();
-      option_list.erase("threshold_value");
-      option_list.erase("threshold_connectivity");
     } break;
     case FilterType::SMOOTH: {
       const float fwhm = get_option_value("fwhm", Fixel::Filter::Smooth::default_fwhm);
       const float threshold = get_option_value("minweight", Fixel::Filter::Smooth::default_threshold);
       filter.reset(new Fixel::Filter::Smooth(index_image, matrix, fwhm, threshold));
-      option_list.erase("fwhm");
-      option_list.erase("minweight");
     } break;
     default:
       assert(0);
     }
   }
 
-  for (const auto &i : option_list) {
-    if (!get_options(i).empty())
-      WARN("Option -" + i + " ignored:" + " not relevant to " + MR::Enum::lowercase_name(filter_type) + " filter");
-  }
+  // Options not relevant to the chosen filter are simply never read below; the unused-option
+  //   check reports any such option that the user nonetheless specified.
 
   if (single_file.valid()) {
     auto output_image = Image<float>::create(output_path, single_file);

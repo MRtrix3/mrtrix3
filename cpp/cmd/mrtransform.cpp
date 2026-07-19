@@ -364,12 +364,13 @@ void run() {
   }
 
   // Warp from image1 or image2
+  // -from only applies when a 5D warp is provided; otherwise it is left unread, so the
+  //   unused-option check reports it if specified.
   int from = 1;
-  opt = get_options("from");
-  if (!opt.empty()) {
-    from = opt[0][0];
-    if (!warp.valid())
-      WARN("-from option ignored since no 5D warp was input");
+  if (warp.valid()) {
+    opt = get_options("from");
+    if (!opt.empty())
+      from = opt[0][0];
   }
 
   // Warp deformation field
@@ -612,12 +613,13 @@ void run() {
   }
 
   // Out of bounds value
+  // The out-of-bounds value only applies when the input image is regridded (a warp or a template
+  //   is provided); otherwise -nan is left unread and the unused-option check reports it.
   float out_of_bounds_value = 0.0F;
-  opt = get_options("nan");
-  if (!opt.empty()) {
-    out_of_bounds_value = std::numeric_limits<float>::quiet_NaN();
-    if (!warp && !template_header)
-      WARN("Out of bounds value ignored since the input image will not be regridded");
+  if (warp.valid() || template_header.valid()) {
+    opt = get_options("nan");
+    if (!opt.empty())
+      out_of_bounds_value = std::numeric_limits<float>::quiet_NaN();
   }
 
   auto input = input_header.get_image<float>(DirectIO{stride});

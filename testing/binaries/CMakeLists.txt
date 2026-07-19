@@ -352,6 +352,7 @@ add_bash_binary_test(mrcolour/map_pet NO_FILESYSTEM_LOCK)
 add_bash_binary_test(mrcolour/map_rgb)
 add_bash_binary_test(mrcolour/map_viridis NO_FILESYSTEM_LOCK)
 add_bash_binary_test(mrcolour/scaling)
+add_bash_binary_test(mrcolour/unused_option)
 add_bash_binary_test(mrcolour/upperlimit NO_FILESYSTEM_LOCK)
 
 add_bash_binary_test(mrconvert/big_endian NO_FILESYSTEM_LOCK)

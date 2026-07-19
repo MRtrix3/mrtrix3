@@ -308,9 +308,9 @@ void run() {
       nodes.push_back(i);
   }
 
-  const bool exclusive = !get_options("exclusive").empty();
-  if (exclusive && !manual_node_list)
-    WARN("List of nodes of interest not provided; -exclusive option will have no effect");
+  // -exclusive only has an effect when an explicit list of nodes of interest is provided; without
+  //   one it is left unread, so the unused-option check reports it if specified.
+  const bool exclusive = manual_node_list && !get_options("exclusive").empty();
 
   opt = get_options("exemplars");
   if (!opt.empty()) {

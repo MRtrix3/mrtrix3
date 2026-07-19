@@ -521,16 +521,17 @@ void run() {
     }
   }
 
-  opt = get_options("scaling");
-  if (!opt.empty()) {
-    if (header_out.datatype().is_integer()) {
+  // -scaling has no effect for floating-point or binary images, so it is only read for an integer
+  //   output datatype; otherwise it is left unread and the unused-option check reports it.
+  if (header_out.datatype().is_integer()) {
+    opt = get_options("scaling");
+    if (!opt.empty()) {
       std::vector<default_type> scaling = opt[0][0];
       if (scaling.size() != 2)
         throw Exception("-scaling option expects comma-separated 2-vector of floating-point values");
       header_out.intensity_offset() = scaling[0];
       header_out.intensity_scale() = scaling[1];
-    } else
-      WARN("-scaling option has no effect for floating-point or binary images");
+    }
   }
 
   const std::filesystem::path output_path{argument[1]};
