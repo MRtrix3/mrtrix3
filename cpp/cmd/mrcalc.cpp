@@ -1143,10 +1143,22 @@ void run() {
   std::vector<StackEntry> stack;
   std::optional<Header> template_header;
 
+  // mrcalc evaluates its command-line as a stack-based (RPN) token stream, matching each
+  //   operator via match_option() rather than the standard get_options() accessors; that
+  //   custom path bypasses the unused-option tracker (App::check_unused_options()), so every
+  //   specified option is in fact consumed here by design. Mark them all accessed up-front to
+  //   avoid spurious "had no effect" warnings for the operator options.
+  for (const auto &parsed_option : App::option)
+    parsed_option.mark_accessed();
+
   for (size_t n = 0; n < raw_arguments_list.size(); ++n) {
     const auto &argument = raw_arguments_list[n];
     const Option *opt = match_option(argument);
     if (opt) {
+
+      // mrcalc consumes operators (and its own options) through this token loop rather than the
+      //   get_options() family, so mark each one accessed for the unused-option check.
+      mark_option_accessed(opt);
 
       if (opt->is("datatype") || opt->is("nthreads"))
         ++n;

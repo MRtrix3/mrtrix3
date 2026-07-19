@@ -612,6 +612,14 @@ typename std::enable_if<std::is_enum_v<Enum>, std::optional<Enum>>::type get_opt
  * them uniformly and lazily. */
 void check_unused_options();
 
+//! flag every parsed instance of the given option as having been consulted
+/*! For the rare commands that consume options outside the get_options() family — e.g. mrcalc,
+ * which identifies operators via match_option() and processes them through its own reverse-Polish
+ * token loop rather than the standard accessors — so that check_unused_options() does not
+ * misreport those options as unused. The command calls this for each option it actually
+ * consumes. */
+void mark_option_accessed(const Option *opt);
+
 //! convenience function provided mostly to ease writing Exception strings
 std::string operator+(const char *const left, const App::ParsedArgument &right); // check_syntax off
 

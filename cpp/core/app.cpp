@@ -1903,6 +1903,12 @@ std::vector<ParsedOption> get_options(std::string_view name) {
   return matches;
 }
 
+void mark_option_accessed(const Option *opt) {
+  for (const ParsedOption &parsed : option)
+    if (parsed.opt == opt)
+      parsed.mark_accessed();
+}
+
 void check_unused_options() {
   // First pass: an option may be specified multiple times (allow_multiple), or read via more
   //   than one path; treat an Option as consulted if any of its parsed instances was accessed.
