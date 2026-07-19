@@ -290,11 +290,8 @@ Eigen::MatrixXd compute_SH2amp_mapping(const MatrixType &directions,       //
     auto opt = App::get_options("lmax");
     if (!opt.empty()) {
       lmax_set_from_commandline = true;
+      // Non-negativity and evenness are enforced at parse time by the lmax argument type.
       lmax = static_cast<int>(opt[0][0].as_int());
-      if (lmax % 2)
-        throw Exception("lmax must be an even number");
-      if (lmax < 0)
-        throw Exception("lmax must be a non-negative number");
       if (lmax > lmax_from_ndir) {
         WARN("not enough directions for lmax = " + str(lmax) + " - dropping down to " + str(lmax_from_ndir));
         lmax = lmax_from_ndir;

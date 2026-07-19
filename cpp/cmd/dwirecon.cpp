@@ -61,7 +61,7 @@ const OptionGroup combinepredicted_options = OptionGroup("Options specific to \"
   + Option("lmax", "set the maximal spherical harmonic degrees to use"
                    " (one for each b-value)"
                    " during signal reconstruction")
-      + Argument("value").type_sequence_int()
+      + Argument("value").type_lmax_sequence()
   + Option("exponent", "set the exponent modulating relative contributions"
                        " between empirical and predicted signal"
                        " (see Description)")
@@ -581,12 +581,11 @@ void run_combine_predicted(Image<float> &dwi_in,
   auto opt = get_options("lmax");
   std::vector<int> lmax_user;
   if (!opt.empty()) {
-    lmax_user = parse_ints<int>(opt[0][0]);
+    // Non-negativity and evenness of each lmax are enforced at parse time by the lmax argument type.
+    lmax_user = MR::container_cast<std::vector<int>>(opt[0][0].as_sequence_int());
     if (lmax_user.size() != shells.count())
       throw Exception("-lmax option must specify one lmax for each unique b-value");
     for (size_t shell_index = 0; shell_index != shells.count(); ++shell_index) {
-      if (lmax_user[shell_index] % 2 != 0)
-        throw Exception("-lmax values must be even numbers");
       // Technically this is a weak constraint:
       //   user-requested lmax may not be possible once excluding a phase encoding group
       if (lmax_user[shell_index] > Math::SH::NforL(shells[shell_index].count()))

@@ -54,7 +54,7 @@ const OptionGroup CommonOptions = OptionGroup ("Options common to more than one 
             " If omitted, the command will use the lmax of the corresponding response function"
             " (i.e based on its number of coefficients),"
             " up to a maximum of 8.")
-      + Argument ("order").type_sequence_int()
+      + Argument ("order").type_lmax_sequence()
 
     + Option ("mask",
               "only perform computation within the specified binary brain mask image.")

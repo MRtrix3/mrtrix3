@@ -62,10 +62,12 @@ add_bash_binary_test(afdconnectivity/wbft)
 
 add_bash_binary_test(amp2response/default)
 add_bash_binary_test(amp2response/lmax)
+add_bash_binary_test(amp2response/lmax_validation)
 add_bash_binary_test(amp2response/noconstraint)
 
 add_bash_binary_test(amp2sh/default NO_FILESYSTEM_LOCK)
 add_bash_binary_test(amp2sh/lmax NO_FILESYSTEM_LOCK)
+add_bash_binary_test(amp2sh/lmax_validation NO_FILESYSTEM_LOCK)
 add_bash_binary_test(amp2sh/with_noise NO_FILESYSTEM_LOCK)
 
 add_bash_binary_test(connectome2tck/exemplars)

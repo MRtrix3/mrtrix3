@@ -272,7 +272,7 @@ const OptionGroup rigid_options =
              " By default, FOD registration will use lmax 0,2,4"
              " with default scale factors 0.25,0.5,1.0 respectively."
              " Note that no reorientation will be performed with lmax = 0.")
-      + Argument("num").type_sequence_int()
+      + Argument("num").type_lmax_sequence()
 
     + Option("rigid_log",
              "write gradient descent parameter evolution to log file")
@@ -353,7 +353,7 @@ const OptionGroup affine_options =
              " By default FOD registration will use lmax 0,2,4"
              " with default scale factors 0.25,0.5,1.0 respectively."
              " Note that no reorientation will be performed with lmax = 0.")
-      + Argument("num").type_sequence_int()
+      + Argument("num").type_lmax_sequence()
 
     + Option("affine_log",
              "write gradient descent parameter evolution to log file")

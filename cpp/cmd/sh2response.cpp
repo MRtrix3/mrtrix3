@@ -49,7 +49,7 @@ void usage() {
 
   OPTIONS
     + Option ("lmax", "specify the maximum harmonic degree of the response function to estimate")
-      + Argument ("value").type_integer(0, 20)
+      + Argument ("value").type_lmax(0, 20)
     + Option ("dump", "dump the m=0 SH coefficients from all voxels in the mask to the output file,"
                       " rather than their mean")
       + Argument ("file").type_file_out();

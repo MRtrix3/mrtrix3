@@ -67,7 +67,8 @@ public:
       using namespace App;
       auto opt = get_options("lmax");
       if (!opt.empty()) {
-        auto list = parse_ints<uint32_t>(opt[0][0]);
+        // Non-negativity and evenness are enforced at parse time by the lmax argument type.
+        auto list = opt[0][0].as_sequence_uint();
         if (list.size() != 1)
           throw Exception("CSD algorithm expects a single lmax to be specified");
         lmax_cmdline = list.front();

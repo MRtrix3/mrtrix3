@@ -454,7 +454,7 @@ void run() {
       throw Exception("the -rigid_lmax option has been set when no rigid registration is requested");
     if (max_mc_image_lmax == 0)
       throw Exception("-rigid_lmax option is not valid if no input image is FOD image");
-    rigid_lmax = parse_ints<uint32_t>(opt[0][0]);
+    rigid_lmax = MR::container_cast<std::vector<uint32_t>>(opt[0][0].as_sequence_uint());
     for (size_t i = 0; i < rigid_lmax.size(); ++i)
       if (rigid_lmax[i] > max_mc_image_lmax) {
         WARN("the requested -rigid_lmax exceeds the lmax of the input images, setting it to " + str(max_mc_image_lmax));
@@ -565,7 +565,7 @@ void run() {
       throw Exception("the -affine_lmax option has been set when no affine registration is requested");
     if (max_mc_image_lmax == 0)
       throw Exception("-affine_lmax option is not valid if no input image is FOD image");
-    affine_lmax = parse_ints<uint32_t>(opt[0][0]);
+    affine_lmax = MR::container_cast<std::vector<uint32_t>>(opt[0][0].as_sequence_uint());
     for (size_t i = 0; i < affine_lmax.size(); ++i)
       if (affine_lmax[i] > max_mc_image_lmax) {
         WARN("the requested -affine_lmax exceeds the lmax of the input images, setting it to " +
@@ -732,7 +732,7 @@ void run() {
       throw Exception("the -nl_lmax option has been set when no non-linear registration is requested");
     if (max_mc_image_lmax == 0)
       throw Exception("-nl_lmax option is not valid if no input image is FOD image");
-    nl_lmax = parse_ints<uint32_t>(opt[0][0]);
+    nl_lmax = MR::container_cast<std::vector<uint32_t>>(opt[0][0].as_sequence_uint());
     nl_registration.set_lmax(nl_lmax);
     for (size_t i = 0; i < (nl_lmax).size(); ++i)
       if ((nl_lmax)[i] > max_mc_image_lmax)

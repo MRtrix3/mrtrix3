@@ -51,7 +51,7 @@ Input options
 Parameters
 ^^^^^^^^^^
 
--  **-lmax order** set the maximum harmonic order for the output series. (range: 2 to 30) (default: 8)
+-  **-lmax order** set the maximum harmonic order for the output series. (range: 2 to 30) (must be even) (default: 8)
 
 -  **-length size** set the length of the particles (fibre segments). (minimum: 9.9999999999999995e-07) (default: 1mm)
 

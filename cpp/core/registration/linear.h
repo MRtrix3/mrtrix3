@@ -193,10 +193,8 @@ public:
     do_reorientation = true;
   }
 
+  // Non-negativity and evenness of each lmax are enforced at parse time by the lmax argument type.
   void set_lmax(const std::vector<uint32_t> &lmax) {
-    for (size_t i = 0; i < lmax.size(); ++i)
-      if (lmax[i] % 2)
-        throw Exception("the input lmax must be even");
     if (lmax.size() == stages.size()) {
       for (size_t i = 0; i < stages.size(); ++i)
         stages[i].fod_lmax = lmax[i];

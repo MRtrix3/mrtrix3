@@ -31,7 +31,7 @@ https://mrtrix.readthedocs.io/en/3.0.8/concepts/spherical_harmonics.html
 Options
 -------
 
--  **-lmax order** set the maximum harmonic order for the output series. By default, the program will use the highest possible lmax given the number of diffusion-weighted images, up to a maximum of 8. (range: 0 to 30)
+-  **-lmax order** set the maximum harmonic order for the output series. By default, the program will use the highest possible lmax given the number of diffusion-weighted images, up to a maximum of 8. (range: 0 to 30) (must be even)
 
 -  **-normalise** normalise the DW signal to the b=0 image
 

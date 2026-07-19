@@ -76,7 +76,7 @@ void usage() {
 
     + Option ("lmax", "specify the maximum harmonic degree of the response function to estimate"
                       " (can be a comma-separated list for multi-shell data)")
-      + Argument ("values").type_sequence_int();
+      + Argument ("values").type_lmax_sequence();
 
   REFERENCES
     + "Smith, R. E.; Dhollander, T. & Connelly, A. " // Internal
@@ -263,11 +263,9 @@ void run() {
     if (lmax.size() != dirs_azin.size())
       throw Exception("Number of lmax\'s specified (" + str(lmax.size()) + ")" +                   //
                       " does not match number of b-value shells (" + str(dirs_azin.size()) + ")"); //
-    for (auto i : lmax) {
-      if (i % 2)
-        throw Exception("Values specified for lmax must be even");
+    // Non-negativity and evenness of each lmax are enforced at parse time by the lmax argument type.
+    for (auto i : lmax)
       max_lmax = std::max(max_lmax, i);
-    }
     if ((*shells)[0].is_bzero() && lmax.front()) {
       WARN("Non-zero lmax requested for " +
            ((*shells)[0].get_mean()

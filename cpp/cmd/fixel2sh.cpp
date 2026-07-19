@@ -55,7 +55,7 @@ void usage() {
 
   OPTIONS
   + Option ("lmax", "set the maximum harmonic order for the output series")
-  +   Argument ("order").type_integer (0, 30).set_default (8);
+  +   Argument ("order").type_lmax (0, 30).set_default (8);
 
 }
 // clang-format on

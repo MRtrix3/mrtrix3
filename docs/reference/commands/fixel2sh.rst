@@ -32,7 +32,7 @@ https://mrtrix.readthedocs.io/en/3.0.8/fixel_based_analysis/fixel_directory_form
 Options
 -------
 
--  **-lmax order** set the maximum harmonic order for the output series (range: 0 to 30) (default: 8)
+-  **-lmax order** set the maximum harmonic order for the output series (range: 0 to 30) (must be even) (default: 8)
 
 Standard options
 ^^^^^^^^^^^^^^^^

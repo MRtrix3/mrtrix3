@@ -1,0 +1,21 @@
+#!/bin/bash
+# Parse-time validation of the comma-separated (vector) lmax argument type, and preservation
+#   of the command's own count-matching validation on top of the type.
+# Each -lmax entry must be a non-negative even integer, enforced by the argument type. The
+#   per-command check that the number of entries matches the number of b-value shells is NOT
+#   part of the type and must continue to fire.
+
+# Odd entry: rejected with the dedicated per-value lmax error.
+OUT=$(amp2response dwi.mif sh2response/sf.mif sh2response/ev.mif tmp_reject.txt -lmax 0,7 2>&1) \
+  && { echo "ERROR: expected odd lmax entry to be rejected"; exit 1; }
+echo "$OUT" | grep -q "each lmax value supplied for option \"-lmax\" must be a non-negative even integer"
+
+# Count mismatch (three entries, two shells): the command's own preserved check must fire,
+#   not the type's even/non-negative check.
+OUT=$(amp2response dwi.mif sh2response/sf.mif sh2response/ev.mif tmp_reject.txt -lmax 0,4,6 2>&1) \
+  && { echo "ERROR: expected shell-count mismatch to be rejected"; exit 1; }
+echo "$OUT" | grep -q "does not match number of b-value shells"
+
+# Valid list: accepted, matching the pre-generated reference.
+amp2response dwi.mif sh2response/sf.mif sh2response/ev.mif tmp_lmax6.txt -lmax 0,6 -force
+testing_diff_matrix tmp_lmax6.txt amp2response/lmax6.txt -frac 1e-5

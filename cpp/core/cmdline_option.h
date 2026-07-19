@@ -39,7 +39,7 @@ namespace MR::App {
  * \ref command_line_parsing page.
  * */
 
-class ArgTypeFlags : public std::bitset<15> {
+class ArgTypeFlags : public std::bitset<17> {
 public:
   ArgTypeFlags() = default;
   inline static constexpr ssize_t Text = 0;
@@ -57,6 +57,15 @@ public:
   inline static constexpr ssize_t TracksIn = 12;
   inline static constexpr ssize_t TracksOut = 13;
   inline static constexpr ssize_t Choice = 14;
+  //! a single maximal spherical harmonic degree (lmax): a non-negative even integer
+  /*! A refinement of Integer: the Integer bit is set alongside Lmax so that all existing
+   * integer machinery (parsing, range display, readers) applies unchanged, while the Lmax
+   * bit triggers the additional non-negative-and-even validation at parse time. */
+  inline static constexpr ssize_t Lmax = 15;
+  //! a comma-separated list of maximal spherical harmonic degrees (lmax), each non-negative and even
+  /*! A refinement of IntSeq: the IntSeq bit is set alongside LmaxSeq, so the sequence parsing
+   * is shared while the LmaxSeq bit triggers per-element non-negative-and-even validation. */
+  inline static constexpr ssize_t LmaxSeq = 16;
 };
 
 class ArgModifierFlags {
@@ -330,6 +339,30 @@ public:
   //! specifies that the argument should be a sequence of comma-separated floating-point values.
   Argument &type_sequence_float() {
     types.set(ArgTypeFlags::FloatSeq);
+    return *this;
+  }
+
+  //! specifies that the argument should be a maximal spherical harmonic degree (lmax)
+  /*! An lmax is a non-negative even integer; both constraints are enforced at parse time
+   * (see App::ParsedArgument::as_int()) and surfaced automatically in the help. The optional
+   * bounds constrain the permitted magnitude further (e.g. a command may require a minimum of
+   * 2, or impose a sanity upper bound); the default lower bound of 0 encodes non-negativity. */
+  Argument &type_lmax(const int64_t min = 0, const int64_t max = std::numeric_limits<int64_t>::max()) {
+    types.set(ArgTypeFlags::Integer);
+    types.set(ArgTypeFlags::Lmax);
+    int_limits.set(min, max);
+    return *this;
+  }
+
+  //! specifies that the argument should be a comma-separated list of lmax values
+  /*! Each element is a non-negative even integer; both constraints are enforced per element at
+   * parse time (see App::ParsedArgument::as_sequence_int() / as_sequence_uint()) and surfaced
+   * automatically in the help. Command-specific validation of the list (e.g. matching the number
+   * of entries to the number of shells or tissues, or clamping to a per-shell upper bound) remains
+   * the responsibility of the individual command. */
+  Argument &type_lmax_sequence() {
+    types.set(ArgTypeFlags::IntSeq);
+    types.set(ArgTypeFlags::LmaxSeq);
     return *this;
   }
 

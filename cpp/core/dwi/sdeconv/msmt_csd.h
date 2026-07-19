@@ -56,8 +56,9 @@ public:
     void parse_cmdline_options() {
       using namespace App;
       auto opt = get_options("lmax");
+      // Non-negativity and evenness of each lmax are enforced at parse time by the lmax argument type.
       if (!opt.empty())
-        lmax = parse_ints<uint32_t>(opt[0][0]);
+        lmax = MR::container_cast<std::vector<uint32_t>>(opt[0][0].as_sequence_uint());
       opt = get_options("directions");
       if (!opt.empty()) {
         const Eigen::MatrixXd directions = File::Matrix::load_matrix(opt[0][0]);
@@ -102,10 +103,6 @@ public:
         if (lmax.size() != num_tissues())
           throw Exception("Number of lmaxes specified (" + str(lmax.size()) + ") does not match number of tissues (" +
                           str(num_tissues()) + ")");
-        for (const auto i : lmax) {
-          if (i % 2)
-            throw Exception("Each value of lmax must be a non-negative even integer");
-        }
       }
 
       for (size_t t = 0; t != num_tissues(); ++t) {

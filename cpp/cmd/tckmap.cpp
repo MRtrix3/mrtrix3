@@ -75,7 +75,7 @@ const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality
       "generate a Track Orientation Distribution (TOD) in each voxel;"
       " need to specify the maximum spherical harmonic degree lmax to use"
       " when generating Apodised Point Spread Functions")
-    + Argument ("lmax").type_integer (2, 20);
+    + Argument ("lmax").type_lmax (2, 20);
 
 const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast properties")
   + Option ("contrast",
@@ -373,9 +373,8 @@ void run() {
     if (writer_type != writer_dim::GREYSCALE)
       throw Exception("Options for setting output image dimensionality are mutually exclusive");
     writer_type = writer_dim::TOD;
+    // Non-negativity and evenness are enforced at parse time by the lmax argument type.
     const size_t lmax = opt[0][0];
-    if (lmax % 2)
-      throw Exception("lmax for TODI must be an even number");
     header.ndim() = 4;
     header.size(3) = Math::SH::NforL(lmax);
     header.sanitise();

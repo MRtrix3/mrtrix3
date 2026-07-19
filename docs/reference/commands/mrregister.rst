@@ -67,7 +67,7 @@ Rigid registration options
 
 -  **-rigid_metric.diff.estimator type** Robust estimator to use during rigid-body registration. l1 (least absolute: \|x\|); l2 (ordinary least squares); lp (least powers: \|x\|^1.2); none. (choices: l1, l2, lp, none) (default: none)
 
--  **-rigid_lmax num** explicitly set the lmax to be used per scale factor in rigid FOD registration. By default, FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
+-  **-rigid_lmax num** explicitly set the lmax to be used per scale factor in rigid FOD registration. By default, FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0. (values must be non-negative and even)
 
 -  **-rigid_log file** write gradient descent parameter evolution to log file
 
@@ -94,7 +94,7 @@ Affine registration options
 
 -  **-affine_metric.diff.estimator type** Robust estimator to use durring affine registration. l1 (least absolute: \|x\|); l2 (ordinary least squares); lp (least powers: \|x\|^1.2); none. (choices: l1, l2, lp, none) (default: none)
 
--  **-affine_lmax num** explicitly set the lmax to be used per scale factor in affine FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
+-  **-affine_lmax num** explicitly set the lmax to be used per scale factor in affine FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0. (values must be non-negative and even)
 
 -  **-affine_log file** write gradient descent parameter evolution to log file
 
@@ -151,7 +151,7 @@ Non-linear registration options
 
 -  **-nl_grad_step num** the gradient step size for non-linear registration (Default: 0.5) (range: 0.0001 to 1)
 
--  **-nl_lmax num** explicitly set the lmax to be used per scale factor in non-linear FOD registration. By default, FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
+-  **-nl_lmax num** explicitly set the lmax to be used per scale factor in non-linear FOD registration. By default, FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0. (values must be non-negative and even)
 
 -  **-nl_diagnostics_dir dir** write intermediate images for diagnostics purposes
 

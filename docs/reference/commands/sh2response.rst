@@ -29,7 +29,7 @@ https://mrtrix.readthedocs.io/en/3.0.8/concepts/spherical_harmonics.html
 Options
 -------
 
--  **-lmax value** specify the maximum harmonic degree of the response function to estimate (range: 0 to 20)
+-  **-lmax value** specify the maximum harmonic degree of the response function to estimate (range: 0 to 20) (must be even)
 
 -  **-dump file** dump the m=0 SH coefficients from all voxels in the mask to the output file, rather than their mean
 

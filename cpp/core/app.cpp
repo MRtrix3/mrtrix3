@@ -518,6 +518,13 @@ std::string Argument::help_metadata() const {
     else if (float_limits.has_max())
       result += " (maximum: " + str(float_limits.max()) + ")";
   }
+  // For lmax arguments, the non-negative-and-even constraint is advertised automatically; the
+  //   non-negativity is already conveyed by the integer range (whose lower bound is >= 0), so only
+  //   the evenness requirement need be added for the scalar form.
+  if (types[ArgTypeFlags::Lmax])
+    result += " (must be even)";
+  if (types[ArgTypeFlags::LmaxSeq])
+    result += " (values must be non-negative and even)";
   if (default_value)
     result += " (default: " + *default_value + ")";
   return result;
@@ -2085,6 +2092,11 @@ int64_t App::ParsedArgument::as_int() const {
       retval = to<int64_t>(p);
     }
 
+    // The lmax even/non-negative contract is checked before the magnitude bounds, so that sign and
+    //   evenness violations always report the dedicated lmax error, while an in-parity value outside
+    //   any command-specified magnitude bounds reports the generic out-of-bounds error.
+    if (arg->types[ArgTypeFlags::Lmax] && (retval < 0 || retval % 2 != 0))
+      throw Exception("lmax must be a non-negative even integer (value supplied: " + str(retval) + ")");
     if (retval < arg->int_limits.min() || retval > arg->int_limits.max())
       throw Exception(std::string("out of bounds")                     //
                       + " (valid range: " + str(arg->int_limits.min()) //
@@ -2141,22 +2153,46 @@ default_type App::ParsedArgument::as_float() const {
   return retval;
 }
 
+namespace {
+//! validate that every element of a parsed lmax sequence is a non-negative even integer
+template <class Container>
+void check_lmax_sequence(const Container &values, const Argument *const arg, const Option *const opt) {
+  for (const auto value : values) {
+    const int64_t as_signed = static_cast<int64_t>(value);
+    if (as_signed < 0 || as_signed % 2 != 0) {
+      const std::string source =
+          opt != nullptr ? std::string("option \"-") + opt->id + "\"" : std::string("argument \"") + arg->id + "\"";
+      throw Exception("each lmax value supplied for " + source +
+                      " must be a non-negative even integer (value supplied: " + str(value) + ")");
+    }
+  }
+}
+} // namespace
+
 std::vector<ParsedArgument::IntType> ParsedArgument::as_sequence_int() const {
   assert(arg->types[ArgTypeFlags::IntSeq]);
+  std::vector<IntType> result;
   try {
-    return parse_ints<IntType>(p);
+    result = parse_ints<IntType>(p);
   } catch (Exception &e) {
     throw Exception(e, "Unable to interpret command-line input \"" + as_text() + "\" as sequence of integers");
   }
+  if (arg->types[ArgTypeFlags::LmaxSeq])
+    check_lmax_sequence(result, arg, opt);
+  return result;
 }
 
 std::vector<ParsedArgument::UIntType> ParsedArgument::as_sequence_uint() const {
   assert(arg->types[ArgTypeFlags::IntSeq]);
+  std::vector<UIntType> result;
   try {
-    return parse_ints<UIntType>(p);
+    result = parse_ints<UIntType>(p);
   } catch (Exception &e) {
     throw Exception(e, "Unable to interpret command-line input \"" + as_text() + "\" as sequence of integers");
   }
+  if (arg->types[ArgTypeFlags::LmaxSeq])
+    check_lmax_sequence(result, arg, opt);
+  return result;
 }
 
 std::vector<default_type> ParsedArgument::as_sequence_float() const {

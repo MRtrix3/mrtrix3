@@ -1,0 +1,17 @@
+#!/bin/bash
+# Parse-time validation of the scalar lmax argument type.
+# The -lmax value must be a non-negative even integer; the constraint is enforced by the
+#   argument type before any input data is processed. An odd value is rejected with the
+#   dedicated lmax error; a negative value is rejected by the type's non-negative lower bound;
+#   a valid even non-negative value is accepted.
+
+# Odd value: rejected with the non-negative-even-integer error.
+OUT=$(amp2sh dwi.mif -lmax 7 - 2>&1) && { echo "ERROR: expected odd lmax to be rejected"; exit 1; }
+echo "$OUT" | grep -q "lmax must be a non-negative even integer"
+
+# Negative value: rejected with the same non-negative-even-integer error.
+OUT=$(amp2sh dwi.mif -lmax -2 - 2>&1) && { echo "ERROR: expected negative lmax to be rejected"; exit 1; }
+echo "$OUT" | grep -q "lmax must be a non-negative even integer"
+
+# Valid even non-negative value: accepted (the type does not fire).
+amp2sh dwi.mif -lmax 4 - | testing_diff_image - amp2sh/out_lmax4.mif -voxel 1e-5

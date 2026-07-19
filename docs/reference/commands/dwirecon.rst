@@ -46,7 +46,7 @@ Options specific to "combine_pairs" operation
 Options specific to "combine_predicted" operation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-lmax value** set the maximal spherical harmonic degrees to use (one for each b-value) during signal reconstruction
+-  **-lmax value** set the maximal spherical harmonic degrees to use (one for each b-value) during signal reconstruction (values must be non-negative and even)
 
 -  **-exponent value** set the exponent modulating relative contributions between empirical and predicted signal (see Description)
 

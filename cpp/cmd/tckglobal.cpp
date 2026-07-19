@@ -115,7 +115,7 @@ void usage() {
   + OptionGroup("Parameters")
 
   + Option ("lmax", "set the maximum harmonic order for the output series.")
-    + Argument ("order").type_integer(2, 30).set_default(default_lmax)
+    + Argument ("order").type_lmax(2, 30).set_default(default_lmax)
 
   + Option ("length", "set the length of the particles (fibre segments).")
     + Argument ("size").type_float(1e-6).set_default(str(default_length, 2) + "mm")

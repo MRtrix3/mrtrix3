@@ -88,7 +88,7 @@ const OptionGroup nonlinear_options =
              " By default, FOD registration will use lmax 0,2,4"
              " with default scale factors 0.25,0.5,1.0 respectively."
              " Note that no reorientation will be performed with lmax = 0.")
-      + Argument("num").type_sequence_int()
+      + Argument("num").type_lmax_sequence()
 
     // + Option("cc", "use cc metric with radius")
     // + Argument ("radius").type_integer (1,100)
