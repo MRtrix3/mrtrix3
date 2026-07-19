@@ -91,6 +91,36 @@ testing_python_cli -bool 2
 ! testing_python_cli -int_seq Not,An,Int,Seq
 ! testing_python_cli -float_seq Not,A,Float,Seq
 
+# Integer suffix multipliers on scalar integer types (mirrors the C++
+#   ParsedArgument::as_int(); decimal multipliers k/K=1e3, m/M=1e6, b/B=1e9, t/T=1e12).
+# Each multiplier, upper and lower case.
+testing_python_cli -int_unbound 5k 2>&1 | grep "int_unbound: 5000"
+testing_python_cli -int_unbound 5K 2>&1 | grep "int_unbound: 5000"
+testing_python_cli -int_unbound 3m 2>&1 | grep "int_unbound: 3000000"
+testing_python_cli -int_unbound 3M 2>&1 | grep "int_unbound: 3000000"
+# "b"/"B" is a decimal billion (1e9), NOT a bytes multiplier.
+testing_python_cli -int_unbound 2b 2>&1 | grep "int_unbound: 2000000000"
+testing_python_cli -int_unbound 2B 2>&1 | grep "int_unbound: 2000000000"
+testing_python_cli -int_unbound 1t 2>&1 | grep "int_unbound: 1000000000000"
+testing_python_cli -int_unbound 1T 2>&1 | grep "int_unbound: 1000000000000"
+# A fractional prefix is multiplied then rounded to the nearest integer.
+testing_python_cli -int_unbound 1.5k 2>&1 | grep "int_unbound: 1500"
+testing_python_cli -int_unbound 3.5b 2>&1 | grep "int_unbound: 3500000000"
+# A single mid-string "e"/"E" selects scientific-notation parsing, rounded to integer.
+testing_python_cli -int_unbound 1e3 2>&1 | grep "int_unbound: 1000"
+testing_python_cli -int_unbound 1e10 2>&1 | grep "int_unbound: 10000000000"
+# The range check is applied AFTER multiplication (-int_bounded permits 0 to 100):
+#   "0k" multiplies to an in-range 0, but "1k" multiplies to an out-of-range 1000.
+testing_python_cli -int_bounded 0k 2>&1 | grep "int_bounded: 0"
+! testing_python_cli -int_bounded 1k
+# Erroneous suffixes are rejected: an unknown postfix, a trailing non-suffix, or two letters.
+! testing_python_cli -int_unbound 5x
+! testing_python_cli -int_unbound 1k1
+! testing_python_cli -int_unbound 1e3k
+# Integer sequences deliberately do NOT apply multipliers (matches C++ parse_ints()).
+! testing_python_cli -int_seq 5k
+testing_python_cli -int_seq 1,2,3 2>&1 | grep "int_seq: \[1, 2, 3\]"
+
 # Verify correct parsing of option arguments that begin with a dash.
 testing_python_cli -int_unbound -123 2>&1 | grep "int_unbound: -123"
 ! testing_python_cli -int_unbound --1

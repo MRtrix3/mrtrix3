@@ -1001,6 +1001,56 @@ class Parser: # pylint: disable=too-many-public-methods
     #   Int / Float factories (mirrors the C++ ScalarRange rendering in Argument::help_metadata()).
     def _help_range(self):
       return ''
+    # Parse a scalar integer with the same suffix-multiplier support as the C++ parser
+    #   (MR::App::ParsedArgument::as_int(), cpp/core/app.cpp). Decimal multipliers only, no
+    #   binary "G": k/K=1e3, m/M=1e6, b/B=1e9 (billion, NOT bytes), t/T=1e12. Edge rules mirror
+    #   the C++ implementation exactly:
+    #   - Exactly one trailing alpha character is treated as a multiplier suffix; a fractional
+    #     prefix (a '.' anywhere before the suffix) is parsed as float, multiplied, then rounded,
+    #     otherwise the integer prefix is multiplied directly.
+    #   - A single mid-string 'e'/'E' selects scientific-notation parsing (float, then rounded).
+    #   - More than one alpha character, or any other single trailing alpha, is rejected.
+    #   Rounding matches C++ std::round() (half away from zero), not Python's banker's rounding.
+    #   Range-checking against min/max is the caller's responsibility, applied AFTER multiplication.
+    #   Sequence-integer types deliberately do NOT use this (C++ applies multipliers to scalar
+    #   as_int() only; parse_ints() does not).
+    @staticmethod
+    def _parse_int_multiplier(input_value):
+      def round_half_away(value):
+        return math.floor(value + 0.5) if value >= 0.0 else math.ceil(value - 0.5)
+      alpha_count = 0
+      alpha_is_last = False
+      contains_dotpoint = False
+      alpha_char = ''
+      for char in input_value:
+        if char.isalpha():
+          alpha_count += 1
+          alpha_is_last = True
+          alpha_char = char
+        else:
+          alpha_is_last = False
+        if char == '.':
+          contains_dotpoint = True
+      if alpha_count > 1:
+        raise ValueError('too many letters')
+      if not alpha_count:
+        return int(input_value)
+      if alpha_is_last:
+        multipliers = {'k': 1000, 'K': 1000,
+                       'm': 1000000, 'M': 1000000,
+                       'b': 1000000000, 'B': 1000000000,
+                       't': 1000000000000, 'T': 1000000000000}
+        postfix = input_value[-1]
+        if postfix not in multipliers:
+          raise ValueError(f'unexpected postfix \'{postfix}\'')
+        multiplier = multipliers[postfix]
+        prefix = input_value[:-1]
+        if contains_dotpoint:
+          return round_half_away(float(prefix) * multiplier)
+        return int(prefix) * multiplier
+      if alpha_char in ('e', 'E'):
+        return round_half_away(float(input_value))
+      raise ValueError('unexpected character')
 
   class Bool(CustomTypeBase):
     def __call__(self, input_value):
@@ -1028,7 +1078,7 @@ class Parser: # pylint: disable=too-many-public-methods
     class IntBounded(Parser.CustomTypeBase):
       def __call__(self, input_value):
         try:
-          value = int(input_value)
+          value = Parser.CustomTypeBase._parse_int_multiplier(input_value)
         except ValueError as exc:
           raise Parser.ArgumentError(f'Could not interpret "{input_value}" as integer value') from exc
         if min_value is not None and value < min_value:
@@ -1102,7 +1152,7 @@ class Parser: # pylint: disable=too-many-public-methods
     class LmaxScalar(Parser.CustomTypeBase):
       def __call__(self, input_value):
         try:
-          value = int(input_value)
+          value = Parser.CustomTypeBase._parse_int_multiplier(input_value)
         except ValueError as exc:
           raise Parser.ArgumentError(f'Could not interpret "{input_value}" as integer value') from exc
         if value < 0 or value % 2:
