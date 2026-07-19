@@ -61,7 +61,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       help='The normalised DWI series')
   options = parser.add_argument_group('Options specific to the "mtnorm" algorithm')
   options.add_argument('-lmax',
-                       type=app.Parser.SequenceInt(),
+                       type=app.Parser.SequenceLmax(),
                        help='The maximum spherical harmonic degree for the estimated FODs (see Description); '
                             f'defaults are "{",".join(map(str, LMAXES_MULTI))}" for multi-shell '
                             f'and "{",".join(map(str, LMAXES_SINGLE))}" for single-shell data)')
@@ -87,8 +87,6 @@ def execute(): #pylint: disable=unused-variable
   lmax = None
   if app.ARGS.lmax:
     lmax = app.ARGS.lmax
-    if any(value < 0 or value % 2 for value in lmax):
-      raise MRtrixError('lmax values must be non-negative even integers')
     if len(lmax) not in [2, 3]:
       raise MRtrixError('Length of lmax vector expected to be either 2 or 3')
 

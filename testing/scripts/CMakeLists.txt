@@ -290,6 +290,7 @@ add_bash_script_test(population_template/piping)
 add_bash_script_test(population_template/whitespace)
 
 add_bash_script_test(pythoncli/constraint_at_least_one "pythonci")
+add_bash_script_test(pythoncli/lmax_types "pythonci")
 add_bash_script_test(pythoncli/unused_option "pythonci")
 
 add_bash_script_test(responsemean/default "pythonci")

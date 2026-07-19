@@ -119,10 +119,6 @@ def execute(): #pylint: disable=unused-variable
     if len(sfwm_lmax) != len(bvalues):
       raise MRtrixError(f'Number of lmax\'s ({len(sfwm_lmax)}, as supplied to the -lmax option: '
                         f'{",".join(map(str,sfwm_lmax))}) does not match number of unique b-values.')
-    if any(sfl%2 for sfl in sfwm_lmax):
-      raise MRtrixError('Values supplied to the -lmax option must be even.')
-    if any(sfl<0 for sfl in sfwm_lmax):
-      raise MRtrixError('Values supplied to the -lmax option must be non-negative.')
     sfwm_lmax_option = ' -lmax ' + ','.join(map(str,sfwm_lmax))
 
 

@@ -55,7 +55,7 @@ Options relevant to the internal optimisation procedure
 
 - **-mask_algo algorithm** The algorithm to use for mask estimation, potentially based on the ODF sum image (see Description) (choices: dwi2mask, fslbet, hdbet, mrthreshold, synthstrip, threshold) (default: threshold)
 
-- **-lmax values** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell  and "4,0" for single-shell data)
+- **-lmax values** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell  and "4,0" for single-shell data) (values must be non-negative and even)
 
 Options that modulate the outputs of the script
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

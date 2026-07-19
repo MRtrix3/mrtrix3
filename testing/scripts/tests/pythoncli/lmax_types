@@ -1,0 +1,66 @@
+#!/bin/bash
+# Scalar and vector lmax argument types, Python parser (mirrors the C++ lmax types,
+#   cpp/core/cmdline_option.h Argument::type_lmax() / type_lmax_sequence()).
+# No shipped Python command declares a SCALAR lmax option (its C++ counterparts are amp2sh etc.),
+#   and the vector wording must match verbatim regardless of the owning command, so this exercises
+#   the native parser (python/mrtrix3/app.py) directly: the even/non-negative constraint must reject
+#   odd and negative values with wording identical to the C++ parser, applied BEFORE the scalar
+#   magnitude-bounds check, while valid even non-negative values must be accepted.
+
+# Locate the installed mrtrix3 Python library alongside the command launchers on PATH.
+launcher=$(command -v peakscheck)
+libdir=$(cd "$(dirname "${launcher}")/../lib" && pwd)
+export PYTHONPATH="${libdir}:${PYTHONPATH}"
+
+# A minimal single-command harness with one scalar lmax option (bounded 0..30) and one vector.
+cat > tmp-lmax_types.py <<'PYEOF'
+import sys
+from mrtrix3 import app
+cmdline = app.Parser()
+cmdline.set_author('MRtrix3 test harness')
+cmdline.set_synopsis('Exercise the scalar and vector lmax argument types')
+cmdline.add_argument('-lmax_scalar', type=app.Parser.Lmax(0, 30), help='a scalar lmax')
+cmdline.add_argument('-lmax_vector', type=app.Parser.SequenceLmax(), help='a vector lmax')
+cmdline.parse_args()
+sys.stderr.write('LMAX_ACCEPTED\n')
+PYEOF
+
+# Scalar odd value: dedicated lmax error (raw clause, matching amp2sh's inner clause).
+OUT=$(python3 tmp-lmax_types.py -lmax_scalar 7 2>&1) \
+  && { echo "ERROR: expected scalar-odd failure"; exit 1; }
+echo "$OUT" | grep -qF 'lmax must be a non-negative even integer (value supplied: 7)' \
+  || { echo "ERROR: scalar-odd wording mismatch"; echo "$OUT"; exit 1; }
+
+# Scalar negative value: the sign check fires the lmax error (before the magnitude-bounds check).
+OUT=$(python3 tmp-lmax_types.py -lmax_scalar -2 2>&1) \
+  && { echo "ERROR: expected scalar-negative failure"; exit 1; }
+echo "$OUT" | grep -qF 'lmax must be a non-negative even integer (value supplied: -2)' \
+  || { echo "ERROR: scalar-negative wording mismatch"; echo "$OUT"; exit 1; }
+
+# Scalar in-parity but over the command bound: generic out-of-bounds, NOT the lmax error.
+OUT=$(python3 tmp-lmax_types.py -lmax_scalar 32 2>&1) \
+  && { echo "ERROR: expected scalar out-of-bounds failure"; exit 1; }
+echo "$OUT" | grep -qF 'lmax must be a non-negative even integer' \
+  && { echo "ERROR: in-parity over-bound value wrongly reported the lmax error"; echo "$OUT"; exit 1; }
+
+# Scalar valid even value within bounds: accepted.
+OUT=$(python3 tmp-lmax_types.py -lmax_scalar 8 2>&1)
+echo "$OUT" | grep -qF 'LMAX_ACCEPTED' || { echo "ERROR: valid scalar lmax rejected"; echo "$OUT"; exit 1; }
+
+# Vector odd entry: per-element error naming the owning option (matching amp2response verbatim).
+OUT=$(python3 tmp-lmax_types.py -lmax_vector 2,3 2>&1) \
+  && { echo "ERROR: expected vector-odd failure"; exit 1; }
+echo "$OUT" | grep -qF 'each lmax value supplied for option "-lmax_vector" must be a non-negative even integer (value supplied: 3)' \
+  || { echo "ERROR: vector-odd wording mismatch"; echo "$OUT"; exit 1; }
+
+# Vector negative entry: unified onto the same per-element lmax error.
+OUT=$(python3 tmp-lmax_types.py -lmax_vector 2,-4 2>&1) \
+  && { echo "ERROR: expected vector-negative failure"; exit 1; }
+echo "$OUT" | grep -qF 'each lmax value supplied for option "-lmax_vector" must be a non-negative even integer (value supplied: -4)' \
+  || { echo "ERROR: vector-negative wording mismatch"; echo "$OUT"; exit 1; }
+
+# Vector of valid even non-negative entries: accepted.
+OUT=$(python3 tmp-lmax_types.py -lmax_vector 0,2,4,6 2>&1)
+echo "$OUT" | grep -qF 'LMAX_ACCEPTED' || { echo "ERROR: valid vector lmax rejected"; echo "$OUT"; exit 1; }
+
+true

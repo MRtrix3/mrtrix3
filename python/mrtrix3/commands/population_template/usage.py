@@ -132,7 +132,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                                f' (default: {",".join([str(x) for x in DEFAULT_RIGID_SCALES])}).'
                                ' This and affine_scale implicitly define the number of template levels')
   linoptions.add_argument('-rigid_lmax',
-                          type=app.Parser.SequenceInt(),
+                          type=app.Parser.SequenceLmax(),
                           help='Specify the lmax used for rigid registration for each scale factor,'
                                ' in the form of a list of integers'
                                f' (default: {",".join([str(x) for x in DEFAULT_RIGID_LMAX])}).'
@@ -152,7 +152,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                                f' (default: {",".join([str(x) for x in DEFAULT_AFFINE_SCALES])}).'
                                ' This and rigid_scale implicitly define the number of template levels')
   linoptions.add_argument('-affine_lmax',
-                          type=app.Parser.SequenceInt(),
+                          type=app.Parser.SequenceLmax(),
                           help='Specify the lmax used for affine registration for each scale factor,'
                                ' in the form of a list of integers'
                                f' (default: {",".join([str(x) for x in DEFAULT_AFFINE_LMAX])}).'
@@ -174,7 +174,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                               f' (default: {",".join([str(x) for x in DEFAULT_NL_SCALES])}).'
                               ' This implicitly defines the number of template levels')
   nloptions.add_argument('-nl_lmax',
-                         type=app.Parser.SequenceInt(),
+                         type=app.Parser.SequenceLmax(),
                          help='Specify the lmax used for non-linear registration for each scale factor,'
                               ' in the form of a list of integers'
                               f' (default: {",".join([str(x) for x in DEFAULT_NL_LMAX])}).'

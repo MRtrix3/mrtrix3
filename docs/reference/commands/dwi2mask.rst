@@ -931,7 +931,7 @@ Options specific to the "mtnorm" algorithm
 
 - **-init_mask image** Provide an initial brain mask, which will constrain the response function estimation (if omitted, the default dwi2mask algorithm will be used)
 
-- **-lmax values** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell and "4,0" for single-shell data
+- **-lmax values** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell and "4,0" for single-shell data (values must be non-negative and even)
 
 - **-threshold value** the threshold on the total tissue density sum image used to derive the brain mask; default is 0.5 (range: 0 to 1)
 

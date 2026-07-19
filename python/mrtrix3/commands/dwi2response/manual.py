@@ -63,10 +63,6 @@ def execute(): #pylint: disable=unused-variable
     if len(app.ARGS.lmax) != len(shells):
       raise MRtrixError(f'Number of manually-defined lmax\'s ({len(app.ARGS.lmax)}) '
                         f'does not match number of b-value shells ({len(shells)})')
-    if any(l % 2 for l in app.ARGS.lmax):
-      raise MRtrixError('Values for lmax must be even')
-    if any(l < 0 for l in app.ARGS.lmax):
-      raise MRtrixError('Values for lmax must be non-negative')
     lmax_option = f' -lmax {",".join(map(str,app.ARGS.lmax))}'
 
   # Do we have directions, or do we need to calculate them?

@@ -67,7 +67,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                                    '(comma-separated list in case of multiple b-values; '
                                    'b=0 must be included explicitly if desired)')
   common_options.add_argument('-lmax',
-                              type=app.Parser.SequenceInt(),
+                              type=app.Parser.SequenceLmax(),
                               help='The maximum harmonic degree(s) for response function estimation '
                                    '(comma-separated list in case of multiple b-values)')
   app.add_dwgrad_import_options(cmdline)
@@ -89,8 +89,6 @@ def execute(): #pylint: disable=unused-variable
 
   # Sanitise some inputs, and get ready for data import
   if app.ARGS.lmax:
-    if any(lmax%2 for lmax in app.ARGS.lmax):
-      raise MRtrixError('Value(s) of lmax must be even')
     if alg.NEEDS_SINGLE_SHELL and not len(app.ARGS.lmax) == 1:
       raise MRtrixError('Can only specify a single lmax value for single-shell algorithms')
   shells_option = []

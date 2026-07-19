@@ -1028,6 +1028,50 @@ class Parser: # pylint: disable=too-many-public-methods
         return ''
     return FloatBounded()
 
+  # A single spherical-harmonic degree: a non-negative even integer. Mirrors the C++ scalar lmax
+  #   type (cpp/core/cmdline_option.h Argument::type_lmax()): a refinement of the bounded integer
+  #   type that additionally requires the value be even and non-negative. The even/sign check is
+  #   applied BEFORE the magnitude-bounds check, so any parity or sign violation always reports the
+  #   dedicated lmax error (including a negative value, even though the default lower bound is 0),
+  #   while an in-parity, non-negative value that merely exceeds a command-specified bound reports
+  #   the generic out-of-bounds error (lmax-design.md section 2.3). The default lower bound of 0
+  #   encodes non-negativity through the ordinary integer range check; a command may pass a stricter
+  #   lower bound (e.g. 2) or a sanity upper bound. The machine-export token is unchanged (INT).
+  def Lmax(min_value=0, max_value=None): # pylint: disable=invalid-name,no-self-argument
+    assert min_value is None or isinstance(min_value, int)
+    assert max_value is None or isinstance(max_value, int)
+    assert min_value is None or max_value is None or max_value >= min_value
+    class LmaxScalar(Parser.CustomTypeBase):
+      def __call__(self, input_value):
+        try:
+          value = int(input_value)
+        except ValueError as exc:
+          raise Parser.ArgumentError(f'Could not interpret "{input_value}" as integer value') from exc
+        if value < 0 or value % 2:
+          raise Parser.ArgumentError(f'lmax must be a non-negative even integer (value supplied: {value})')
+        if min_value is not None and value < min_value:
+          raise Parser.ArgumentError(f'Input value "{input_value}" less than minimum permissible value {min_value}')
+        if max_value is not None and value > max_value:
+          raise Parser.ArgumentError(f'Input value "{input_value}" greater than maximum permissible value {max_value}')
+        return value
+      @staticmethod
+      def _legacytypestring():
+        return f'INT {-sys.maxsize - 1 if min_value is None else min_value} {sys.maxsize if max_value is None else max_value}'
+      @staticmethod
+      def _metavar():
+        return 'value'
+      def _help_range(self):
+        if min_value is not None and max_value is not None:
+          base = f' (range: {min_value} to {max_value})'
+        elif min_value is not None:
+          base = f' (minimum: {min_value})'
+        elif max_value is not None:
+          base = f' (maximum: {max_value})'
+        else:
+          base = ''
+        return f'{base} (must be even)'
+    return LmaxScalar()
+
   class SequenceInt(CustomTypeBase):
     def __call__(self, input_value):
       try:
@@ -1053,6 +1097,35 @@ class Parser: # pylint: disable=too-many-public-methods
     @staticmethod
     def _metavar():
       return 'values'
+
+  # A comma-separated list of spherical-harmonic degrees, each a non-negative even integer.
+  #   Mirrors the C++ vector lmax type (Argument::type_lmax_sequence()): a refinement of the
+  #   integer-sequence type that validates each parsed element. The per-element error names the
+  #   owning option/argument, so the parser records that source on the instance when the option
+  #   is declared (see _add_argument). Negative entries are unified onto the same lmax message
+  #   (lmax-design.md section 2.4). The machine-export token is unchanged (ISEQ).
+  class SequenceLmax(CustomTypeBase):
+    def __init__(self):
+      self._source = None
+    def __call__(self, input_value):
+      try:
+        values = [int(i) for i in input_value.split(',')]
+      except ValueError as exc:
+        raise Parser.ArgumentError(f'Could not interpret "{input_value}" as integer sequence') from exc
+      for value in values:
+        if value < 0 or value % 2:
+          source = self._source if self._source is not None else 'the lmax sequence'
+          raise Parser.ArgumentError(f'each lmax value supplied for {source} '
+                                     f'must be a non-negative even integer (value supplied: {value})')
+      return values
+    @staticmethod
+    def _legacytypestring():
+      return 'ISEQ'
+    @staticmethod
+    def _metavar():
+      return 'values'
+    def _help_range(self):
+      return ' (values must be non-negative and even)'
 
   class DirectoryIn(CustomTypeBase):
     def __call__(self, input_value):
@@ -1371,6 +1444,10 @@ class Parser: # pylint: disable=too-many-public-methods
     if name.startswith('-'):
       # ---- Command-line option ----
       opt_name = name.lstrip('-')
+      # The vector lmax type embeds the owning option in its per-element error; record it here,
+      #   mirroring the C++ parse-time source (option id) passed to check_lmax_sequence().
+      if isinstance(argtype, Parser.SequenceLmax):
+        argtype._source = f'option "-{opt_name}"' # pylint: disable=protected-access
       option = Parser.Option(opt_name,
                              help_text=help_text,
                              repeatable=action == 'append',
@@ -1417,6 +1494,8 @@ class Parser: # pylint: disable=too-many-public-methods
     #   positional per command may be variable-count.
     if nargs in ('+', '*'):
       allow_multiple = True
+    if isinstance(argtype, Parser.SequenceLmax):
+      argtype._source = f'argument "{dest if dest is not None else name}"' # pylint: disable=protected-access
     argument = Parser.Argument(dest if dest is not None else name,
                                help_text=help_text,
                                argtype=argtype,

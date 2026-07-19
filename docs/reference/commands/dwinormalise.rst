@@ -308,7 +308,7 @@ Options for importing the diffusion gradient table
 Options specific to the "mtnorm" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-lmax values** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell and "4,0" for single-shell data)
+- **-lmax values** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell and "4,0" for single-shell data) (values must be non-negative and even)
 
 - **-mask image** Provide a mask image for relevant calculations (if not provided, the default dwi2mask algorithm will be used)
 
