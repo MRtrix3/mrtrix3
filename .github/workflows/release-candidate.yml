@@ -1,0 +1,353 @@
+name: Release candidate
+
+# On-demand validation of a prospective release.
+#
+# Unlike the per-pull-request "Checks" workflow, this workflow:
+#   * checks out the exact commit to be released, with full history and tags;
+#   * creates the release tag *inside the runner's clone only* (it is never
+#     pushed), so that the git-derived version string that FindVersion.cmake
+#     compiles into every binary — and stamps into the provenance of every
+#     output file — is exactly e.g. "3.1.0", the same string the published
+#     binaries will carry, rather than "3.0.8-2083-gabcdef12";
+#   * asserts that the embedded version string is exactly the requested version;
+#   * confirms that the hand-maintained base version in CMakeLists.txt (the
+#     value used for git-less builds such as source archives) was bumped in
+#     lockstep with the tag; and
+#   * runs the *full* test suite, including the Python "script" and the
+#     "integration" suites that are too expensive to run on every pull request
+#     and are therefore otherwise validated only by hand before a release.
+#
+# A green run means: this commit, when tagged <version>, builds cleanly on every
+# supported platform with the correct embedded version and passes every test.
+# Nothing is published; a maintainer then creates and pushes the real signed tag
+# and the GitHub Release, which drives the existing packaging workflows.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version to validate; must equal project(VERSION) on the branch (e.g. 3.1.0)'
+        required: true
+      ref:
+        description: 'Branch, tag or commit to validate (usually the prepared release branch, e.g. next_release)'
+        required: true
+        default: 'dev'
+
+jobs:
+
+  linux:
+    name: linux (full suite)
+    runs-on: ubuntu-latest
+
+    env:
+      QT_SELECT: qt6
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_SIZE: "2G"
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        # Full history and all tags: FindVersion.cmake relies on `git describe`,
+        # and the tag-materialisation step below must see prior release tags.
+        fetch-depth: 0
+        ref: ${{ github.event.inputs.ref }}
+        submodules: true
+
+    - name: install dependencies
+      run: |
+         sudo apt-get update
+         sudo apt-get install clang qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy libpng-dev mesa-vulkan-drivers
+
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.9
+
+    - name: Get CMake
+      uses: lukka/get-cmake@latest
+      with:
+        cmakeVersion: '3.22.1'
+
+    - name: Materialise release tag in local clone
+      run: |
+        set -euo pipefail
+        REQUESTED="${{ github.event.inputs.version }}"
+        # The base version compiled into git-less builds (source archives, shallow
+        # clones) is the literal in CMakeLists.txt; FindVersion.cmake also aborts
+        # the build if the nearest tag does not equal it. It must therefore have
+        # been bumped in lockstep with the tag, so validate that before building.
+        CMAKE_VERSION="$(sed -n 's/.*project(mrtrix3.*VERSION[[:space:]]\{1,\}\([0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}\).*/\1/p' CMakeLists.txt)"
+        echo "Requested release version  : ${REQUESTED}"
+        echo "CMakeLists project version : ${CMAKE_VERSION}"
+        if [ "${CMAKE_VERSION}" != "${REQUESTED}" ]; then
+          echo "::error::project(VERSION ${CMAKE_VERSION}) in CMakeLists.txt does not match requested release ${REQUESTED}."
+          echo "Bump 'project(mrtrix3 ... VERSION ...)' on the release branch to ${REQUESTED} and re-run."
+          exit 1
+        fi
+        if git rev-parse -q --verify "refs/tags/${REQUESTED}" >/dev/null; then
+          echo "::error::Tag ${REQUESTED} already exists; this version appears to have been released already."
+          exit 1
+        fi
+        # Annotated (not lightweight): FindVersion.cmake runs `git describe`
+        # without --tags, so a lightweight tag would be invisible to it.
+        git config user.name "MRtrix3 release-candidate CI"
+        git config user.email "gitbot@mrtrix.org"
+        git tag -a "${REQUESTED}" -m "Release candidate ${REQUESTED}"
+        echo "git describe now yields: $(git describe --abbrev=8 --dirty --always)"
+
+    - name: configure
+      run: >
+        cmake
+        -B build
+        -G Ninja
+        -D CMAKE_BUILD_TYPE=Release
+        -D MRTRIX_BUILD_TESTS=ON
+        -D MRTRIX_STL_DEBUGGING=ON
+        -D MRTRIX_WARNINGS_AS_ERRORS=ON
+        -D CMAKE_C_COMPILER=clang
+        -D CMAKE_CXX_COMPILER=clang++
+
+    - name: build
+      run: cmake --build build -- -k 0
+
+    - name: assert embedded version string
+      run: |
+        set -euo pipefail
+        VERSION_LINE="$(build/bin/mrinfo -version | head -n1)"
+        echo "${VERSION_LINE}"
+        EXPECTED="== mrinfo ${{ github.event.inputs.version }} =="
+        if [ "${VERSION_LINE}" != "${EXPECTED}" ]; then
+          echo "::error::Embedded version is '${VERSION_LINE}', expected '${EXPECTED}'."
+          echo "The build is not sitting exactly on a clean '${{ github.event.inputs.version }}' tag."
+          exit 1
+        fi
+
+    - name: interface tests
+      run: cd build && ctest -L cli --output-on-failure
+
+    - name: unit tests
+      run: cd build && ctest -L unittest --output-on-failure --parallel 4
+
+    - name: binary tests
+      run: cd build && ctest -L binary --output-on-failure --parallel 4
+
+    - name: compatibility tests
+      run: cd build && ctest -L compatibility --output-on-failure
+
+    # The two suites below are the ones the per-PR "Checks" workflow omits for
+    # cost reasons; running them here is the primary purpose of this workflow.
+    - name: script tests (full Python suite)
+      run: cd build && ctest -L script --output-on-failure --parallel 4
+
+    - name: integration tests
+      run: cd build && ctest -L integration --output-on-failure --parallel 4
+
+    - name: check command documentation
+      run: ./docs/generate_user_docs.sh --build-dir build && git diff --exit-code docs/
+
+
+  macos:
+    name: macos (full suite)
+    runs-on: macos-latest
+
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_SIZE: "2G"
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        ref: ${{ github.event.inputs.ref }}
+        submodules: true
+
+    - name: install dependencies
+      run: |
+         brew bundle --file=${{ github.workspace }}/.brewfile
+         brew link --force qt
+         brew install numpy
+
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.9
+
+    - name: Get CMake
+      uses: lukka/get-cmake@latest
+      with:
+        cmakeVersion: '3.22.1'
+
+    - name: Materialise release tag in local clone
+      run: |
+        set -euo pipefail
+        REQUESTED="${{ github.event.inputs.version }}"
+        CMAKE_VERSION="$(sed -n 's/.*project(mrtrix3.*VERSION[[:space:]]\{1,\}\([0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}\).*/\1/p' CMakeLists.txt)"
+        echo "Requested release version  : ${REQUESTED}"
+        echo "CMakeLists project version : ${CMAKE_VERSION}"
+        if [ "${CMAKE_VERSION}" != "${REQUESTED}" ]; then
+          echo "::error::project(VERSION ${CMAKE_VERSION}) in CMakeLists.txt does not match requested release ${REQUESTED}."
+          exit 1
+        fi
+        if git rev-parse -q --verify "refs/tags/${REQUESTED}" >/dev/null; then
+          echo "::error::Tag ${REQUESTED} already exists; this version appears to have been released already."
+          exit 1
+        fi
+        git config user.name "MRtrix3 release-candidate CI"
+        git config user.email "gitbot@mrtrix.org"
+        git tag -a "${REQUESTED}" -m "Release candidate ${REQUESTED}"
+        echo "git describe now yields: $(git describe --abbrev=8 --dirty --always)"
+
+    - name: configure
+      run: >
+        export PATH=/usr/local/opt/qt/bin:$PATH;
+        cmake
+        -B build
+        -G Ninja
+        -D CMAKE_BUILD_TYPE=Release
+        -D CMAKE_FIND_FRAMEWORK=LAST
+        -D MRTRIX_BUILD_TESTS=ON
+        -D MRTRIX_STL_DEBUGGING=ON
+        -D MRTRIX_USE_PCH=OFF
+        -D MRTRIX_WARNINGS_AS_ERRORS=ON
+
+    - name: build
+      run: cmake --build build -- -k 0
+
+    - name: assert embedded version string
+      run: |
+        set -euo pipefail
+        VERSION_LINE="$(build/bin/mrinfo -version | head -n1)"
+        echo "${VERSION_LINE}"
+        EXPECTED="== mrinfo ${{ github.event.inputs.version }} =="
+        if [ "${VERSION_LINE}" != "${EXPECTED}" ]; then
+          echo "::error::Embedded version is '${VERSION_LINE}', expected '${EXPECTED}'."
+          exit 1
+        fi
+
+    - name: interface tests
+      run: cd build && ctest -L cli --output-on-failure
+
+    - name: unit tests
+      run: cd build && ctest -L unittest --output-on-failure --parallel 4
+
+    - name: binary tests
+      run: cd build && ctest -L binary --output-on-failure --parallel 4
+
+    - name: compatibility tests
+      run: cd build && ctest -L compatibility --output-on-failure
+
+    - name: script tests (full Python suite)
+      run: cd build && ctest -L script --output-on-failure --parallel 4
+
+    - name: integration tests
+      run: cd build && ctest -L integration --output-on-failure --parallel 4
+
+
+  windows:
+    name: windows (full suite)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    env:
+      CHERE_INVOKING: enabled_from_arguments
+      MINGW_PACKAGE_PREFIX: mingw-w64-ucrt-x86_64
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_SIZE: "2G"
+      SCCACHE_DIR: ${{ github.workspace }}/.sccache
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.ref }}
+          submodules: true
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          release: false
+          install: |
+            git
+            python
+            ${{env.MINGW_PACKAGE_PREFIX}}-bc
+            ${{env.MINGW_PACKAGE_PREFIX}}-cmake
+            ${{env.MINGW_PACKAGE_PREFIX}}-diffutils
+            ${{env.MINGW_PACKAGE_PREFIX}}-fftw
+            ${{env.MINGW_PACKAGE_PREFIX}}-gcc
+            ${{env.MINGW_PACKAGE_PREFIX}}-jq
+            ${{env.MINGW_PACKAGE_PREFIX}}-mesa
+            ${{env.MINGW_PACKAGE_PREFIX}}-ninja
+            ${{env.MINGW_PACKAGE_PREFIX}}-pkg-config
+            ${{env.MINGW_PACKAGE_PREFIX}}-qt6-base
+            ${{env.MINGW_PACKAGE_PREFIX}}-qt6-svg
+            ${{env.MINGW_PACKAGE_PREFIX}}-zlib
+
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: export sccache to msys2 shell
+        run: |
+          export SCCACHE_UNIX_PATH=$(cygpath -u "$SCCACHE_PATH")
+          echo "SCCACHE_UNIX_PATH=$SCCACHE_UNIX_PATH" >> $GITHUB_ENV
+
+      - name: Materialise release tag in local clone
+        run: |
+          set -euo pipefail
+          REQUESTED="${{ github.event.inputs.version }}"
+          CMAKE_VERSION="$(sed -n 's/.*project(mrtrix3.*VERSION[[:space:]]\{1,\}\([0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}\).*/\1/p' CMakeLists.txt)"
+          echo "Requested release version  : ${REQUESTED}"
+          echo "CMakeLists project version : ${CMAKE_VERSION}"
+          if [ "${CMAKE_VERSION}" != "${REQUESTED}" ]; then
+            echo "::error::project(VERSION ${CMAKE_VERSION}) in CMakeLists.txt does not match requested release ${REQUESTED}."
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/${REQUESTED}" >/dev/null; then
+            echo "::error::Tag ${REQUESTED} already exists; this version appears to have been released already."
+            exit 1
+          fi
+          git config user.name "MRtrix3 release-candidate CI"
+          git config user.email "gitbot@mrtrix.org"
+          git tag -a "${REQUESTED}" -m "Release candidate ${REQUESTED}"
+          echo "git describe now yields: $(git describe --abbrev=8 --dirty --always)"
+
+      - name: configure
+        run: >
+            cmake
+            -B build
+            -G Ninja
+            -D CMAKE_BUILD_TYPE=Release
+            -D MRTRIX_BUILD_TESTS=ON
+            -D MRTRIX_STL_DEBUGGING=ON
+            -D MRTRIX_WARNINGS_AS_ERRORS=ON
+            -D MRTRIX_ENABLE_GPU=OFF
+            -D CMAKE_CXX_COMPILER_LAUNCHER=${{env.SCCACHE_UNIX_PATH}} .
+
+      - name: build
+        run: cmake --build build -- -k 0
+
+      - name: assert embedded version string
+        run: |
+          set -euo pipefail
+          VERSION_LINE="$(build/bin/mrinfo -version | head -n1)"
+          echo "${VERSION_LINE}"
+          EXPECTED="== mrinfo ${{ github.event.inputs.version }} =="
+          if [ "${VERSION_LINE}" != "${EXPECTED}" ]; then
+            echo "::error::Embedded version is '${VERSION_LINE}', expected '${EXPECTED}'."
+            exit 1
+          fi
+
+      - name: interface tests
+        run: cd build && ctest -L cli --output-on-failure
+
+      - name: unit tests
+        run: cd build && ctest -L unittest --output-on-failure --parallel 4
+
+      - name: binary tests
+        run: cd build && ctest -L binary --output-on-failure --parallel 4
+
+      - name: compatibility tests
+        run: cd build && ctest -L compatibility --output-on-failure
+
+      - name: script tests (full Python suite)
+        run: cd build && ctest -L script --output-on-failure --parallel 4
+
+      - name: integration tests
+        run: cd build && ctest -L integration --output-on-failure --parallel 4
