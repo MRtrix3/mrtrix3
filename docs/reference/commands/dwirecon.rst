@@ -16,7 +16,7 @@ Usage
     dwirecon [ options ]  input operation output
 
 -  *input*: the input DWI series
--  *operation*: the way in which output DWIs will be reconstructed; one of: combine_pairs, combine_predicted
+-  *operation*: the way in which output DWIs will be reconstructed (choices: combine_pairs, combine_predicted)
 -  *output*: the output DWI series
 
 Description
@@ -82,7 +82,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

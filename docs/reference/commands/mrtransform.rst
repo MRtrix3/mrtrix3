@@ -56,7 +56,7 @@ Regridding options
 
 -  **-midway_space** reslice the input image to the midway space. Requires either the -template or -warp option. If used with -template and -linear option, the input image will be resliced onto the grid halfway between the input and template. If used with the -warp option, the input will be warped to the midway space defined by the grid of the input warp (i.e. half way between image1 and image2)
 
--  **-interp method** set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc; default: cubic).
+-  **-interp method** set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc) (default: cubic)
 
 -  **-oversample factor** set the amount of over-sampling (in the target space) to perform when regridding. This is particularly relevant when downsamping a high-resolution image to a low-resolution image, to avoid aliasing artefacts. This can consist of a single integer, or a comma-separated list of 3 integers if different oversampling factors are desired along the different axes. Default is determined from ratio of voxel dimensions (disabled for nearest-neighbour interpolation).
 
@@ -67,12 +67,12 @@ Non-linear transformation options
 
 -  **-warp_full image** warp the input image using a 5D warp file output from mrregister. Any linear transforms in the warp image header will also be applied. The -warp_full option must be used in combination with either the -template option or the -midway_space option. If a -template image is supplied then the full warp will be used. By default the image1->image2 transform will be applied, however the -from 2 option can be used to apply the image2->image1 transform. Use the -midway_space option to warp the input image to the midway space. The -from option can also be used to define which warp to use when transforming to midway space
 
--  **-from image** used to define which space the input image is when using the -warp_mid option. Use -from 1 to warp from image1 or -from 2 to warp from image2
+-  **-from image** used to define which space the input image is when using the -warp_mid option. Use -from 1 to warp from image1 or -from 2 to warp from image2 (range: 1 to 2)
 
 Fibre orientation distribution handling options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-modulate method** Valid choices are:  fod: modulate FODs during reorientation to preserve the apparent fibre density across fibre bundle widths before and after the transformation; jac: modulate the image intensity with the determinant of the Jacobian of the warp of linear transformation  to preserve the total intensity before and after the transformation.
+-  **-modulate method** fod: modulate FODs during reorientation to preserve the apparent fibre density across fibre bundle widths before and after the transformation; jac: modulate the image intensity with the determinant of the Jacobian of the warp of linear transformation  to preserve the total intensity before and after the transformation. (choices: fod, jac)
 
 -  **-directions file** directions defining the number and orientation of the apodised point spread functions used in FOD reorientation (Default: 300 directions)
 
@@ -95,7 +95,7 @@ DW gradient table export options
 Data type options
 ^^^^^^^^^^^^^^^^^
 
--  **-datatype spec** specify output image data type. Valid choices are: float16, float16le, float16be, float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat16, cfloat16le, cfloat16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
+-  **-datatype spec** specify output image data type. (choices: float16, float16le, float16be, float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat16, cfloat16le, cfloat16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit)
 
 Stride options
 ^^^^^^^^^^^^^^
@@ -114,7 +114,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

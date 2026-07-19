@@ -16,7 +16,7 @@ Usage
     meshfilter [ options ]  input filter output
 
 -  *input*: the input mesh file
--  *filter*: the filter to apply; options are: smooth.
+-  *filter*: the filter to apply (choices: smooth)
 -  *output*: the output mesh file
 
 Description
@@ -39,16 +39,16 @@ Options
 Options for mesh smoothing filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-smooth_spatial value** spatial extent of smoothing (default: 10mm)
+-  **-smooth_spatial value** spatial extent of smoothing (minimum: 0) (default: 10mm)
 
--  **-smooth_influence value** influence factor for smoothing (default: 10)
+-  **-smooth_influence value** influence factor for smoothing (minimum: 0) (default: 10)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

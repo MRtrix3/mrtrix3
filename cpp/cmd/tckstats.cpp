@@ -52,7 +52,6 @@ void usage() {
 
   + Option ("output", "output only the field specified."
                       " Multiple such options can be supplied if required."
-                      " Choices are: " + MR::Enum::join<FieldChoice>() + "."
                       " Useful for use in scripts.").allow_multiple()
     + Argument ("field").type_choice<FieldChoice>()
 

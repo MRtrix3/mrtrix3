@@ -54,9 +54,8 @@ void usage() {
   + Argument ("sh_out", "the output sh image.").type_image_out ();
 
   OPTIONS
-  + Option ("lmax", "set the maximum harmonic order for the output series"
-                    " (Default: 8)")
-  +   Argument ("order").type_integer (0, 30);
+  + Option ("lmax", "set the maximum harmonic order for the output series")
+  +   Argument ("order").type_integer (0, 30).set_default (8);
 
 }
 // clang-format on

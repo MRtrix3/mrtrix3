@@ -16,7 +16,7 @@ Usage
     maskfilter [ options ]  input filter output
 
 -  *input*: the input mask.
--  *filter*: the name of the filter to be applied; options are: clean, connect, dilate, erode, fill, median.
+-  *filter*: the name of the filter to be applied (choices: clean, connect, dilate, erode, fill, median)
 -  *output*: the output mask.
 
 Description
@@ -33,7 +33,7 @@ Filter-specific options
 Options for mask cleaning filter
 """"""""""""""""""""""""""""""""
 
--  **-scale value** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. (Default: 2)
+-  **-scale value** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. (range: 1 to 1000000) (default: 2)
 
 Options for connected-component filter
 """"""""""""""""""""""""""""""""""""""
@@ -44,12 +44,12 @@ Options for connected-component filter
 
 -  **-connectivity** use 26-voxel-neighbourhood connectivity (Default is 6-voxel-neighbourhood)
 
--  **-minsize value** impose minimum size of segmented components (Default: select all components)
+-  **-minsize value** impose minimum size of segmented components (range: 1 to 1000000) (default: select all components)
 
 Options for dilate / erode filters
 """"""""""""""""""""""""""""""""""
 
--  **-npass value** the number of times to repeatedly apply the filter
+-  **-npass value** the number of times to repeatedly apply the filter (range: 1 to 1000000)
 
 Options for interior-filling filter
 """""""""""""""""""""""""""""""""""
@@ -61,7 +61,7 @@ Options for interior-filling filter
 Options for median filter
 """""""""""""""""""""""""
 
--  **-extent voxels** specify the extent (width) of kernel size in voxels. This can be specified either as a single value to be used for all axes, or as a comma-separated list of the extent for each axis. The default is 3x3x3.
+-  **-extent voxels** specify the extent (width) of kernel size in voxels. This can be specified either as a single value to be used for all axes, or as a comma-separated list of the extent for each axis. (default: 3x3x3)
 
 Stride options
 ^^^^^^^^^^^^^^
@@ -73,7 +73,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

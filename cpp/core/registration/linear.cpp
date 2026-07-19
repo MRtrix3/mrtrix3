@@ -143,23 +143,19 @@ const OptionGroup adv_init_options =
              "disregard mask2 for the rotation initialisation"
              " (affects 'search' and 'moments')")
     + Option("init_rotation.search.angles",
-             "rotation angles for the local search in degrees between 0 and 180."
-             " (Default: 2,5,10,15,20)")
-      + Argument("angles").type_sequence_float()
+             "rotation angles for the local search in degrees between 0 and 180.")
+      + Argument("angles").type_sequence_float().set_default("2,5,10,15,20")
     + Option("init_rotation.search.scale",
-             "relative size of the images used for the rotation search."
-             " (Default: 0.15)")
-      + Argument("scale").type_float(0.0001, 1.0)
+             "relative size of the images used for the rotation search.")
+      + Argument("scale").type_float(0.0001, 1.0).set_default("0.15")
     + Option("init_rotation.search.directions",
-             "number of rotation axis for local search."
-             " (Default: 250)")
-      + Argument("num").type_integer(1, 10000)
+             "number of rotation axis for local search.")
+      + Argument("num").type_integer(1, 10000).set_default(250)
     + Option("init_rotation.search.run_global",
              "perform a global rather than local initial rotation search.")
     + Option("init_rotation.search.global.iterations",
-             "number of rotations to investigate"
-             " (Default: 10000)")
-      + Argument("num").type_integer(1, 1e10);
+             "number of rotations to investigate")
+      + Argument("num").type_integer(1, 1e10).set_default(10000);
 
 const OptionGroup lin_stage_options =
     OptionGroup("Advanced linear registration stage options")
@@ -181,27 +177,21 @@ const OptionGroup lin_stage_options =
 
     + Option("linstage.optimiser.first",
              "Cost function optimisation algorithm to use at first iteration of all stages."
-             " Valid choices:"
              " BBGD (Barzilai-Borwein gradient descent);"
-             " GD (simple gradient descent)."
-             " (Default: BBGD)")
-      + Argument("algorithm").type_choice<OptimiserAlgoType>()
+             " GD (simple gradient descent).")
+      + Argument("algorithm").type_choice<OptimiserAlgoType>().set_default("bbgd")
     + Option("linstage.optimiser.last",
              "Cost function optimisation algorithm to use at last iteration of all stages"
              " (if there are more than one)."
-             " Valid choices:"
              " BBGD (Barzilai-Borwein gradient descent);"
-             " GD (simple gradient descent)."
-             " (Default: BBGD)")
-      + Argument("algorithm").type_choice<OptimiserAlgoType>()
+             " GD (simple gradient descent).")
+      + Argument("algorithm").type_choice<OptimiserAlgoType>().set_default("bbgd")
     + Option("linstage.optimiser.default",
              "Cost function optimisation algorithm to use at any stage iteration"
              " other than first or last iteration."
-             " Valid choices:"
              " BBGD (Barzilai-Borwein gradient descent);"
-             " GD (simple gradient descent)."
-             " (Default: BBGD)")
-      + Argument("algorithm").type_choice<OptimiserAlgoType>()
+             " GD (simple gradient descent).")
+      + Argument("algorithm").type_choice<OptimiserAlgoType>().set_default("bbgd")
 
     + Option("linstage.diagnostics.dir",
              "generate diagnostics images after every registration stage")
@@ -226,20 +216,18 @@ const OptionGroup rigid_options =
       + Argument("file").type_file_out()
 
     + Option("rigid_init_translation",
-             "initialise the translation and centre of rotation;"
-             " Valid choices are:"
-             " mass (aligns the centers of mass of both images, default);"
+             "initialise the translation and centre of rotation."
+             " mass (aligns the centers of mass of both images);"
              " geometric (aligns geometric image centres);"
              " none.")
-      + Argument("type").type_choice<init_translation_t>()
+      + Argument("type").type_choice<init_translation_t>().set_default("mass")
 
     + Option("rigid_init_rotation",
              "Method to use to initialise the rotation."
-             " Valid choices are:"
              " search (search for the best rotation using mean squared residuals);" // TODO CC
              " moments (rotation based on directions of intensity variance with respect to centre of mass);"
-             " none (default).") // TODO  This can be combined with rigid_init_translation.
-      + Argument("type").type_choice<init_rotation_t>()
+             " none.") // TODO  This can be combined with rigid_init_translation.
+      + Argument("type").type_choice<init_rotation_t>().set_default("none")
 
     + Option("rigid_init_matrix",
              "initialise either the rigid, affine, or syn registration"
@@ -251,33 +239,27 @@ const OptionGroup rigid_options =
 
     + Option("rigid_scale",
              "use a multi-resolution scheme by defining a scale factor for each level"
-             " using comma-separated values"
-             " (Default: 0.25,0.5,1.0)")
-      + Argument("factor").type_sequence_float()
+             " using comma-separated values")
+      + Argument("factor").type_sequence_float().set_default("0.25,0.5,1.0")
 
     + Option("rigid_niter",
              "the maximum number of gradient descent iterations per stage."
              " This can be specified either as a single number for all multi-resolution levels,"
-             " or a single value for each level."
-             " (Default: 1000)")
-      + Argument("num").type_sequence_int()
+             " or a single value for each level.")
+      + Argument("num").type_sequence_int().set_default("1000")
 
     + Option("rigid_metric",
-             "valid choices are:"
-             " diff (intensity differences);"
+             "diff (intensity differences).")
              // " ncc (normalised cross-correlation);" TODO
-             " Default: diff")
-      + Argument("type").type_choice<LinearMetricType>()
+      + Argument("type").type_choice<LinearMetricType>().set_default("diff")
 
     + Option("rigid_metric.diff.estimator",
              "Robust estimator to use during rigid-body registration."
-             " Valid choices are:"
              " l1 (least absolute: |x|);"
              " l2 (ordinary least squares);"
              " lp (least powers: |x|^1.2);"
-             " none."
-             " Default: none.")
-      + Argument("type").type_choice<LinearRobustMetricEstimatorType>()
+             " none.")
+      + Argument("type").type_choice<LinearRobustMetricEstimatorType>().set_default("none")
 
     // + Option ("rigid_loop_density", "density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)")
     //   + Argument ("num").type_sequence_float () // TODO
@@ -317,21 +299,17 @@ const OptionGroup affine_options =
 
     + Option("affine_init_translation",
              "initialise the translation and centre of rotation."
-             " Valid choices are: "
              " mass (aligns the centers of mass of both images);"
              " geometric (aligns geometric image centres);"
-             " none."
-             " (Default: mass)")
-      + Argument("type").type_choice<init_translation_t>()
+             " none.")
+      + Argument("type").type_choice<init_translation_t>().set_default("mass")
 
     + Option("affine_init_rotation",
              "initialise the rotation."
-             " Valid choices are:"
              " search (search for the best rotation using mean squared residuals);"
              " moments (rotation based on directions of intensity variance with respect to centre of mass);"
-             " none"
-             " (Default: none).") // TODO  This can be combined with affine_init_translation.
-      + Argument("type").type_choice<init_rotation_t>()
+             " none.") // TODO  This can be combined with affine_init_translation.
+      + Argument("type").type_choice<init_rotation_t>().set_default("none")
 
     + Option("affine_init_matrix",
              "initialise either the affine or syn registration"
@@ -342,33 +320,27 @@ const OptionGroup affine_options =
 
     + Option("affine_scale",
              "use a multi-resolution scheme"
-             " by defining a scale factor for each level using comma separated values"
-             " (Default: 0.25,0.5,1.0)")
-      + Argument("factor").type_sequence_float()
+             " by defining a scale factor for each level using comma separated values")
+      + Argument("factor").type_sequence_float().set_default("0.25,0.5,1.0")
 
     + Option("affine_niter",
              "the maximum number of gradient descent iterations per stage."
              " This can be specified either as a single number for all multi-resolution levels,"
-             " or a single value for each level."
-             " (Default: 1000)")
-      + Argument("num").type_sequence_int()
+             " or a single value for each level.")
+      + Argument("num").type_sequence_int().set_default("1000")
 
     + Option("affine_metric",
-             "valid choices are:"
-             " diff (intensity differences);"
+             "diff (intensity differences).")
              // "ncc (normalised cross-correlation) " TODO
-             " Default: diff")
-      + Argument("type").type_choice<LinearMetricType>()
+      + Argument("type").type_choice<LinearMetricType>().set_default("diff")
 
     + Option("affine_metric.diff.estimator",
              "Robust estimator to use durring affine registration."
-             " Valid choices are:"
              " l1 (least absolute: |x|);"
              " l2 (ordinary least squares);"
              " lp (least powers: |x|^1.2);"
-             " none."
-             " Default: none.")
-      + Argument("type").type_choice<LinearRobustMetricEstimatorType>()
+             " none.")
+      + Argument("type").type_choice<LinearRobustMetricEstimatorType>().set_default("none")
 
     // + Option ("affine_loop_density", "density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)")
     //   + Argument ("num").type_sequence_float () // TODO
@@ -391,9 +363,8 @@ const OptionGroup fod_options =
     OptionGroup("FOD registration options")
 
     + Option("directions",
-             "file containing the directions used for FOD reorientation using apodised point spread functions"
-             " (Default: built-in 60-direction set)")
-      + Argument("file").type_file_in()
+             "file containing the directions used for FOD reorientation using apodised point spread functions")
+      + Argument("file").type_file_in().set_default("built-in 60-direction set")
 
     + Option("noreorientation",
              "turn off FOD reorientation."

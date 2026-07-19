@@ -87,7 +87,7 @@ void usage() {
 
   ARGUMENTS
     + Argument ("SH", "the input spherical harmonics coefficients image(s)").type_image_in().allow_multiple()
-    + Argument ("metric", "the metrc to compute; one of: " + Enum::join<metrics>()).type_choice<metrics>()
+    + Argument ("metric", "the metrc to compute").type_choice<metrics>()
     + Argument ("output", "the output metric image").type_image_out();
 
   OPTIONS

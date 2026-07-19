@@ -51,21 +51,21 @@ Input options
 Parameters
 ^^^^^^^^^^
 
--  **-lmax order** set the maximum harmonic order for the output series. (default = 8)
+-  **-lmax order** set the maximum harmonic order for the output series. (range: 2 to 30) (default: 8)
 
--  **-length size** set the length of the particles (fibre segments). (default = 1mm)
+-  **-length size** set the length of the particles (fibre segments). (minimum: 9.9999999999999995e-07) (default: 1mm)
 
--  **-weight w** set the weight by which particles contribute to the model. (default = 0.1)
+-  **-weight w** set the weight by which particles contribute to the model. (range: 9.9999999999999995e-07 to 1) (default: 0.1)
 
--  **-ppot u** set the particle potential, i.e., the cost of adding one segment, relative to the particle weight. (default = 0.05)
+-  **-ppot u** set the particle potential, i.e., the cost of adding one segment, relative to the particle weight. (range: 0 to 1) (default: 0.05)
 
--  **-cpot v** set the connection potential, i.e., the energy term that drives two segments together. (default = 0.5)
+-  **-cpot v** set the connection potential, i.e., the energy term that drives two segments together. (minimum: 0) (default: 0.5)
 
--  **-t0 start** set the initial temperature of the metropolis hastings optimizer. (default = 0.1)
+-  **-t0 start** set the initial temperature of the metropolis hastings optimizer. (range: 9.9999999999999995e-07 to 1000000) (default: 0.1)
 
--  **-t1 end** set the final temperature of the metropolis hastings optimizer. (default = 0.001)
+-  **-t1 end** set the final temperature of the metropolis hastings optimizer. (range: 9.9999999999999995e-07 to 1000000) (default: 0.001)
 
--  **-niter n** set the number of iterations of the metropolis hastings optimizer. (default = 10M)
+-  **-niter n** set the number of iterations of the metropolis hastings optimizer. (minimum: 0) (default: 10M)
 
 Output options
 ^^^^^^^^^^^^^^
@@ -83,22 +83,22 @@ Output options
 Advanced parameters, if you really know what you're doing
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-balance b** balance internal and external energy. (default = 0). Negative values give more weight to the internal energy; positive to the external energy.
+-  **-balance b** balance internal and external energy. Negative values give more weight to the internal energy; positive to the external energy. (range: -100 to 100) (default: 0)
 
--  **-density lambda** set the desired density of the free Poisson process. (default = 1)
+-  **-density lambda** set the desired density of the free Poisson process. (minimum: 0) (default: 1)
 
--  **-prob prob** set the probabilities of generating birth, death, randshift, optshift and connect proposals respectively. (default = 0.25,0.05,0.25,0.1,0.35)
+-  **-prob prob** set the probabilities of generating birth, death, randshift, optshift and connect proposals respectively. (default: 0.25,0.05,0.25,0.1,0.35)
 
--  **-beta b** set the width of the Hanning interpolation window. (in [0, 1], default = 0).  If used, a mask is required, and this mask must keep at least one voxel distance to the image bounding box.
+-  **-beta b** set the width of the Hanning interpolation window. If used, a mask is required, and this mask must keep at least one voxel distance to the image bounding box. (range: 0 to 1) (default: 0)
 
--  **-lambda lam** set the weight of the internal energy directly. (default = 1). If provided, any value of -balance will be ignored.
+-  **-lambda lam** set the weight of the internal energy directly. If provided, any value of -balance will be ignored. (minimum: 0) (default: 1)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

@@ -29,7 +29,7 @@ https://mrtrix.readthedocs.io/en/3.0.8/concepts/spherical_harmonics.html
 Options
 -------
 
--  **-lmax value** specify the maximum harmonic degree of the response function to estimate
+-  **-lmax value** specify the maximum harmonic degree of the response function to estimate (range: 0 to 20)
 
 -  **-dump file** dump the m=0 SH coefficients from all voxels in the mask to the output file, rather than their mean
 
@@ -38,7 +38,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

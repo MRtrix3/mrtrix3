@@ -44,7 +44,7 @@ Options affecting the SIFT model
 
 -  **-remove_untracked** remove FOD lobes that do not have any streamline density attributed to them; this improves filtering slightly, at the expense of longer computation time (and you can no longer trivially do quantitative comparisons between reconstructions if this is enabled)
 
--  **-fd_thresh value** fibre density threshold; exclude an FOD lobe from filtering processing if its integral is less than this amount (streamlines will still be mapped to it, but it will not contribute to the cost function or the filtering)
+-  **-fd_thresh value** fibre density threshold; exclude an FOD lobe from filtering processing if its integral is less than this amount (streamlines will still be mapped to it, but it will not contribute to the cost function or the filtering) (range: 0 to 6.2831853071795862)
 
 Options to make SIFT provide additional output files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -60,18 +60,18 @@ Options to make SIFT provide additional output files
 Options to control when SIFT terminates filtering
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-term_number value** number of streamlines; continue filtering until this number of streamlines remain
+-  **-term_number value** number of streamlines; continue filtering until this number of streamlines remain (minimum: 1)
 
--  **-term_ratio value** termination ratio; defined as the ratio between reduction in cost function, and reduction in density of streamlines. Smaller values result in more streamlines being filtered out.
+-  **-term_ratio value** termination ratio; defined as the ratio between reduction in cost function, and reduction in density of streamlines. Smaller values result in more streamlines being filtered out. (minimum: 9.9999999999999995e-07)
 
--  **-term_mu value** terminate filtering once the SIFT proportionality coefficient reaches a given value
+-  **-term_mu value** terminate filtering once the SIFT proportionality coefficient reaches a given value (minimum: 0)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

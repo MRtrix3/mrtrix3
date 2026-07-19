@@ -114,40 +114,32 @@ void usage() {
 
   + OptionGroup("Parameters")
 
-  + Option ("lmax", "set the maximum harmonic order for the output series."
-                    " (default = " + str(default_lmax) + ")")
-    + Argument ("order").type_integer(2, 30)
+  + Option ("lmax", "set the maximum harmonic order for the output series.")
+    + Argument ("order").type_integer(2, 30).set_default(default_lmax)
 
-  + Option ("length", "set the length of the particles (fibre segments)."
-                      " (default = " + str(default_length, 2) + "mm)")
-    + Argument ("size").type_float(1e-6)
+  + Option ("length", "set the length of the particles (fibre segments).")
+    + Argument ("size").type_float(1e-6).set_default(str(default_length, 2) + "mm")
 
-  + Option ("weight", "set the weight by which particles contribute to the model."
-                      " (default = " + str(default_weight, 2) + ")")
-    + Argument ("w").type_float(1e-6, 1.0)
+  + Option ("weight", "set the weight by which particles contribute to the model.")
+    + Argument ("w").type_float(1e-6, 1.0).set_default(str(default_weight, 2))
 
   + Option ("ppot", "set the particle potential,"
                     " i.e., the cost of adding one segment,"
-                    " relative to the particle weight."
-                    " (default = " + str(default_ppot, 2) + ")")
-    + Argument ("u").type_float(0.0, 1.0)
+                    " relative to the particle weight.")
+    + Argument ("u").type_float(0.0, 1.0).set_default(str(default_ppot, 2))
 
   + Option ("cpot", "set the connection potential,"
-                    " i.e., the energy term that drives two segments together."
-                    " (default = " + str(default_cpot, 2) + ")")
-    + Argument ("v").type_float(0.0)
+                    " i.e., the energy term that drives two segments together.")
+    + Argument ("v").type_float(0.0).set_default(str(default_cpot, 2))
 
-  + Option ("t0", "set the initial temperature of the metropolis hastings optimizer."
-                  " (default = " + str(default_t0, 2) + ")")
-    + Argument ("start").type_float(1e-6, 1e6)
+  + Option ("t0", "set the initial temperature of the metropolis hastings optimizer.")
+    + Argument ("start").type_float(1e-6, 1e6).set_default(str(default_t0, 2))
 
-  + Option ("t1", "set the final temperature of the metropolis hastings optimizer."
-                  " (default = " + str(default_t1, 2) + ")")
-    + Argument ("end").type_float(1e-6, 1e6)
+  + Option ("t1", "set the final temperature of the metropolis hastings optimizer.")
+    + Argument ("end").type_float(1e-6, 1e6).set_default(str(default_t1, 2))
 
-  + Option ("niter", "set the number of iterations of the metropolis hastings optimizer."
-                     " (default = " + str(default_niter/1000000) + "M)")
-    + Argument ("n").type_integer(0)
+  + Option ("niter", "set the number of iterations of the metropolis hastings optimizer.")
+    + Argument ("n").type_integer(0).set_default(str(default_niter/1000000) + "M")
 
 
   + OptionGroup("Output options")
@@ -179,35 +171,30 @@ void usage() {
   + OptionGroup("Advanced parameters, if you really know what you're doing")
 
   + Option ("balance", "balance internal and external energy."
-                       " (default = " + str(default_balance, 2) + ")."
                        " Negative values give more weight to the internal energy;"
                        " positive to the external energy.")
-    + Argument ("b").type_float(-100.0, 100.0)
+    + Argument ("b").type_float(-100.0, 100.0).set_default(str(default_balance, 2))
 
-  + Option ("density", "set the desired density of the free Poisson process."
-                       " (default = " + str(default_density, 2) + ")")
-    + Argument ("lambda").type_float(0.0)
+  + Option ("density", "set the desired density of the free Poisson process.")
+    + Argument ("lambda").type_float(0.0).set_default(str(default_density, 2))
 
   + Option ("prob", "set the probabilities of generating"
-                    " birth, death, randshift, optshift and connect proposals respectively."
-                    " (default = "
-                    + str(default_prob_birth, 2) + ","
-                    + str(default_prob_death, 2) + ","
-                    + str(default_prob_randshift, 2) + ","
-                    + str(default_prob_optshift, 2) + ","
-                    + str(default_prob_connect, 2) + ")")
+                    " birth, death, randshift, optshift and connect proposals respectively.")
     + Argument ("prob").type_sequence_float()
+        .set_default(str(default_prob_birth, 2) + ","      //
+                     + str(default_prob_death, 2) + ","     //
+                     + str(default_prob_randshift, 2) + "," //
+                     + str(default_prob_optshift, 2) + ","  //
+                     + str(default_prob_connect, 2))
 
   + Option ("beta", "set the width of the Hanning interpolation window."
-                    " (in [0, 1], default = " + str(default_beta, 2) + "). "
                     " If used, a mask is required,"
                     " and this mask must keep at least one voxel distance to the image bounding box.")
-    + Argument ("b").type_float(0.0, 1.0)
+    + Argument ("b").type_float(0.0, 1.0).set_default(str(default_beta, 2))
 
   + Option ("lambda", "set the weight of the internal energy directly."
-                      " (default = " + str(default_lambda, 2) + ")."
                       " If provided, any value of -balance will be ignored.")
-    + Argument ("lam").type_float(0.0);
+    + Argument ("lam").type_float(0.0).set_default(str(default_lambda, 2));
 
 }
 // clang-format on

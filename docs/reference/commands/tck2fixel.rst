@@ -23,7 +23,7 @@ Usage
 Options
 -------
 
--  **-angle value** the max angle threshold for assigning streamline tangents to fixels (default: 45 degrees)
+-  **-angle value** the max angle threshold for assigning streamline tangents to fixels (range: 0 to 90) (default: 45 degrees)
 
 -  **-precise** utilise the precise length of streamline-voxel intersections rather than simply the number of streamlines / sum of streamline weights
 
@@ -34,7 +34,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

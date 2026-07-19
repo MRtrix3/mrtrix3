@@ -37,8 +37,7 @@ void usage() {
   ARGUMENTS
   + Argument ("input", "the input connectome.").type_file_in()
 
-  + Argument ("operation", "the operation to apply,"
-                           " one of: " + MR::Enum::join<Operation>() + ".").type_choice<Operation>()
+  + Argument ("operation", "the operation to apply.").type_choice<Operation>()
 
   + Argument ("output", "the output connectome.").type_file_out();
 

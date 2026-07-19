@@ -28,14 +28,14 @@ Options
 
 -  **-marker coordinates** single value or a comma-separated list of three values that define out-of-bounds voxels in the input warp image. Default: (0,0,0).
 
--  **-tolerance value** numerical precision used for L2 matrix norm comparison. Default: 9.99999975e-06.
+-  **-tolerance value** numerical precision used for L2 matrix norm comparison. (minimum: 9.9999997473787516e-06) (default: 9.99999975e-06)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

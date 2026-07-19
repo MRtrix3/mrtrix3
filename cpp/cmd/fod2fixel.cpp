@@ -91,9 +91,8 @@ void usage() {
   + Option ("mask", "only perform computation within the specified binary brain mask image.")
     + Argument ("image").type_image_in()
 
-  + Option ("maxnum", "maximum number of fixels to output for any particular voxel"
-                      " (default: no limit)")
-    + Argument ("number").type_integer(1)
+  + Option ("maxnum", "maximum number of fixels to output for any particular voxel")
+    + Argument ("number").type_integer(1).set_default("no limit")
 
   + Option ("nii", "output the directions and index file in nii format"
                    " (instead of the default mif)")

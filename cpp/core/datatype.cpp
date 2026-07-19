@@ -247,9 +247,7 @@ const std::unordered_map<uint8_t, DataType::Strings> DataType::dt2str{
 App::OptionGroup DataType::options() {
   using namespace App;
   return OptionGroup("Data type options")
-         + Option("datatype", "specify output image data type."
-                              " Valid choices are: "
-                              + MR::Enum::join<DataType::Identifier>() + ".")
+         + Option("datatype", "specify output image data type.")
           + Argument("spec").type_choice<DataType::Identifier>();
 }
 // clang-format on

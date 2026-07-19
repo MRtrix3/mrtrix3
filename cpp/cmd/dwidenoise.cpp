@@ -24,6 +24,7 @@
 #include <sys/types.h>
 
 #include "command.h"
+#include "enum.h"
 #include "image.h"
 #include "image_helpers.h"
 
@@ -113,12 +114,11 @@ void usage() {
     + Argument("float32/float64").type_choice<DType>()
 
   + Option("estimator",
-           "Select the noise level estimator"
-           " (default = Exp2),"
+           "Select the noise level estimator,"
            " either: \n"
            "* Exp1: the original estimator used in Veraart et al. (2016), or \n"
            "* Exp2: the improved estimator introduced in Cordero-Grande et al. (2019).")
-    + Argument("Exp1/Exp2").type_choice<Estimator>();
+    + Argument("Exp1/Exp2").type_choice<Estimator>().set_default(MR::Enum::lowercase_name(Estimator::EXP2));
 
   COPYRIGHT =
       "Copyright (c) 2016 New York University, University of Antwerp, and the MRtrix3 contributors \n \n"

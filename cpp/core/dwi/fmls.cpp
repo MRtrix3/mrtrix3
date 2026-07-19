@@ -23,15 +23,13 @@ const App::OptionGroup FMLSSegmentOption =
     App::OptionGroup("FOD FMLS segmenter options")
     + App::Option("fmls_integral",
                   "threshold absolute numerical integral of positive FOD lobes."
-                  " Any lobe for which the integral is smaller than this threshold will be discarded."
-                  " Default: " + str(default_integral_threshold, 2) + ".")
-      + App::Argument("value").type_float(0.0)
+                  " Any lobe for which the integral is smaller than this threshold will be discarded.")
+      + App::Argument("value").type_float(0.0).set_default(str(default_integral_threshold, 2))
 
     + App::Option("fmls_peak_value",
                   "threshold peak amplitude of positive FOD lobes."
-                  " Any lobe for which the maximal peak amplitude is smaller than this threshold will be discarded."
-                  " Default: " + str(default_peakamp_threshold, 2) + ".")
-      + App::Argument("value").type_float(0.0)
+                  " Any lobe for which the maximal peak amplitude is smaller than this threshold will be discarded.")
+      + App::Argument("value").type_float(0.0).set_default(str(default_peakamp_threshold, 2))
 
     + App::Option("fmls_no_thresholds",
                   "disable all FOD lobe thresholding;"
@@ -44,9 +42,8 @@ const App::OptionGroup FMLSSegmentOption =
                   " This is the amplitude of the FOD at the 'bridge' point between the two lobes,"
                   " divided by the peak amplitude of the smaller of the two adjoining lobes."
                   " A value of 1.0 will never merge two lobes into one;"
-                  " a value of 0.0 will always merge lobes unless they are bisected by a zero-valued crossing."
-                  " Default: " + str(default_mergeratio_bridgetopeak, 2) + ".")
-      + App::Argument("value").type_float(0.0, 1.0);
+                  " a value of 0.0 will always merge lobes unless they are bisected by a zero-valued crossing.")
+      + App::Argument("value").type_float(0.0, 1.0).set_default(str(default_mergeratio_bridgetopeak, 2));
 // clang-format on
 
 void load_fmls_thresholds(Segmenter &segmenter) {

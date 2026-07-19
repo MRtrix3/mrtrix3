@@ -60,9 +60,9 @@ void usage() {
 
   OPTIONS
   + Option ("angle", "the max anglular threshold for computing correspondence"
-                     " between a fixel direction and track tangent"
-                     " (default = " + str(DWI::Tractography::Mapping::default_streamline2fixel_angle, 2) + " degrees)")
-  + Argument ("value").type_float (0.001, 90.0);
+                     " between a fixel direction and track tangent")
+  + Argument ("value").type_float (0.001, 90.0)
+      .set_default (str(DWI::Tractography::Mapping::default_streamline2fixel_angle, 2) + " degrees");
 
 }
 // clang-format on

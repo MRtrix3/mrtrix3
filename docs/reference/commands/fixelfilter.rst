@@ -16,7 +16,7 @@ Usage
     fixelfilter [ options ]  input filter output
 
 -  *input*: the input: either a fixel data file, or a fixel directory (see Description)
--  *filter*: the filtering operation to perform; options are: cfe, connect, smooth.
+-  *filter*: the filtering operation to perform (choices: cfe, connect, smooth)
 -  *output*: the output: either a fixel data file, or a fixel directory (see Description)
 
 Description
@@ -37,36 +37,36 @@ Options
 Parameters for the Connectivity-based Fixel Enhancement (CFE) algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-cfe_dh value** the height increment used in the cfe integration (default: 0.1)
+-  **-cfe_dh value** the height increment used in the cfe integration (default: 0.1) (range: 0.001 to 1)
 
--  **-cfe_e value** cfe extent exponent (default: 2)
+-  **-cfe_e value** cfe extent exponent (default: 2) (range: 0 to 100)
 
--  **-cfe_h value** cfe height exponent (default: 3)
+-  **-cfe_h value** cfe height exponent (default: 3) (range: 0 to 100)
 
--  **-cfe_c value** cfe connectivity exponent (default: 0.5)
+-  **-cfe_c value** cfe connectivity exponent (default: 0.5) (range: 0 to 100)
 
 -  **-cfe_legacy** use the legacy (non-normalised) form of the cfe equation
 
 Options specific to the "connect" filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-threshold_value value** specify a threshold for the input fixel data file values (default = 0.5)
+-  **-threshold_value value** specify a threshold for the input fixel data file values (default: 0.5)
 
--  **-threshold_connectivity value** specify a fixel-fixel connectivity threshold for connected-component analysis (default = 0.1)
+-  **-threshold_connectivity value** specify a fixel-fixel connectivity threshold for connected-component analysis (minimum: 0) (default: 0.1)
 
 Options specific to the "smooth" filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-fwhm value** the full-width half-maximum (FWHM) of the spatial component of the smoothing filter (default = 10mm)
+-  **-fwhm value** the full-width half-maximum (FWHM) of the spatial component of the smoothing filter (minimum: 0) (default: 10mm)
 
--  **-minweight value** apply a minimum threshold to smoothing weights (default = 0.01)
+-  **-minweight value** apply a minimum threshold to smoothing weights (minimum: 0) (default: 0.01)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

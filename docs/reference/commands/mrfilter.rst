@@ -16,17 +16,11 @@ Usage
     mrfilter [ options ]  input filter output
 
 -  *input*: the input image.
--  *filter*: the type of filter to be applied
+-  *filter*: the type of filter to be applied (choices: demodulate, fft, gradient, median, smooth, normalise, zclean)
 -  *output*: the output image.
 
 Description
 -----------
-
-The available filters are: 
-
-demodulate, fft, gradient, median, smooth, normalise, zclean
-
-.
 
 Each filter has its own unique set of optional parameters.
 
@@ -70,12 +64,12 @@ Options for gradient filter
 Options for median filter
 """""""""""""""""""""""""
 
--  **-extent size** specify extent of median filtering neighbourhood in voxels. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values (one for each axis) (default: 3x3x3).
+-  **-extent size** specify extent of median filtering neighbourhood in voxels. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values (one for each axis) (default: 3x3x3)
 
 Options for normalisation filter
 """"""""""""""""""""""""""""""""
 
--  **-extent size** specify extent of normalisation filtering neighbourhood in voxels.This can be specified either as a single value to be used for all 3 axes,or as a comma-separated list of 3 values (one for each axis) (default: 3x3x3).
+-  **-extent size** specify extent of normalisation filtering neighbourhood in voxels.This can be specified either as a single value to be used for all 3 axes,or as a comma-separated list of 3 values (one for each axis) (default: 3x3x3)
 
 Options for smooth filter
 """""""""""""""""""""""""
@@ -89,11 +83,11 @@ Options for smooth filter
 Options for zclean filter
 """""""""""""""""""""""""
 
--  **-zupper num** define high intensity outliers; default: 2.5
+-  **-zupper num** define high intensity outliers (minimum: 0.10000000000000001) (default: 2.5)
 
--  **-zlower num** define low intensity outliers; default: 2.5
+-  **-zlower num** define low intensity outliers (minimum: 0.10000000000000001) (default: 2.5)
 
--  **-bridge num** number of voxels to gap to fill holes in mask; default: 4
+-  **-bridge num** number of voxels to gap to fill holes in mask (minimum: 0) (default: 4)
 
 -  **-maskin image** initial mask that defines the maximum spatial extent and the region from which to smaple the intensity range.
 
@@ -109,7 +103,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

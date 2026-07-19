@@ -30,11 +30,10 @@ const OptionGroup TrackOption =
              " tckgen will keep seeding streamlines until this number of streamlines have been selected,"
              " or the maximum allowed number of seeds has been exceeded"
              " (see -seeds option)."
-             " By default, " + str(Defaults::num_selected_tracks) + " streamlines are to be selected."
              " Set to zero to disable,"
              " which will result in streamlines being seeded"
              " until the number specified by -seeds has been reached.")
-      + Argument("number").type_integer(0)
+      + Argument("number").type_integer(0).set_default(Defaults::num_selected_tracks)
 
     + Option("step",
              "set the step size of the algorithm in mm"
@@ -75,9 +74,8 @@ const OptionGroup TrackOption =
 
     + Option("trials",
              "set the maximum number of sampling trials at each point"
-             " (only used for iFOD1 / iFOD2)"
-             " (default: " + str(Defaults::max_trials_per_step) + ").")
-      + Argument("number").type_integer(1)
+             " (only used for iFOD1 / iFOD2).")
+      + Argument("number").type_integer(1).set_default(Defaults::max_trials_per_step)
 
     + Option("noprecomputed",
              "do NOT pre-compute legendre polynomial values."

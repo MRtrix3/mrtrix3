@@ -38,9 +38,8 @@ void usage() {
 
   OPTIONS
   + Option ("stdev", "apply Gaussian smoothing with the specified standard deviation."
-                     " The standard deviation is defined in units of track points"
-                     " (default: " + str(default_smoothing, 2) + ")")
-    + Argument ("sigma").type_float(1e-6);
+                     " The standard deviation is defined in units of track points")
+    + Argument ("sigma").type_float(1e-6).set_default(str(default_smoothing, 2));
 
 }
 // clang-format on

@@ -49,9 +49,8 @@ void usage() {
 
 
   OPTIONS
-    + Option ("number", "number of shuffles to try"
-                        " (default: " + str(default_permutations) + ")")
-      + Argument ("num").type_integer (1)
+    + Option ("number", "number of shuffles to try")
+      + Argument ("num").type_integer (1).set_default (default_permutations)
 
     + Option ("preserve", "preserve the sign of some number of directions at the start of the set")
       + Argument ("num").type_integer(1)

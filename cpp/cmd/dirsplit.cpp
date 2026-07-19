@@ -41,9 +41,8 @@ ARGUMENTS
   + Argument ("out", "the output partitioned directions").type_file_out().allow_multiple();
 
 OPTIONS
-  + Option ("number", "number of permutations to try"
-                      " (default: " + str(default_permutations) + ")")
-    + Argument ("num").type_integer (1)
+  + Option ("number", "number of permutations to try")
+    + Argument ("num").type_integer (1).set_default (default_permutations)
 
   + DWI::Directions::cartesian_option;
 

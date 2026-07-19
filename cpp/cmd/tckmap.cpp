@@ -79,10 +79,8 @@ const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality
 
 const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast properties")
   + Option ("contrast",
-      "define the desired form of contrast for the output image;"
-      " options are: " + MR::Enum::join<contrast_t>() +
-      " (default: tdi)")
-    + Argument ("type").type_choice<contrast_t>()
+      "define the desired form of contrast for the output image")
+    + Argument ("type").type_choice<contrast_t>().set_default(MR::Enum::lowercase_name(contrast_t::TDI))
   + Option ("image",
       "provide the scalar image map for generating images with 'scalar_map' / 'scalar_map_count' contrast,"
       " or the spherical harmonics image for 'fod_amp' contrast")
@@ -92,17 +90,13 @@ const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast p
     + Argument ("path").type_file_in()
   + Option ("stat_vox",
       "define the statistic for choosing the final voxel intensities for a given contrast type"
-      " given the individual values from the tracks passing through each voxel."
-      " Options are: " + MR::Enum::join<vox_stat_t>() +
-      " (default: sum)")
-    + Argument ("type").type_choice<vox_stat_t>()
+      " given the individual values from the tracks passing through each voxel.")
+    + Argument ("type").type_choice<vox_stat_t>().set_default(MR::Enum::lowercase_name(vox_stat_t::SUM))
   + Option ("stat_tck",
       "define the statistic for choosing the contribution to be made by each streamline"
       " as a function of the samples taken along their lengths."
-      " Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types."
-      " Options are: " + MR::Enum::join<tck_stat_t>() +
-      " (default: mean)")
-    + Argument ("type").type_choice<tck_stat_t>()
+      " Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types.")
+    + Argument ("type").type_choice<tck_stat_t>().set_default(MR::Enum::lowercase_name(tck_stat_t::MEAN))
   + Option ("fwhm_tck",
       "when using gaussian-smoothed per-track statistic,"
       " specify the desired full-width half-maximum of the Gaussian smoothing kernel"

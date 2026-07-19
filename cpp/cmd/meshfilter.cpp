@@ -36,12 +36,10 @@ const std::vector<std::string> filters = MR::Enum::lower_case_names<FilterType>(
 
 // clang-format off
 const OptionGroup smooth_option = OptionGroup ("Options for mesh smoothing filter")
-  + Option ("smooth_spatial", "spatial extent of smoothing"
-                              " (default: " + str(Filter::default_smoothing_spatial_factor, 2) + "mm)")
-    + Argument ("value").type_float (0.0)
-  + Option ("smooth_influence", "influence factor for smoothing"
-                                " (default: " + str(Filter::default_smoothing_influence_factor, 2) + ")")
-    + Argument ("value").type_float (0.0);
+  + Option ("smooth_spatial", "spatial extent of smoothing")
+    + Argument ("value").type_float (0.0).set_default (str(Filter::default_smoothing_spatial_factor, 2) + "mm")
+  + Option ("smooth_influence", "influence factor for smoothing")
+    + Argument ("value").type_float (0.0).set_default (str(Filter::default_smoothing_influence_factor, 2));
 
 
 void usage() {
@@ -65,8 +63,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("input",  "the input mesh file").type_file_in()
-  + Argument ("filter", "the filter to apply;"
-                        " options are: " + MR::Enum::join<FilterType>() + ".").type_choice<FilterType>()
+  + Argument ("filter", "the filter to apply").type_choice<FilterType>()
   + Argument ("output", "the output mesh file").type_file_out();
 
   OPTIONS

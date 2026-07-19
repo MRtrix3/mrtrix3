@@ -36,7 +36,7 @@ Options
    *fraction*: the output perfusion signal fraction image |br|
    *diffusivity*: the output perfusion diffusivity image
 
--  **-cutoff bval** minimum b-value for ADC estimation in IVIM fit (default = 120 s/mm^2).
+-  **-cutoff bval** minimum b-value for ADC estimation in IVIM fit (range: 0 to 1000) (default: 120 s/mm^2)
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -50,7 +50,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

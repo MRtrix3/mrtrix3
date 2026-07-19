@@ -125,8 +125,7 @@ void usage() {
 
   ARGUMENTS
     + Argument ("input", "the input DWI series").type_image_in()
-    + Argument ("operation", "the way in which output DWIs will be reconstructed;"
-                " one of: " + MR::Enum::join<Operation>()).type_choice<Operation>()
+    + Argument ("operation", "the way in which output DWIs will be reconstructed").type_choice<Operation>()
     + Argument ("output", "the output DWI series").type_image_out();
 
   OPTIONS

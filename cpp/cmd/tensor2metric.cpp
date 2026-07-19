@@ -74,15 +74,12 @@ void usage() {
     + Option("num",
              "specify the desired eigenvalue/eigenvector(s)."
              " Note that several eigenvalues can be specified as a number sequence."
-             " For example, '1,3' specifies the principal (1) and minor (3) eigenvalues/eigenvectors"
-             " (default = 1).")
-      + Argument("sequence").type_sequence_int()
+             " For example, '1,3' specifies the principal (1) and minor (3) eigenvalues/eigenvectors.")
+      + Argument("sequence").type_sequence_int().set_default("1")
 
     + Option("modulate",
-             "specify how to modulate the magnitude of the eigenvectors."
-             " Valid choices are: " + MR::Enum::join<ModulateChoice>() +
-             " (default = " + MR::Enum::lowercase_name(default_modulate_choice) + ").")
-      + Argument("choice").type_choice<ModulateChoice>()
+             "specify how to modulate the magnitude of the eigenvectors.")
+      + Argument("choice").type_choice<ModulateChoice>().set_default(MR::Enum::lowercase_name(default_modulate_choice))
 
     + Option("cl",
              "compute the linearity metric of the diffusion tensor."
@@ -126,9 +123,8 @@ void usage() {
       + Argument("file").type_file_in()
 
     + Option("rk_ndirs",
-             "specify the number of directions used to numerically calculate radial kurtosis"
-             " (by default, " + str(default_rk_numdirections) + " directions are used).")
-      + Argument("integer").type_integer(0, 1000);
+             "specify the number of directions used to numerically calculate radial kurtosis")
+      + Argument("integer").type_integer(0, 1000).set_default(default_rk_numdirections);
 
   AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be)"
            " and Thijs Dhollander (thijs.dhollander@gmail.com)"

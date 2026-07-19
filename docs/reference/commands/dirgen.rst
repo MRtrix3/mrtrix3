@@ -15,7 +15,7 @@ Usage
 
     dirgen [ options ]  ndir dirs
 
--  *ndir*: the number of directions to generate.
+-  *ndir*: the number of directions to generate. (range: 6 to 2147483647)
 -  *dirs*: the text file to write the directions to, as [ az in ] pairs.
 
 Description
@@ -26,11 +26,11 @@ Directions are distributed by analogy to an electrostatic repulsion system, with
 Options
 -------
 
--  **-power exp** specify exponent to use for repulsion power law (default: 1). This must be a power of 2 (i.e. 1, 2, 4, 8, 16, ...).
+-  **-power exp** specify exponent to use for repulsion power law. This must be a power of 2 (i.e. 1, 2, 4, 8, 16, ...). (range: 1 to 2147483647) (default: 1)
 
--  **-niter num** specify the maximum number of iterations to perform (default: 10000).
+-  **-niter num** specify the maximum number of iterations to perform. (range: 1 to 2147483647) (default: 10000)
 
--  **-restarts num** specify the number of restarts to perform (default: 10).
+-  **-restarts num** specify the number of restarts to perform. (range: 1 to 2147483647) (default: 10)
 
 -  **-fixed direction** *(multiple uses permitted)* specify a fixed direction (comm-separateed floats) that will always be included at the start of the scheme
 
@@ -43,7 +43,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

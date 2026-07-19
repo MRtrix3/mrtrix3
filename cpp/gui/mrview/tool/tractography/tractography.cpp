@@ -758,19 +758,16 @@ void Tractography::add_commandline_options(MR::App::OptionList &options) {
         + Argument("tracks").type_file_in()
 
       + Option("tractography.thickness",
-               "Line thickness of tractography display, [-1.0, 1.0];"
-               " default is 0.0.").allow_multiple()
-        + Argument("value").type_float(-1.0, 1.0)
+               "Line thickness of tractography display.").allow_multiple()
+        + Argument("value").type_float(-1.0, 1.0).set_default("0.0")
 
       + Option("tractography.geometry",
-               "The geometry type to use when rendering tractograms"
-               " (options are: " + MR::Enum::join<TrackGeometryType>() + ")").allow_multiple()
+               "The geometry type to use when rendering tractograms").allow_multiple()
         + Argument("value").type_choice<TrackGeometryType>()
 
       + Option("tractography.opacity",
-               "Opacity of tractography display, [0.0, 1.0];"
-               " default is 1.0.").allow_multiple()
-        + Argument("value").type_float(0.0, 1.0)
+               "Opacity of tractography display.").allow_multiple()
+        + Argument("value").type_float(0.0, 1.0).set_default("1.0")
 
       + Option("tractography.slab",
                "Slab thickness of tractography display, in mm."

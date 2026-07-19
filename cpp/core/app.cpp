@@ -495,16 +495,56 @@ std::string Argument::syntax_id() const {
   return result;
 }
 
+std::string Argument::help_metadata() const {
+  // Each present piece of metadata is rendered as one parenthesised clause preceded by a single
+  //   space, in a fixed order (choices, then numeric range, then default), so that every
+  //   human-readable help surface presents them identically.
+  std::string result;
+  if (!choices.empty())
+    result += " (choices: " + join(choices, ", ") + ")";
+  if (types[ArgTypeFlags::Integer]) {
+    if (int_limits.has_min() && int_limits.has_max())
+      result += " (range: " + str(int_limits.min()) + " to " + str(int_limits.max()) + ")";
+    else if (int_limits.has_min())
+      result += " (minimum: " + str(int_limits.min()) + ")";
+    else if (int_limits.has_max())
+      result += " (maximum: " + str(int_limits.max()) + ")";
+  }
+  if (types[ArgTypeFlags::Float]) {
+    if (float_limits.has_min() && float_limits.has_max())
+      result += " (range: " + str(float_limits.min()) + " to " + str(float_limits.max()) + ")";
+    else if (float_limits.has_min())
+      result += " (minimum: " + str(float_limits.min()) + ")";
+    else if (float_limits.has_max())
+      result += " (maximum: " + str(float_limits.max()) + ")";
+  }
+  if (default_value)
+    result += " (default: " + *default_value + ")";
+  return result;
+}
+
+std::string Option::help_metadata() const {
+  std::string result;
+  for (const auto &arg : *this) {
+    if (arg.is_tuple())
+      continue;
+    result += arg.help_metadata();
+  }
+  return result;
+}
+
 std::string Argument::syntax(const bool format) const {
   const std::string header = syntax_id();
-  std::string retval = paragraph((format ? underline(header, true) : header), desc, help_formatting.arg_indents);
+  std::string retval =
+      paragraph((format ? underline(header, true) : header), desc + help_metadata(), help_formatting.arg_indents);
   // For a tuple argument, list each sub-argument (id and description) beneath the summary line.
   const HelpFormatting::Indents element_indents{help_formatting.arg_indents.header + 2,
                                                 help_formatting.arg_indents.main + 2};
   for (const auto &element : elements) {
-    if (element.desc.empty())
+    const std::string element_desc = element.desc + element.help_metadata();
+    if (element_desc.empty())
       continue;
-    retval += paragraph((format ? underline(element.id, true) : element.id), element.desc, element_indents);
+    retval += paragraph((format ? underline(element.id, true) : element.id), element_desc, element_indents);
   }
   if (format)
     retval += "\n";
@@ -536,19 +576,23 @@ std::string Option::syntax(const bool format) const {
   if (format && flags.allow_multiple())
     opt += "  (multiple uses permitted)";
 
+  // The choices / range / default of the option's scalar arguments are appended to its description.
+  const std::string augmented_desc = desc + help_metadata();
+
   if (format)
-    opt = "  " + opt + "\n" + paragraph("", desc, help_formatting.purpose_indents) + "\n";
+    opt = "  " + opt + "\n" + paragraph("", augmented_desc, help_formatting.purpose_indents) + "\n";
   else
-    opt = paragraph(opt, desc, help_formatting.option_indents);
+    opt = paragraph(opt, augmented_desc, help_formatting.option_indents);
 
   // For a tuple argument, list each described sub-argument (id and description) beneath the option.
   for (const auto &arg : *this) {
     if (!arg.is_tuple())
       continue;
     for (const auto &element : arg.elements) {
-      if (element.desc.empty())
+      const std::string element_desc = element.desc + element.help_metadata();
+      if (element_desc.empty())
         continue;
-      opt += paragraph((format ? underline(element.id, true) : element.id), element.desc, help_formatting.arg_indents);
+      opt += paragraph((format ? underline(element.id, true) : element.id), element_desc, help_formatting.arg_indents);
     }
   }
   return opt;
@@ -671,8 +715,15 @@ std::string Argument::usage() const {
       stream << " " << p;
   }
   stream << "\n";
-  if (!desc.empty())
-    stream << desc << "\n";
+  // The default value has no dedicated machine token (adding one to this line would corrupt the
+  //   choice-list parsing in bash completion); it is preserved as free text appended to the
+  //   description line, exactly where it used to appear before it was declared via set_default().
+  if (!desc.empty() || default_value) {
+    stream << desc;
+    if (default_value)
+      stream << (desc.empty() ? "" : " ") << "(default: " << *default_value << ")";
+    stream << "\n";
+  }
 
   return stream.str();
 }
@@ -831,10 +882,13 @@ std::string markdown_usage() {
 
     // Argument description (tuple sub-arguments listed as an indented sub-list):
     for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-      s += std::string("- *") + ARGUMENTS[i].syntax_id() + "*: " + ARGUMENTS[i].desc + "\n";
-      for (const auto &element : ARGUMENTS[i].elements)
-        if (!element.desc.empty())
-          s += std::string("    - *") + element.id + "*: " + element.desc + "\n";
+      s += std::string("- *") + ARGUMENTS[i].syntax_id() + "*: " + ARGUMENTS[i].desc + ARGUMENTS[i].help_metadata() +
+           "\n";
+      for (const auto &element : ARGUMENTS[i].elements) {
+        const std::string element_desc = element.desc + element.help_metadata();
+        if (!element_desc.empty())
+          s += std::string("    - *") + element.id + "*: " + element_desc + "\n";
+      }
     }
   }
 
@@ -868,13 +922,15 @@ std::string markdown_usage() {
     f += "**";
     if (opt.flags.allow_multiple())
       f += "  *(multiple uses permitted)*";
-    f += std::string("<br>") + opt.desc + "\n\n";
+    f += std::string("<br>") + opt.desc + opt.help_metadata() + "\n\n";
     // Tuple sub-arguments listed as an indented sub-list beneath the option.
     for (const auto &arg : opt)
       if (arg.is_tuple())
-        for (const auto &element : arg.elements)
-          if (!element.desc.empty())
-            f += std::string("    - *") + element.id + "*: " + element.desc + "\n";
+        for (const auto &element : arg.elements) {
+          const std::string element_desc = element.desc + element.help_metadata();
+          if (!element_desc.empty())
+            f += std::string("    - *") + element.id + "*: " + element_desc + "\n";
+        }
     return f;
   };
 
@@ -987,14 +1043,15 @@ std::string restructured_text_usage() {
 
     // Argument description (a tuple's sub-arguments follow on |br| continuation lines):
     for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-      auto desc = split_lines(escape_special(ARGUMENTS[i].desc), false);
+      auto desc = split_lines(escape_special(ARGUMENTS[i].desc + ARGUMENTS[i].help_metadata()), false);
       s += std::string("-  *") + ARGUMENTS[i].syntax_id() + "*: " + desc[0];
       for (size_t n = 1; n < desc.size(); ++n)
         s += " |br|\n   " + desc[n];
       for (const auto &element : ARGUMENTS[i].elements) {
-        if (element.desc.empty())
+        const std::string element_desc = element.desc + element.help_metadata();
+        if (element_desc.empty())
           continue;
-        auto edesc = split_lines(escape_special(element.desc), false);
+        auto edesc = split_lines(escape_special(element_desc), false);
         s += " |br|\n   *" + element.id + "*: " + edesc[0];
         for (size_t n = 1; n < edesc.size(); ++n)
           s += " |br|\n   " + edesc[n];
@@ -1038,7 +1095,7 @@ std::string restructured_text_usage() {
     f += std::string("** ");
     if (opt.flags.allow_multiple())
       f += "*(multiple uses permitted)* ";
-    auto desc = split_lines(opt.desc, false);
+    auto desc = split_lines(opt.desc + opt.help_metadata(), false);
     f += escape_special(desc[0]);
     for (size_t n = 1; n < desc.size(); ++n)
       f += " |br|\n   " + escape_special(desc[n]);
@@ -1047,9 +1104,10 @@ std::string restructured_text_usage() {
       if (!arg.is_tuple())
         continue;
       for (const auto &element : arg.elements) {
-        if (element.desc.empty())
+        const std::string element_desc = element.desc + element.help_metadata();
+        if (element_desc.empty())
           continue;
-        auto edesc = split_lines(escape_special(element.desc), false);
+        auto edesc = split_lines(escape_special(element_desc), false);
         f += " |br|\n   *" + element.id + "*: " + edesc[0];
         for (size_t n = 1; n < edesc.size(); ++n)
           f += " |br|\n   " + edesc[n];

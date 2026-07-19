@@ -156,11 +156,10 @@ void usage() {
         " the input will be warped to the midway space defined by the grid of the input warp"
         " (i.e. half way between image1 and image2)")
 
-    + Option ("interp",
-        std::string("set the interpolation method to use when reslicing")
-        + " (choices: " + MR::Enum::join<MR::Interp::interp_type>() + ";"
-        + " default: " + MR::Enum::lowercase_name(default_interp) + ").")
-      + Argument ("method").type_choice<MR::Interp::interp_type>()
+    + Option ("interp", "set the interpolation method to use when reslicing")
+      + Argument ("method")
+          .type_choice<MR::Interp::interp_type>()
+          .set_default(MR::Enum::lowercase_name(default_interp))
 
     + Option ("oversample",
         "set the amount of over-sampling (in the target space) to perform when regridding."
@@ -210,8 +209,7 @@ void usage() {
     + OptionGroup ("Fibre orientation distribution handling options")
 
     + Option ("modulate",
-        "Valid choices are: "
-        " fod:"
+        "fod:"
         " modulate FODs during reorientation"
         " to preserve the apparent fibre density across fibre bundle widths"
         " before and after the transformation;"

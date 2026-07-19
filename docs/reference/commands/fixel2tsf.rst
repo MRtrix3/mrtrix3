@@ -30,14 +30,14 @@ https://mrtrix.readthedocs.io/en/3.0.8/fixel_based_analysis/fixel_directory_form
 Options
 -------
 
--  **-angle value** the max anglular threshold for computing correspondence between a fixel direction and track tangent (default = 45 degrees)
+-  **-angle value** the max anglular threshold for computing correspondence between a fixel direction and track tangent (range: 0.001 to 90) (default: 45 degrees)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

@@ -30,7 +30,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
@@ -102,7 +102,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
@@ -174,7 +174,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
@@ -245,14 +245,14 @@ Options
 
 -  **-midway_space** output only the non-linear warp mapping an input image to the midway space defined by the warpfull grid. If a linear transform exists in the warpfull file header then it will be composed and included in the output.
 
--  **-from image** define the direction of the desired output field. Use -from 1 to obtain the image1->image2 field and -from 2 for image2->image1. Can be combined with -midway_space to produce a field that only maps to midway space.
+-  **-from image** define the direction of the desired output field. Use -from 1 to obtain the image1->image2 field and -from 2 for image2->image1. Can be combined with -midway_space to produce a field that only maps to midway space. (range: 1 to 2)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
@@ -323,14 +323,14 @@ Options
 
 -  **-midway_space** output only the non-linear warp mapping an input image to the midway space defined by the warpfull grid. If a linear transform exists in the warpfull file header then it will be composed and included in the output.
 
--  **-from image** define the direction of the desired output field. Use -from 1 to obtain the image1->image2 field and -from 2 for image2->image1. Can be combined with -midway_space to produce a field that only maps to midway space.
+-  **-from image** define the direction of the desired output field. Use -from 1 to obtain the image1->image2 field and -from 2 for image2->image1. Can be combined with -midway_space to produce a field that only maps to midway space. (range: 1 to 2)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

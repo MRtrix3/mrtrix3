@@ -111,8 +111,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("input", "the input image(s).").type_image_in ().allow_multiple()
-  + Argument ("operation", "the operation to apply;"
-                           " options are: " + MR::Enum::join<Operation>() + ".").type_choice<Operation>()
+  + Argument ("operation", "the operation to apply").type_choice<Operation>()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS

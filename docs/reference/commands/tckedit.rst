@@ -67,23 +67,23 @@ Region Of Interest processing options
 Streamline length threshold options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-maxlength value** set the maximum length of any streamline in mm
+-  **-maxlength value** set the maximum length of any streamline in mm (minimum: 0)
 
--  **-minlength value** set the minimum length of any streamline in mm
+-  **-minlength value** set the minimum length of any streamline in mm (minimum: 0)
 
 Streamline count truncation options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-number count** set the desired number of selected streamlines to be propagated to the output file
+-  **-number count** set the desired number of selected streamlines to be propagated to the output file (minimum: 1)
 
--  **-skip count** omit this number of selected streamlines before commencing writing to the output file
+-  **-skip count** omit this number of selected streamlines before commencing writing to the output file (minimum: 1)
 
 Thresholds pertaining to per-streamline weighting
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-maxweight value** set the maximum weight of any streamline
+-  **-maxweight value** set the maximum weight of any streamline (minimum: 0)
 
--  **-minweight value** set the minimum weight of any streamline
+-  **-minweight value** set the minimum weight of any streamline (minimum: 0)
 
 Other options specific to tckedit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -104,7 +104,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

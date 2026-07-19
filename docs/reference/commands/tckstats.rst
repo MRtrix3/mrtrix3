@@ -20,7 +20,7 @@ Usage
 Options
 -------
 
--  **-output field** *(multiple uses permitted)* output only the field specified. Multiple such options can be supplied if required. Choices are: mean, median, std, min, max, count. Useful for use in scripts.
+-  **-output field** *(multiple uses permitted)* output only the field specified. Multiple such options can be supplied if required. Useful for use in scripts. (choices: mean, median, std, min, max, count)
 
 -  **-histogram path** output a histogram of streamline lengths
 
@@ -35,7 +35,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

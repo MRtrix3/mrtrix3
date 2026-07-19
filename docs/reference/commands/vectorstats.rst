@@ -41,7 +41,7 @@ Options relating to shuffling of data for nonparametric statistical inference
 
 -  **-notest** don't perform statistical inference; only output population statistics (effect size, stdev etc)
 
--  **-errors spec** specify nature of errors for shuffling; options are: ee,ise,both (default: ee)
+-  **-errors spec** specify nature of errors for shuffling. (choices: ee, ise, both) (default: ee)
 
 -  **-exchange_within file** specify blocks of observations within each of which data may undergo restricted exchange
 
@@ -49,7 +49,7 @@ Options relating to shuffling of data for nonparametric statistical inference
 
 -  **-strong** use strong familywise error control across multiple hypotheses
 
--  **-nshuffles number** the number of shuffles (default: 5000)
+-  **-nshuffles number** the number of shuffles (minimum: 1) (default: 5000)
 
 -  **-permutations file** manually define the permutations (relabelling). The input should be a text file defining a m x n matrix, where each relabelling is defined as a column vector of size m, and the number of columns, n, defines the number of permutations. Can be generated with the palm_quickperms function in PALM (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM). Overrides the -nshuffles option.
 
@@ -69,7 +69,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

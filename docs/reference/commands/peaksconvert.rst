@@ -33,23 +33,23 @@ Options
 Options providing information about the input image
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-in_format choice** specify the format in which the input directions are specified (see Description)
+-  **-in_format choice** specify the format in which the input directions are specified (see Description) (choices: unitspherical, spherical, unitcartesian, cartesian)
 
--  **-in_reference choice** specify the reference axes against which the input directions are specified (see Description)
+-  **-in_reference choice** specify the reference axes against which the input directions are specified (see Description) (choices: xyz, ijk, fsl)
 
 Options providing information about the output image
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-out_format choice** specify the format in which the output directions will be specified (see Description)
+-  **-out_format choice** specify the format in which the output directions will be specified (see Description) (choices: unitspherical, spherical, unitcartesian, cartesian)
 
--  **-out_reference choice** specify the reference axes against which the output directions will be specified (see Description)
+-  **-out_reference choice** specify the reference axes against which the output directions will be specified (see Description) (choices: xyz, ijk, fsl)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

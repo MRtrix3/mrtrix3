@@ -210,11 +210,8 @@ void usage() {
   OPTIONS
 
   + Option ("algorithm",
-            "specify the tractography algorithm to use."
-            " Valid choices are: "
-            + MR::Enum::join<algorithm_t>()
-            + " (default: " + MR::Enum::lowercase_name(default_algorithm) + ").")
-    + Argument ("name").type_choice<algorithm_t>()
+            "specify the tractography algorithm to use.")
+    + Argument ("name").type_choice<algorithm_t>().set_default(MR::Enum::lowercase_name(default_algorithm))
 
   + DWI::Tractography::Tracking::TrackOption
 

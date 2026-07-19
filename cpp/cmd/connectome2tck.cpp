@@ -56,9 +56,8 @@ const OptionGroup TrackOutputOptions = OptionGroup ("Options for determining the
 
     + Option ("exclusive", "only select tracks that exclusively connect nodes from within the list of nodes of interest")
 
-    + Option ("files", "select how the resulting streamlines will be grouped in output files."
-                       " Options are: " + MR::Enum::join<FileOutput>(", ") + ". Default: " + MR::Enum::lowercase_name(default_file_output) + ".")
-      + Argument ("option").type_choice<FileOutput>()
+    + Option ("files", "select how the resulting streamlines will be grouped in output files")
+      + Argument ("option").type_choice<FileOutput>().set_default (MR::Enum::lowercase_name(default_file_output))
 
     + Option ("exemplars", "generate a mean connection exemplar per edge,"
                            " rather than keeping all streamlines "

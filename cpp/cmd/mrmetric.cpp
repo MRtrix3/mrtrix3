@@ -195,23 +195,19 @@ void usage() {
                      " image1: scanner space of image 1;"
                      " image2: scanner space of image 2;"
                      " average: scanner space of the average affine transformation"
-                     " of image 1 and 2;"
-                     " default: " + MR::Enum::lowercase_name(default_space) + ".")
-    + Argument ("iteration method").type_choice<space_t>()
+                     " of image 1 and 2.")
+    + Argument ("iteration method").type_choice<space_t>().set_default(MR::Enum::lowercase_name(default_space))
 
-  + Option ("interp", std::string("set the interpolation method to use when reslicing") +
-                      " (choices: " + MR::Enum::join<MR::Interp::interp_type>() + "."
-                      " Default: " + MR::Enum::lowercase_name(default_interp) + ").")
-    + Argument ("method").type_choice<MR::Interp::interp_type>()
+  + Option ("interp", "set the interpolation method to use when reslicing")
+    + Argument ("method").type_choice<MR::Interp::interp_type>().set_default(MR::Enum::lowercase_name(default_interp))
 
   + Option ("metric",
             "define the dissimilarity metric used to calculate the cost."
             " Choices:"
             " diff (squared differences);"
             " cc (non-normalised negative cross correlation aka negative cross covariance)."
-            " Default: diff)."
             " cc is only implemented for -space average and -interp linear and cubic.")
-    + Argument ("method").type_choice<MetricChoice>()
+    + Argument ("method").type_choice<MetricChoice>().set_default(MR::Enum::lowercase_name(MetricChoice::DIFF))
 
   + Option ("mask1", "mask for image 1")
     + Argument ("image").type_image_in ()

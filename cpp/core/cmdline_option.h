@@ -19,6 +19,7 @@
 #include <bitset>
 #include <cassert>
 #include <limits>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -87,6 +88,12 @@ template <typename T> typename std::enable_if<MR::is_integral<T>::value, T>::typ
 }
 template <typename T> typename std::enable_if<MR::is_floating_point<T>::value, T>::type void_rangemax() {
   return std::numeric_limits<T>::infinity();
+}
+template <typename T> typename std::enable_if<MR::is_integral<T>::value, T>::type void_rangemin() {
+  return std::numeric_limits<T>::min();
+}
+template <typename T> typename std::enable_if<MR::is_floating_point<T>::value, T>::type void_rangemin() {
+  return -std::numeric_limits<T>::infinity();
 }
 } // namespace
 
@@ -167,6 +174,10 @@ public:
     }
     T min() const { return _min; }
     T max() const { return _max; }
+    //! true if a lower bound other than the type's unbounded sentinel has been set
+    bool has_min() const { return _min != void_rangemin<T>(); }
+    //! true if an upper bound other than the type's unbounded sentinel has been set
+    bool has_max() const { return _max != void_rangemax<T>(); }
 
   private:
     T _min, _max;
@@ -174,7 +185,26 @@ public:
   ScalarRange<int64_t> int_limits;
   ScalarRange<default_type> float_limits;
 
+  //! the default value applied by the command when this argument / option is not supplied
+  /*! Held as free text so it may describe non-scalar defaults (e.g. "3x3x3", "no limit").
+   * When set, the value is auto-rendered as "(default: <value>)" in the terminal help and
+   * every machine-readable export, removing the need to repeat it by hand in the description. */
+  std::optional<std::string> default_value;
+
   operator bool() const { return !id.empty(); }
+
+  //! declare the default value applied when this argument / option is absent (pre-formatted text)
+  Argument &set_default(std::string value) {
+    default_value = std::move(value);
+    return *this;
+  }
+
+  //! declare the default value applied when this argument / option is absent (numeric convenience)
+  template <typename T, typename std::enable_if<MR::is_arithmetic<T>::value, int>::type = 0>
+  Argument &set_default(const T value) {
+    default_value = MR::str(value);
+    return *this;
+  }
 
   //! specifies that the argument is optional
   /*! For example:
@@ -349,6 +379,13 @@ public:
    * ids of its sub-arguments, so that the command-line syntax lines read naturally. */
   std::string syntax_id() const;
 
+  //! the auto-rendered annotation of permitted choices, numeric range and default value
+  /*! Returns a string of parenthesised clauses, each preceded by a single space (e.g.
+   * " (choices: a, b, c) (range: 0 to 1) (default: 0.5)"), or an empty string when this
+   * argument carries no such metadata. Appended to the description by every human-readable
+   * help surface so choices / ranges / defaults need not be written out by hand. */
+  std::string help_metadata() const;
+
   std::string syntax(const bool format) const;
   std::string usage() const;
 };
@@ -465,6 +502,12 @@ public:
     }
     return result;
   }
+
+  //! the auto-rendered choice / range / default annotation of this option's scalar arguments
+  /*! Concatenates the help_metadata() of each non-tuple argument, so that an option's permitted
+   * choices, numeric range and default value are appended to its description automatically.
+   * Tuple sub-arguments are excluded here; their metadata is rendered on their own listing lines. */
+  std::string help_metadata() const;
 
   std::string syntax(const bool format) const;
   std::string usage() const;

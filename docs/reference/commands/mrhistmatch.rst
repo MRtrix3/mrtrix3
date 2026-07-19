@@ -15,7 +15,7 @@ Usage
 
     mrhistmatch [ options ]  type input target output
 
--  *type*: type of histogram matching to perform; options are: scale, linear, nonlinear.
+-  *type*: type of histogram matching to perform (choices: scale, linear, nonlinear)
 -  *input*: the input image to be modified
 -  *target*: the input image from which to derive the target histogram
 -  *output*: the output image
@@ -33,14 +33,14 @@ Image masking options
 Non-linear histogram matching options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-bins num** the number of bins to use to generate the histograms
+-  **-bins num** the number of bins to use to generate the histograms (minimum: 2)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

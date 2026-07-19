@@ -31,26 +31,26 @@ Options
 Streamline resampling options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-upsample ratio** increase the density of points along the length of each streamline by some factor (may improve mapping streamlines to ROIs, and/or visualisation)
+-  **-upsample ratio** increase the density of points along the length of each streamline by some factor (may improve mapping streamlines to ROIs, and/or visualisation) (minimum: 1)
 
--  **-downsample ratio** increase the density of points along the length of each streamline by some factor (decreases required storage space)
+-  **-downsample ratio** increase the density of points along the length of each streamline by some factor (decreases required storage space) (minimum: 1)
 
--  **-step_size value** re-sample the streamlines to a desired step size (in mm)
+-  **-step_size value** re-sample the streamlines to a desired step size (in mm) (minimum: 0)
 
--  **-num_points count** re-sample each streamline to a fixed number of points
+-  **-num_points count** re-sample each streamline to a fixed number of points (minimum: 2)
 
 -  **-endpoints** only output the two endpoints of each streamline
 
--  **-line num start end** resample tracks at 'num' equidistant locations along a line between 'start' and 'end' (specified as comma-separated 3-vectors in scanner coordinates)
+-  **-line num start end** resample tracks at 'num' equidistant locations along a line between 'start' and 'end' (specified as comma-separated 3-vectors in scanner coordinates) (minimum: 2)
 
--  **-arc num start mid end** resample tracks at 'num' equidistant locations along a circular arc specified by points 'start', 'mid' and 'end' (specified as comma-separated 3-vectors in scanner coordinates)
+-  **-arc num start mid end** resample tracks at 'num' equidistant locations along a circular arc specified by points 'start', 'mid' and 'end' (specified as comma-separated 3-vectors in scanner coordinates) (minimum: 2)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

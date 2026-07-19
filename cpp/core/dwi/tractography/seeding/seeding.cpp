@@ -120,9 +120,8 @@ const OptionGroup SeedParameterOption =
              " is not discarded prematurely as being unable to initiate tracking from."
              " Higher settings may affect performance if many seeds are"
              " genuinely impossible to track from,"
-             " as many attempts will still be made in vain for such seeds."
-             " (default: 1000)")
-      + Argument("number").type_integer(1)
+             " as many attempts will still be made in vain for such seeds.")
+      + Argument("number").type_integer(1).set_default(1000)
     + Option("seed_cutoff",
              "set the minimum FA or FOD amplitude for seeding tracks"
              " (default is the same as the normal -cutoff).")

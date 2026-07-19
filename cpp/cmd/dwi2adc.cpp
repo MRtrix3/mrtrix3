@@ -74,9 +74,8 @@ void usage ()
           .type_tuple({Argument("fraction",    "the output perfusion signal fraction image").type_image_out(),
                        Argument("diffusivity", "the output perfusion diffusivity image").type_image_out()})
 
-    + Option ("cutoff", "minimum b-value for ADC estimation in IVIM fit "
-                        "(default = " + str(ivim_cutoff_default) + " s/mm^2).")
-    +   Argument ("bval").type_float (0.0, 1000.0)
+    + Option ("cutoff", "minimum b-value for ADC estimation in IVIM fit")
+    +   Argument ("bval").type_float (0.0, 1000.0).set_default (str(ivim_cutoff_default) + " s/mm^2")
 
     + DWI::GradImportOptions();
 

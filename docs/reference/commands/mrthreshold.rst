@@ -37,11 +37,11 @@ Threshold determination mechanisms
 
 -  **-abs value** specify threshold value as absolute intensity
 
--  **-percentile value** determine threshold based on some percentile of the image intensity distribution
+-  **-percentile value** determine threshold based on some percentile of the image intensity distribution (range: 0 to 100)
 
--  **-top count** determine threshold that will result in selection of some number of top-valued voxels
+-  **-top count** determine threshold that will result in selection of some number of top-valued voxels (minimum: 1)
 
--  **-bottom count** determine & apply threshold resulting in selection of some number of bottom-valued voxels (note: implies threshold application operator of "le" unless otherwise specified)
+-  **-bottom count** determine & apply threshold resulting in selection of some number of bottom-valued voxels (note: implies threshold application operator of "le" unless otherwise specified) (minimum: 1)
 
 Threshold determination modifiers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -55,7 +55,7 @@ Threshold determination modifiers
 Threshold application modifiers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-comparison choice** comparison operator to use when applying the threshold; options are: lt, le, ge, gt (default = "le" for -bottom; "ge" otherwise)
+-  **-comparison choice** comparison operator to use when applying the threshold (default = "le" for -bottom; "ge" otherwise) (choices: lt, le, ge, gt)
 
 -  **-invert** invert the output binary mask (equivalent to flipping the operator; provided for backwards compatibility)
 
@@ -68,7 +68,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

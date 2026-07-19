@@ -64,18 +64,15 @@ void usage() {
     + Argument ("dirs", "the text file to write the directions to, as [ az in ] pairs.").type_file_out();
 
   OPTIONS
-    + Option ("power", "specify exponent to use for repulsion power law"
-                       " (default: " + str(default_power) + ")."
+    + Option ("power", "specify exponent to use for repulsion power law."
                        " This must be a power of 2 (i.e. 1, 2, 4, 8, 16, ...).")
-      + Argument ("exp").type_integer(1, std::numeric_limits<int>::max())
+      + Argument ("exp").type_integer(1, std::numeric_limits<int>::max()).set_default(default_power)
 
-    + Option ("niter", "specify the maximum number of iterations to perform"
-                       " (default: " + str(default_number_iterations) + ").")
-      + Argument ("num").type_integer(1, std::numeric_limits<int>::max())
+    + Option ("niter", "specify the maximum number of iterations to perform.")
+      + Argument ("num").type_integer(1, std::numeric_limits<int>::max()).set_default(default_number_iterations)
 
-    + Option ("restarts", "specify the number of restarts to perform"
-                          " (default: " + str(default_number_restarts) + ").")
-      + Argument ("num").type_integer (1, std::numeric_limits<int>::max())
+    + Option ("restarts", "specify the number of restarts to perform.")
+      + Argument ("num").type_integer (1, std::numeric_limits<int>::max()).set_default (default_number_restarts)
 
     + Option ("fixed", "specify a fixed direction (comm-separateed floats)"
                        " that will always be included at the start of the scheme").allow_multiple()

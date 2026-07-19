@@ -85,9 +85,8 @@ void usage() {
   + Option("order", "the maximum order of the polynomial basis"
                     " used to fit the normalisation field in the log-domain."
                     " An order of 0 is equivalent to not allowing spatial variance"
-                    " of the intensity normalisation factor."
-                    " (default: " + str(default_polynormial_order) + ")")
-    + Argument("number").type_integer(0, 3)
+                    " of the intensity normalisation factor.")
+    + Argument("number").type_integer(0, 3).set_default(default_polynormial_order)
 
   + Option("niter", "set the number of iterations."
                     " The first (and potentially only) entry applies to the main loop."
@@ -97,10 +96,11 @@ void usage() {
     + Argument("number").type_sequence_int()
 
   + Option("reference", "specify the (positive) reference value"
-                        " to which the summed tissue compartments will be normalised."
-                        " (default: " +str(default_reference_value, 6) + ","
-                        " SH DC term for unit angular integral)")
-    + Argument("number").type_float(std::numeric_limits<default_type>::min())
+                        " to which the summed tissue compartments will be normalised"
+                        " (the SH DC term for unit angular integral)")
+    + Argument("number")
+        .type_float(std::numeric_limits<default_type>::min())
+        .set_default(str(default_reference_value, 6))
 
   + Option("balanced", "incorporate the per-tissue balancing factors"
                        " into scaling of the output images."

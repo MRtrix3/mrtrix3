@@ -57,16 +57,13 @@ void usage() {
 
   OPTIONS
   + Option ("padding",
-            "boundary box padding in voxels."
-            " Default: " + str(PADDING_DEFAULT))
-    + Argument ("value").type_float(0.0)
+            "boundary box padding in voxels.")
+    + Argument ("value").type_float(0.0).set_default(PADDING_DEFAULT)
   + Option ("spacing",
             "Method for determination of voxel spacings based on"
             " the set of input images and the average header axes"
-            " (see Description)."
-            " Valid options are: " + MR::Enum::join<avgspace_voxspacing_t>(",") + ";"
-            " default = " + SPACING_DEFAULT_STRING)
-    + Argument("type").type_choice<avgspace_voxspacing_t>()
+            " (see Description).")
+    + Argument("type").type_choice<avgspace_voxspacing_t>().set_default(SPACING_DEFAULT_STRING)
   + Option ("fill", "set the intensity in the first volume of the average space to 1")
   + DataType::options();
 

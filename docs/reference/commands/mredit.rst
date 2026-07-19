@@ -31,7 +31,7 @@ Options
 -------
 
 -  **-plane axis coord value** *(multiple uses permitted)* fill one or more planes perpendicular to the specified axis |br|
-   *axis*: the axis perpendicular to the plane(s) |br|
+   *axis*: the axis perpendicular to the plane(s) (range: 0 to 2) |br|
    *coord*: the coordinate(s) along that axis at which to fill |br|
    *value*: the intensity value to set
 
@@ -66,7 +66,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

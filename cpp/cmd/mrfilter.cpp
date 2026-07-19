@@ -74,16 +74,14 @@ const OptionGroup GradientOption = OptionGroup ("Options for gradient filter")
 const OptionGroup MedianOption = OptionGroup ("Options for median filter")
   + Option ("extent", "specify extent of median filtering neighbourhood in voxels."
                       " This can be specified either as a single value to be used for all 3 axes,"
-                      " or as a comma-separated list of 3 values (one for each axis)"
-                      " (default: 3x3x3).")
-    + Argument ("size").type_sequence_int();
+                      " or as a comma-separated list of 3 values (one for each axis)")
+    + Argument ("size").type_sequence_int().set_default("3x3x3");
 
 const OptionGroup NormaliseOption = OptionGroup ("Options for normalisation filter")
   + Option ("extent", "specify extent of normalisation filtering neighbourhood in voxels."
                       "This can be specified either as a single value to be used for all 3 axes,"
-                      "or as a comma-separated list of 3 values (one for each axis)"
-                      " (default: 3x3x3).")
-    + Argument ("size").type_sequence_int();
+                      "or as a comma-separated list of 3 values (one for each axis)")
+    + Argument ("size").type_sequence_int().set_default("3x3x3");
 
 const OptionGroup SmoothOption = OptionGroup ("Options for smooth filter")
   + Option ("stdev", "apply Gaussian smoothing with the specified standard deviation."
@@ -103,15 +101,12 @@ const OptionGroup SmoothOption = OptionGroup ("Options for smooth filter")
   + Argument ("voxels").type_sequence_int();
 
 const OptionGroup ZcleanOption = OptionGroup ("Options for zclean filter")
-  + Option ("zupper", "define high intensity outliers;"
-                      " default: 2.5")
-    + Argument ("num").type_float(0.1)
-  + Option ("zlower", "define low intensity outliers;"
-                      " default: 2.5")
-    + Argument ("num").type_float(0.1)
-  + Option ("bridge", "number of voxels to gap to fill holes in mask;"
-                      " default: 4")
-    + Argument ("num").type_integer(0)
+  + Option ("zupper", "define high intensity outliers")
+    + Argument ("num").type_float(0.1).set_default(2.5)
+  + Option ("zlower", "define low intensity outliers")
+    + Argument ("num").type_float(0.1).set_default(2.5)
+  + Option ("bridge", "number of voxels to gap to fill holes in mask")
+    + Argument ("num").type_integer(0).set_default(4)
   + Option ("maskin", "initial mask that defines the maximum spatial extent"
                       " and the region from which to smaple the intensity range.")
     + Argument ("image").type_image_in()
@@ -129,7 +124,6 @@ void usage() {
   SYNOPSIS = "Perform filtering operations on 3D / 4D MR images";
 
   DESCRIPTION
-  + "The available filters are: " + MR::Enum::join<FilterType>() + "."
   + "Each filter has its own unique set of optional parameters."
   + "For 4D images, each 3D volume is processed independently.";
 

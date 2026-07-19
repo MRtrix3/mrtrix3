@@ -51,9 +51,8 @@ void usage() {
                       " that define out-of-bounds voxels in the input warp image."
                       " Default: (0,0,0).")
     + Argument ("coordinates").type_sequence_float()
-  + Option ("tolerance", "numerical precision used for L2 matrix norm comparison."
-                         " Default: " + str(precision) + ".")
-    + Argument ("value").type_float(precision);
+  + Option ("tolerance", "numerical precision used for L2 matrix norm comparison.")
+    + Argument ("value").type_float(precision).set_default(str(precision));
 }
 // clang-format on
 

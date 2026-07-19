@@ -46,9 +46,9 @@ Options
 Options specific to PLY writer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-sides sides** number of sides for streamlines
+-  **-sides sides** number of sides for streamlines (range: 3 to 15)
 
--  **-increment increment** generate streamline points at every (increment) points
+-  **-increment increment** generate streamline points at every (increment) points (minimum: 1)
 
 Options specific to RIB writer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -58,7 +58,7 @@ Options specific to RIB writer
 Options for both PLY and RIB writer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-radius radius** radius of the streamlines
+-  **-radius radius** radius of the streamlines (minimum: 0)
 
 Options specific to VTK writer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -70,7 +70,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

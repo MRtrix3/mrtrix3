@@ -120,10 +120,8 @@ void usage () {
   + Option ("stat_vox",
       "define the statistic for choosing the final voxel intensities"
       " for a given contrast type given the individual values"
-      " from the tracks passing through each voxel;"
-      " options are: " + MR::Enum::join<vox_stat_t>() +
-      " (default: mean)")
-    + Argument ("type").type_choice<vox_stat_t>()
+      " from the tracks passing through each voxel")
+    + Argument ("type").type_choice<vox_stat_t>().set_default(MR::Enum::lowercase_name(vox_stat_t::MEAN))
 
   + OptionGroup ("Other options for affecting the streamline sampling & mapping behaviour")
 

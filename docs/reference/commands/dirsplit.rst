@@ -21,7 +21,7 @@ Usage
 Options
 -------
 
--  **-number num** number of permutations to try (default: 100000000)
+-  **-number num** number of permutations to try (minimum: 1) (default: 100000000)
 
 -  **-cartesian** Output directions in Cartesian coordinates [x y z] instead of spherical angles [az in].
 
@@ -30,7 +30,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

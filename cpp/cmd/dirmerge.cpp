@@ -49,9 +49,8 @@ void usage() {
 
 OPTIONS
   + Option ("unipolar_weight", "set the weight given to the unipolar electrostatic repulsion model"
-                               " compared to the bipolar model"
-                               " (default: 0.2).")
-    + Argument ("value").type_float(0.0, 1.0)
+                               " compared to the bipolar model")
+    + Argument ("value").type_float(0.0, 1.0).set_default("0.2")
 
   + Option ("firstisfirst", "choose the first volume in the list from the first shell,"
                             " rather than choosing such from the shell with the most volumes"

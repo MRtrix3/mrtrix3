@@ -16,7 +16,7 @@ Usage
     connectomestats [ options ]  input algorithm design output_dir
 
 -  *input*: a text file listing the file names of the input connectomes
--  *algorithm*: the algorithm to use in network-based clustering/enhancement. Options are: nbs, tfnbs, none.
+-  *algorithm*: the algorithm to use in network-based clustering/enhancement. (choices: nbs, tfnbs, none)
 -  *design*: the design matrix
 -  *output_dir*: the output directory (will be created by the command).
 
@@ -47,7 +47,7 @@ Options relating to shuffling of data for nonparametric statistical inference
 
 -  **-notest** don't perform statistical inference; only output population statistics (effect size, stdev etc)
 
--  **-errors spec** specify nature of errors for shuffling; options are: ee,ise,both (default: ee)
+-  **-errors spec** specify nature of errors for shuffling. (choices: ee, ise, both) (default: ee)
 
 -  **-exchange_within file** specify blocks of observations within each of which data may undergo restricted exchange
 
@@ -55,26 +55,26 @@ Options relating to shuffling of data for nonparametric statistical inference
 
 -  **-strong** use strong familywise error control across multiple hypotheses
 
--  **-nshuffles number** the number of shuffles (default: 5000)
+-  **-nshuffles number** the number of shuffles (minimum: 1) (default: 5000)
 
 -  **-permutations file** manually define the permutations (relabelling). The input should be a text file defining a m x n matrix, where each relabelling is defined as a column vector of size m, and the number of columns, n, defines the number of permutations. Can be generated with the palm_quickperms function in PALM (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM). Overrides the -nshuffles option.
 
 -  **-nonstationarity** perform empirical non-stationarity correction
 
--  **-skew_nonstationarity value** specify the skew parameter for empirical statistic calculation (default for this command is 1)
+-  **-skew_nonstationarity value** specify the skew parameter for empirical statistic calculation (minimum: 0) (default: 1)
 
--  **-nshuffles_nonstationarity number** the number of shuffles to use when precomputing the empirical statistic image for non-stationarity correction (default: 5000)
+-  **-nshuffles_nonstationarity number** the number of shuffles to use when precomputing the empirical statistic image for non-stationarity correction (minimum: 1) (default: 5000)
 
 -  **-permutations_nonstationarity file** manually define the permutations (relabelling) for computing the emprical statistics for non-stationarity correction. The input should be a text file defining a m x n matrix, where each relabelling is defined as a column vector of size m, and the number of columns, n, defines the number of permutations. Can be generated with the palm_quickperms function in PALM (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM) Overrides the -nshuffles_nonstationarity option.
 
 Options for controlling TFCE behaviour
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-tfce_dh value** the height increment used in the tfce integration (default: 0.1)
+-  **-tfce_dh value** the height increment used in the tfce integration (minimum: 9.9999999999999995e-07) (default: 0.1)
 
--  **-tfce_e value** tfce extent exponent (default: 0.4)
+-  **-tfce_e value** tfce extent exponent (minimum: 0) (default: 0.4)
 
--  **-tfce_h value** tfce height exponent (default: 3)
+-  **-tfce_h value** tfce height exponent (minimum: 0) (default: 3)
 
 Options related to the General Linear Model (GLM)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -90,14 +90,14 @@ Options related to the General Linear Model (GLM)
 Additional options for connectomestats
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-threshold value** the t-statistic value to use in threshold-based clustering algorithms
+-  **-threshold value** the t-statistic value to use in threshold-based clustering algorithms (minimum: 0)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

@@ -21,24 +21,24 @@ Usage
 Options
 -------
 
--  **-bg value** image intensity of background (default: 0)
+-  **-bg value** image intensity of background (range: 0 to 1) (default: 0)
 
--  **-cgm value** image intensity of cortical grey matter (default: 0.5)
+-  **-cgm value** image intensity of cortical grey matter (range: 0 to 1) (default: 0.5)
 
--  **-sgm value** image intensity of sub-cortical grey matter (default: 0.75)
+-  **-sgm value** image intensity of sub-cortical grey matter (range: 0 to 1) (default: 0.75)
 
--  **-wm value** image intensity of white matter (default: 1)
+-  **-wm value** image intensity of white matter (range: 0 to 1) (default: 1)
 
--  **-csf value** image intensity of CSF (default: 0.15)
+-  **-csf value** image intensity of CSF (range: 0 to 1) (default: 0.15)
 
--  **-path value** image intensity of pathological tissue (default: 2)
+-  **-path value** image intensity of pathological tissue (range: 0 to 10) (default: 2)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

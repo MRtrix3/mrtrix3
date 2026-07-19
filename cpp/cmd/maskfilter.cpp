@@ -39,9 +39,8 @@ const OptionGroup CleanOption =
     OptionGroup("Options for mask cleaning filter")
       + Option("scale",
                "the maximum scale used to cut bridges."
-               " A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale."
-               " (Default: " + str(default_clean_scale, 2) + ")")
-        + Argument("value").type_integer(1, 1e6);
+               " A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale.")
+        + Argument("value").type_integer(1, 1e6).set_default(default_clean_scale);
 
 const OptionGroup ConnectOption =
     OptionGroup("Options for connected-component filter")
@@ -56,9 +55,8 @@ const OptionGroup ConnectOption =
              "use 26-voxel-neighbourhood connectivity"
              " (Default is 6-voxel-neighbourhood)")
     + Option("minsize",
-             "impose minimum size of segmented components"
-             " (Default: select all components)")
-      + Argument("value").type_integer(1, 1e6);
+             "impose minimum size of segmented components")
+      + Argument("value").type_integer(1, 1e6).set_default("select all components");
 
 const OptionGroup DilateErodeOption =
     OptionGroup("Options for dilate / erode filters")
@@ -81,9 +79,8 @@ const OptionGroup MedianOption =
     + Option("extent",
              "specify the extent (width) of kernel size in voxels."
              " This can be specified either as a single value to be used for all axes,"
-             " or as a comma-separated list of the extent for each axis."
-             " The default is 3x3x3.")
-      + Argument("voxels").type_sequence_int();
+             " or as a comma-separated list of the extent for each axis.")
+      + Argument("voxels").type_sequence_int().set_default("3x3x3");
 
 void usage() {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)"
@@ -99,8 +96,7 @@ void usage() {
 
   ARGUMENTS
   + Argument("input", "the input mask.").type_image_in()
-  + Argument("filter", "the name of the filter to be applied;"
-                       " options are: " + MR::Enum::join<FilterType>() + ".").type_choice<FilterType>()
+  + Argument("filter", "the name of the filter to be applied").type_choice<FilterType>()
   + Argument("output", "the output mask.").type_image_out();
 
   OPTIONS

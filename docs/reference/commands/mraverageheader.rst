@@ -26,23 +26,23 @@ The voxel spacings of the calculated average header can be determined from the s
 Options
 -------
 
--  **-padding value** boundary box padding in voxels. Default: 0
+-  **-padding value** boundary box padding in voxels. (minimum: 0) (default: 0)
 
--  **-spacing type** Method for determination of voxel spacings based on the set of input images and the average header axes (see Description). Valid options are: min_projection,mean_projection,min_nearest,mean_nearest; default = mean_projection
+-  **-spacing type** Method for determination of voxel spacings based on the set of input images and the average header axes (see Description). (choices: min_projection, mean_projection, min_nearest, mean_nearest) (default: mean_projection)
 
 -  **-fill** set the intensity in the first volume of the average space to 1
 
 Data type options
 ^^^^^^^^^^^^^^^^^
 
--  **-datatype spec** specify output image data type. Valid choices are: float16, float16le, float16be, float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat16, cfloat16le, cfloat16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
+-  **-datatype spec** specify output image data type. (choices: float16, float16le, float16be, float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat16, cfloat16le, cfloat16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

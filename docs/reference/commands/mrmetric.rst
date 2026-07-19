@@ -26,11 +26,11 @@ Currently only the mean squared difference is fully implemented.
 Options
 -------
 
--  **-space iteration method** Image "space" in which the metric will be computed. Options are: voxel: per voxel; image1: scanner space of image 1; image2: scanner space of image 2; average: scanner space of the average affine transformation of image 1 and 2; default: voxel.
+-  **-space iteration method** Image "space" in which the metric will be computed. Options are: voxel: per voxel; image1: scanner space of image 1; image2: scanner space of image 2; average: scanner space of the average affine transformation of image 1 and 2. (choices: voxel, image1, image2, average) (default: voxel)
 
--  **-interp method** set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: linear).
+-  **-interp method** set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc) (default: linear)
 
--  **-metric method** define the dissimilarity metric used to calculate the cost. Choices: diff (squared differences); cc (non-normalised negative cross correlation aka negative cross covariance). Default: diff). cc is only implemented for -space average and -interp linear and cubic.
+-  **-metric method** define the dissimilarity metric used to calculate the cost. Choices: diff (squared differences); cc (non-normalised negative cross correlation aka negative cross covariance). cc is only implemented for -space average and -interp linear and cubic. (choices: diff, cc) (default: diff)
 
 -  **-mask1 image** mask for image 1
 
@@ -45,7 +45,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

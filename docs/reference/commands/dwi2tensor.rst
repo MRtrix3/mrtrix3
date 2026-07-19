@@ -48,7 +48,7 @@ Options
 
 -  **-ols** perform initial fit using an ordinary least-squares (OLS) fit (see Description).
 
--  **-iter integer** number of iterative reweightings for IWLS algorithm (default: 2) (see Description).
+-  **-iter integer** number of iterative reweightings for IWLS algorithm (see Description). (range: 0 to 10) (default: 2)
 
 -  **-constrain** constrain fit to non-negative diffusivity and kurtosis as well as monotonic signal decay (see Description).
 
@@ -74,7 +74,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

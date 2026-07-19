@@ -103,8 +103,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("input", "input image to be regridded.").type_image_in ()
-  + Argument ("operation", "the operation to be performed;"
-                           " one of: " + MR::Enum::join<Operation>() + ".").type_choice<Operation>()
+  + Argument ("operation", "the operation to be performed").type_choice<Operation>()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
@@ -131,10 +130,8 @@ void usage() {
                          " or as a comma-separated list of scale factors for each dimension.")
     + Argument ("factor").type_sequence_float()
 
-    + Option ("interp", std::string("set the interpolation method to use when reslicing")
-                        + " (choices: " + MR::Enum::join<MR::Interp::interp_type>() + ";"
-                        " default: " + MR::Enum::lowercase_name(default_interp) + ").")
-    + Argument ("method").type_choice<MR::Interp::interp_type>()
+    + Option ("interp", "set the interpolation method to use when reslicing")
+    + Argument ("method").type_choice<MR::Interp::interp_type>().set_default(MR::Enum::lowercase_name(default_interp))
 
     + Option ("oversample",
         "set the amount of over-sampling (in the target space) to perform when regridding."
@@ -195,9 +192,8 @@ void usage() {
 
   + OptionGroup ("General options")
     + Option ("fill", "Use number as the out of bounds value."
-                      " nan, inf and -inf are valid arguments."
-                      " (Default: 0.0)")
-    + Argument ("number").type_float()
+                      " nan, inf and -inf are valid arguments.")
+    + Argument ("number").type_float().set_default("0.0")
 
   + Stride::Options
   + DataType::options();

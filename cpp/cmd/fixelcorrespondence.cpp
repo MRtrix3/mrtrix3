@@ -55,9 +55,8 @@ void usage() {
                              " This will be placed in the output fixel directory").type_text();
 
   OPTIONS
-  + Option ("angle", "the max angle threshold for computing inter-subject fixel correspondence"
-                     " (Default: " + str(default_angle_threshold, 2) + " degrees)")
-  + Argument ("value").type_float (0.0, 90.0);
+  + Option ("angle", "the max angle threshold for computing inter-subject fixel correspondence")
+  + Argument ("value").type_float (0.0, 90.0).set_default (str(default_angle_threshold, 2) + " degrees");
 }
 // clang-format on
 

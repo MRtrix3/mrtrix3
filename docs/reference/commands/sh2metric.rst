@@ -16,7 +16,7 @@ Usage
     sh2metric [ options ]  SH [ SH ... ] metric output
 
 -  *SH*: the input spherical harmonics coefficients image(s)
--  *metric*: the metrc to compute; one of: entropy, power
+-  *metric*: the metrc to compute (choices: entropy, power)
 -  *output*: the output metric image
 
 Description
@@ -52,7 +52,7 @@ Options specific to the "entropy" metric
 
 -  **-invnorm** compute the complement of the normalised voxel-wise entropy measure (ie. 1.0 - normalised), such that values closer to 1.0 reflect greater concentration of the function
 
--  **-directions spec** specify the direction set to be used for SH amplitude sampling; either an input file containing a set of directions, or an integer corresponding to a built-in direction set
+-  **-directions spec** specify the direction set to be used for SH amplitude sampling; either an input file containing a set of directions, or an integer corresponding to a built-in direction set (minimum: 1)
 
 Options specific to the "power" metric
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -64,7 +64,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

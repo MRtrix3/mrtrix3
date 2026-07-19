@@ -53,8 +53,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("input",  "the input image").type_image_in()
-  + Argument ("map",    "the colourmap to apply;"
-                        " choices are: " + MR::Enum::join<ColourMap::Choice>(",")).type_choice<ColourMap::Choice>()
+  + Argument ("map",    "the colourmap to apply").type_choice<ColourMap::Choice>()
   + Argument ("output", "the output image").type_image_out();
 
   OPTIONS

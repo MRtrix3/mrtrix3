@@ -78,8 +78,7 @@ void usage ()
   + Argument ("values", "the output sampled values").type_file_out();
 
   OPTIONS
-  + Option ("stat_tck", "compute some statistic from the values along each streamline;"
-                        " options are: " + MR::Enum::join<Statistic>())
+  + Option ("stat_tck", "compute some statistic from the values along each streamline")
     + Argument ("statistic").type_choice<Statistic>()
 
   + Option ("nointerp", "do not use trilinear interpolation when sampling image values")

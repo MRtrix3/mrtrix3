@@ -61,8 +61,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("input", "the input(s) for the specified operation").type_file_in().type_image_in().allow_multiple()
-  + Argument ("operation", "the operation to perform;"
-                           " one of: " + MR::Enum::join<Operation>()).type_choice<Operation>()
+  + Argument ("operation", "the operation to perform").type_choice<Operation>()
   + Argument ("output", "the output transformation matrix.").type_file_out ();
 
 }

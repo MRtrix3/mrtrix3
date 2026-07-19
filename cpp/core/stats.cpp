@@ -27,7 +27,6 @@ const OptionGroup Options =
     + Option("output",
              "output only the field specified."
              " Multiple such options can be supplied if required."
-             " Choices are: " + MR::Enum::join<field_t>() + "."
              " Useful for use in scripts."
              " Both std options refer to the unbiased (sample) standard deviation."
              " For complex data, min, max and std are calculated separately for real and imaginary parts,"

@@ -24,15 +24,13 @@ const OptionGroup MSMT_CSD_options =
     OptionGroup("Options for the Multi-Shell, Multi-Tissue Constrained Spherical Deconvolution algorithm")
     + Option("norm_lambda",
              "the regularisation parameter lambda that controls the strength "
-             "of the constraint on the norm of the solution"
-             " (default = " + str(default_msmt_normlambda, 2) + ").")
-      + Argument("value").type_float(0.0)
+             "of the constraint on the norm of the solution")
+      + Argument("value").type_float(0.0).set_default(str(default_msmt_normlambda, 2))
 
     + Option("neg_lambda",
              "the regularisation parameter lambda that controls the strength "
-             "of the non-negativity constraint"
-             " (default = " + str(default_msmt_neglambda, 2) + ").")
-      + Argument("value").type_float(0.0)
+             "of the non-negativity constraint")
+      + Argument("value").type_float(0.0).set_default(str(default_msmt_neglambda, 2))
 
     + Option("predicted_signal",
              "output the predicted dwi image.")

@@ -57,8 +57,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("input", "the input: either a fixel data file, or a fixel directory (see Description)").type_image_in().type_directory_in()
-  + Argument ("filter", "the filtering operation to perform;"
-                        " options are: " + MR::Enum::join<FilterType>() + ".").type_choice<FilterType>()
+  + Argument ("filter", "the filtering operation to perform").type_choice<FilterType>()
   + Argument ("output", "the output: either a fixel data file, or a fixel directory (see Description)").type_image_out().type_directory_out(DirOutMode::MayExist);
 
   OPTIONS
@@ -72,20 +71,16 @@ void usage() {
   + Fixel::Filter::cfe_options
 
   + OptionGroup ("Options specific to the \"connect\" filter")
-  + Option ("threshold_value", "specify a threshold for the input fixel data file values"
-                               " (default = " + str(Fixel::Filter::Connect::default_value_threshold) + ")")
-    + Argument ("value").type_float ()
-  + Option ("threshold_connectivity", "specify a fixel-fixel connectivity threshold for connected-component analysis"
-                                      " (default = " + str(Fixel::Filter::Connect::default_connectivity_threshold, 2) + ")")
-    + Argument ("value").type_float (0.0)
+  + Option ("threshold_value", "specify a threshold for the input fixel data file values")
+    + Argument ("value").type_float ().set_default (str(Fixel::Filter::Connect::default_value_threshold))
+  + Option ("threshold_connectivity", "specify a fixel-fixel connectivity threshold for connected-component analysis")
+    + Argument ("value").type_float (0.0).set_default (str(Fixel::Filter::Connect::default_connectivity_threshold, 2))
 
   + OptionGroup ("Options specific to the \"smooth\" filter")
-  + Option ("fwhm", "the full-width half-maximum (FWHM) of the spatial component of the smoothing filter"
-                    " (default = " + str(Fixel::Filter::Smooth::default_fwhm) + "mm)")
-    + Argument ("value").type_float (0.0)
-  + Option ("minweight", "apply a minimum threshold to smoothing weights"
-                         " (default = " + str(Fixel::Filter::Smooth::default_threshold, 2) + ")")
-    + Argument ("value").type_float (0.0);
+  + Option ("fwhm", "the full-width half-maximum (FWHM) of the spatial component of the smoothing filter")
+    + Argument ("value").type_float (0.0).set_default (str(Fixel::Filter::Smooth::default_fwhm) + "mm")
+  + Option ("minweight", "apply a minimum threshold to smoothing weights")
+    + Argument ("value").type_float (0.0).set_default (str(Fixel::Filter::Smooth::default_threshold, 2));
 
 }
 // clang-format on

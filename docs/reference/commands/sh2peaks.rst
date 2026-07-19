@@ -31,7 +31,7 @@ https://mrtrix.readthedocs.io/en/3.0.8/concepts/spherical_harmonics.html
 Options
 -------
 
--  **-num peaks** the number of peaks to extract (default: 3).
+-  **-num peaks** the number of peaks to extract (minimum: 0) (default: 3)
 
 -  **-direction phi theta** *(multiple uses permitted)* the direction of a peak to estimate. The algorithm will attempt to find the same number of peaks as have been specified using this option. |br|
    *phi*: the azimuthal angle of the peak direction |br|
@@ -39,7 +39,7 @@ Options
 
 -  **-peaks image** the program will try to find the peaks that most closely match those in the image provided.
 
--  **-threshold value** only peak amplitudes greater than the threshold will be considered.
+-  **-threshold value** only peak amplitudes greater than the threshold will be considered. (minimum: 0)
 
 -  **-seeds file** specify a set of directions from which to start the multiple restarts of the optimisation (by default, the built-in 60 direction set is used)
 
@@ -52,7 +52,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

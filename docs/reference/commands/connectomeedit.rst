@@ -16,7 +16,7 @@ Usage
     connectomeedit [ options ]  input operation output
 
 -  *input*: the input connectome.
--  *operation*: the operation to apply, one of: to_symmetric, upper_triangular, lower_triangular, transpose, zero_diagonal.
+-  *operation*: the operation to apply. (choices: to_symmetric, upper_triangular, lower_triangular, transpose, zero_diagonal)
 -  *output*: the output connectome.
 
 Options
@@ -27,7 +27,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

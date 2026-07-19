@@ -59,9 +59,8 @@ void usage() {
   + Argument ("output", "the output peaks image").type_image_out();
 
   OPTIONS
-  + Option ("num", "the number of peaks to extract"
-                   " (default: " + str(default_npeaks) + ").")
-    + Argument ("peaks").type_integer (0)
+  + Option ("num", "the number of peaks to extract")
+    + Argument ("peaks").type_integer (0).set_default(default_npeaks)
 
   + Option ("direction",
             "the direction of a peak to estimate."

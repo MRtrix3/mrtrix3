@@ -33,9 +33,9 @@ Options
 Options that influence generation of the connectivity matrix / matrices
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-threshold value** a threshold to define the required fraction of shared connections to be included in the neighbourhood (default: 0.01)
+-  **-threshold value** a threshold to define the required fraction of shared connections to be included in the neighbourhood (range: 0 to 1) (default: 0.01)
 
--  **-angle value** the max angle threshold for assigning streamline tangents to fixels (Default: 45 degrees)
+-  **-angle value** the max angle threshold for assigning streamline tangents to fixels (range: 0 to 90) (default: 45 degrees)
 
 -  **-mask file** provide a fixel data file containing a mask of those fixels to be computed; fixels outside the mask will be empty in the output matrix
 
@@ -53,7 +53,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

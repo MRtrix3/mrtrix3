@@ -97,9 +97,8 @@ void usage() {
 
   + Option("iter",
            "number of iterative reweightings for IWLS algorithm"
-           " (default: " + str(default_iterations) +")"
            " (see Description).")
-    + Argument("integer").type_integer(0, 10)
+    + Argument("integer").type_integer(0, 10).set_default(default_iterations)
 
   + Option("constrain",
            "constrain fit to non-negative diffusivity and kurtosis"

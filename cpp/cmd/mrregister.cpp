@@ -114,11 +114,10 @@ void usage() {
         " contrastX and imageX must share the same coordinate system.").type_image_in().optional().allow_multiple();
 
   OPTIONS
-  + Option ("type", std::string("the registration type.") +
-                    " Valid choices are: "
-                    + MR::Enum::join<transformation_t>()
-                    + " (default: " + MR::Enum::lowercase_name(default_transformation_type) + ")")
-    + Argument ("choice").type_choice<transformation_t>()
+  + Option ("type", "the registration type.")
+    + Argument ("choice")
+        .type_choice<transformation_t>()
+        .set_default(MR::Enum::lowercase_name(default_transformation_type))
 
   + Option ("transformed", "image1 after registration transformed and regridded to the space of image2."
                            " Note that -transformed needs to be repeated for each contrast"

@@ -53,9 +53,8 @@ void usage() {
     + Argument ("out", "the output direction file").type_file_out();
 
   OPTIONS
-    + Option ("number", "number of rotations to try"
-                        " (default: " + str(default_number) + ")")
-    +   Argument ("num").type_integer(1)
+    + Option ("number", "number of rotations to try")
+    +   Argument ("num").type_integer(1).set_default(default_number)
 
     + DWI::Directions::cartesian_option;
 }

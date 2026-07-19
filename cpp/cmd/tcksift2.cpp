@@ -43,64 +43,54 @@ using namespace MR::DWI::Tractography::SIFT2;
 // clang-format off
 const OptionGroup SIFT2RegularisationOption = OptionGroup ("Regularisation options for SIFT2")
   + Option ("reg_tikhonov", "provide coefficient for regularising streamline weighting coefficients"
-                            " (Tikhonov regularisation)"
-                            " (default: " + str(SIFT2::default_regularisation_tikhonov, 2) + ")")
-    + Argument ("value").type_float(0.0)
+                            " (Tikhonov regularisation)")
+    + Argument ("value").type_float(0.0).set_default(str(SIFT2::default_regularisation_tikhonov, 2))
   + Option ("reg_tv", "provide coefficient for regularising variance of streamline weighting coefficient"
                       " to fixels along its length"
-                      " (Total Variation regularisation)"
-                      " (default: " + str(SIFT2::default_regularisation_tv, 2) + ")")
-    + Argument ("value").type_float(0.0);
+                      " (Total Variation regularisation)")
+    + Argument ("value").type_float(0.0).set_default(str(SIFT2::default_regularisation_tv, 2));
 
 const OptionGroup SIFT2AlgorithmOption = OptionGroup ("Options for controlling the SIFT2 optimisation algorithm")
   + Option ("min_td_frac", "minimum fraction of the FOD integral reconstructed by streamlines;"
                            " if the reconstructed streamline density is below this fraction,"
-                           " the fixel is excluded from optimisation"
-                           " (default: " + str(SIFT2::default_minimum_td_fraction, 2) + ")")
-    + Argument ("fraction").type_float(0.0, 1.0)
+                           " the fixel is excluded from optimisation")
+    + Argument ("fraction").type_float(0.0, 1.0).set_default(str(SIFT2::default_minimum_td_fraction, 2))
   + Option ("min_iters", "minimum number of iterations to run before testing for convergence;"
                          " this can prevent premature termination at early iterations"
-                         " if the cost function increases slightly"
-                         " (default: " + str(SIFT2::default_minimum_iterations) + ")")
-    + Argument ("count").type_integer(0)
-  + Option ("max_iters", "maximum number of iterations to run before terminating program"
-                         " (default: " + str(SIFT2::default_maximum_iterations) + ")")
-    + Argument ("count").type_integer(0)
+                         " if the cost function increases slightly")
+    + Argument ("count").type_integer(0).set_default(SIFT2::default_minimum_iterations)
+  + Option ("max_iters", "maximum number of iterations to run before terminating program")
+    + Argument ("count").type_integer(0).set_default(SIFT2::default_maximum_iterations)
   + Option ("min_factor", "minimum weighting factor for an individual streamline;"
                           " if the factor falls below this number,"
                           " the streamline will be rejected entirely"
-                          " (factor set to zero)"
-                          " (default: " + str(std::exp(SIFT2::default_minimum_coefficient), 2) + ")")
-    + Argument ("factor").type_float(0.0, 1.0)
+                          " (factor set to zero)")
+    + Argument ("factor").type_float(0.0, 1.0).set_default(str(std::exp(SIFT2::default_minimum_coefficient), 2))
   + Option ("min_coeff", "minimum weighting coefficient for an individual streamline;"
                          " similar to the '-min_factor' option,"
                          " but using the exponential coefficient basis of the SIFT2 model;"
                          " these parameters are related as:"
                          " factor = e^(coeff)."
                          " Note that the -min_factor and -min_coeff options are mutually exclusive;"
-                         " you can only provide one."
-                         " (default: " + str(SIFT2::default_minimum_coefficient, 2) + ")")
+                         " you can only provide one.")
     + Argument ("coeff").type_float(-std::numeric_limits<default_type>::infinity(), 0.0)
-  + Option ("max_factor", "maximum weighting factor that can be assigned to any one streamline"
-                          " (default: " + str(std::exp(SIFT2::default_maximum_coefficient), 2) + ")")
-    + Argument ("factor").type_float(1.0)
+        .set_default(str(SIFT2::default_minimum_coefficient, 2))
+  + Option ("max_factor", "maximum weighting factor that can be assigned to any one streamline")
+    + Argument ("factor").type_float(1.0).set_default(str(std::exp(SIFT2::default_maximum_coefficient), 2))
   + Option ("max_coeff", "maximum weighting coefficient for an individual streamline;"
                          " similar to the '-max_factor' option,"
                          " but using the exponential coefficient basis of the SIFT2 model;"
                          " these parameters are related as:"
                          " factor = e^(coeff)."
                          " Note that the -max_factor and -max_coeff options are mutually exclusive;"
-                         " you can only provide one."
-                         " (default: " + str(SIFT2::default_maximum_coefficient, 2) + ")")
-    + Argument ("coeff").type_float(1.0)
-  + Option ("max_coeff_step", "maximum change to a streamline's weighting coefficient in a single iteration"
-                              " (default: " + str(SIFT2::default_maximum_coeffstep, 2) + ")")
-    + Argument ("step").type_float()
+                         " you can only provide one.")
+    + Argument ("coeff").type_float(1.0).set_default(str(SIFT2::default_maximum_coefficient, 2))
+  + Option ("max_coeff_step", "maximum change to a streamline's weighting coefficient in a single iteration")
+    + Argument ("step").type_float().set_default(str(SIFT2::default_maximum_coeffstep, 2))
   + Option ("min_cf_decrease", "minimum decrease in the cost function"
                                " (as a fraction of the initial value)"
-                               " that must occur each iteration for the algorithm to continue"
-                               " (default: " + str(SIFT2::default_minimum_cf_fractional_decrease, 2) + ")")
-    + Argument ("frac").type_float(0.0, 1.0)
+                               " that must occur each iteration for the algorithm to continue")
+    + Argument ("frac").type_float(0.0, 1.0).set_default(str(SIFT2::default_minimum_cf_fractional_decrease, 2))
   + Option ("linear", "perform a linear estimation of streamline weights,"
                       " rather than the standard non-linear optimisation"
                       " (typically does not provide as accurate a model fit;"

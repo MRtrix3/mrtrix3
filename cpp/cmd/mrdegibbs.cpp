@@ -78,29 +78,25 @@ void usage() {
   OPTIONS
   + Option ("dimensionality",
             "specify the dimensionality of operation."
-            " Valid choices are: 2, 3 (default: 2)."
             " A value of 2 corresponds to the original slice-wise approach as proposed by Kellner et al.,"
             " appropriate for images acquired using 2D stack-of-slices approaches."
             " Values greater than 2 select the 3D volume-wise extension proposed by Bautista et al.,"
             " which is appropriate for images acquired using 3D Fourier encoding.")
-    + Argument ("value").type_integer(2, 3)
+    + Argument ("value").type_integer(2, 3).set_default(2)
 
   + Option ("axes",
             "select the slice axes"
             " (default: 0,1 - i.e. x-y).")
     + Argument ("list").type_sequence_int()
 
-  + Option ("nshifts", "discretization of subpixel spacing"
-                       " (default: 20).")
-    + Argument ("value").type_integer(8, 128)
+  + Option ("nshifts", "discretization of subpixel spacing")
+    + Argument ("value").type_integer(8, 128).set_default(20)
 
-  + Option ("minW", "left border of window used for TV computation"
-                    " (default: 1).")
-    + Argument ("value").type_integer(0, 10)
+  + Option ("minW", "left border of window used for TV computation")
+    + Argument ("value").type_integer(0, 10).set_default(1)
 
-  + Option ("maxW", "right border of window used for TV computation"
-                    " (default: 3).")
-    + Argument ("value").type_integer(0, 128)
+  + Option ("maxW", "right border of window used for TV computation")
+    + Argument ("value").type_integer(0, 128).set_default(3)
 
   + DataType::options();
 

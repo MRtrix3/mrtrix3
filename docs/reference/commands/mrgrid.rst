@@ -16,7 +16,7 @@ Usage
     mrgrid [ options ]  input operation output
 
 -  *input*: input image to be regridded.
--  *operation*: the operation to be performed; one of: regrid, crop, pad.
+-  *operation*: the operation to be performed (choices: regrid, crop, pad)
 -  *output*: the output image.
 
 Description
@@ -65,7 +65,7 @@ Regridding options (involves image interpolation, applied to spatial axes only)
 
 -  **-scale factor** scale the image resolution by the supplied factor. This can be specified either as a single value to be used for all dimensions, or as a comma-separated list of scale factors for each dimension.
 
--  **-interp method** set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc; default: cubic).
+-  **-interp method** set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc) (default: cubic)
 
 -  **-oversample factor** set the amount of over-sampling (in the target space) to perform when regridding. This is particularly relevant when downsamping a high-resolution image to a low-resolution image, to avoid aliasing artefacts. This can consist of a single integer, or a comma-separated list of 3 integers if different oversampling factors are desired along the different axes. Default is determined from ratio of voxel dimensions (disabled for nearest-neighbour interpolation).
 
@@ -81,7 +81,7 @@ Pad and crop options (no image interpolation is performed, header transformation
 -  **-crop_unbound** Allow padding beyond the original FOV when cropping.
 
 -  **-axis index spec** *(multiple uses permitted)* pad or crop the input image along the provided axis (defined by index). The specifier argument defines the number of voxels added or removed on the lower or upper end of the axis (-axis index delta_lower,delta_upper)or acts as a voxel selection range (-axis index start:stop). In both modes, values are relative to the input image  (overriding all other extent-specifying options). Negative delta specifier values trigger the inverse operation (pad instead of crop and vice versa) and negative range specifier trigger padding. Note that the deprecated commands 'mrcrop' and 'mrpad' used range-based and delta-based -axis indices, respectively. |br|
-   *index*: the index of the axis to pad or crop |br|
+   *index*: the index of the axis to pad or crop (minimum: 0) |br|
    *spec*: the delta (lower,upper) or range (start:stop) specifier
 
 -  **-all_axes** Crop or pad all, not just spatial axes.
@@ -89,7 +89,7 @@ Pad and crop options (no image interpolation is performed, header transformation
 General options
 ^^^^^^^^^^^^^^^
 
--  **-fill number** Use number as the out of bounds value. nan, inf and -inf are valid arguments. (Default: 0.0)
+-  **-fill number** Use number as the out of bounds value. nan, inf and -inf are valid arguments. (default: 0.0)
 
 Stride options
 ^^^^^^^^^^^^^^
@@ -99,14 +99,14 @@ Stride options
 Data type options
 ^^^^^^^^^^^^^^^^^
 
--  **-datatype spec** specify output image data type. Valid choices are: float16, float16le, float16be, float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat16, cfloat16le, cfloat16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
+-  **-datatype spec** specify output image data type. (choices: float16, float16le, float16be, float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat16, cfloat16le, cfloat16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

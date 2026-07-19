@@ -15,14 +15,14 @@ Usage
 
     dirmerge [ options ]  subsets bvalue files [ bvalue files ... ] out
 
--  *subsets*: the number of subsets (eg. phase encoding directions) per b-value
+-  *subsets*: the number of subsets (eg. phase encoding directions) per b-value (range: 1 to 10000)
 -  *bvalue files*: the b-value and sets of corresponding files, in order
 -  *out*: the output directions file, with each row listing the X Y Z gradient directions, the b-value, and an index representing the phase encode direction
 
 Options
 -------
 
--  **-unipolar_weight value** set the weight given to the unipolar electrostatic repulsion model compared to the bipolar model (default: 0.2).
+-  **-unipolar_weight value** set the weight given to the unipolar electrostatic repulsion model compared to the bipolar model (range: 0 to 1) (default: 0.2)
 
 -  **-firstisfirst** choose the first volume in the list from the first shell, rather than choosing such from the shell with the most volumes (replicates behaviour prior to version 3.1.0)
 
@@ -31,7 +31,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

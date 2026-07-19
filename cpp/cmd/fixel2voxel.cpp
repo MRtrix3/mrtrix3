@@ -95,7 +95,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("fixel_in", "the input fixel data file").type_image_in()
-  + Argument ("operation", "the operation to apply, one of: " + MR::Enum::join<Operation>() + ".").type_choice<Operation>()
+  + Argument ("operation", "the operation to apply").type_choice<Operation>()
   + Argument ("image_out", "the output scalar image.").type_image_out();
 
   OPTIONS
@@ -105,9 +105,8 @@ void usage() {
       + Argument ("N").type_integer(1)
 
   + Option ("fill", "for \"none\" operation,"
-                    " specify the value to fill when number of fixels is fewer than the maximum"
-                    " (default: 0.0)")
-      + Argument ("value").type_float()
+                    " specify the value to fill when number of fixels is fewer than the maximum")
+      + Argument ("value").type_float().set_default("0.0")
 
   + Option ("weighted", "weight the contribution of each fixel to the per-voxel result"
                         " according to its volume.")

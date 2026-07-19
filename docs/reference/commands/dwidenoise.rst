@@ -38,18 +38,18 @@ Options
 
 -  **-rank cutoff** The selected signal rank of the output denoised image.
 
--  **-datatype float32/float64** Datatype for the eigenvalue decomposition (single or double precision). For complex input data, this will select complex float32 or complex float64 datatypes.
+-  **-datatype float32/float64** Datatype for the eigenvalue decomposition (single or double precision). For complex input data, this will select complex float32 or complex float64 datatypes. (choices: float32, float64)
 
--  **-estimator Exp1/Exp2** Select the noise level estimator (default = Exp2), either:  |br|
+-  **-estimator Exp1/Exp2** Select the noise level estimator, either:  |br|
    * Exp1: the original estimator used in Veraart et al. (2016), or  |br|
-   * Exp2: the improved estimator introduced in Cordero-Grande et al. (2019).
+   * Exp2: the improved estimator introduced in Cordero-Grande et al. (2019). (choices: exp1, exp2) (default: exp2)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

@@ -36,9 +36,8 @@ App::OptionGroup shuffle_options(const bool include_nonstationarity, const defau
            " only output population statistics (effect size, stdev etc)")
 
   + Option("errors",
-           "specify nature of errors for shuffling;"
-           " options are: " + Enum::join<Shuffler::error_t>(",") + " (default: ee)")
-    + Argument("spec").type_choice<Shuffler::error_t>()
+           "specify nature of errors for shuffling.")
+    + Argument("spec").type_choice<Shuffler::error_t>().set_default("ee")
 
   + Option("exchange_within",
            "specify blocks of observations within each of which data may undergo restricted exchange")
@@ -52,9 +51,8 @@ App::OptionGroup shuffle_options(const bool include_nonstationarity, const defau
   + Option("strong", "use strong familywise error control across multiple hypotheses")
 
   + Option("nshuffles",
-           "the number of shuffles"
-           " (default: " + str(default_numshuffles_nulldist) + ")")
-    + Argument("number").type_integer(1)
+           "the number of shuffles")
+    + Argument("number").type_integer(1).set_default(default_numshuffles_nulldist)
 
   + Option("permutations",
            "manually define the permutations (relabelling). The input should be a text file defining a m x n matrix, "
@@ -70,14 +68,12 @@ App::OptionGroup shuffle_options(const bool include_nonstationarity, const defau
     + Option("nonstationarity", "perform empirical non-stationarity correction")
 
     + Option("skew_nonstationarity",
-             "specify the skew parameter for empirical statistic calculation"
-             " (default for this command is " + str(default_skew) + ")")
-      + Argument("value").type_float(0.0)
+             "specify the skew parameter for empirical statistic calculation")
+      + Argument("value").type_float(0.0).set_default(default_skew)
 
     + Option("nshuffles_nonstationarity",
-             "the number of shuffles to use when precomputing the empirical statistic image for non-stationarity correction"
-             " (default: " + str(default_numshuffles_nonstationarity) + ")")
-      + Argument("number").type_integer(1)
+             "the number of shuffles to use when precomputing the empirical statistic image for non-stationarity correction")
+      + Argument("number").type_integer(1).set_default(default_numshuffles_nonstationarity)
 
     + Option("permutations_nonstationarity",
              "manually define the permutations (relabelling) for computing the emprical statistics for "

@@ -45,8 +45,7 @@ void usage() {
   + Option ("binary", "write the output mesh file in binary format (if supported)")
 
   + Option ("transform", "transform vertices from one coordinate space to another,"
-                         " based on a template image;"
-                         " options are: " + MR::Enum::join<TransformChoice>() + ".")
+                         " based on a template image")
     + Argument ("mode").type_choice<TransformChoice>()
     + Argument ("image").type_image_in();
 

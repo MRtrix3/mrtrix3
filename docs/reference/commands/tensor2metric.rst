@@ -37,9 +37,9 @@ Diffusion Tensor Imaging
 
 -  **-vector image** compute the selected eigenvector(s) of the diffusion tensor.
 
--  **-num sequence** specify the desired eigenvalue/eigenvector(s). Note that several eigenvalues can be specified as a number sequence. For example, '1,3' specifies the principal (1) and minor (3) eigenvalues/eigenvectors (default = 1).
+-  **-num sequence** specify the desired eigenvalue/eigenvector(s). Note that several eigenvalues can be specified as a number sequence. For example, '1,3' specifies the principal (1) and minor (3) eigenvalues/eigenvectors. (default: 1)
 
--  **-modulate choice** specify how to modulate the magnitude of the eigenvectors. Valid choices are: none, fa, eigval (default = fa).
+-  **-modulate choice** specify how to modulate the magnitude of the eigenvectors. (choices: none, fa, eigval) (default: fa)
 
 -  **-cl image** compute the linearity metric of the diffusion tensor. (one of the three Westin shape metrics)
 
@@ -64,14 +64,14 @@ Diffusion Kurtosis Imaging
 
 -  **-mk_dirs file** specify the directions used to numerically calculate mean kurtosis (by default, the built-in 300 direction set is used). These should be supplied as a text file containing [ az in ] pairs for the directions.
 
--  **-rk_ndirs integer** specify the number of directions used to numerically calculate radial kurtosis (by default, 300 directions are used).
+-  **-rk_ndirs integer** specify the number of directions used to numerically calculate radial kurtosis (range: 0 to 1000) (default: 300)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

@@ -15,7 +15,7 @@ Usage
 
     dwi2fod [ options ]  algorithm dwi response odf [ response odf ... ]
 
--  *algorithm*: the algorithm to use for FOD estimation. (options are: csd, msmt_csd)
+-  *algorithm*: the algorithm to use for FOD estimation. (choices: csd, msmt_csd)
 -  *dwi*: the input diffusion-weighted image
 -  *response odf*: pairs of input tissue response and output ODF images |br|
    *response*: an input tissue response function |br|
@@ -74,20 +74,20 @@ Options for the Constrained Spherical Deconvolution algorithm
 
 -  **-filter spec** the linear frequency filtering parameters used for the initial linear spherical deconvolution step (default = [ 1 1 1 0 0 ]). These should be supplied as a text file containing the filtering coefficients for each even harmonic order.
 
--  **-neg_lambda value** the regularisation parameter lambda that controls the strength of the non-negativity constraint (default = 1).
+-  **-neg_lambda value** the regularisation parameter lambda that controls the strength of the non-negativity constraint (minimum: 0) (default: 1)
 
--  **-norm_lambda value** the regularisation parameter lambda that controls the strength of the constraint on the norm of the solution (default = 1).
+-  **-norm_lambda value** the regularisation parameter lambda that controls the strength of the constraint on the norm of the solution (minimum: 0) (default: 1)
 
--  **-threshold value** the threshold below which the amplitude of the FOD is assumed to be zero, expressed as an absolute amplitude (default = 0).
+-  **-threshold value** the threshold below which the amplitude of the FOD is assumed to be zero, expressed as an absolute amplitude (range: -1 to 10) (default: 0)
 
--  **-niter number** the maximum number of iterations to perform for each voxel (default = 50). Use '-niter 0' for a linear unconstrained spherical deconvolution.
+-  **-niter number** the maximum number of iterations to perform for each voxel. Use '-niter 0' for a linear unconstrained spherical deconvolution. (range: 0 to 1000) (default: 50)
 
 Options for the Multi-Shell, Multi-Tissue Constrained Spherical Deconvolution algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-norm_lambda value** the regularisation parameter lambda that controls the strength of the constraint on the norm of the solution (default = 1e-10).
+-  **-norm_lambda value** the regularisation parameter lambda that controls the strength of the constraint on the norm of the solution (minimum: 0) (default: 1e-10)
 
--  **-neg_lambda value** the regularisation parameter lambda that controls the strength of the non-negativity constraint (default = 1e-10).
+-  **-neg_lambda value** the regularisation parameter lambda that controls the strength of the non-negativity constraint (minimum: 0) (default: 1e-10)
 
 -  **-predicted_signal image** output the predicted dwi image.
 
@@ -101,7 +101,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

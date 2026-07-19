@@ -16,7 +16,7 @@ Usage
     fixel2voxel [ options ]  fixel_in operation image_out
 
 -  *fixel_in*: the input fixel data file
--  *operation*: the operation to apply, one of: mean, sum, product, min, max, absmax, magmax, count, complexity, sf, entropy, dec_unit, dec_scaled, none.
+-  *operation*: the operation to apply (choices: mean, sum, product, min, max, absmax, magmax, count, complexity, sf, entropy, dec_unit, dec_scaled, none)
 -  *image_out*: the output scalar image.
 
 Description
@@ -42,7 +42,7 @@ https://mrtrix.readthedocs.io/en/3.0.8/fixel_based_analysis/fixel_directory_form
 Options
 -------
 
--  **-number N** use only the largest N fixels in calculation of the voxel-wise statistic; in the case of operation "none", output only the largest N fixels in each voxel.
+-  **-number N** use only the largest N fixels in calculation of the voxel-wise statistic; in the case of operation "none", output only the largest N fixels in each voxel. (minimum: 1)
 
 -  **-fill value** for "none" operation, specify the value to fill when number of fixels is fewer than the maximum (default: 0.0)
 
@@ -53,7 +53,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

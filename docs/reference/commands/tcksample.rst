@@ -31,7 +31,7 @@ If the input image is 4D, and the number of volumes corresponds to an antipodall
 Options
 -------
 
--  **-stat_tck statistic** compute some statistic from the values along each streamline; options are: mean, median, min, max
+-  **-stat_tck statistic** compute some statistic from the values along each streamline (choices: mean, median, min, max)
 
 -  **-nointerp** do not use trilinear interpolation when sampling image values
 
@@ -46,7 +46,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

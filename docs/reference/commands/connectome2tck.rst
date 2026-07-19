@@ -77,7 +77,7 @@ Options for determining the content / format of output files
 
 -  **-exclusive** only select tracks that exclusively connect nodes from within the list of nodes of interest
 
--  **-files option** select how the resulting streamlines will be grouped in output files. Options are: per_edge, per_node, single. Default: per_edge.
+-  **-files option** select how the resulting streamlines will be grouped in output files (choices: per_edge, per_node, single) (default: per_edge)
 
 -  **-exemplars image** generate a mean connection exemplar per edge, rather than keeping all streamlines (the parcellation node image must be provided in order to constrain the exemplar endpoints)
 
@@ -97,7 +97,7 @@ Standard options
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

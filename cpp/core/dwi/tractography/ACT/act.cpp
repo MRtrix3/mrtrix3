@@ -44,8 +44,7 @@ const OptionGroup ACTOption =
 
     + Option("sgm_truncation",
              "control how truncation of streamlines is performed"
-             " if they attempt to enter and then exit sub-cortical grey matter;"
-             " options are: " + Enum::join<sgm_trunc_t>())
+             " if they attempt to enter and then exit sub-cortical grey matter.")
       + Argument ("choice").type_choice<sgm_trunc_t>();
 // clang-format on
 

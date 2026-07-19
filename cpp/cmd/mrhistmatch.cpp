@@ -41,8 +41,7 @@ void usage() {
   SYNOPSIS = "Modify the intensities of one image to match the histogram of another";
 
   ARGUMENTS
-    + Argument ("type", "type of histogram matching to perform;"
-                        " options are: " + MR::Enum::join<MatchType>() + ".").type_choice<MatchType>()
+    + Argument ("type", "type of histogram matching to perform").type_choice<MatchType>()
     + Argument ("input", "the input image to be modified").type_image_in ()
     + Argument ("target", "the input image from which to derive the target histogram").type_image_in()
     + Argument ("output", "the output image").type_image_out();
