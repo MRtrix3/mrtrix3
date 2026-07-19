@@ -26,6 +26,9 @@ https://mrtrix.readthedocs.io/en/3.0.8/fixel_based_analysis/fixel_directory_form
 Options
 -------
 
+Output options (at least one is required)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 -  **-fc template_fixel_directory output_fixel_directory output_fixel_data** use an input template fixel image to define fibre orientations and output a fixel image describing the change in fibre cross-section (FC) in the perpendicular plane to the fixel orientation. |br|
    *template_fixel_directory*: the input template fixel directory defining fibre orientations |br|
    *output_fixel_directory*: the output fixel directory |br|

@@ -443,6 +443,7 @@ add_bash_binary_test(mrinfo/all NO_FILESYSTEM_LOCK)
 add_bash_binary_test(mrinfo/bvec_bval_nan)
 add_bash_binary_test(mrinfo/json_keyval)
 add_bash_binary_test(mrinfo/print_fields)
+add_bash_binary_test(mrinfo/verbosity_exclusive NO_FILESYSTEM_LOCK)
 
 add_bash_binary_test(mrmath/axis)
 add_bash_binary_test(mrmath/max)
@@ -576,6 +577,8 @@ add_bash_binary_test(tckconvert/vtk_read_empty)
 add_bash_binary_test(tckconvert/vtk_write_ascii)
 add_bash_binary_test(tckconvert/vtk_write_binary)
 
+add_bash_binary_test(tckdfc/exactly_one NO_FILESYSTEM_LOCK)
+
 add_bash_binary_test(tckedit/include_exclude_inverse)
 add_bash_binary_test(tckedit/include_mask)
 add_bash_binary_test(tckedit/length)
@@ -649,6 +652,7 @@ add_bash_binary_test(tcksample/interp_tdifrac)
 add_bash_binary_test(tcksift/default)
 
 add_bash_binary_test(tcksift2/default)
+add_bash_binary_test(tcksift2/mutex_options NO_FILESYSTEM_LOCK)
 
 add_bash_binary_test(tckstats/default)
 add_bash_binary_test(tckstats/dump)
@@ -718,6 +722,7 @@ add_bash_binary_test(voxel2fixel/default)
 add_bash_binary_test(voxel2mesh/blocky)
 add_bash_binary_test(voxel2mesh/default)
 
+add_bash_binary_test(warp2metric/at_least_one NO_FILESYSTEM_LOCK)
 add_bash_binary_test(warp2metric/fc)
 add_bash_binary_test(warp2metric/jdet NO_FILESYSTEM_LOCK)
 add_bash_binary_test(warp2metric/jmat NO_FILESYSTEM_LOCK)

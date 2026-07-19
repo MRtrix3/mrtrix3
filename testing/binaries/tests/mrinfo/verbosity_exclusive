@@ -1,0 +1,18 @@
+#!/bin/bash
+# Verbosity sub-group constraint (all-mutually-exclusive violation class).
+# The -info / -quiet / -debug verbosity options form a "Verbosity options" sub-group of the
+#   standard options that is constrained mutually_exclusive(): at most one verbosity level may
+#   be active. The default (no flag) is normal verbosity, so specifying none must remain valid;
+#   specifying two distinct verbosity flags on a single command must fail at parse time.
+
+# Two distinct verbosity flags: rejected as mutually exclusive, naming the offending options.
+OUT=$(mrinfo dwi.mif -info -debug 2>&1) && { echo "ERROR: expected mutually-exclusive failure"; exit 1; }
+echo "$OUT" | grep -q "mutually exclusive; at most one may be specified"
+echo "$OUT" | grep -q -- "-info"
+echo "$OUT" | grep -q -- "-debug"
+
+# A single verbosity flag is valid (constraint does not fire).
+mrinfo dwi.mif -info > /dev/null
+
+# No verbosity flag (default normal verbosity) is valid.
+mrinfo dwi.mif > /dev/null

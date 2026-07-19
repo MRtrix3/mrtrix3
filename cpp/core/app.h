@@ -435,6 +435,27 @@ extern ArgumentList ARGUMENTS;
  */
 extern OptionList OPTIONS;
 
+//! a set of option identifiers declared mutually exclusive independently of their OptionGroup
+/*! Where an OptionGroup constraint (OptionGroup::mutually_exclusive() etc.) cannot express a
+ *  mutual exclusion — because the conflicting options belong to different groups, or are only a
+ *  subset of a group that also contains unrelated options — the exclusion is declared instead as
+ *  a set of option ids in the command-level MUTUALLY_EXCLUSIVE_OPTIONS global. At most one of the
+ *  listed options may be specified on the command-line. Options are identified by exact id (no
+ *  leading dash), resolved across the entire option hierarchy. */
+class MutuallyExclusiveOptions : public std::vector<std::string> {
+public:
+  MutuallyExclusiveOptions() = default;
+  MutuallyExclusiveOptions(std::initializer_list<std::string> ids) : std::vector<std::string>(ids) {}
+};
+
+//! the command-declared cross-group mutual-exclusion sets (see MutuallyExclusiveOptions)
+/*! Populated within a command's usage() function, e.g.:
+ * \code
+ *   MUTUALLY_EXCLUSIVE_OPTIONS = {{"min_factor", "min_coeff"}, {"max_factor", "max_coeff"}};
+ * \endcode
+ * Each set is enforced at parse time; a violation names the offending options. */
+extern std::vector<MutuallyExclusiveOptions> MUTUALLY_EXCLUSIVE_OPTIONS;
+
 //! the ordered sub-interfaces of a hierarchical command
 /*! Populated within a command's usage() function to make it hierarchical: the
  * sub-interface is selected by the first positional command-line token. A command

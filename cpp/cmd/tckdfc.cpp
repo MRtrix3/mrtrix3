@@ -94,16 +94,16 @@ void usage () {
   + Argument ("output", "the output TW-dFC image").type_image_out();
 
   OPTIONS
-  + OptionGroup ("Options for toggling between static and dynamic TW-dFC methods;"
-                 " note that one of these options MUST be provided")
+  + (OptionGroup ("Options for toggling between static and dynamic TW-dFC methods;"
+                  " note that one of these options MUST be provided")
 
-  + Option ("static", "generate a \"static\" (3D) output image.")
+     + Option ("static", "generate a \"static\" (3D) output image.")
 
-  + Option ("dynamic", "generate a \"dynamic\" (4D) output image;"
-                       " must additionally provide the shape and width (in volumes)"
-                       " of the sliding window.")
-    + Argument ("shape").type_choice<WindowShape>()
-    + Argument ("width").type_integer(3)
+     + Option ("dynamic", "generate a \"dynamic\" (4D) output image;"
+                          " must additionally provide the shape and width (in volumes)"
+                          " of the sliding window.")
+       + Argument ("shape").type_choice<WindowShape>()
+       + Argument ("width").type_integer(3)).require_exactly_one()
 
   + OptionGroup ("Options for setting the properties of the output image")
 
@@ -236,8 +236,8 @@ void run() {
 
   auto opt = get_options("dynamic");
   if (!opt.empty()) {
-    if (is_static)
-      throw Exception("Do not specify both -static and -dynamic options");
+    // The -static / -dynamic group is constrained require_exactly_one(), so reaching here with
+    //   -dynamic present guarantees -static was not also specified: dynamic mode is selected.
 
     // Generate the window filter
     const WindowShape window_shape = MR::Enum::from_name<WindowShape>(opt[0][0]);
@@ -285,10 +285,9 @@ void run() {
     default:
       throw Exception("Unsupported sliding window shape");
     }
-
-  } else if (!is_static) {
-    throw Exception("Either the -static or -dynamic option must be provided");
   }
+  // Otherwise -static was specified (guaranteed by the require_exactly_one() group constraint);
+  //   the window filter remains empty, selecting static mode.
 
   Tractography::Properties properties;
   {

@@ -1,0 +1,26 @@
+#!/bin/bash
+# Group constraint require_exactly_one() (exactly-one violation class).
+# tckdfc's -static and -dynamic options form a group constrained require_exactly_one(): exactly
+#   one must be specified. Specifying neither, or both, must fail at parse time (before any input
+#   data is read), naming the offending options / rule. Specifying exactly one must satisfy the
+#   constraint (the command then fails only because the dummy input does not exist).
+
+MISSING_TCK=constraint_missing.tck
+MISSING_MIF=constraint_missing.mif
+OUT_MIF=constraint_missing_out.mif
+
+# Neither -static nor -dynamic: must fail requiring exactly one.
+OUT=$(tckdfc $MISSING_TCK $MISSING_MIF $OUT_MIF 2>&1) && { echo "ERROR: expected exactly-one failure (neither)"; exit 1; }
+echo "$OUT" | grep -q "exactly one of the following options must be specified"
+echo "$OUT" | grep -q -- "-static"
+echo "$OUT" | grep -q -- "-dynamic"
+
+# Both -static and -dynamic: must fail as mutually exclusive.
+OUT=$(tckdfc $MISSING_TCK $MISSING_MIF $OUT_MIF -static -dynamic rectangle 5 2>&1) \
+  && { echo "ERROR: expected exactly-one failure (both)"; exit 1; }
+echo "$OUT" | grep -q "mutually exclusive; exactly one must be specified"
+
+# Exactly one (-static): the exactly-one constraint must NOT fire.
+OUT=$(tckdfc $MISSING_TCK $MISSING_MIF $OUT_MIF -static 2>&1) && { echo "ERROR: expected later failure on missing input"; exit 1; }
+echo "$OUT" | grep -q "exactly one of the following options" && { echo "ERROR: constraint fired for valid usage"; exit 1; }
+true

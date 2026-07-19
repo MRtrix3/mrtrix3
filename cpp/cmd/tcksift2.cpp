@@ -141,19 +141,22 @@ void usage() {
 
   + SIFT2RegularisationOption
   + SIFT2AlgorithmOption;
+  // clang-format on
 
+  // -min_factor / -min_coeff and -max_factor / -max_coeff are alternative parameterisations of the
+  //   same bound; each pair is mutually exclusive. They are only a subset of SIFT2AlgorithmOption
+  //   (which also holds unrelated options), so the exclusion is declared as cross-group mutex sets
+  //   rather than an OptionGroup constraint.
+  MUTUALLY_EXCLUSIVE_OPTIONS = {{"min_factor", "min_coeff"}, {"max_factor", "max_coeff"}};
 }
-// clang-format on
 
 void run() {
   const std::filesystem::path input_tracks_path{argument[0]};
   const std::filesystem::path input_fod_path{argument[1]};
   const std::filesystem::path output_weights_path{argument[2]};
 
-  if (!get_options("min_factor").empty() && !get_options("min_coeff").empty())
-    throw Exception("Options -min_factor and -min_coeff are mutually exclusive");
-  if (!get_options("max_factor").empty() && !get_options("max_coeff").empty())
-    throw Exception("Options -max_factor and -max_coeff are mutually exclusive");
+  // The -min_factor/-min_coeff and -max_factor/-max_coeff mutual exclusions are enforced at parse
+  //   time via MUTUALLY_EXCLUSIVE_OPTIONS (declared in usage()).
 
   if (output_weights_path.extension() == ".tck")
     throw Exception("Output of tcksift2 command should be a text file, not a tracks file");

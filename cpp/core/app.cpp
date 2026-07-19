@@ -44,6 +44,7 @@ Description DESCRIPTION;
 ExampleList EXAMPLES;
 ArgumentList ARGUMENTS;
 OptionList OPTIONS;
+std::vector<MutuallyExclusiveOptions> MUTUALLY_EXCLUSIVE_OPTIONS;
 SubcommandList SUBCOMMANDS;
 std::string SUBCOMMANDS_SELECTOR = "algorithm";
 std::string SUBCOMMAND_SELECTED_ID;
@@ -91,7 +92,7 @@ const OptionGroup _standard_options = OptionGroup("Standard options")
               "do not display information messages or progress status; "
               "alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable"
               " to a non-empty string.")
-     + Option("debug", "display debugging messages & debug input data."));
+     + Option("debug", "display debugging messages & debug input data.")).mutually_exclusive();
 // clang-format on
 
 std::string AUTHOR{};
@@ -1415,6 +1416,91 @@ void select_subcommand() {
   throw Exception("unknown algorithm \"" + *selection + "\" (expected one of: " + join(ids, ", ") + ")");
 }
 
+namespace {
+
+//! the subset of the given options that were specified on the command-line, as "-id" strings
+/*! Order follows that of the input list; each option appears at most once regardless of how
+ *  many times it was specified. */
+std::vector<std::string> specified_options(const std::vector<const Option *> &candidates) {
+  std::vector<std::string> result;
+  for (const Option *const candidate : candidates) {
+    for (const ParsedOption &parsed : option) {
+      if (parsed.opt == candidate) {
+        result.push_back(std::string("-") + candidate->id);
+        break;
+      }
+    }
+  }
+  return result;
+}
+
+//! the "-id" strings of all options in the given list (whether specified or not)
+std::string all_option_ids(const std::vector<const Option *> &candidates) {
+  std::vector<std::string> ids;
+  ids.reserve(candidates.size());
+  for (const Option *const candidate : candidates)
+    ids.push_back(std::string("-") + candidate->id);
+  return join(ids, ", ");
+}
+
+//! enforce a single group's collective constraint over its (recursive) member options
+void enforce_group_constraint(const OptionGroup &group) {
+  if (group.constraint == OptionGroup::Constraint::None)
+    return;
+  const std::vector<const Option *> members = group.all_options();
+  const std::vector<std::string> specified = specified_options(members);
+  switch (group.constraint) {
+  case OptionGroup::Constraint::RequireExactlyOne:
+    if (specified.empty())
+      throw Exception("exactly one of the following options must be specified: " + all_option_ids(members));
+    if (specified.size() > 1)
+      throw Exception("the options " + join(specified, ", ") +
+                      " are mutually exclusive; exactly one must be specified");
+    break;
+  case OptionGroup::Constraint::RequireAtLeastOne:
+    if (specified.empty())
+      throw Exception("at least one of the following options must be specified: " + all_option_ids(members));
+    break;
+  case OptionGroup::Constraint::MutuallyExclusive:
+    if (specified.size() > 1)
+      throw Exception("the options " + join(specified, ", ") + " are mutually exclusive; at most one may be specified");
+    break;
+  case OptionGroup::Constraint::AllOrNone:
+    if (!specified.empty() && specified.size() != members.size())
+      throw Exception("the options " + all_option_ids(members) + " must be specified together or not at all; only " +
+                      join(specified, ", ") + " specified");
+    break;
+  case OptionGroup::Constraint::None:
+    break;
+  }
+}
+
+//! recursively enforce the constraints of a group and all its nested sub-groups
+void enforce_group_constraints(const OptionGroup &group) {
+  enforce_group_constraint(group);
+  for (const OptionGroup &subgroup : group.subgroups)
+    enforce_group_constraints(subgroup);
+}
+
+//! enforce the command-declared cross-group mutual-exclusion sets
+void enforce_cross_group_mutex() {
+  for (const MutuallyExclusiveOptions &set : MUTUALLY_EXCLUSIVE_OPTIONS) {
+    std::vector<std::string> specified;
+    for (const auto &id : set) {
+      for (const ParsedOption &parsed : option) {
+        if (parsed.opt->is(id)) {
+          specified.push_back(std::string("-") + id);
+          break;
+        }
+      }
+    }
+    if (specified.size() > 1)
+      throw Exception("the options " + join(specified, ", ") + " are mutually exclusive; at most one may be specified");
+  }
+}
+
+} // namespace
+
 void parse() {
   argument.clear();
   option.clear();
@@ -1529,6 +1615,15 @@ void parse() {
         throw Exception(std::string("multiple instances of option \"-") + opt->id + "\" are not allowed");
     }
   }
+
+  // enforce collective option-group constraints (at-least-one / exactly-one / all-mutually-
+  //   exclusive / all-or-none), recursing into nested sub-groups, followed by any command-declared
+  //   cross-group mutual-exclusion sets. The verbosity sub-group of the standard options is
+  //   constrained mutually-exclusive, so it is checked here alongside the command's own groups.
+  for (const OptionGroup &og : OPTIONS)
+    enforce_group_constraints(og);
+  enforce_group_constraints(_standard_options);
+  enforce_cross_group_mutex();
 
   parse_standard_options();
 

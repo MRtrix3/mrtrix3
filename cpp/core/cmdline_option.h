@@ -497,8 +497,24 @@ public:
  */
 class OptionGroup : public std::vector<Option> {
 public:
+  //! the parse-time constraint a group can impose collectively on its member options
+  /*! A constraint is evaluated over every option in the group and, recursively, its
+   *  sub-groups (i.e. over all_options()); "specified" means the option appears at least
+   *  once on the command-line. The default is None (no constraint). Enforcement occurs
+   *  during App::parse(), before any input file is accessed. */
+  enum class Constraint {
+    None,              //!< no collective constraint (default)
+    RequireExactlyOne, //!< exactly one member option must be specified
+    RequireAtLeastOne, //!< at least one member option must be specified
+    MutuallyExclusive, //!< at most one member option may be specified
+    AllOrNone,         //!< either every member option is specified, or none of them is
+  };
+
   OptionGroup(std::string group_name = "OPTIONS") : name(std::move(group_name)) {}
   std::string name;
+
+  //! the collective constraint imposed on this group's member options (see Constraint)
+  Constraint constraint = Constraint::None;
 
   //! nested child groups (empty for a flat group)
   std::vector<OptionGroup> subgroups;
@@ -517,6 +533,30 @@ public:
   //! nest a child group within this group
   OptionGroup &operator+(const OptionGroup &subgroup) {
     subgroups.push_back(subgroup);
+    return *this;
+  }
+
+  //! require that exactly one of this group's member options is specified
+  OptionGroup &require_exactly_one() {
+    constraint = Constraint::RequireExactlyOne;
+    return *this;
+  }
+
+  //! require that at least one of this group's member options is specified
+  OptionGroup &require_at_least_one() {
+    constraint = Constraint::RequireAtLeastOne;
+    return *this;
+  }
+
+  //! permit at most one of this group's member options to be specified (all mutually exclusive)
+  OptionGroup &mutually_exclusive() {
+    constraint = Constraint::MutuallyExclusive;
+    return *this;
+  }
+
+  //! require that this group's member options are either all specified or none specified
+  OptionGroup &all_or_none() {
+    constraint = Constraint::AllOrNone;
     return *this;
   }
 

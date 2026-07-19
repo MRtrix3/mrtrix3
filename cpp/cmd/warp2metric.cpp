@@ -50,23 +50,25 @@ void usage() {
   + Argument ("in", "the input deformation field").type_image_in();
 
   OPTIONS
-  + Option ("fc", "use an input template fixel image to define fibre orientations"
-                  " and output a fixel image describing the change in fibre cross-section (FC)"
-                  " in the perpendicular plane to the fixel orientation.")
-    + Argument ("fc_spec")
-        .type_tuple({Argument ("template_fixel_directory",
-                              "the input template fixel directory defining fibre orientations").type_directory_in(),
-                     Argument ("output_fixel_directory", "the output fixel directory").type_text(),
-                     Argument ("output_fixel_data", "the output fixel data file describing the FC").type_text()})
+  + (OptionGroup ("Output options (at least one is required)")
 
-  + Option ("jmat", "output a Jacobian matrix image stored in column-major order"
-                    " along the 4th dimension."
-                    " Note the output jacobian describes the warp gradient"
-                    " w.r.t the scanner space coordinate system")
-    + Argument ("output").type_image_out()
+     + Option ("fc", "use an input template fixel image to define fibre orientations"
+                     " and output a fixel image describing the change in fibre cross-section (FC)"
+                     " in the perpendicular plane to the fixel orientation.")
+       + Argument ("fc_spec")
+           .type_tuple({Argument ("template_fixel_directory",
+                                 "the input template fixel directory defining fibre orientations").type_directory_in(),
+                        Argument ("output_fixel_directory", "the output fixel directory").type_text(),
+                        Argument ("output_fixel_data", "the output fixel data file describing the FC").type_text()})
 
-  + Option ("jdet", "output the Jacobian determinant instead of the full matrix")
-    + Argument ("output").type_image_out();
+     + Option ("jmat", "output a Jacobian matrix image stored in column-major order"
+                       " along the 4th dimension."
+                       " Note the output jacobian describes the warp gradient"
+                       " w.r.t the scanner space coordinate system")
+       + Argument ("output").type_image_out()
+
+     + Option ("jdet", "output the Jacobian determinant instead of the full matrix")
+       + Argument ("output").type_image_out()).require_at_least_one();
 
 }
 // clang-format on
@@ -121,8 +123,7 @@ void run() {
     jdeterminant_output = Image<value_type>::create(opt[0][0], output_header);
   }
 
-  if (!(jmatrix_output.valid() || jdeterminant_output.valid() || fc_output_data.valid()))
-    throw Exception("Nothing to do; please specify at least one output image type");
+  // At least one output option is guaranteed by the require_at_least_one() group constraint.
 
   Adapter::Jacobian<Image<value_type>> jacobian(input);
 
