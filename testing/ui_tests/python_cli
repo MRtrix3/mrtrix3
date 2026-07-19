@@ -30,6 +30,27 @@ mkdir -p tmp-dirin/ \
         -tracks_out tmp-tracksout.tck \
         -custom my_custom
 
+# Multi-spelling option / choice-value aliases (mirrors the C++ behaviour, spelling-design.md).
+# The canonical "-choice" option also answers to the alias "-choose", and the choice value
+#   "One" also accepts the alias spelling "uno"; both resolve to the canonical value stored
+#   under the canonical destination.
+# Canonical spelling of both the option and the choice value.
+testing_python_cli -choice One 2>&1 | grep "choice: 'One'"
+# Full alias spelling of the option resolves to the canonical option.
+testing_python_cli -choose One 2>&1 | grep "choice: 'One'"
+# A prefix shared by the canonical name and the alias collapses to the one option (no spurious
+#   "several matches"): "-cho" prefixes both "choice" and "choose", which are the same option.
+testing_python_cli -cho One 2>&1 | grep "choice: 'One'"
+# A prefix specific to the canonical name, and one specific to the alias, each resolve.
+testing_python_cli -choic One 2>&1 | grep "choice: 'One'"
+testing_python_cli -choos One 2>&1 | grep "choice: 'One'"
+# The choice-value alias "uno" is canonicalised to "One" at parse time, via either spelling
+#   of the option.
+testing_python_cli -choice uno 2>&1 | grep "choice: 'One'"
+testing_python_cli -choose uno 2>&1 | grep "choice: 'One'"
+# An unknown choice value is still rejected (the alias adds a spelling, it does not relax validation).
+! testing_python_cli -choice NotAChoice
+
 # Ensure that export of the command-line interfaces in various file formats obeys expectations
 trap "rm -f tmp.txt" EXIT; \
     testing_python_cli -help | \

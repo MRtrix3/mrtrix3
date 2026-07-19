@@ -43,9 +43,15 @@ def usage(cmdline): #pylint: disable=unused-variable
   builtins.add_argument('-string_explicit',
                         type=str,
                         help='A built-in string (explicit)')
+  # The alias mechanism (spelling-design.md, mirrored in the Python parser): the canonical
+  #   name "-choice" also answers to the alias "-choose" (both spellings, and any unambiguous
+  #   prefix of either, resolve to this one option), and the choice value "One" additionally
+  #   accepts the alias spelling "uno" (canonicalised to "One" at parse time). Both aliases are
+  #   silent: help and every machine-readable export present only the canonical spellings.
   builtins.add_argument('-choice',
                         choices=CHOICES,
-                        help='A selection of choices').set_default('One')
+                        help='A selection of choices').set_default('One') \
+                        .alias('choose').choice_alias('uno', 'One')
   builtins.add_argument('-int_builtin',
                         type=int,
                         help='An integer; built-in type')

@@ -639,6 +639,12 @@ class Parser: # pylint: disable=too-many-public-methods
       self.optional = optional
       self.allow_multiple = allow_multiple
       self.elements = list(elements) if elements else []
+      # Choice-value aliases: an ordered list of (lowercased alias spelling, canonical choice)
+      #   pairs mapping an additional accepted spelling of a choice value to its canonical
+      #   spelling, mirroring the C++ Argument::choice_aliases (spelling-design.md section 3).
+      #   A supplied alias is canonicalised to the declared choice at parse time (see
+      #   resolve_choice_alias), so every downstream consumer observes the canonical value.
+      self.choice_aliases = []
       # Free-text description of the value applied when this argument / option is absent, held
       #   separately from the parse-time "default" so it may describe non-scalar defaults (e.g.
       #   "0.5 per cent", "mean"). When set it is auto-rendered as "(default: <value>)" in the
@@ -682,6 +688,30 @@ class Parser: # pylint: disable=too-many-public-methods
       #   corresponds to the k-th consumed token.
       return list(self.elements) if self.elements else [self]
 
+    # Declare an additional accepted spelling of a choice value that maps to the canonical
+    #   choice, mirroring the C++ Argument::choice_alias(). type_choice (choices=...) must be
+    #   supplied first, and the canonical spelling must already be one of the declared choices.
+    #   Matching is case-insensitive (both the alias key and the incoming token are lowercased),
+    #   consistent with the C++ choice matching.
+    def choice_alias(self, alias_spelling, canonical_choice): #pylint: disable=unused-variable
+      assert self.choices is not None and canonical_choice in self.choices, \
+          f'choice_alias() canonical value "{canonical_choice}" is not a declared choice'
+      self.choice_aliases.append((alias_spelling.lower(), canonical_choice))
+      return self
+
+    # Canonicalise a supplied choice token: return the canonical choice spelling if the token
+    #   (case-insensitively) matches a declared alias, else None to leave the token unchanged.
+    #   Choice values are always matched exactly, so an alias is a pure additional exact spelling
+    #   and introduces no ambiguity (spelling-design.md section 3).
+    def resolve_choice_alias(self, token):
+      if not self.choice_aliases:
+        return None
+      lowered = token.lower()
+      for alias, canonical in self.choice_aliases:
+        if alias == lowered:
+          return canonical
+      return None
+
   class Option:
     def __init__(self, name, *, help_text='', required=False, repeatable=False, dest=None,
                  default=None):
@@ -693,6 +723,26 @@ class Parser: # pylint: disable=too-many-public-methods
       self.default = default
       self.args = []               # list[Parser.Argument]; a multi-argument option holds a
                                    #   single tuple argument (its fields); [] == flag
+      # Additional accepted spellings of this option (without the leading dash), mirroring the
+      #   C++ Option::aliases (spelling-design.md section 2). Any alias, and any unambiguous
+      #   prefix of the canonical name or of an alias, resolves to this option; the canonical
+      #   name remains the sole spelling shown in help and every export.
+      self.aliases = []
+    # Register an additional accepted spelling (chainable), mirroring the C++ Option::alias().
+    def alias(self, spelling): #pylint: disable=unused-variable
+      self.aliases.append(spelling.lstrip('-'))
+      return self
+    # Exact-spelling match against the canonical name or any alias (C++ Option::is()).
+    def matches_exact(self, name):
+      return name == self.name or name in self.aliases
+    # Prefix match against the canonical name or any alias (C++ Option::matches_prefix()): "stub"
+    #   is a prefix of spelling S iff S begins with stub. Used by the matcher, which collects each
+    #   Option at most once, so two spellings of the same option sharing a prefix collapse to a
+    #   single candidate and never trigger a spurious "several matches" error.
+    def matches_prefix(self, stub):
+      if self.name.startswith(stub):
+        return True
+      return any(spelling.startswith(stub) for spelling in self.aliases)
     @property
     def is_flag(self):
       return not self.args
@@ -716,6 +766,14 @@ class Parser: # pylint: disable=too-many-public-methods
       assert self.args and not self.args[0].is_tuple, \
           'set_default() is only applicable to a single-argument option'
       self.args[0].set_default(value)
+      return self
+    # Declare a choice-value alias on this option's sole choice argument (delegates to
+    #   Argument.choice_alias), so that a single-argument type_choice option can accept an
+    #   additional spelling of a choice value while presenting the canonical spelling only.
+    def choice_alias(self, alias_spelling, canonical_choice): #pylint: disable=unused-variable
+      assert self.args and not self.args[0].is_tuple, \
+          'choice_alias() is only applicable to a single-argument option'
+      self.args[0].choice_alias(alias_spelling, canonical_choice)
       return self
     # The auto-rendered choice / range / default annotation of this option's scalar arguments,
     #   concatenated in argument order (tuple sub-arguments are excluded here; their metadata is
@@ -1592,13 +1650,18 @@ class Parser: # pylint: disable=too-many-public-methods
     root = self._without_leading_dashes(token)
     if len(root) == len(token) or not root or root[0].isdigit() or root[0] == '.':
       return None
-    candidates = [option for option in self._iter_options() if option.name.startswith(root)]
+    # Each Option is yielded once by _iter_options(), so an option whose canonical name and an
+    #   alias both prefix "root" is collected a single time (mirrors the C++ get_matches
+    #   "added at most once" property): two spellings of the SAME option never appear as two
+    #   candidates, so a British/American pair sharing a prefix cannot fabricate an ambiguity.
+    candidates = [option for option in self._iter_options() if option.matches_prefix(root)]
     if not candidates:
       raise Parser.ArgumentError(f'unknown option "-{root}"')
     if len(candidates) == 1:
       return candidates[0]
+    # An exact match of the canonical name or of any alias wins over a longer partial match.
     for candidate in candidates:
-      if candidate.name == root:
+      if candidate.matches_exact(root):
         return candidate
     first_name = candidates[0].name
     if all(candidate.name == first_name for candidate in candidates):
@@ -1608,9 +1671,16 @@ class Parser: # pylint: disable=too-many-public-methods
 
   @staticmethod
   def _convert_value(spec, value, context):
-    if spec.choices is not None and value not in spec.choices:
-      raise Parser.ArgumentError(f'{context}: unexpected value "{value}"; '
-                                 f'expected one of: {", ".join(spec.choices)}')
+    if spec.choices is not None:
+      # Canonicalise a choice-value alias to its declared spelling once, before validating
+      #   against the choice list, so the value the command reads is always canonical (mirrors
+      #   the C++ parse-time canonicalisation, spelling-design.md section 3).
+      canonical = spec.resolve_choice_alias(value)
+      if canonical is not None:
+        value = canonical
+      if value not in spec.choices:
+        raise Parser.ArgumentError(f'{context}: unexpected value "{value}"; '
+                                   f'expected one of: {", ".join(spec.choices)}')
     argtype = spec.argtype
     if argtype is None or argtype is str:
       return value
