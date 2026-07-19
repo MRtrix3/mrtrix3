@@ -44,7 +44,7 @@ void usage() {
 
   OPTIONS
   + Option ("output", "output only the field specified")
-    + Argument ("choice").type_choice<FieldChoice>()
+    + Argument ("choice").type_choice<FieldChoice>().choice_alias("center", "centre")
 
   + Option ("voxelspace", "report parcel centres of mass in voxel space"
                           " rather than scanner space");

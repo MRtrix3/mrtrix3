@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <bitset>
 #include <cassert>
 #include <limits>
@@ -166,6 +167,14 @@ public:
   ArgModifierFlags flags;
 
   std::vector<std::string> choices;
+
+  //! additional accepted spellings of individual choice values (alias -> canonical choice)
+  /*! Each entry maps an alternative spelling of a choice value (e.g. an American spelling) to
+   * one of the canonical (British) strings held in `choices`, so that both resolve to the same
+   * underlying enum value. The alias key is stored lowercased and matched case-insensitively.
+   * Only the canonical spelling is presented in the help text and machine-readable exports. */
+  std::vector<std::pair<std::string, std::string>> choice_aliases;
+
   //! for DirectoryOut arguments, specifies behaviour with respect to pre-existing directories
   DirOutMode dir_out_mode = DirOutMode::MustNotExist;
 
@@ -302,6 +311,36 @@ public:
     types.set(ArgTypeFlags::Choice);
     choices = MR::Enum::lower_case_names<Enum>();
     return *this;
+  }
+
+  //! register an alternative accepted spelling for one of this argument's choice values
+  /*! `canonical_choice` must be one of the strings already present in `choices` (i.e.
+   * type_choice<Enum>() must have been called first); `alias_spelling` is an additional
+   * spelling (e.g. an American spelling) that resolves, case-insensitively, to that same
+   * choice. The canonical spelling remains the only one shown in help / exports.
+   * \code
+   *   + Argument ("map").type_choice<ColourMap::Choice>().choice_alias("color", "colour");
+   * \endcode */
+  Argument &choice_alias(std::string alias_spelling, std::string canonical_choice) {
+    assert(types[ArgTypeFlags::Choice]);
+    assert(std::find(choices.begin(), choices.end(), canonical_choice) != choices.end());
+    choice_aliases.emplace_back(MR::lowercase(alias_spelling), std::move(canonical_choice));
+    return *this;
+  }
+
+  //! resolve a supplied token to its canonical choice spelling if it is a registered alias
+  /*! Returns the canonical choice string when `token` (compared case-insensitively) matches a
+   * spelling registered via choice_alias(); returns std::nullopt when it does not, leaving the
+   * token to be validated against `choices` unchanged. */
+  std::optional<std::string> resolve_choice_alias(std::string_view token) const {
+    if (choice_aliases.empty())
+      return std::nullopt;
+    const std::string lowered = MR::lowercase(token);
+    for (const auto &entry : choice_aliases) {
+      if (entry.first == lowered)
+        return entry.second;
+    }
+    return std::nullopt;
   }
 
   //! specifies that the argument should be an input file
@@ -474,12 +513,19 @@ public:
   }
   operator bool() const { return !id.empty(); }
 
-  //! the option name
+  //! the option name (canonical spelling)
   std::string id;
   //! the option description
   std::string desc;
   //! option flags (AllowMultiple and/or Optional)
   ArgModifierFlags flags;
+
+  //! additional accepted spellings of this option (aliases)
+  /*! The canonical `id` is unchanged and remains the sole spelling presented in the help
+   * text and every machine-readable export. Any alias, and any unambiguous prefix of the
+   * canonical id or of an alias, resolves to this option during command-line matching.
+   * An alias must not introduce prefix-matching ambiguity with a *different* option. */
+  std::vector<std::string> aliases;
 
   //! specifies that the option is required
   /*! An option specified as required must be supplied on the command line.
@@ -506,7 +552,43 @@ public:
     return *this;
   }
 
-  bool is(std::string_view name) const { return name == id; }
+  //! register an additional accepted spelling (alias) for this option
+  /*! The canonical `id` is unchanged and remains the spelling shown in help / exports.
+   * \code
+   *   + Option ("normalise", "normalise the DW signal to the b=0 image").alias("normalize")
+   * \endcode */
+  Option &alias(std::string spelling) {
+    aliases.push_back(std::move(spelling));
+    return *this;
+  }
+
+  //! true if `name` matches the canonical id or any alias exactly
+  bool is(std::string_view name) const {
+    if (name == id)
+      return true;
+    for (const auto &spelling : aliases) {
+      if (name == spelling)
+        return true;
+    }
+    return false;
+  }
+
+  //! true if `stub` is a prefix of the canonical id or of any alias
+  /*! A spelling S is prefixed by `stub` when S begins with `stub` (and is at least as long).
+   * Because both spellings of an option answer to the same Option object, a prefix shared by
+   * the canonical id and an alias resolves to this single option rather than being ambiguous. */
+  bool matches_prefix(std::string_view stub) const {
+    const auto is_prefix_of = [stub](std::string_view spelling) {
+      return stub.size() <= spelling.size() && spelling.substr(0, stub.size()) == stub;
+    };
+    if (is_prefix_of(id))
+      return true;
+    for (const auto &spelling : aliases) {
+      if (is_prefix_of(spelling))
+        return true;
+    }
+    return false;
+  }
 
   //! the total number of command-line tokens consumed by this option's arguments
   /*! Equal to the number of arguments for an option of scalar arguments; a tuple

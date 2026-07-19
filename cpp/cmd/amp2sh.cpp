@@ -66,7 +66,7 @@ void usage() {
             " up to a maximum of 8.")
   +   Argument ("order").type_lmax (0, 30)
 
-  + Option ("normalise", "normalise the DW signal to the b=0 image")
+  + Option ("normalise", "normalise the DW signal to the b=0 image").alias("normalize")
 
   + Option ("directions", "the directions corresponding to the input amplitude image used to sample AFD."
                           " By default this option is not required"

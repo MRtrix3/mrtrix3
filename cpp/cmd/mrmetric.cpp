@@ -217,6 +217,7 @@ void usage() {
 
   + Option ("nonormalisation", "do not normalise the dissimilarity metric"
                                " to the number of voxels.")
+    .alias("nonormalization")
 
   + Option ("overlap", "output number of voxels that were used.");
 

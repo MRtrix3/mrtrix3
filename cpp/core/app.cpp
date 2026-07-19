@@ -145,9 +145,11 @@ void (*check_overwrite_files_func)(const std::filesystem::path &name) = nullptr;
 namespace {
 
 inline void get_matches(std::vector<const Option *> &candidates, const OptionGroup &group, std::string_view stub) {
-  // Recurse through nested sub-groups so options at any depth are matchable.
+  // Recurse through nested sub-groups so options at any depth are matchable. An option whose
+  //   canonical id or any of whose aliases is prefixed by `stub` is added exactly once, so two
+  //   spellings of the same option that share a prefix collapse to a single (unambiguous) match.
   for (const Option *const opt : group.all_options()) {
-    if (stub.compare(0, stub.size(), std::string(opt->id), 0, stub.size()) == 0)
+    if (opt->matches_prefix(stub))
       candidates.push_back(opt);
   }
 }
@@ -1268,9 +1270,9 @@ const Option *match_option(std::string_view arg) {
   if (candidates.size() == 1)
     return candidates[0];
 
-  // return match if fully specified:
+  // return match if fully specified (an exact match of the canonical id or of any alias):
   for (size_t i = 0; i < candidates.size(); ++i)
-    if (root == candidates[i]->id)
+    if (candidates[i]->is(root))
       return candidates[i];
 
   // check if there is only one *unique* candidate
@@ -1664,6 +1666,26 @@ void parse() {
         argument[n].arg = slot.is_tuple() ? &slot.elements[t % slot.arity()] : &slot;
     }
     assert(n == argument.size());
+  }
+
+  // Canonicalise any choice-value alias to its declared spelling. Performing this once here,
+  //   after every token has been bound to its Argument definition, means all downstream
+  //   consumers (as_int() index lookup, MR::Enum::from_name() magic_enum resolution, and direct
+  //   string reads) observe the canonical choice value irrespective of the spelling supplied.
+  for (auto &parsed_arg : argument) {
+    if (!parsed_arg.arg->types[ArgTypeFlags::Choice])
+      continue;
+    if (const std::optional<std::string> canonical = parsed_arg.arg->resolve_choice_alias(parsed_arg.p))
+      parsed_arg.p = *canonical;
+  }
+  for (auto &parsed_opt : option) {
+    const std::vector<const Argument *> leaves = parsed_opt.opt->leaves();
+    for (size_t j = 0; j != leaves.size(); ++j) {
+      if (!leaves[j]->types[ArgTypeFlags::Choice])
+        continue;
+      if (const std::optional<std::string> canonical = leaves[j]->resolve_choice_alias(parsed_opt.args[j]))
+        parsed_opt.args[j] = *canonical;
+    }
   }
 
   // check for multiple instances of options (recursing into nested sub-groups):

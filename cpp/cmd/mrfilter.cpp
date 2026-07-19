@@ -56,7 +56,8 @@ const OptionGroup FFTOption = OptionGroup ("Options for FFT filter")
   + Option ("rescale", "rescale values so that inverse FFT recovers original values")
   + Option ("centre_zero", "re-arrange the FFT results so that"
                            " the zero-frequency component appears in the centre of the image,"
-                           " rather than at the edges");
+                           " rather than at the edges")
+    .alias("center_zero");
 
 const OptionGroup GradientOption = OptionGroup ("Options for gradient filter")
   + Option ("stdev", "the standard deviation of the Gaussian kernel used to "
@@ -129,7 +130,9 @@ void usage() {
 
   ARGUMENTS
   + Argument ("input",  "the input image.").type_image_in ()
-  + Argument ("filter", "the type of filter to be applied").type_choice<FilterType>()
+  + Argument ("filter", "the type of filter to be applied")
+      .type_choice<FilterType>()
+      .choice_alias("normalize", "normalise")
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS

@@ -92,7 +92,7 @@ void usage() {
 
   OPTIONS
     + OptionGroup ("Options specific to the \"entropy\" metric")
-    + Option ("normalised", "normalise the voxel-wise entropy measure to the range [0.0, 1.0]")
+    + Option ("normalised", "normalise the voxel-wise entropy measure to the range [0.0, 1.0]").alias("normalized")
     + Option ("invnorm", "compute the complement of the normalised voxel-wise entropy measure"
                          " (ie. 1.0 - normalised),"
                          " such that values closer to 1.0 reflect greater concentration of the function")
