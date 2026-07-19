@@ -51,6 +51,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                        type=app.Parser.Float(0.0, 1.0),
                        help='Apply a hard FA threshold, '
                             'rather than selecting the top voxels')
+  parser.flag_mutually_exclusive_options(['number', 'threshold'])
 
 
 

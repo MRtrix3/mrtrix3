@@ -113,6 +113,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_argument('-out_table',
                        type=app.Parser.FileOut(),
                        help='Write text file with table containing all results')
+  cmdline.flag_mutually_exclusive_options(['noshuffle', 'notransform'])
 
 
 

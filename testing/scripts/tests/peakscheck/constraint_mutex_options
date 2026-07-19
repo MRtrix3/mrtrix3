@@ -1,0 +1,18 @@
+#!/bin/bash
+# Cross-group mutual-exclusion set (cross-group mutex violation class), Python parser.
+# peakscheck declares flag_mutually_exclusive_options(['noshuffle', 'notransform']): the two
+#   options are only a subset of the (ungrouped) command options, so the exclusion is declared as
+#   a cross-group mutex set. Specifying both must fail at parse time (before any input is read),
+#   naming the offending options with wording identical to the C++ parser; specifying one must
+#   not trigger the constraint.
+
+# Both -noshuffle and -notransform: must fail as mutually exclusive.
+OUT=$(peakscheck constraint_missing.mif -noshuffle -notransform 2>&1) \
+  && { echo "ERROR: expected cross-group mutex failure"; exit 1; }
+echo "$OUT" | grep -q "the options -noshuffle, -notransform are mutually exclusive; at most one may be specified"
+
+# A single member (-noshuffle): the mutex must NOT fire (command then fails only on missing input).
+OUT=$(peakscheck constraint_missing.mif -noshuffle 2>&1) \
+  && { echo "ERROR: expected later failure on missing input"; exit 1; }
+echo "$OUT" | grep -q "mutually exclusive" && { echo "ERROR: mutex fired for a single option"; exit 1; }
+true

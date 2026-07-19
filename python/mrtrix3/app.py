@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import importlib, inspect, math, os, pathlib, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time
+import enum, importlib, inspect, math, os, pathlib, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils, version
 
@@ -671,11 +671,30 @@ class Parser: # pylint: disable=too-many-public-methods
   #   a group's own direct options always render before its sub-groups; sub-groups render in
   #   declaration order.
   class OptionGroup:
+    # The parse-time constraint a group can impose collectively on its member options
+    #   (mirrors the C++ OptionGroup::Constraint, cpp/core/cmdline_option.h). A constraint is
+    #   evaluated over every option in the group and, recursively, its sub-groups (i.e. over
+    #   all_options()); "specified" means the option appears at least once on the command-line.
+    #   The default is NONE (no constraint). Enforcement occurs during parse_args(), before any
+    #   input file is accessed.
+    class Constraint(enum.Enum):
+      NONE = 0                 # no collective constraint (default)
+      REQUIRE_EXACTLY_ONE = 1  # exactly one member option must be specified
+      REQUIRE_AT_LEAST_ONE = 2 # at least one member option must be specified
+      MUTUALLY_EXCLUSIVE = 3   # at most one member option may be specified
+      ALL_OR_NONE = 4          # either every member option is specified, or none of them is
     def __init__(self, parser, name):
       self._parser = parser
       self.name = name
       self.options = []
       self.subgroups = []
+      # The collective constraint imposed on this group's member options (see Constraint).
+      self.constraint = Parser.OptionGroup.Constraint.NONE
+      # True for the two standard-option groups constructed in Parser.__init__ (their nested
+      #   verbosity sub-group is reached by recursion); command-defined groups are False. Used
+      #   only to order constraint enforcement so that a command's own groups are checked
+      #   before the standard-options groups (mirroring the C++ enforcement order).
+      self.is_standard = False
     def add_argument(self, *name_or_flags, **kwargs):
       return self._parser._add_argument(self, *name_or_flags, **kwargs) # pylint: disable=protected-access
     # Nest a child group within this group, returning the new sub-group so that its own
@@ -693,6 +712,21 @@ class Parser: # pylint: disable=too-many-public-methods
       for subgroup in self.subgroups:
         result.extend(subgroup.all_options())
       return result
+    # Collective-constraint builder methods (mirror the C++ OptionGroup builders). Each sets
+    #   this group's constraint and returns the group, so an author can parenthesise the group
+    #   and apply the method inline, matching the C++ author idiom.
+    def require_exactly_one(self): #pylint: disable=unused-variable
+      self.constraint = Parser.OptionGroup.Constraint.REQUIRE_EXACTLY_ONE
+      return self
+    def require_at_least_one(self): #pylint: disable=unused-variable
+      self.constraint = Parser.OptionGroup.Constraint.REQUIRE_AT_LEAST_ONE
+      return self
+    def mutually_exclusive(self): #pylint: disable=unused-variable
+      self.constraint = Parser.OptionGroup.Constraint.MUTUALLY_EXCLUSIVE
+      return self
+    def all_or_none(self): #pylint: disable=unused-variable
+      self.constraint = Parser.OptionGroup.Constraint.ALL_OR_NONE
+      return self
 
   # Simple attribute container returned by parse_args(); replaces argparse.Namespace.
   #   Supports vars()/getattr()/hasattr() and in-place attribute reassignment,
@@ -1017,6 +1051,11 @@ class Parser: # pylint: disable=too-many-public-methods
     #   add_argument_group().
     self._ungrouped = Parser.OptionGroup(self, 'OPTIONS')
     self._option_groups = [ self._ungrouped ]
+    # Command-declared cross-group mutual-exclusion sets (the analogue of the C++
+    #   MUTUALLY_EXCLUSIVE_OPTIONS global): a list of lists of canonical option ids, each list
+    #   meaning "at most one of these may be specified". Populated by
+    #   flag_mutually_exclusive_options(); enforced at parse time.
+    self._mutually_exclusive_option_groups = [ ]
     self._help_option = None
     self._version_option = None
     # Populated by add_subparsers() on a multi-algorithm command's top-level parser;
@@ -1035,6 +1074,10 @@ class Parser: # pylint: disable=too-many-public-methods
         self._ungrouped.options.extend(parent._ungrouped.options)
         for group in parent._option_groups[1:]:
           self._option_groups.append(group)
+        # Inherit any cross-group mutual-exclusion sets declared on the parent (e.g. those a
+        #   multi-algorithm command registers on its top-level parser before add_subparsers()),
+        #   so that each per-algorithm sub-parser enforces them too.
+        self._mutually_exclusive_option_groups.extend(parent._mutually_exclusive_option_groups)
         if parent._help_option is not None:
           self._help_option = parent._help_option
         if parent._version_option is not None:
@@ -1045,6 +1088,7 @@ class Parser: # pylint: disable=too-many-public-methods
       self._git_version = parents[0]._git_version
       return
     standard_options = self.add_argument_group('Standard options')
+    standard_options.is_standard = True
     standard_options.add_argument('-force',
                                   action='store_true',
                                   default=None,
@@ -1071,8 +1115,10 @@ class Parser: # pylint: disable=too-many-public-methods
     # The verbosity trio ( -info / -quiet / -debug ) is nested as a "Verbosity options"
     #   sub-group of Standard options (mirroring the C++ parser); per the ordering invariant
     #   it therefore renders after the remaining standard options above. The former ad-hoc
-    #   mutual-exclusion of the trio is reinstated as a principled group constraint in
-    #   stages 12/13.
+    #   mutual-exclusion of the trio is reinstated here as a principled group constraint
+    #   (stages 12/13): the three levels are alternatives, so at most one may be specified;
+    #   the default (no flag) is normal verbosity and remains valid, so no command requires a
+    #   verbosity flag.
     verbosity_options = standard_options.add_subgroup('Verbosity options')
     verbosity_options.add_argument('-info',
                                   action='store_true',
@@ -1087,7 +1133,9 @@ class Parser: # pylint: disable=too-many-public-methods
                                   action='store_true',
                                   default=None,
                                   help='display debugging messages & debug input data.')
+    verbosity_options.mutually_exclusive()
     script_options = self.add_argument_group('Additional standard options for Python scripts')
+    script_options.is_standard = True
     script_options.add_argument('-nocleanup',
                                 action='store_true',
                                 default=None,
@@ -1143,6 +1191,17 @@ class Parser: # pylint: disable=too-many-public-methods
 
   def set_copyright(self, text): #pylint: disable=unused-variable
     self._copyright = text
+
+  def flag_mutually_exclusive_options(self, ids): #pylint: disable=unused-variable
+    # Declare a cross-group mutual-exclusion set: at most one of the named options may be
+    #   specified on the command-line, regardless of which option group each belongs to
+    #   (mirrors the C++ MUTUALLY_EXCLUSIVE_OPTIONS, cpp/core/app.h). Options are named by
+    #   canonical id (without the leading dash) and resolved across the whole option
+    #   hierarchy. Where the conflicting options constitute an entire option group, prefer
+    #   the group-level OptionGroup.mutually_exclusive() instead.
+    assert isinstance(ids, (list, tuple)) and all(isinstance(item, str) for item in ids), \
+        'Parser.flag_mutually_exclusive_options() accepts a list of option-name strings'
+    self._mutually_exclusive_option_groups.append(list(ids))
 
   def add_argument_group(self, name): #pylint: disable=unused-variable
     group = Parser.OptionGroup(self, name)
@@ -1434,6 +1493,10 @@ class Parser: # pylint: disable=too-many-public-methods
     for argument in self._positional_args:
       setattr(namespace, argument.name, [] if argument.allow_multiple else argument.default)
     positional_tokens = [ ]
+    # The options actually specified on the command-line, in order of first appearance (the
+    #   analogue of the C++ "option" vector), used to evaluate the collective group / cross-
+    #   group constraints. An option is recorded once regardless of repetition.
+    specified = [ ]
     try:
       index = 0
       while index < len(tokens):
@@ -1443,6 +1506,8 @@ class Parser: # pylint: disable=too-many-public-methods
           positional_tokens.append(token)
           index += 1
           continue
+        if option not in specified:
+          specified.append(option)
         if option.is_flag:
           setattr(namespace, option.dest, True)
           index += 1
@@ -1475,9 +1540,83 @@ class Parser: # pylint: disable=too-many-public-methods
       for option in self._iter_options():
         if option.required and getattr(namespace, option.dest) is None:
           raise Parser.ArgumentError(f'mandatory option "-{option.name}" was not provided')
+      # Enforce the collective option-group constraints and cross-group mutual-exclusion sets,
+      #   immediately after the per-option required check and before any input file is opened,
+      #   matching the C++ enforcement point (cpp/core/app.cpp parse()).
+      self._enforce_constraints(specified)
     except Parser.ArgumentError as exception:
       self._error(str(exception))
     return namespace
+
+  # ---- Collective option-group constraint enforcement (mirrors cpp/core/app.cpp) ------------
+  # "specified" is the list of Option objects present on the command-line (see _parse_tokens).
+
+  # The subset of the given options that were specified, as "-id" strings, in the options'
+  #   own order, each at most once (mirrors the C++ specified_options()).
+  @staticmethod
+  def _specified_option_ids(options, specified):
+    return [f'-{option.name}' for option in options if option in specified]
+
+  # Comma-joined "-id" list of every given option, whether specified or not (C++ all_option_ids()).
+  @staticmethod
+  def _all_option_ids(options):
+    return ', '.join(f'-{option.name}' for option in options)
+
+  # Evaluate one group's collective constraint over its (recursive) member options, raising an
+  #   ArgumentError with the C++ wording (constraints-design.md section 4) on a violation.
+  def _enforce_group_constraint(self, group, specified):
+    enum_cls = Parser.OptionGroup.Constraint
+    if group.constraint == enum_cls.NONE:
+      return
+    members = group.all_options()
+    present = self._specified_option_ids(members, specified)
+    if group.constraint == enum_cls.REQUIRE_EXACTLY_ONE:
+      if not present:
+        raise Parser.ArgumentError('exactly one of the following options must be specified: '
+                                   f'{self._all_option_ids(members)}')
+      if len(present) > 1:
+        raise Parser.ArgumentError(f'the options {", ".join(present)} are mutually exclusive; '
+                                   'exactly one must be specified')
+    elif group.constraint == enum_cls.REQUIRE_AT_LEAST_ONE:
+      if not present:
+        raise Parser.ArgumentError('at least one of the following options must be specified: '
+                                   f'{self._all_option_ids(members)}')
+    elif group.constraint == enum_cls.MUTUALLY_EXCLUSIVE:
+      if len(present) > 1:
+        raise Parser.ArgumentError(f'the options {", ".join(present)} are mutually exclusive; '
+                                   'at most one may be specified')
+    elif group.constraint == enum_cls.ALL_OR_NONE:
+      if present and len(present) != len(members):
+        raise Parser.ArgumentError(f'the options {self._all_option_ids(members)} must be specified '
+                                   f'together or not at all; only {", ".join(present)} specified')
+
+  # Recursively enforce a group's constraint and those of all its nested sub-groups.
+  def _enforce_group_constraints(self, group, specified):
+    self._enforce_group_constraint(group, specified)
+    for subgroup in group.subgroups:
+      self._enforce_group_constraints(subgroup, specified)
+
+  # Enforce the command-declared cross-group mutual-exclusion sets (C++ enforce_cross_group_mutex()).
+  def _enforce_cross_group_mutex(self, specified):
+    specified_names = [option.name for option in specified]
+    for id_set in self._mutually_exclusive_option_groups:
+      present = [f'-{item}' for item in id_set if item in specified_names]
+      if len(present) > 1:
+        raise Parser.ArgumentError(f'the options {", ".join(present)} are mutually exclusive; '
+                                   'at most one may be specified')
+
+  # Enforce all collective constraints in the C++ evaluation order: the command's own option
+  #   groups (declaration order, recursing sub-groups depth-first), then the standard-options
+  #   groups (so the nested verbosity sub-group is checked), then the cross-group mutex sets.
+  #   The first violation raises.
+  def _enforce_constraints(self, specified):
+    for group in self._option_groups:
+      if not group.is_standard:
+        self._enforce_group_constraints(group, specified)
+    for group in self._option_groups:
+      if group.is_standard:
+        self._enforce_group_constraints(group, specified)
+    self._enforce_cross_group_mutex(specified)
 
   def _assign_positionals(self, namespace, values):
     # Counting is done in tokens: each positional spec consumes "arity" tokens (a tuple
@@ -2087,6 +2226,9 @@ def add_dwgrad_import_options(cmdline): #pylint: disable=unused-variable
                        nargs=2,
                        metavar=('bvecs', 'bvals'),
                        help='Provide the diffusion gradient table in FSL bvecs/bvals format')
+  # The two import formats are alternatives: at most one may be specified (reinstates the
+  #   ad-hoc mutex removed in stage 1, now as a group constraint).
+  options.mutually_exclusive()
 
 def dwgrad_import_options(): #pylint: disable=unused-variable
   assert ARGS
@@ -2110,6 +2252,9 @@ def add_dwgrad_export_options(cmdline): #pylint: disable=unused-variable
                        nargs=2,
                        metavar=('bvecs_path', 'bvals_path'),
                        help='Export the final gradient table in FSL bvecs/bvals format')
+  # The two export formats are alternatives: at most one may be specified (reinstates the
+  #   ad-hoc mutex removed in stage 1, now as a group constraint).
+  options.mutually_exclusive()
 
 def dwgrad_export_options(): #pylint: disable=unused-variable
   assert ARGS

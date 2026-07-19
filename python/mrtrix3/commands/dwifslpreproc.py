@@ -299,6 +299,25 @@ def usage(cmdline): #pylint: disable=unused-variable
                            default=None,
                            help='Specify that the phase-encoding information can be found in the image header(s),'
                                 ' and that this is the information that the script should use')
+  # One (and only one) of the -rpe_* options must be provided (reinstates the ad-hoc mutex
+  #   removed in stage 1 as a principled group constraint; the whole rpe_options group is the
+  #   constrained set).
+  rpe_options.require_exactly_one()
+  # Cross-group mutual-exclusion sets: pairs of options (spread across the distortion-
+  #   correction, phase-encoding, EddyQC and rpe groups) that must not be combined. Reinstates
+  #   the ad-hoc mutexes removed in stage 1.
+  cmdline.flag_mutually_exclusive_options(['topup_files', 'se_epi'])
+  cmdline.flag_mutually_exclusive_options(['topup_field', 'se_epi'])
+  cmdline.flag_mutually_exclusive_options(['topup_files', 'align_seepi'])
+  cmdline.flag_mutually_exclusive_options(['topup_field', 'align_seepi'])
+  cmdline.flag_mutually_exclusive_options(['topup_files', 'topup_options'])
+  cmdline.flag_mutually_exclusive_options(['topup_field', 'topup_options'])
+  cmdline.flag_mutually_exclusive_options(['eddyqc_text', 'eddyqc_all'])
+  cmdline.flag_mutually_exclusive_options(['rpe_none', 'se_epi']) # -se_epi is meaningless with -rpe_none
+  cmdline.flag_mutually_exclusive_options(['rpe_pair', 'topup_files']) # two separate sources of the inhomogeneity field
+  cmdline.flag_mutually_exclusive_options(['se_epi', 'topup_files']) # two separate sources of the inhomogeneity field
+  cmdline.flag_mutually_exclusive_options(['rpe_header', 'pe_dir']) # can't manually provide PE direction if expecting it in the header
+  cmdline.flag_mutually_exclusive_options(['rpe_header', 'readout_time']) # can't manually provide readout time if expecting it in the header
 
 
 

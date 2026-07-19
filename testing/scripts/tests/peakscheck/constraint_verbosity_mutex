@@ -1,0 +1,23 @@
+#!/bin/bash
+# Verbosity sub-group constraint (all-mutually-exclusive violation class), Python parser.
+# The -info / -quiet / -debug verbosity options form a "Verbosity options" sub-group of the
+#   standard options constrained mutually_exclusive(): at most one verbosity level may be active.
+#   The default (no flag) is normal verbosity and remains valid; specifying two distinct
+#   verbosity flags on a single command must fail at parse time, with wording identical to the
+#   C++ parser. This exercises the through-line: every Python command inherits this constraint.
+
+# Two distinct verbosity flags: rejected as mutually exclusive, naming the offending options.
+OUT=$(peakscheck constraint_missing.mif -info -debug 2>&1) \
+  && { echo "ERROR: expected mutually-exclusive failure"; exit 1; }
+echo "$OUT" | grep -q "the options -info, -debug are mutually exclusive; at most one may be specified"
+
+# A single verbosity flag must NOT fire the constraint (command then fails only on missing input).
+OUT=$(peakscheck constraint_missing.mif -info 2>&1) \
+  && { echo "ERROR: expected later failure on missing input"; exit 1; }
+echo "$OUT" | grep -q "mutually exclusive" && { echo "ERROR: constraint fired for a single flag"; exit 1; }
+
+# No verbosity flag (default normal verbosity) must NOT fire the constraint either.
+OUT=$(peakscheck constraint_missing.mif 2>&1) \
+  && { echo "ERROR: expected later failure on missing input"; exit 1; }
+echo "$OUT" | grep -q "mutually exclusive" && { echo "ERROR: constraint fired for default verbosity"; exit 1; }
+true

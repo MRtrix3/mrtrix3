@@ -1,0 +1,37 @@
+#!/bin/bash
+# Group constraint require_at_least_one() (at-least-one violation class), Python parser.
+# No shipped Python command currently declares an at-least-one group (its C++ counterpart is
+#   warp2metric), so this exercises the native parser (python/mrtrix3/app.py) directly: a group
+#   constrained require_at_least_one() must reject an invocation specifying none of its options,
+#   with wording identical to the C++ parser, and must accept one that specifies a member.
+
+# Locate the installed mrtrix3 Python library alongside the command launchers on PATH.
+launcher=$(command -v peakscheck)
+libdir=$(cd "$(dirname "${launcher}")/../lib" && pwd)
+export PYTHONPATH="${libdir}:${PYTHONPATH}"
+
+# A minimal single-command harness whose only option group is require_at_least_one().
+cat > tmp-constraint_atleastone.py <<'PYEOF'
+import sys
+from mrtrix3 import app
+cmdline = app.Parser()
+cmdline.set_author('MRtrix3 test harness')
+cmdline.set_synopsis('Exercise the require_at_least_one() group constraint')
+group = cmdline.add_argument_group('Output options')
+group.add_argument('-out_a', action='store_true', default=None, help='first output')
+group.add_argument('-out_b', action='store_true', default=None, help='second output')
+group.require_at_least_one()
+cmdline.parse_args()
+sys.stderr.write('CONSTRAINT_DID_NOT_FIRE\n')
+PYEOF
+
+# No member option: must fail requiring at least one, naming all members.
+OUT=$(python3 tmp-constraint_atleastone.py 2>&1) \
+  && { echo "ERROR: expected at-least-one failure"; exit 1; }
+echo "$OUT" | grep -q "at least one of the following options must be specified: -out_a, -out_b"
+
+# One member option (-out_a): the constraint must NOT fire.
+OUT=$(python3 tmp-constraint_atleastone.py -out_a 2>&1)
+echo "$OUT" | grep -q "CONSTRAINT_DID_NOT_FIRE"
+echo "$OUT" | grep -q "at least one of the following options" && { echo "ERROR: constraint fired for valid usage"; exit 1; }
+true

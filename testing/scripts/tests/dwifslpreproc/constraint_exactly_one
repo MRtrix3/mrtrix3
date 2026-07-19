@@ -1,0 +1,25 @@
+#!/bin/bash
+# Group constraint require_exactly_one() (exactly-one violation class), Python parser.
+# dwifslpreproc's -rpe_none / -rpe_pair / -rpe_split / -rpe_all / -rpe_header options form a
+#   group constrained require_exactly_one(): exactly one must be specified. Specifying none, or
+#   more than one, must fail at parse time (before any input data is read), with wording
+#   identical to the C++ parser. Specifying exactly one must satisfy the constraint (the command
+#   then fails only because the dummy input does not exist).
+
+# Neither: must fail requiring exactly one, naming all members.
+OUT=$(dwifslpreproc constraint_missing_in.mif constraint_missing_out.mif 2>&1) \
+  && { echo "ERROR: expected exactly-one failure (none)"; exit 1; }
+echo "$OUT" | grep -q "exactly one of the following options must be specified"
+echo "$OUT" | grep -q -- "-rpe_none, -rpe_pair, -rpe_split, -rpe_all, -rpe_header"
+
+# Two members: must fail as mutually exclusive, naming the offending pair.
+OUT=$(dwifslpreproc constraint_missing_in.mif constraint_missing_out.mif -rpe_none -rpe_pair 2>&1) \
+  && { echo "ERROR: expected exactly-one failure (>1)"; exit 1; }
+echo "$OUT" | grep -q "the options -rpe_none, -rpe_pair are mutually exclusive; exactly one must be specified"
+
+# Exactly one (-rpe_none): the exactly-one constraint must NOT fire (command then fails only on
+#   the missing input image).
+OUT=$(dwifslpreproc constraint_missing_in.mif constraint_missing_out.mif -rpe_none 2>&1) \
+  && { echo "ERROR: expected later failure on missing input"; exit 1; }
+echo "$OUT" | grep -q "exactly one of the following" && { echo "ERROR: constraint fired for valid usage"; exit 1; }
+true
