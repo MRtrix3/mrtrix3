@@ -1,0 +1,43 @@
+#!/bin/bash
+# End-of-run unused-option tracking, Python parser (mirrors the C++ check_unused_options()).
+# A specified option that the command never consults must trigger the advisory warning, with
+#   wording identical to the C++ parser; an option that the command does read (even as a bare
+#   presence test), and any standard option, must NOT trigger it. This exercises the full
+#   app._execute() driver directly (python/mrtrix3/app.py), as the warning is emitted only after
+#   the command's execute() returns normally.
+
+# Locate the installed mrtrix3 Python library alongside the command launchers on PATH.
+launcher=$(command -v peakscheck)
+libdir=$(cd "$(dirname "${launcher}")/../lib" && pwd)
+export PYTHONPATH="${libdir}:${PYTHONPATH}"
+
+# A minimal single-command harness: execute() consults -used but never reads -unused.
+cat > tmp-unused_option.py <<'PYEOF'
+from mrtrix3 import app
+def usage(cmdline):
+  cmdline.set_author('MRtrix3 test harness')
+  cmdline.set_synopsis('Exercise end-of-run unused-option tracking')
+  cmdline.add_argument('-used', action='store_true', default=None, help='an option the command reads')
+  cmdline.add_argument('-unused', action='store_true', default=None, help='an option the command ignores')
+def execute():
+  # Consult -used only (a bare presence read counts); -unused is deliberately never read.
+  _ = app.ARGS.used
+app._execute(usage, execute)
+PYEOF
+
+expected='Command-line option "-unused" was specified but had no effect (it may not be applicable to the operation being performed).'
+
+# Both options specified: the warning must fire for -unused (never read) and NOT for -used (read).
+OUT=$(python3 tmp-unused_option.py -used -unused 2>&1)
+echo "$OUT" | grep -qF "${expected}" || { echo "ERROR: unused-option warning did not fire for -unused"; echo "$OUT"; exit 1; }
+echo "$OUT" | grep -qF '"-used" was specified but had no effect' && { echo "ERROR: warning fired for a consulted option"; exit 1; }
+
+# Normal usage (only the consulted option specified): no unused-option warning at all.
+OUT=$(python3 tmp-unused_option.py -used 2>&1)
+echo "$OUT" | grep -qF 'was specified but had no effect' && { echo "ERROR: spurious unused-option warning for normal usage"; echo "$OUT"; exit 1; }
+
+# A standard option specified but not exercised by this trivial command must remain exempt.
+OUT=$(python3 tmp-unused_option.py -used -nthreads 1 2>&1)
+echo "$OUT" | grep -qF 'was specified but had no effect' && { echo "ERROR: standard option was flagged as unused"; echo "$OUT"; exit 1; }
+
+true

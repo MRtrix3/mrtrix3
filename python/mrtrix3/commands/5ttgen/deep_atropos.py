@@ -71,9 +71,8 @@ def usage(base_parser, subparsers):  #pylint: disable=unused-variable
     help='Classify the brainstem as white matter')
 
 def execute():  #pylint: disable=unused-variable
-  if app.ARGS.sgm_amyg_hipp:
-    app.warn('Option -sgm_amyg_hipp has no effect on deep_atropos algorithm')
-
+  # -sgm_amyg_hipp is inapplicable to this algorithm and is intentionally not read here, so the
+  #   generic end-of-run unused-option warning covers it automatically (unused-tracking-design.md).
   dim = image.Header(app.ARGS.input).size()
   if not(len(dim) == 3 or (len(dim) == 4 and dim[3] == 7)):
     raise MRtrixError(f'Image \'{str(app.ARGS.input)}\' does not look like Deep Atropos segmentation'

@@ -353,9 +353,9 @@ def execute(): #pylint: disable=unused-variable
       amyg_lut_file = os.path.join(path.shared_data_path(), '5ttgen', 'hsvs', 'AmygSubfields.txt')
       check_file(amyg_lut_file)
 
-  if app.ARGS.sgm_amyg_hipp:
-    app.warn('Option -sgm_amyg_hipp ignored '
-             '(hsvs algorithm always assigns hippocampi & ampygdalae as sub-cortical grey matter)')
+  # -sgm_amyg_hipp is inapplicable to this algorithm (hsvs always assigns hippocampi & amygdalae as
+  #   sub-cortical grey matter) and is intentionally not read here, so the generic end-of-run
+  #   unused-option warning covers it automatically (unused-tracking-design.md).
 
 
   # Similar logic for thalami

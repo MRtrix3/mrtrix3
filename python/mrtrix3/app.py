@@ -110,6 +110,21 @@ _STDOUT_IMAGES = []
 
 
 
+# Warn once for every user-specified option that the command never consulted (mirrors the C++
+#   App::check_unused_options()). The tracker attached to the parsed namespace records which
+#   specified options were accessed via any app.ARGS read; standard options are exempt.
+def _check_unused_options():
+  if ARGS is None:
+    return
+  tracker = vars(ARGS).get('_option_access_tracker')
+  if tracker is None:
+    return
+  for option in tracker.unused_options():
+    warn(f'Command-line option "-{option.name}" was specified but had no effect '
+         f'(it may not be applicable to the operation being performed).')
+
+
+
 # This function gets executed by the corresponding cmake-generated Python executable
 def _execute(usage_function, execute_function): #pylint: disable=unused-variable
   from mrtrix3 import run #pylint: disable=import-outside-toplevel
@@ -180,8 +195,10 @@ def _execute(usage_function, execute_function): #pylint: disable=unused-variable
   # Now that FORCE_OVERWRITE has been set,
   #   check any user-specified output paths
   try:
-    for key in vars(ARGS):
-      value = getattr(ARGS, key)
+    # Read the parsed values straight from the namespace dictionary rather than via attribute
+    #   access: this framework-level output-path validation must not count as the command reading
+    #   the option (the unused-tracking false-positive invariant, unused-tracking-design.md 1.3).
+    for value in vars(ARGS).values():
       if isinstance(value, Parser._UserOutPathExtras): # pylint: disable=protected-access
         value.check_output()
   except FileExistsError as exception:
@@ -235,6 +252,10 @@ def _execute(usage_function, execute_function): #pylint: disable=unused-variable
 
   try:
     execute_function()
+    # Emitted only after the command body returns normally (mirrors the C++ check_unused_options()
+    #   call site, immediately after run()): a raised error supersedes this advisory warning, and
+    #   -help / -version / MRTRIX_CLI_PARSE_ONLY short-circuit before reaching here.
+    _check_unused_options()
   except (run.MRtrixCmdError, run.MRtrixFnError) as exception:
     is_cmd = isinstance(exception, run.MRtrixCmdError)
     return_code = exception.returncode if is_cmd else 1
@@ -738,6 +759,45 @@ class Parser: # pylint: disable=too-many-public-methods
   class Namespace:
     def __getattr__(self, name):
       raise AttributeError(f"'Namespace' object has no attribute '{name}'")
+    # Every read of a user-facing parsed value (app.ARGS.<option>) funnels through here; this
+    #   is the single choke point at which an option is marked "accessed" for the end-of-run
+    #   unused-option check (mirrors the C++ ParsedOption::mark_accessed() accessor
+    #   instrumentation, unused-tracking-design.md). A bare presence read counts as consulting
+    #   the option, exactly as a C++ get_options() presence test does. Framework-internal state
+    #   is stored under underscore-prefixed keys, which never name a command-line option, so
+    #   those reads are ignored; crucially, the parser's own parse-time type coercion / validation
+    #   operates on raw tokens (never through app.ARGS), so it cannot mark options accessed — this
+    #   is the false-positive-avoidance invariant (unused-tracking-design.md 1.3).
+    def __getattribute__(self, name):
+      value = object.__getattribute__(self, name)
+      if not name.startswith('_'):
+        tracker = object.__getattribute__(self, '__dict__').get('_option_access_tracker')
+        if tracker is not None:
+          tracker.mark_accessed(name)
+      return value
+
+  # Records, for the end-of-run unused-option check, which command-line-specified options the
+  #   executing command actually consulted (mirrors the C++ App::check_unused_options() state).
+  #   Attached to the parsed Namespace by _parse_tokens(). An option is "specified" if it appears
+  #   on the command-line, and becomes "accessed" once any app.ARGS read of its destination occurs
+  #   (a bare presence test counts). Standard options are exempt: the framework consumes them
+  #   uniformly and, for e.g. -nthreads, lazily, so a command that does not exercise that machinery
+  #   must not be flagged for them.
+  class _OptionAccessTracker:
+    def __init__(self, specified_options, standard_dests):
+      # specified_options: de-duplicated list of the Parser.Option objects specified on the
+      #   command-line (in first-appearance order); standard_dests: the set of destination names
+      #   belonging to the standard-option groups (exempt from the warning).
+      self._specified = specified_options
+      self._standard_dests = standard_dests
+      self._accessed = set()
+    def mark_accessed(self, dest):
+      self._accessed.add(dest)
+    def unused_options(self):
+      # The specified options that were never consulted and are not standard options, each at most
+      #   once (the specified list is already de-duplicated per distinct Option).
+      return [option for option in self._specified
+              if option.dest not in self._standard_dests and option.dest not in self._accessed]
 
   # Parsed value of a tuple (multi-argument) option or positional: an ordered list of the
   #   converted field values that additionally supports look-up by field id. Mirrors the
@@ -1546,6 +1606,16 @@ class Parser: # pylint: disable=too-many-public-methods
       self._enforce_constraints(specified)
     except Parser.ArgumentError as exception:
       self._error(str(exception))
+    # Attach the per-option access tracker used by the end-of-run unused-option check. Only the
+    #   successful parse reaches here (a parse error exits via _error()). Standard-option
+    #   destinations (the two standard-option groups and, recursively, the nested verbosity
+    #   sub-group) are exempt from the warning.
+    standard_dests = set()
+    for group in self._option_groups:
+      if group.is_standard:
+        for option in group.all_options():
+          standard_dests.add(option.dest)
+    namespace.__dict__['_option_access_tracker'] = Parser._OptionAccessTracker(specified, standard_dests)
     return namespace
 
   # ---- Collective option-group constraint enforcement (mirrors cpp/core/app.cpp) ------------

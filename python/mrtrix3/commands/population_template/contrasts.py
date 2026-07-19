@@ -81,7 +81,7 @@ class Contrasts: # pylint: disable=unused-variable
 
 
     for mode in ['initial_alignment', 'rigid', 'affine', 'nl']:
-      opt = app.ARGS.__dict__.get(f'mc_weight_{mode}', None)
+      opt = getattr(app.ARGS, f'mc_weight_{mode}', None)
       if opt:
         if n_contrasts == 1:
           raise MRtrixError(f'mc_weight_{mode} requires multiple input contrasts')
