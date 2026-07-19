@@ -90,13 +90,11 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_argument('-format',
                        choices=FORMATS,
                        default=DEFAULT_FORMAT,
-                       help='The format in which peak orientations are specified;'
-                            f' one of: {",".join(FORMATS)}')
+                       help='The format in which peak orientations are specified')
   cmdline.add_argument('-reference',
                        choices=REFERENCES,
                        default=DEFAULT_REFERENCE,
-                       help='The a priori expected references axes against which the input orientations are defined;'
-                            f' one of: {",".join(REFERENCES)}')
+                       help='The a priori expected references axes against which the input orientations are defined')
   cmdline.add_argument('-noshuffle',
                        action='store_true',
                        help='Do not evaluate possibility of requiring shuffles of axes or angles;'

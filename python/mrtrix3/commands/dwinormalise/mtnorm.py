@@ -72,8 +72,8 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options.add_argument('-reference',
                        type=app.Parser.Float(0.0),
                        default=REFERENCE_INTENSITY,
-                       help='Set the target CSF b=0 intensity in the output DWI series '
-                            f'(default: {REFERENCE_INTENSITY})')
+                       help='Set the target CSF b=0 intensity in the output DWI series'
+                            ).set_default(REFERENCE_INTENSITY)
   options.add_argument('-scale',
                        type=app.Parser.FileOut(),
                        help='Write the scaling factor applied to the DWI series to a text file')

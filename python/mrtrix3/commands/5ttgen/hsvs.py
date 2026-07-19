@@ -49,12 +49,10 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       help='Provide an image that will form the template for the generated 5TT image')
   parser.add_argument('-hippocampi',
                       choices=HIPPOCAMPI_CHOICES,
-                      help='Select method to be used for hippocampi (& amygdalae) segmentation; '
-                           f'options are: {",".join(HIPPOCAMPI_CHOICES)}')
+                      help='Select method to be used for hippocampi (& amygdalae) segmentation')
   parser.add_argument('-thalami',
                       choices=THALAMI_CHOICES,
-                      help='Select method to be used for thalamic segmentation; '
-                           f'options are: {",".join(THALAMI_CHOICES)}')
+                      help='Select method to be used for thalamic segmentation')
   parser.add_argument('-white_stem',
                       action='store_true',
                       default=None,

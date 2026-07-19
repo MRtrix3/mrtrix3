@@ -16,7 +16,7 @@ Usage
     dwishellmath input operation output [ options ]
 
 -  *input*: The input diffusion MRI series
--  *operation*: The operation to be applied to each shell; this must be one of the following: mean, median, sum, product, rms, norm, var, std, min, max, absmax, magmax
+-  *operation*: The operation to be applied to each shell (choices: mean, median, sum, product, rms, norm, var, std, min, max, absmax, magmax)
 -  *output*: The output image series
 
 Description
@@ -55,7 +55,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

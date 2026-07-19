@@ -124,7 +124,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                                ' l2 (ordinary least squares),'
                                ' lp (least powers: |x|^1.2),'
                                ' none (no robust estimator).'
-                               ' Default: none.')
+                               ).set_default('none')
   linoptions.add_argument('-rigid_scale',
                           type=app.Parser.SequenceFloat(),
                           help='Specify the multi-resolution pyramid used to build the rigid template,'
@@ -202,7 +202,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                          type=app.Parser.Float(0.0),
                          default=DEFAULT_NL_GRAD_STEP,
                          help='The gradient step size for non-linear registration'
-                              f' (Default: {DEFAULT_NL_GRAD_STEP})')
+                              ).set_default(DEFAULT_NL_GRAD_STEP)
 
 
 
@@ -216,9 +216,8 @@ def usage(cmdline): #pylint: disable=unused-variable
                             ' which might be useful for intra-subject registration in longitudinal analysis);'
                             ' "affine" (perform affine registration);'
                             ' "nonlinear";'
-                            f' as well as combinations of registration types: {registration_modes_string}.'
-                            ' Default: rigid_affine_nonlinear',
-                            default='rigid_affine_nonlinear')
+                            f' as well as combinations of registration types: {registration_modes_string}.',
+                            default='rigid_affine_nonlinear').set_default('rigid_affine_nonlinear')
   options.add_argument('-voxel_size',
                        type=app.Parser.SequenceFloat(),
                        help='Define the template voxel size in mm.'
@@ -228,10 +227,10 @@ def usage(cmdline): #pylint: disable=unused-variable
                        default='mass',
                        help='Method of alignment to form the initial template.'
                             ' Options are:'
-                            ' "mass" (default);'
+                            ' "mass";'
                             ' "robust_mass" (requires masks);'
                             ' "geometric";'
-                            ' "none".')
+                            ' "none".').set_default('mass')
   options.add_argument('-mask_dir',
                        type=app.Parser.DirectoryIn(),
                        help='Optionally input a set of masks inside a single directory,'
@@ -275,13 +274,11 @@ def usage(cmdline): #pylint: disable=unused-variable
                        choices=LEAVE_ONE_OUT,
                        default='auto',
                        help='Register each input image to a template that does not contain that image.'
-                            f' Valid choices: {", ".join(LEAVE_ONE_OUT)}.'
                             ' (Default: auto (true if n_subjects larger than 2 and smaller than 15))')
   options.add_argument('-aggregate',
                        choices=AGGREGATION_MODES,
                        help='Measure used to aggregate information from transformed images to the template image.'
-                            f' Valid choices: {", ".join(AGGREGATION_MODES)}.'
-                            ' Default: mean')
+                            ).set_default('mean')
   options.add_argument('-aggregation_weights',
                        type=app.Parser.FileIn(),
                        help='Comma-separated file containing weights used for weighted image aggregation.'

@@ -87,9 +87,8 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options = parser.add_argument_group('Options specific to the "template" algorithm')
   options.add_argument('-software',
                        choices=SOFTWARES,
-                       help='The software to use for template registration; '
-                            f'options are: {",".join(SOFTWARES)}; '
-                            f'default is {DEFAULT_SOFTWARE}')
+                       help='The software to use for template registration'
+                            ).set_default(DEFAULT_SOFTWARE)
   options.add_argument('-template',
                        type=app.Parser.ImageIn(),
                        metavar=('TemplateImage', 'MaskImage'),

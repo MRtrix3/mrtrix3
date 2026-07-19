@@ -17,19 +17,19 @@ CCuussttoomm  ttyyppeess
      An integer; unbounded
 
   _-_i_n_t___n_o_n_n_e_g_a_t_i_v_e value
-     An integer; non-negative
+     An integer; non-negative (minimum: 0)
 
   _-_i_n_t___b_o_u_n_d_e_d value
-     An integer; bound range
+     An integer; bound range (range: 0 to 100) (default: 50)
 
   _-_f_l_o_a_t___u_n_b_o_u_n_d value
      A floating-point; unbounded
 
   _-_f_l_o_a_t___n_o_n_n_e_g value
-     A floating-point; non-negative
+     A floating-point; non-negative (minimum: 0)
 
   _-_f_l_o_a_t___b_o_u_n_d_e_d value
-     A floating-point; bound range
+     A floating-point; bound range (range: 0 to 1) (default: 0.5)
 
   _-_i_n_t___s_e_q values
      A comma-separated list of integers
@@ -95,7 +95,7 @@ BBuuiilltt--iinn  ttyyppeess
      A built-in string (explicit)
 
   _-_c_h_o_i_c_e choice
-     A selection of choices; one of: One, Two, Three
+     A selection of choices (choices: One, Two, Three) (default: One)
 
   _-_i_n_t___b_u_i_l_t_i_n int
      An integer; built-in type
@@ -124,7 +124,7 @@ SSttaannddaarrdd  ooppttiioonnss
 
   _-_n_t_h_r_e_a_d_s number
      use this number of threads in multi-threaded applications (set to 0 to
-     disable multi-threading).
+     disable multi-threading). (minimum: 0)
 
   _-_c_o_n_f_i_g key value  (multiple uses permitted)
      temporarily set the value of an MRtrix config file entry.

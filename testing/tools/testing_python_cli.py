@@ -45,7 +45,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                         help='A built-in string (explicit)')
   builtins.add_argument('-choice',
                         choices=CHOICES,
-                        help='A selection of choices; one of: ' + ', '.join(CHOICES))
+                        help='A selection of choices').set_default('One')
   builtins.add_argument('-int_builtin',
                         type=int,
                         help='An integer; built-in type')
@@ -84,7 +84,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                       help='An integer; non-negative')
   custom.add_argument('-int_bounded',
                       type=app.Parser.Int(0, 100),
-                      help='An integer; bound range')
+                      help='An integer; bound range').set_default(50)
   custom.add_argument('-float_unbound',
                       type=app.Parser.Float(),
                       help='A floating-point; unbounded')
@@ -93,7 +93,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                       help='A floating-point; non-negative')
   custom.add_argument('-float_bounded',
                       type=app.Parser.Float(0.0, 1.0),
-                      help='A floating-point; bound range')
+                      help='A floating-point; bound range').set_default(0.5)
   custom.add_argument('-int_seq',
                       type=app.Parser.SequenceInt(),
                       help='A comma-separated list of integers')

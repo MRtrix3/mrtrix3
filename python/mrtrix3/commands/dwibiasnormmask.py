@@ -125,14 +125,14 @@ def usage(cmdline): #pylint: disable=unused-variable
                               type=app.Parser.Float(0.0),
                               default=REFERENCE_INTENSITY,
                               help='Set the target CSF b=0 intensity in the output DWI series'
-                                   f' (default: {REFERENCE_INTENSITY})')
+                                   ).set_default(REFERENCE_INTENSITY)
   internal_options = cmdline.add_argument_group('Options relevant to the internal optimisation procedure')
   internal_options.add_argument('-dice',
                                 type=app.Parser.Float(0.0, 1.0),
                                 default=DICE_COEFF_DEFAULT,
                                 help='Set the Dice coefficient threshold for similarity of masks between sequential iterations'
-                                     ' that will result in termination due to convergence;'
-                                     f' default = {DICE_COEFF_DEFAULT}')
+                                     ' that will result in termination due to convergence'
+                                     ).set_default(DICE_COEFF_DEFAULT)
   internal_options.add_argument('-init_mask',
                                 type=app.Parser.ImageIn(),
                                 help='Provide an initial mask for the first iteration of the algorithm'
@@ -142,14 +142,13 @@ def usage(cmdline): #pylint: disable=unused-variable
                                 default=DWIBIASCORRECT_MAX_ITERS,
                                 metavar='count',
                                 help='The maximum number of iterations (see Description);'
-                                     f' default is {DWIBIASCORRECT_MAX_ITERS};'
-                                     ' set to 0 to proceed until convergence')
+                                     ' set to 0 to proceed until convergence').set_default(DWIBIASCORRECT_MAX_ITERS)
   internal_options.add_argument('-mask_algo',
                                 choices=MASK_ALGOS,
                                 metavar='algorithm',
                                 help='The algorithm to use for mask estimation,'
-                                     ' potentially based on the ODF sum image (see Description);'
-                                     f' default: {MASK_ALGO_DEFAULT}')
+                                     ' potentially based on the ODF sum image (see Description)'
+                                     ).set_default(MASK_ALGO_DEFAULT)
   internal_options.add_argument('-lmax',
                                 type=app.Parser.SequenceInt(),
                                 help='The maximum spherical harmonic degree for the estimated FODs (see Description);'

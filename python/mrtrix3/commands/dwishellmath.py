@@ -30,9 +30,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                        help='The input diffusion MRI series')
   cmdline.add_argument('operation',
                        choices=SUPPORTED_OPS,
-                       help='The operation to be applied to each shell;'
-                            ' this must be one of the following: '
-                            + ', '.join(SUPPORTED_OPS))
+                       help='The operation to be applied to each shell')
   cmdline.add_argument('output',
                        type=app.Parser.ImageOut(),
                        help='The output image series')

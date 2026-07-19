@@ -28,11 +28,11 @@ While the name of this script indicates that a binary mask image is required as 
 Options
 -------
 
-- **-dilate iterations** Provide number of iterations for dilation step; default = 2
+- **-dilate iterations** Provide number of iterations for dilation step; default = 2 (minimum: 0)
 
-- **-scale value** Provide resolution upscaling value; default = 2.0
+- **-scale value** Provide resolution upscaling value; default = 2.0 (minimum: 0)
 
-- **-smooth value** Provide standard deviation of smoothing (in mm); default = 1.0
+- **-smooth value** Provide standard deviation of smoothing (in mm); default = 1.0 (minimum: 0)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -48,7 +48,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

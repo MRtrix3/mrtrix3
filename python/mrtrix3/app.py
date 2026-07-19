@@ -639,8 +639,34 @@ class Parser: # pylint: disable=too-many-public-methods
       self.optional = optional
       self.allow_multiple = allow_multiple
       self.elements = list(elements) if elements else []
+      # Free-text description of the value applied when this argument / option is absent, held
+      #   separately from the parse-time "default" so it may describe non-scalar defaults (e.g.
+      #   "0.5 per cent", "mean"). When set it is auto-rendered as "(default: <value>)" in the
+      #   help and every export, mirroring the C++ Argument::default_value (autohelp-design.md).
+      self.default_value = None
       assert not any(element.is_tuple for element in self.elements), \
           'Argument tuples must not nest'
+
+    # Declare the default value applied when this argument / option is absent, so that it is
+    #   auto-rendered rather than repeated by hand in the help text. A number is formatted with
+    #   the Python str() (pass a pre-formatted string to control precision or add units).
+    def set_default(self, value): #pylint: disable=unused-variable
+      self.default_value = value if isinstance(value, str) else str(value)
+      return self
+
+    # The auto-rendered "(choices: ...) (range: ...) (default: ...)" annotation of this argument,
+    #   each clause preceded by a single space in that fixed order (empty when no such metadata);
+    #   appended to the description by every human-readable help surface, mirroring the C++
+    #   Argument::help_metadata() (autohelp-design.md section 2).
+    def help_metadata(self):
+      result = ''
+      if self.choices:
+        result += f' (choices: {", ".join(str(choice) for choice in self.choices)})'
+      if isinstance(self.argtype, Parser.CustomTypeBase):
+        result += self.argtype._help_range() # pylint: disable=protected-access
+      if self.default_value is not None:
+        result += f' (default: {self.default_value})'
+      return result
 
     @property
     def is_tuple(self):
@@ -684,6 +710,18 @@ class Parser: # pylint: disable=too-many-public-methods
       for arg in self.args:
         result.extend(arg.leaves())
       return result
+    # Declare the default value applied when this option is absent, recorded on the option's sole
+    #   scalar argument so that it auto-renders as "(default: <value>)" (see Argument.set_default).
+    def set_default(self, value): #pylint: disable=unused-variable
+      assert self.args and not self.args[0].is_tuple, \
+          'set_default() is only applicable to a single-argument option'
+      self.args[0].set_default(value)
+      return self
+    # The auto-rendered choice / range / default annotation of this option's scalar arguments,
+    #   concatenated in argument order (tuple sub-arguments are excluded here; their metadata is
+    #   rendered on their own listing lines), mirroring the C++ Option::help_metadata().
+    def help_metadata(self):
+      return ''.join(arg.help_metadata() for arg in self.args if not arg.is_tuple)
 
   # A named, ordered collection of Options that additionally owns an ordered list of nested
   #   child groups (sub-groups), mirroring the C++ OptionGroup (cpp/core/cmdline_option.h).
@@ -822,6 +860,16 @@ class Parser: # pylint: disable=too-many-public-methods
   def _leaf_id(leaf):
     return leaf.metavar if leaf.metavar else leaf.name
 
+  # The machine-readable full-usage description line for one argument: its description with the
+  #   declared default value appended as free text. The default carries no dedicated machine token
+  #   (adding one to the ARGUMENT line would corrupt bash-completion choice parsing); it is
+  #   preserved exactly where it used to sit in the prose, mirroring the C++ Argument::usage().
+  @staticmethod
+  def _fullusage_desc(desc, default_value):
+    if default_value is None:
+      return desc
+    return f'{desc} (default: {default_value})' if desc else f'(default: {default_value})'
+
   # Function that will create a new class,
   #   which will derive from both pathlib.Path (which itself through __new__() could be Posix or Windows)
   #   and a desired augmentation that provides additional functions
@@ -890,6 +938,11 @@ class Parser: # pylint: disable=too-many-public-methods
     @staticmethod
     def _metavar():
       assert False
+    # The auto-rendered "(range: ...)" / "(minimum: ...)" / "(maximum: ...)" clause contributed
+    #   by a bounded numeric type; empty for every unbounded / non-numeric type. Overridden by the
+    #   Int / Float factories (mirrors the C++ ScalarRange rendering in Argument::help_metadata()).
+    def _help_range(self):
+      return ''
 
   class Bool(CustomTypeBase):
     def __call__(self, input_value):
@@ -931,6 +984,14 @@ class Parser: # pylint: disable=too-many-public-methods
       @staticmethod
       def _metavar():
         return 'value'
+      def _help_range(self):
+        if min_value is not None and max_value is not None:
+          return f' (range: {min_value} to {max_value})'
+        if min_value is not None:
+          return f' (minimum: {min_value})'
+        if max_value is not None:
+          return f' (maximum: {max_value})'
+        return ''
     return IntBounded()
 
   def Float(min_value=None, max_value=None): # pylint: disable=invalid-name,no-self-argument
@@ -954,6 +1015,17 @@ class Parser: # pylint: disable=too-many-public-methods
       @staticmethod
       def _metavar():
         return 'value'
+      def _help_range(self):
+        # Floating-point bounds are rendered exactly as the C++ MR::str<double>() would (full
+        #   double precision, "%.17g"), so that a Python range/limit clause is byte-identical to
+        #   the equivalent C++ command (e.g. type_float(1e-6) -> "(minimum: 9.9999999999999995e-07)").
+        if min_value is not None and max_value is not None:
+          return f' (range: {min_value:.17g} to {max_value:.17g})'
+        if min_value is not None:
+          return f' (minimum: {min_value:.17g})'
+        if max_value is not None:
+          return f' (maximum: {max_value:.17g})'
+        return ''
     return FloatBounded()
 
   class SequenceInt(CustomTypeBase):
@@ -1852,7 +1924,7 @@ class Parser: # pylint: disable=too-many-public-methods
     for argument in self._positional_args:
       line = '        '
       name = argument.metavar if argument.metavar else argument.name
-      line += f'{name}{" "*(max(13-len(name), 1))}{argument.help}'
+      line += f'{name}{" "*(max(13-len(name), 1))}{argument.help}{argument.help_metadata()}'
       text += wrapper_args.fill(line).replace(name, underline(name), 1) + '\n'
       text += '\n'
     if self._description:
@@ -1887,16 +1959,18 @@ class Parser: # pylint: disable=too-many-public-methods
         if option.repeatable:
           group_text += '  (multiple uses permitted)'
         group_text += '\n'
-        group_text += wrapper_other.fill(option.help) + '\n'
+        group_text += wrapper_other.fill(option.help + option.help_metadata()) + '\n'
         # A described tuple field is listed beneath the option (indented past the option
-        #   help); scalar options and undescribed fields add nothing.
+        #   help); scalar options add nothing here. A field's own choice / range / default
+        #   metadata is appended to its description (rendered even when it has no description).
         for arg in option.args:
           if not arg.is_tuple:
             continue
           for leaf in arg.elements:
-            if leaf.help:
+            leaf_desc = leaf.help + leaf.help_metadata()
+            if leaf_desc:
               leaf_id = Parser._leaf_id(leaf)
-              group_text += wrapper_field.fill(f'{leaf_id}: {leaf.help}') + '\n'
+              group_text += wrapper_field.fill(f'{leaf_id}: {leaf_desc}') + '\n'
         group_text += '\n'
       return group_text
 
@@ -2021,7 +2095,7 @@ class Parser: # pylint: disable=too-many-public-methods
       for argument in self._positional_args:
         allow_multiple = '1' if argument.allow_multiple else '0'
         sys.stdout.write(f'ARGUMENT {argument.name} 0 {allow_multiple} {arg2str(argument)}\n')
-        sys.stdout.write(f'{argument.help}\n')
+        sys.stdout.write(f'{Parser._fullusage_desc(argument.help, argument.default_value)}\n')
 
     # Options: the required field is inverted (0 if required, else 1); the option-level
     #   allow_multiple field is always 0 (repeatable/append options are NOT flagged here);
@@ -2035,15 +2109,20 @@ class Parser: # pylint: disable=too-many-public-methods
       for option in group.all_options():
         required = '0' if option.required else '1'
         sys.stdout.write(f'OPTION -{option.name} {required} 0\n')
-        sys.stdout.write(f'{option.help}\n')
+        # A scalar option's default value is preserved on the OPTION description line, exactly where
+        #   the prose used to carry it before it was declared via set_default() (no dedicated machine
+        #   token: the choice / range tokens remain on the ARGUMENT lines, so bash completion is
+        #   unaffected). A tuple field's own description / default stays on its own argument line.
+        scalar_arg = option.args[0] if len(option.args) == 1 and not option.args[0].is_tuple else None
+        option_default = scalar_arg.default_value if scalar_arg is not None else None
+        sys.stdout.write(f'{Parser._fullusage_desc(option.help, option_default)}\n')
         for arg in option.args:
           for leaf in arg.leaves():
             metavar_string = leaf.metavar if leaf.metavar else option.name
             sys.stdout.write(f'ARGUMENT {metavar_string} 0 0 {arg2str(leaf)}\n')
-            # A described tuple field emits its description on the following line, matching
-            #   the C++ full-usage rendering; scalar options and undescribed fields emit none.
-            if arg.is_tuple and leaf.help:
-              sys.stdout.write(f'{leaf.help}\n')
+            field_desc = Parser._fullusage_desc(leaf.help, leaf.default_value) if arg.is_tuple else ''
+            if field_desc:
+              sys.stdout.write(f'{field_desc}\n')
 
     # Ungrouped options first (no heading), then the named groups in reverse order of
     #   definition, matching the terminal help traversal and the pre-overhaul baseline.
@@ -2075,7 +2154,7 @@ class Parser: # pylint: disable=too-many-public-methods
       text += f'-  *{self._subparsers.dest}*: {self._subparsers.help}\n'
     for argument in self._positional_args:
       name = argument.metavar if argument.metavar else argument.name
-      text += f'-  *{name}*: {argument.help}\n\n'
+      text += f'-  *{name}*: {argument.help}{argument.help_metadata()}\n\n'
     if self._description:
       text += '## Description\n\n'
       for line in self._description:
@@ -2102,11 +2181,12 @@ class Parser: # pylint: disable=too-many-public-methods
         group_text += f'+ **-{option_text}**'
         if option.repeatable:
           group_text += '  *(multiple uses permitted)*'
-        group_text += f'<br>{option.help}\n\n'
-        # Described tuple fields render as an indented markdown sub-list beneath the option.
-        field_lines = [f'    - *{Parser._leaf_id(leaf)}*: {leaf.help}'
+        group_text += f'<br>{option.help}{option.help_metadata()}\n\n'
+        # Described tuple fields render as an indented markdown sub-list beneath the option; a
+        #   field's own choice / range / default metadata is appended to its description.
+        field_lines = [f'    - *{Parser._leaf_id(leaf)}*: {leaf.help}{leaf.help_metadata()}'
                        for arg in option.args if arg.is_tuple
-                       for leaf in arg.elements if leaf.help]
+                       for leaf in arg.elements if leaf.help or leaf.help_metadata()]
         if field_lines:
           group_text += '\n'.join(field_lines) + '\n'
       return group_text
@@ -2174,7 +2254,7 @@ class Parser: # pylint: disable=too-many-public-methods
       text += f'-  *{self._subparsers.dest}*: {self._subparsers.help}\n'
     for argument in self._positional_args:
       name = argument.metavar if argument.metavar else argument.name
-      arg_help = argument.help.replace('|', '\\|')
+      arg_help = (argument.help + argument.help_metadata()).replace('|', '\\|')
       text += f'-  *{name}*: {arg_help}\n'
     text += '\n'
     if self._description:
@@ -2206,17 +2286,19 @@ class Parser: # pylint: disable=too-many-public-methods
         group_text += f'- **{option_text}**'
         if option.repeatable:
           group_text += '  *(multiple uses permitted)*'
-        option_help = option.help.replace('|', '\\|')
+        option_help = (option.help + option.help_metadata()).replace('|', '\\|')
         group_text += f' {option_help}'
         # Described tuple fields follow the summary on " |br|" continuation lines, matching
-        #   the C++ RST rendering; scalar options and undescribed fields add nothing.
+        #   the C++ RST rendering; a field's own choice / range / default metadata is appended
+        #   to its description (scalar options add nothing here).
         field_lines = [ ]
         for arg in option.args:
           if not arg.is_tuple:
             continue
           for leaf in arg.elements:
-            if leaf.help:
-              leaf_help = leaf.help.replace('|', '\\|')
+            leaf_desc = leaf.help + leaf.help_metadata()
+            if leaf_desc:
+              leaf_help = leaf_desc.replace('|', '\\|')
               field_lines.append(f'   *{Parser._leaf_id(leaf)}*: {leaf_help}')
         if field_lines:
           group_text += ' |br|\n' + ' |br|\n'.join(field_lines)

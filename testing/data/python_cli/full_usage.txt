@@ -9,7 +9,7 @@ OPTION -int_nonnegative 1 0
 An integer; non-negative
 ARGUMENT int_nonnegative 0 0 INT 0 9223372036854775807
 OPTION -int_bounded 1 0
-An integer; bound range
+An integer; bound range (default: 50)
 ARGUMENT int_bounded 0 0 INT 0 100
 OPTION -float_unbound 1 0
 A floating-point; unbounded
@@ -18,7 +18,7 @@ OPTION -float_nonneg 1 0
 A floating-point; non-negative
 ARGUMENT float_nonneg 0 0 FLOAT 0.0 inf
 OPTION -float_bounded 1 0
-A floating-point; bound range
+A floating-point; bound range (default: 0.5)
 ARGUMENT float_bounded 0 0 FLOAT 0.0 1.0
 OPTION -int_seq 1 0
 A comma-separated list of integers
@@ -80,7 +80,7 @@ OPTION -string_explicit 1 0
 A built-in string (explicit)
 ARGUMENT string_explicit 0 0 TEXT
 OPTION -choice 1 0
-A selection of choices; one of: One, Two, Three
+A selection of choices (default: One)
 ARGUMENT choice 0 0 CHOICE One Two Three
 OPTION -int_builtin 1 0
 An integer; built-in type

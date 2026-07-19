@@ -47,13 +47,13 @@ Options for importing the diffusion gradient table
 Options relevant to the internal optimisation procedure
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-dice value** Set the Dice coefficient threshold for similarity of masks between sequential iterations that will result in termination due to convergence; default = 0.999
+- **-dice value** Set the Dice coefficient threshold for similarity of masks between sequential iterations that will result in termination due to convergence (range: 0 to 1) (default: 0.999)
 
 - **-init_mask image** Provide an initial mask for the first iteration of the algorithm (if not provided, the default dwi2mask algorithm will be used)
 
-- **-max_iters count** The maximum number of iterations (see Description); default is 2; set to 0 to proceed until convergence
+- **-max_iters count** The maximum number of iterations (see Description); set to 0 to proceed until convergence (minimum: 0) (default: 2)
 
-- **-mask_algo algorithm** The algorithm to use for mask estimation, potentially based on the ODF sum image (see Description); default: threshold
+- **-mask_algo algorithm** The algorithm to use for mask estimation, potentially based on the ODF sum image (see Description) (choices: dwi2mask, fslbet, hdbet, mrthreshold, synthstrip, threshold) (default: threshold)
 
 - **-lmax values** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell  and "4,0" for single-shell data)
 
@@ -66,7 +66,7 @@ Options that modulate the outputs of the script
 
 - **-output_tissuesum image** Export the tissue sum image that was used to generate the final mask
 
-- **-reference value** Set the target CSF b=0 intensity in the output DWI series (default: 1000.0)
+- **-reference value** Set the target CSF b=0 intensity in the output DWI series (minimum: 0) (default: 1000.0)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -82,7 +82,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

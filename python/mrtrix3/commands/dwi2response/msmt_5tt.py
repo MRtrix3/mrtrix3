@@ -55,20 +55,20 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options.add_argument('-fa',
                        type=app.Parser.Float(0.0, 1.0),
                        default=0.2,
-                       help='Upper fractional anisotropy threshold for GM and CSF voxel selection '
-                            '(default: 0.2)')
+                       help='Upper fractional anisotropy threshold for GM and CSF voxel selection'
+                            ).set_default(0.2)
   options.add_argument('-pvf',
                        type=app.Parser.Float(0.0, 1.0),
                        metavar='fraction',
                        default=0.95,
-                       help='Partial volume fraction threshold for tissue voxel selection '
-                            '(default: 0.95)')
+                       help='Partial volume fraction threshold for tissue voxel selection'
+                            ).set_default(0.95)
   options.add_argument('-wm_algo',
                        metavar='algorithm',
                        choices=WM_ALGOS,
                        default='tournier',
-                       help='dwi2response algorithm to use for WM single-fibre voxel selection '
-                            f'(options: {", ".join(WM_ALGOS)}; default: tournier)')
+                       help='dwi2response algorithm to use for WM single-fibre voxel selection'
+                            ).set_default('tournier')
   options.add_argument('-sfwm_fa_threshold',
                        type=app.Parser.Float(0.0, 1.0),
                        help='Sets -wm_algo to fa and allows to specify a hard FA threshold for single-fibre WM voxels, '

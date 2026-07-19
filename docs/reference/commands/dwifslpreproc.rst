@@ -136,7 +136,7 @@ Options for manually specifying the phase encoding of the input DWIs
 
 - **-pe_dir PE** Manually specify the phase encoding direction of the input series; can be a signed axis number (e.g. -0, 1, +2), an axis designator (e.g. RL, PA, IS), or NIfTI axis codes (e.g. i-, j, k)
 
-- **-readout_time time** Manually specify the total readout time of the input series (in seconds)
+- **-readout_time time** Manually specify the total readout time of the input series (in seconds) (minimum: 0)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -152,7 +152,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

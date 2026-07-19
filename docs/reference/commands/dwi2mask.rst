@@ -49,7 +49,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
@@ -118,21 +118,21 @@ Options
 Options specific to the "3dautomask" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-clfrac value** Set the "clip level fraction"; must be a number between 0.1 and 0.9. A small value means to make the initial threshold for clipping smaller, which will tend to make the mask larger.
+- **-clfrac value** Set the "clip level fraction"; must be a number between 0.1 and 0.9. A small value means to make the initial threshold for clipping smaller, which will tend to make the mask larger. (range: 0.10000000000000001 to 0.90000000000000002)
 
 - **-nograd** The program uses a "gradual" clip level by default. Add this option to use a fixed clip level.
 
-- **-peels iterations** Peel (erode) the mask n times, then unpeel (dilate).
+- **-peels iterations** Peel (erode) the mask n times, then unpeel (dilate). (minimum: 0)
 
-- **-nbhrs count** Define the number of neighbors needed for a voxel NOT to be eroded. It should be between 6 and 26.
+- **-nbhrs count** Define the number of neighbors needed for a voxel NOT to be eroded. It should be between 6 and 26. (range: 6 to 26)
 
 - **-eclip** After creating the mask, remove exterior voxels below the clip threshold.
 
-- **-SI value** After creating the mask, find the most superior voxel, then zero out everything more than SI millimeters inferior to that. 130 seems to be decent (i.e., for Homo Sapiens brains).
+- **-SI value** After creating the mask, find the most superior voxel, then zero out everything more than SI millimeters inferior to that. 130 seems to be decent (i.e., for Homo Sapiens brains). (minimum: 0)
 
-- **-dilate iterations** Dilate the mask outwards n times
+- **-dilate iterations** Dilate the mask outwards n times (minimum: 0)
 
-- **-erode iterations** Erode the mask outwards n times
+- **-erode iterations** Erode the mask outwards n times (minimum: 0)
 
 - **-NN1** Erode and dilate based on mask faces
 
@@ -161,7 +161,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
@@ -255,7 +255,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
@@ -345,7 +345,7 @@ Options applicable when using the ANTs software for registration
 Options specific to the "template" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-software choice** The software to use for template registration; options are: antsfull,antsquick,fsl; default is antsquick
+- **-software choice** The software to use for template registration (choices: antsfull, antsquick, fsl) (default: antsquick)
 
 - **-template TemplateImage MaskImage** Provide the template image to which the input data will be registered, and the mask to be projected to the input image. The template image should be T2-weighted.
 
@@ -370,7 +370,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
@@ -449,7 +449,7 @@ Options specific to the "consensus" algorithm
 
 - **-template TemplateImage MaskImage** Provide a template image and corresponding mask for those algorithms requiring such
 
-- **-threshold value** The fraction of algorithms that must include a voxel for that voxel to be present in the final mask (default: 0.501)
+- **-threshold value** The fraction of algorithms that must include a voxel for that voxel to be present in the final mask (default: 0.501) (range: 0 to 1)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -472,7 +472,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
@@ -541,13 +541,13 @@ Options
 Options specific to the "fslbet" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-bet_f value** Fractional intensity threshold (0->1); smaller values give larger brain outline estimates
+- **-bet_f value** Fractional intensity threshold (0->1); smaller values give larger brain outline estimates (range: 0 to 1)
 
-- **-bet_g value** Vertical gradient in fractional intensity threshold (-1->1); positive values give larger brain outline at bottom, smaller at top
+- **-bet_g value** Vertical gradient in fractional intensity threshold (-1->1); positive values give larger brain outline at bottom, smaller at top (range: -1 to 1)
 
 - **-bet_c i,j,k** Centre-of-gravity (voxels not mm) of initial mesh surface
 
-- **-bet_r value** Head radius (mm not voxels); initial surface sphere is set to half of this
+- **-bet_r value** Head radius (mm not voxels); initial surface sphere is set to half of this (minimum: 0)
 
 - **-rescale** Rescale voxel size provided to BET to 1mm isotropic; can improve results for rodent data
 
@@ -572,7 +572,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
@@ -666,7 +666,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
@@ -734,7 +734,7 @@ Usage
 Options
 -------
 
-- **-clean_scale value** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
+- **-clean_scale value** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2) (minimum: 0)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -757,7 +757,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
@@ -828,7 +828,7 @@ Options specific to the "mean" algorithm
 
 - **-shells bvalues** Comma separated list of shells to be included in the volume averaging
 
-- **-clean_scale value** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
+- **-clean_scale value** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2) (minimum: 0)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -851,7 +851,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
@@ -933,7 +933,7 @@ Options specific to the "mtnorm" algorithm
 
 - **-lmax values** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell and "4,0" for single-shell data
 
-- **-threshold value** the threshold on the total tissue density sum image used to derive the brain mask; default is 0.5
+- **-threshold value** the threshold on the total tissue density sum image used to derive the brain mask; default is 0.5 (range: 0 to 1)
 
 - **-tissuesum image** Export the tissue sum image that was used to generate the mask
 
@@ -958,7 +958,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
@@ -1067,7 +1067,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
@@ -1140,14 +1140,14 @@ Options for turning "dwi2mask trace" into an iterative algorithm
 
 - **-iterative** (EXPERIMENTAL) Iteratively refine the weights for combination of per-shell trace-weighted images prior to thresholding
 
-- **-max_iters iterations** Set the maximum number of iterations for the algorithm (default: 10)
+- **-max_iters iterations** Set the maximum number of iterations for the algorithm (default: 10) (minimum: 1)
 
 Options specific to the "trace" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-shells bvalues** Comma-separated list of shells used to generate trace-weighted images for masking
 
-- **-clean_scale value** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
+- **-clean_scale value** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2) (minimum: 0)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1170,7 +1170,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

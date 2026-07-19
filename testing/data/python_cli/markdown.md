@@ -14,15 +14,15 @@ Test operation of the Python command-line interface
 
 + **--int_unbound value**<br>An integer; unbounded
 
-+ **--int_nonnegative value**<br>An integer; non-negative
++ **--int_nonnegative value**<br>An integer; non-negative (minimum: 0)
 
-+ **--int_bounded value**<br>An integer; bound range
++ **--int_bounded value**<br>An integer; bound range (range: 0 to 100) (default: 50)
 
 + **--float_unbound value**<br>A floating-point; unbounded
 
-+ **--float_nonneg value**<br>A floating-point; non-negative
++ **--float_nonneg value**<br>A floating-point; non-negative (minimum: 0)
 
-+ **--float_bounded value**<br>A floating-point; bound range
++ **--float_bounded value**<br>A floating-point; bound range (range: 0 to 1) (default: 0.5)
 
 + **--int_seq values**<br>A comma-separated list of integers
 
@@ -66,7 +66,7 @@ Test operation of the Python command-line interface
 
 + **--string_explicit str**<br>A built-in string (explicit)
 
-+ **--choice choice**<br>A selection of choices; one of: One, Two, Three
++ **--choice choice**<br>A selection of choices (choices: One, Two, Three) (default: One)
 
 + **--int_builtin int**<br>An integer; built-in type
 
@@ -84,7 +84,7 @@ Test operation of the Python command-line interface
 
 + **--force**<br>force overwrite of output files.
 
-+ **--nthreads number**<br>use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
++ **--nthreads number**<br>use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 + **--config key value**  *(multiple uses permitted)*<br>temporarily set the value of an MRtrix config file entry.
 

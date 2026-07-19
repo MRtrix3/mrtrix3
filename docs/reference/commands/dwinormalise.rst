@@ -39,7 +39,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
@@ -115,7 +115,7 @@ All input DWI files must contain an embedded diffusion gradient table; for this 
 Options
 -------
 
-- **-fa_threshold value** The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask (default: 0.4)
+- **-fa_threshold value** The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask (default: 0.4) (range: 0 to 1)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -131,7 +131,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
@@ -198,9 +198,9 @@ Usage
 Options
 -------
 
-- **-intensity value** Normalise the b=0 signal to a specified value (Default: 1000)
+- **-intensity value** Normalise the b=0 signal to a specified value (Default: 1000) (minimum: 0)
 
-- **-percentile value** Define the percentile of the b=0 image intensties within the mask used for normalisation; if this option is not supplied then the median value (50th percentile) will be normalised to the desired intensity value
+- **-percentile value** Define the percentile of the b=0 image intensties within the mask used for normalisation; if this option is not supplied then the median value (50th percentile) will be normalised to the desired intensity value (range: 0 to 100)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -223,7 +223,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
@@ -312,7 +312,7 @@ Options specific to the "mtnorm" algorithm
 
 - **-mask image** Provide a mask image for relevant calculations (if not provided, the default dwi2mask algorithm will be used)
 
-- **-reference value** Set the target CSF b=0 intensity in the output DWI series (default: 1000)
+- **-reference value** Set the target CSF b=0 intensity in the output DWI series (minimum: 0) (default: 1000)
 
 - **-scale file** Write the scaling factor applied to the DWI series to a text file
 
@@ -330,7 +330,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

@@ -27,13 +27,13 @@ Options
 
 - **-mask image** Provide a mask image within which to seed & constrain tracking
 
-- **-number value** Set the number of tracks to generate for each test
+- **-number value** Set the number of tracks to generate for each test (minimum: 1)
 
-- **-threshold value** Modulate thresold on the ratio of empirical to maximal mean length to issue an error
+- **-threshold value** Modulate thresold on the ratio of empirical to maximal mean length to issue an error (range: 0 to 1)
 
-- **-format choice** The format in which peak orientations are specified; one of: spherical,unitspherical,cartesian,unitcartesian
+- **-format choice** The format in which peak orientations are specified (choices: spherical, unitspherical, cartesian, unitcartesian)
 
-- **-reference choice** The a priori expected references axes against which the input orientations are defined; one of: xyz,ijk,fsl
+- **-reference choice** The a priori expected references axes against which the input orientations are defined (choices: xyz, ijk, fsl)
 
 - **-noshuffle** Do not evaluate possibility of requiring shuffles of axes or angles; only consider prospective transforms from alternative reference frames to real / scanner space
 
@@ -57,7 +57,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 

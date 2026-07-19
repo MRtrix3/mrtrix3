@@ -38,11 +38,11 @@ Options
 Input, output and general options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-type choice** Specify the types of registration stages to perform. Options are: "rigid" (perform rigid registration only, which might be useful for intra-subject registration in longitudinal analysis); "affine" (perform affine registration); "nonlinear"; as well as combinations of registration types: "rigid_affine", "rigid_nonlinear", "affine_nonlinear", "rigid_affine_nonlinear". Default: rigid_affine_nonlinear
+- **-type choice** Specify the types of registration stages to perform. Options are: "rigid" (perform rigid registration only, which might be useful for intra-subject registration in longitudinal analysis); "affine" (perform affine registration); "nonlinear"; as well as combinations of registration types: "rigid_affine", "rigid_nonlinear", "affine_nonlinear", "rigid_affine_nonlinear". (choices: rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear) (default: rigid_affine_nonlinear)
 
 - **-voxel_size values** Define the template voxel size in mm. Use either a single value for isotropic voxels or 3 comma-separated values.
 
-- **-initial_alignment choice** Method of alignment to form the initial template. Options are: "mass" (default); "robust_mass" (requires masks); "geometric"; "none".
+- **-initial_alignment choice** Method of alignment to form the initial template. Options are: "mass"; "robust_mass" (requires masks); "geometric"; "none". (choices: mass, robust_mass, geometric, none) (default: mass)
 
 - **-mask_dir directory** Optionally input a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly. Note that masks are used for registration, not for aggregation. To exclude areas from aggregation, NaN-mask your input images.
 
@@ -56,9 +56,9 @@ Input, output and general options
 
 - **-noreorientation** Turn off FOD reorientation in mrregister. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)
 
-- **-leave_one_out choice** Register each input image to a template that does not contain that image. Valid choices: 0, 1, auto. (Default: auto (true if n_subjects larger than 2 and smaller than 15))
+- **-leave_one_out choice** Register each input image to a template that does not contain that image. (Default: auto (true if n_subjects larger than 2 and smaller than 15)) (choices: 0, 1, auto)
 
-- **-aggregate choice** Measure used to aggregate information from transformed images to the template image. Valid choices: mean, median. Default: mean
+- **-aggregate choice** Measure used to aggregate information from transformed images to the template image. (choices: mean, median) (default: mean)
 
 - **-aggregation_weights file** Comma-separated file containing weights used for weighted image aggregation. Each row must contain the identifiers of the input image and its weight. Note that this weighs intensity values not transformations (shape).
 
@@ -77,11 +77,11 @@ Options for the non-linear registration
 
 - **-nl_niter values** Specify the number of registration iterations used within each level before updating the template, in the form of a list of integers (default: 5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5). The list must be the same length as the nl_scale factor list
 
-- **-nl_update_smooth value** Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)
+- **-nl_update_smooth value** Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size) (minimum: 0)
 
-- **-nl_disp_smooth value** Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)
+- **-nl_disp_smooth value** Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size) (minimum: 0)
 
-- **-nl_grad_step value** The gradient step size for non-linear registration (Default: 0.5)
+- **-nl_grad_step value** The gradient step size for non-linear registration (minimum: 0) (default: 0.5)
 
 Options for the linear registration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -90,7 +90,7 @@ Options for the linear registration
 
 - **-linear_no_drift_correction** Deactivate correction of template appearance (scale and shear) over iterations
 
-- **-linear_estimator choice** Specify estimator for intensity difference metric. Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), none (no robust estimator). Default: none.
+- **-linear_estimator choice** Specify estimator for intensity difference metric. Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), none (no robust estimator). (choices: l1, l2, lp, none) (default: none)
 
 - **-rigid_scale values** Specify the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: 0.3,0.4,0.6,0.8,1.0,1.0). This and affine_scale implicitly define the number of template levels
 
@@ -129,7 +129,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 - **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
