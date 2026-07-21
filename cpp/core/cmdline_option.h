@@ -360,10 +360,11 @@ public:
     if (choice_aliases.empty())
       return std::nullopt;
     const std::string lowered = MR::lowercase(token);
-    for (const auto &entry : choice_aliases) {
-      if (entry.first == lowered)
-        return entry.second;
-    }
+    // Search for the (lowercased) alias entry and return its canonical choice: std::find_if.
+    const auto entry = std::find_if(
+        choice_aliases.begin(), choice_aliases.end(), [&lowered](const auto &e) { return e.first == lowered; });
+    if (entry != choice_aliases.end())
+      return entry->second;
     return std::nullopt;
   }
 
@@ -736,13 +737,8 @@ public:
 
   //! true if `name` matches the canonical id or any alias exactly
   bool is(std::string_view name) const {
-    if (name == id)
-      return true;
-    for (const auto &spelling : aliases) {
-      if (name == spelling)
-        return true;
-    }
-    return false;
+    // Exact-equality search over the alias spellings: std::find expresses precisely that.
+    return name == id || std::find(aliases.begin(), aliases.end(), name) != aliases.end();
   }
 
   //! true if `stub` is a prefix of the canonical id or of any alias
@@ -753,13 +749,8 @@ public:
     const auto is_prefix_of = [stub](std::string_view spelling) {
       return stub.size() <= spelling.size() && spelling.substr(0, stub.size()) == stub;
     };
-    if (is_prefix_of(id))
-      return true;
-    for (const auto &spelling : aliases) {
-      if (is_prefix_of(spelling))
-        return true;
-    }
-    return false;
+    // Predicate search over the alias spellings: std::any_of expresses precisely that.
+    return is_prefix_of(id) || std::any_of(aliases.begin(), aliases.end(), is_prefix_of);
   }
 
   //! the total number of command-line tokens consumed by this option's argument item

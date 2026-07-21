@@ -1427,9 +1427,11 @@ const Option *match_option(std::string_view arg) {
     return candidates[0];
 
   // return match if fully specified (an exact match of the canonical id or of any alias):
-  for (size_t i = 0; i < candidates.size(); ++i)
-    if (candidates[i]->is(root))
-      return candidates[i];
+  const auto exact = std::find_if(candidates.begin(),
+                                  candidates.end(), //
+                                  [&root](const Option *const cand) { return cand->is(root); });
+  if (exact != candidates.end())
+    return *exact;
 
   // check if there is only one *unique* candidate
   const auto cid = candidates[0]->id;
@@ -1694,12 +1696,9 @@ namespace {
 std::vector<std::string> specified_options(const std::vector<const Option *> &candidates) {
   std::vector<std::string> result;
   for (const Option *const candidate : candidates) {
-    for (const ParsedOption &parsed : option) {
-      if (parsed.opt == candidate) {
-        result.push_back(std::string("-") + candidate->id);
-        break;
-      }
-    }
+    if (std::any_of(
+            option.begin(), option.end(), [candidate](const ParsedOption &parsed) { return parsed.opt == candidate; }))
+      result.push_back(std::string("-") + candidate->id);
   }
   return result;
 }
@@ -1757,12 +1756,8 @@ void enforce_cross_group_mutex() {
   for (const MutuallyExclusiveOptions &set : MUTUALLY_EXCLUSIVE_OPTIONS) {
     std::vector<std::string> specified;
     for (const auto &id : set) {
-      for (const ParsedOption &parsed : option) {
-        if (parsed.opt->is(id)) {
-          specified.push_back(std::string("-") + id);
-          break;
-        }
-      }
+      if (std::any_of(option.begin(), option.end(), [&id](const ParsedOption &parsed) { return parsed.opt->is(id); }))
+        specified.push_back(std::string("-") + id);
     }
     if (specified.size() > 1)
       throw Exception("the options " + join(specified, ", ") + " are mutually exclusive; at most one may be specified");

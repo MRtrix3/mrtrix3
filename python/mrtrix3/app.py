@@ -725,10 +725,8 @@ class Parser: # pylint: disable=too-many-public-methods
       if not self.choice_aliases:
         return None
       lowered = token.lower()
-      for alias, canonical in self.choice_aliases:
-        if alias == lowered:
-          return canonical
-      return None
+      # Search for the matching alias entry and return its canonical choice (mirrors std::find_if).
+      return next((canonical for alias, canonical in self.choice_aliases if alias == lowered), None)
 
   # A fixed-arity group of individually-typed scalar Arguments, consumed as one logical, permutable
   #   command-line argument (one token per element), mirroring the C++ ArgumentTuple
@@ -1880,9 +1878,9 @@ class Parser: # pylint: disable=too-many-public-methods
     if len(candidates) == 1:
       return candidates[0]
     # An exact match of the canonical name or of any alias wins over a longer partial match.
-    for candidate in candidates:
-      if candidate.matches_exact(root):
-        return candidate
+    exact = next((candidate for candidate in candidates if candidate.matches_exact(root)), None)
+    if exact is not None:
+      return exact
     first_name = candidates[0].name
     if all(candidate.name == first_name for candidate in candidates):
       return candidates[0]
