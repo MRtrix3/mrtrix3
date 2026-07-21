@@ -77,6 +77,17 @@ _MRTRIX3_CORE_REFERENCE = 'Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, 
 MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. \
 NeuroImage, 2019, 202, 116137'
 
+# The deepest option-group nesting that can still be rendered as a heading in *every* documentation
+#   format. Markdown headings run out at level six: a top-level group is "####", so its sub-groups
+#   reach "#####" (depth 1) and "######" (depth 2) — depth 2 is the last available heading.
+#   reStructuredText offers further underline characters, but the two formats are deliberately kept
+#   parallel (this mirrors the C++ front-end exactly), so the shared limit is the Markdown one.
+_MAX_HEADING_GROUP_DEPTH = 2
+# Beyond the heading limit, two further nesting levels are conveyed with emphasised text in place of
+#   a heading (depth 3 = bold, depth 4 = bold-italic); past that no depth cue remains and the nesting
+#   is rejected.
+_MAX_AUGMENTED_GROUP_DEPTH = _MAX_HEADING_GROUP_DEPTH + 2
+
 
 
 _SIGNALS = { 'SIGALRM': 'Timer expiration',
@@ -878,6 +889,15 @@ class Parser: # pylint: disable=too-many-public-methods
       result = list(self.options)
       for subgroup in self.subgroups:
         result.extend(subgroup.all_options())
+      return result
+    # The greatest nesting depth of any sub-group beneath this group (0 if it has no sub-groups):
+    #   a direct child is depth 1, a grandchild depth 2, etc. Used by the documentation exporters
+    #   to decide whether the deepest groups still fit the finite heading capacity of the Markdown
+    #   / reStructuredText formats (mirrors the C++ OptionGroup::max_subgroup_depth()).
+    def max_subgroup_depth(self):
+      result = 0
+      for subgroup in self.subgroups:
+        result = max(result, 1 + subgroup.max_subgroup_depth())
       return result
     # Collective-constraint builder methods (mirror the C++ OptionGroup builders). Each sets
     #   this group's constraint and returns the group, so an author can parenthesise the group
@@ -1760,6 +1780,25 @@ class Parser: # pylint: disable=too-many-public-methods
     return [group for group in groups if not group.is_standard] \
          + [group for group in groups if group.is_standard]
 
+  # The greatest option-group nesting depth across all of this command's option groups.
+  def _options_nesting_depth(self):
+    return max(group.max_subgroup_depth() for group in self._option_groups)
+
+  # Warn when option-group nesting reaches the emphasis-rendered depth, and raise when it exceeds
+  #   even the augmented depth. Invoked by the Markdown and reStructuredText exporters (the
+  #   depth-limited formats) before any output is produced. Kept identical, wording included, to
+  #   the C++ front-end (cpp/core/app.cpp check_options_nesting_depth()).
+  def _check_options_nesting_depth(self):
+    depth = self._options_nesting_depth()
+    if depth > _MAX_AUGMENTED_GROUP_DEPTH:
+      raise MRtrixError(f'command "{self.prog}" nests option groups {depth} levels deep, '
+                        f'exceeding the maximum supported documentation depth of {_MAX_AUGMENTED_GROUP_DEPTH}; '
+                        f'reduce the option-group nesting')
+    if depth > _MAX_HEADING_GROUP_DEPTH:
+      warn(f'command "{self.prog}" nests option groups {depth} levels deep, '
+           f'beyond the maximum heading depth ({_MAX_HEADING_GROUP_DEPTH}) common to all documentation formats; '
+           f'groups deeper than that are rendered with emphasised text instead of headings')
+
   @staticmethod
   def _without_leading_dashes(token):
     index = 0
@@ -2446,6 +2485,7 @@ class Parser: # pylint: disable=too-many-public-methods
     if self._subparsers is not None and len(sys.argv) >= 3 and sys.argv[-2] in self._subparsers.choices:
       self._subparsers.choices[sys.argv[-2]].print_usage_markdown()
       return
+    self._check_options_nesting_depth()
     text = '## Synopsis\n\n'
     text += f'{self._synopsis}\n\n'
     text += '## Usage\n\n'
@@ -2495,11 +2535,20 @@ class Parser: # pylint: disable=too-many-public-methods
 
     # A nested child group renders as a deeper Markdown heading (one extra '#' per level of
     #   depth), then its own options, then recursively its own child groups. "depth" is 0 for
-    #   a top-level group's sub-groups, i.e. heading level "#####".
+    #   a top-level group's sub-groups, i.e. heading level "#####". Once the heading level would
+    #   exceed Markdown's maximum of six '#', the title degrades to emphasised text conveying
+    #   further depth: level 7 -> bold, level 8 -> bold-italic (_check_options_nesting_depth()
+    #   has already rejected anything deeper).
     def print_subgroups(group, depth):
       subgroup_text = ''
       for subgroup in group.subgroups:
-        subgroup_text += f'{"#" * (5 + depth)} {subgroup.name}\n\n'
+        heading_level = 5 + depth
+        if heading_level <= 6:
+          subgroup_text += f'{"#" * heading_level} {subgroup.name}\n\n'
+        elif heading_level == 7:
+          subgroup_text += f'**{subgroup.name}**\n\n'
+        else:
+          subgroup_text += f'***{subgroup.name}***\n\n'
         subgroup_text += print_group_options(subgroup)
         subgroup_text += print_subgroups(subgroup, depth + 1)
       return subgroup_text
@@ -2540,6 +2589,7 @@ class Parser: # pylint: disable=too-many-public-methods
     if self._subparsers is not None and len(sys.argv) >= 3 and sys.argv[-2] in self._subparsers.choices:
       self._subparsers.choices[sys.argv[-2]].print_usage_rst()
       return
+    self._check_options_nesting_depth()
     text = f'.. _{self.prog.replace(" ", "_")}:\n\n'
     text += f'{self.prog}\n'
     text += f'{"="*len(self.prog)}\n\n'
@@ -2610,17 +2660,26 @@ class Parser: # pylint: disable=too-many-public-methods
       return group_text
 
     # A nested child group descends one further RST heading level per depth, its underline
-    #   character chosen so Sphinx infers the correct nesting: depth 0 -> '"', 1 -> "'",
-    #   2+ -> '~' ("depth" being 0 for a top-level group's sub-groups). Own options first,
-    #   then recursively the child's own sub-groups.
+    #   character chosen so Sphinx infers the correct nesting: depth 0 -> '"', 1 -> "'"
+    #   ("depth" being 0 for a top-level group's sub-groups). The heading capacity is capped at
+    #   the shared limit (_MAX_HEADING_GROUP_DEPTH) to stay parallel with Markdown; deeper groups
+    #   degrade to emphasised text: depth 2 -> strong (bold), depth 3 -> emphasis. reStructuredText
+    #   forbids nested inline markup, so bold-italic cannot be a single run; the two augmented
+    #   levels use the two primitive inline styles instead. Anything deeper is rejected before
+    #   rendering. Own options first, then recursively the child's own sub-groups.
     def subgroup_underline(depth):
-      return '"\'~'[min(depth, 2)]
+      return '"\''[depth]
     def print_subgroups(group, depth):
       subgroup_text = ''
       for subgroup in group.subgroups:
         subgroup_text += '\n'
-        subgroup_text += f'{subgroup.name}\n'
-        subgroup_text += f'{subgroup_underline(depth) * len(subgroup.name)}\n'
+        if depth < _MAX_HEADING_GROUP_DEPTH:
+          subgroup_text += f'{subgroup.name}\n'
+          subgroup_text += f'{subgroup_underline(depth) * len(subgroup.name)}\n'
+        elif depth == _MAX_HEADING_GROUP_DEPTH:
+          subgroup_text += f'**{subgroup.name}**\n'
+        else:
+          subgroup_text += f'*{subgroup.name}*\n'
         subgroup_text += print_group_options(subgroup)
         subgroup_text += print_subgroups(subgroup, depth + 1)
       return subgroup_text

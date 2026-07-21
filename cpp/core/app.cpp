@@ -855,7 +855,48 @@ std::string full_usage() {
   return s;
 }
 
+namespace {
+
+// The deepest option-group nesting that can still be rendered as a heading in *every* documentation
+//   format. Markdown headings run out at level six: a top-level group is "####", so its sub-groups
+//   reach "#####" (depth 1) and "######" (depth 2) — depth 2 is the last available heading.
+//   reStructuredText offers further underline characters, but the two formats are deliberately kept
+//   parallel (Python mirrors this exactly), so the shared limit is the Markdown one: depth 2.
+constexpr size_t max_heading_group_depth = 2;
+// Beyond the heading limit, two further nesting levels are conveyed with emphasised text in place of
+//   a heading (depth 3 = bold, depth 4 = bold-italic); past that no depth cue remains and the
+//   nesting is rejected.
+constexpr size_t max_augmented_group_depth = max_heading_group_depth + 2;
+
+//! the greatest option-group nesting depth across this command's option groups (0 == no sub-groups)
+size_t options_nesting_depth() {
+  size_t depth = _standard_options.max_subgroup_depth();
+  for (const auto &og : OPTIONS)
+    depth = std::max(depth, og.max_subgroup_depth());
+  return depth;
+}
+
+//! warn when option-group nesting reaches emphasis-rendered depth; throw when it exceeds all cues
+/*! Invoked by the Markdown and reStructuredText exporters (the depth-limited formats) before any
+ *  output is produced. Kept identical, wording included, to the Python front-end. */
+void check_options_nesting_depth() {
+  const size_t depth = options_nesting_depth();
+  if (depth > max_augmented_group_depth)
+    throw Exception(std::string("command \"") + NAME + "\" nests option groups " + str(depth) +
+                    " levels deep, exceeding the maximum supported documentation depth of " +
+                    str(max_augmented_group_depth) + "; reduce the option-group nesting");
+  if (depth > max_heading_group_depth) {
+    WARN(std::string("command \"") + NAME + "\" nests option groups " + str(depth) +
+         " levels deep, beyond the maximum heading depth (" + str(max_heading_group_depth) +
+         ") common to all documentation formats; " +
+         "groups deeper than that are rendered with emphasised text instead of headings");
+  }
+}
+
+} // namespace
+
 std::string markdown_usage() {
+  check_options_nesting_depth();
   /*
     help_head (format)
     + help_synopsis (format)
@@ -951,10 +992,19 @@ std::string markdown_usage() {
 
   // A nested child group is rendered as a deeper Markdown heading (one extra '#' per level),
   //   its own options, then recursively its own child groups. Depth 0 == a top-level group's
-  //   sub-group, i.e. heading level "#####".
+  //   sub-group, i.e. heading level "#####". Once the heading level would exceed Markdown's
+  //   maximum of six '#', the title degrades to emphasised text conveying further depth:
+  //   level 7 -> bold, level 8 -> bold-italic (check_options_nesting_depth() has already
+  //   rejected anything deeper).
   std::function<void(const OptionGroup &, size_t)> render_subgroups = [&](const OptionGroup &group, size_t depth) {
     for (const auto &subgroup : group.subgroups) {
-      s += std::string(5 + depth, '#') + " " + subgroup.name + "\n\n";
+      const size_t heading_level = 5 + depth;
+      if (heading_level <= 6)
+        s += std::string(heading_level, '#') + " " + subgroup.name + "\n\n";
+      else if (heading_level == 7)
+        s += std::string("**") + subgroup.name + "**\n\n";
+      else
+        s += std::string("***") + subgroup.name + "***\n\n";
       for (size_t o = 0; o < subgroup.size(); ++o)
         s += format_option(subgroup[o]);
       render_subgroups(subgroup, depth + 1);
@@ -1002,6 +1052,7 @@ std::string markdown_usage() {
 }
 
 std::string restructured_text_usage() {
+  check_options_nesting_depth();
   /*
     help_head (format)
     + help_synopsis (format)
@@ -1134,15 +1185,24 @@ std::string restructured_text_usage() {
   };
 
   // Top-level option groups are underlined with '^' (a sub-section of "Options"); a nested
-  //   child group descends one further RST heading level per depth. The underline character
-  //   is chosen by depth so Sphinx infers the correct nesting.
+  //   child group descends one further RST heading level per depth (depth 0 -> '"', 1 -> "'")
+  //   so Sphinx infers the correct nesting. The heading capacity is capped at the shared limit
+  //   (see max_heading_group_depth) to stay parallel with Markdown; deeper groups degrade to
+  //   emphasised text: depth 2 -> strong (bold), depth 3 -> emphasis. reStructuredText forbids
+  //   nested inline markup, so bold-italic cannot be a single run; the two augmented levels use
+  //   the two primitive inline styles instead. Anything deeper is rejected before rendering.
   auto subgroup_underline = [](size_t depth) -> char {
-    static const std::array<char, 3> chars = {'"', '\'', '~'};
-    return chars[std::min<size_t>(depth, chars.size() - 1)];
+    static const std::array<char, 2> chars = {'"', '\''};
+    return chars[depth];
   };
   std::function<void(const OptionGroup &, size_t)> render_subgroups = [&](const OptionGroup &group, size_t depth) {
     for (const auto &subgroup : group.subgroups) {
-      s += subgroup.name + std::string("\n") + std::string(subgroup.name.size(), subgroup_underline(depth)) + "\n\n";
+      if (depth < max_heading_group_depth)
+        s += subgroup.name + std::string("\n") + std::string(subgroup.name.size(), subgroup_underline(depth)) + "\n\n";
+      else if (depth == max_heading_group_depth)
+        s += std::string("**") + subgroup.name + "**\n\n";
+      else
+        s += std::string("*") + subgroup.name + "*\n\n";
       for (size_t o = 0; o < subgroup.size(); ++o)
         s += format_option(subgroup[o]);
       render_subgroups(subgroup, depth + 1);

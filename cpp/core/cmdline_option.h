@@ -903,6 +903,17 @@ public:
     return false;
   }
 
+  //! the greatest nesting depth of any sub-group beneath this group (0 if it has no sub-groups)
+  /*! A direct child sub-group is depth 1, a grandchild depth 2, etc. Used by the documentation
+   * exporters to decide whether the deepest groups still fit within the finite heading capacity
+   * of the Markdown / reStructuredText formats, or must degrade to emphasis-based rendering. */
+  size_t max_subgroup_depth() const {
+    size_t result = 0;
+    for (const auto &subgroup : subgroups)
+      result = std::max(result, size_t(1) + subgroup.max_subgroup_depth());
+    return result;
+  }
+
   //! the section heading for this group; depth controls the indentation / heading level
   std::string header(const bool format, const size_t depth = 0) const;
   //! this group's options followed by its sub-groups (each headed and rendered recursively)
