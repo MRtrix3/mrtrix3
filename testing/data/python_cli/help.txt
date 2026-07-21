@@ -8,6 +8,48 @@ UUSSAAGGEE
 
      _t_e_s_t_i_n_g___p_y_t_h_o_n___c_l_i [ options ]
 
+BBuuiilltt--iinn  ttyyppeess
+
+  _-_f_l_a_g
+     A binary flag
+
+  _-_s_t_r_i_n_g___i_m_p_l_i_c_i_t string
+     A built-in string (implicit)
+
+  _-_s_t_r_i_n_g___e_x_p_l_i_c_i_t str
+     A built-in string (explicit)
+
+  _-_c_h_o_i_c_e choice
+     A selection of choices (choices: One, Two, Three) (default: One)
+
+  _-_i_n_t___b_u_i_l_t_i_n int
+     An integer; built-in type
+
+  _-_f_l_o_a_t___b_u_i_l_t_i_n float
+     A floating-point; built-in type
+
+CCoommpplleexx  iinntteerrffaacceess;;  nnaarrggss,,  mmeettaavvaarr,,  eettcc..
+
+  _-_n_a_r_g_s___t_w_o string string
+     A command-line option with nargs=2, no metavar
+
+  _-_m_e_t_a_v_a_r___o_n_e metavar
+     A command-line option with nargs=1 and metavar="metavar"
+
+  _-_m_e_t_a_v_a_r___t_w_o metavar metavar
+     A command-line option with nargs=2 and metavar="metavar"
+
+  _-_m_e_t_a_v_a_r___t_u_p_l_e metavar_one metavar_two
+     A command-line option with nargs=2 and metavar=("metavar_one",
+     "metavar_two")
+
+  _-_a_p_p_e_n_d string  (multiple uses permitted)
+     A command-line option with "append" action (can be specified multiple
+     times)
+
+  _-_u_n_u_s_e_d
+     An option deliberately left unread to exercise unused-option tracking
+
 CCuussttoomm  ttyyppeess
 
   _-_b_o_o_l value
@@ -37,6 +79,18 @@ CCuussttoomm  ttyyppeess
   _-_f_l_o_a_t___s_e_q values
      A comma-separated list of floating-points
 
+  _-_l_m_a_x value
+     A spherical-harmonic degree; non-negative even integer (minimum: 0) (must
+     be even)
+
+  _-_l_m_a_x___b_o_u_n_d_e_d value
+     A spherical-harmonic degree with an explicit upper bound (range: 0 to 8)
+     (must be even)
+
+  _-_l_m_a_x___s_e_q values
+     A comma-separated sequence of spherical-harmonic degrees (values must be
+     non-negative and even)
+
   _-_d_i_r___i_n directory
      An input directory
 
@@ -63,59 +117,6 @@ CCuussttoomm  ttyyppeess
 
   _-_c_u_s_t_o_m custom
      An option with custom type
-
-CCoommpplleexx  iinntteerrffaacceess;;  nnaarrggss,,  mmeettaavvaarr,,  eettcc..
-
-  _-_n_a_r_g_s___t_w_o string string
-     A command-line option with nargs=2, no metavar
-
-  _-_m_e_t_a_v_a_r___o_n_e metavar
-     A command-line option with nargs=1 and metavar="metavar"
-
-  _-_m_e_t_a_v_a_r___t_w_o metavar metavar
-     A command-line option with nargs=2 and metavar="metavar"
-
-  _-_m_e_t_a_v_a_r___t_u_p_l_e metavar_one metavar_two
-     A command-line option with nargs=2 and metavar=("metavar_one",
-     "metavar_two")
-
-  _-_a_p_p_e_n_d string  (multiple uses permitted)
-     A command-line option with "append" action (can be specified multiple
-     times)
-
-BBuuiilltt--iinn  ttyyppeess
-
-  _-_f_l_a_g
-     A binary flag
-
-  _-_s_t_r_i_n_g___i_m_p_l_i_c_i_t string
-     A built-in string (implicit)
-
-  _-_s_t_r_i_n_g___e_x_p_l_i_c_i_t str
-     A built-in string (explicit)
-
-  _-_c_h_o_i_c_e choice
-     A selection of choices (choices: One, Two, Three) (default: One)
-
-  _-_i_n_t___b_u_i_l_t_i_n int
-     An integer; built-in type
-
-  _-_f_l_o_a_t___b_u_i_l_t_i_n float
-     A floating-point; built-in type
-
-AAddddiittiioonnaall  ssttaannddaarrdd  ooppttiioonnss  ffoorr  PPyytthhoonn  ssccrriippttss
-
-  _-_n_o_c_l_e_a_n_u_p
-     do not delete intermediate files during script execution, and do not delete
-     scratch directory at script completion.
-
-  _-_s_c_r_a_t_c_h /path/to/scratch/
-     manually specify an existing directory in which to generate the scratch
-     directory.
-
-  _-_c_o_n_t_i_n_u_e ScratchDir LastFile
-     continue the script from a previous execution; must provide the scratch
-     directory path, and the name of the last successfully-generated file.
 
 SSttaannddaarrdd  ooppttiioonnss
 
@@ -147,6 +148,20 @@ SSttaannddaarrdd  ooppttiioonnss
 
   _-_d_e_b_u_g
      display debugging messages & debug input data.
+
+AAddddiittiioonnaall  ssttaannddaarrdd  ooppttiioonnss  ffoorr  PPyytthhoonn  ssccrriippttss
+
+  _-_n_o_c_l_e_a_n_u_p
+     do not delete intermediate files during script execution, and do not delete
+     scratch directory at script completion.
+
+  _-_s_c_r_a_t_c_h /path/to/scratch/
+     manually specify an existing directory in which to generate the scratch
+     directory.
+
+  _-_c_o_n_t_i_n_u_e ScratchDir LastFile
+     continue the script from a previous execution; must provide the scratch
+     directory path, and the name of the last successfully-generated file.
 
 AAUUTTHHOORR
      Robert E. Smith (robert.smith@florey.edu.au)

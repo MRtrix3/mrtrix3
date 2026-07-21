@@ -77,6 +77,10 @@ def usage(cmdline): #pylint: disable=unused-variable
   complex_types.add_argument('-append',
                              action='append',
                              help='A command-line option with "append" action (can be specified multiple times)')
+  complex_types.add_argument('-unused',
+                             action='store_true',
+                             default=None,
+                             help='An option deliberately left unread to exercise unused-option tracking')
 
   custom = cmdline.add_argument_group('Custom types')
   custom.add_argument('-bool',
@@ -106,6 +110,17 @@ def usage(cmdline): #pylint: disable=unused-variable
   custom.add_argument('-float_seq',
                       type=app.Parser.SequenceFloat(),
                       help='A comma-separated list of floating-points')
+  # Dedicated spherical-harmonic degree types (mirrors the C++ type_lmax / type_lmax_sequence):
+  #   a scalar lmax (non-negative even integer) and a comma-separated vector (each non-negative even).
+  custom.add_argument('-lmax',
+                      type=app.Parser.Lmax(),
+                      help='A spherical-harmonic degree; non-negative even integer')
+  custom.add_argument('-lmax_bounded',
+                      type=app.Parser.Lmax(0, 8),
+                      help='A spherical-harmonic degree with an explicit upper bound')
+  custom.add_argument('-lmax_seq',
+                      type=app.Parser.SequenceLmax(),
+                      help='A comma-separated sequence of spherical-harmonic degrees')
   custom.add_argument('-dir_in',
                       type=app.Parser.DirectoryIn(),
                       help='An input directory')
@@ -138,6 +153,14 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   for key in vars(app.ARGS):
+    # Skip internal parser bookkeeping (e.g. the unused-option access tracker) exposed on the
+    #   ARGS namespace under an underscore-prefixed key; only user-facing arguments are reported.
+    if key.startswith('_'):
+      continue
+    # "-unused" is intentionally never read, so that specifying it exercises the end-of-run
+    #   unused-option advisory (the command body reading it would mark it as accessed).
+    if key == 'unused':
+      continue
     value = getattr(app.ARGS, key)
     if value is not None:
       app.console(f'{key}: {repr(value)}')

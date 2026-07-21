@@ -8,6 +8,34 @@ Test operation of the Python command-line interface
 
 ## Options
 
+#### Built-in types
+
++ **--flag**<br>A binary flag
+
++ **--string_implicit string**<br>A built-in string (implicit)
+
++ **--string_explicit str**<br>A built-in string (explicit)
+
++ **--choice choice**<br>A selection of choices (choices: One, Two, Three) (default: One)
+
++ **--int_builtin int**<br>An integer; built-in type
+
++ **--float_builtin float**<br>A floating-point; built-in type
+
+#### Complex interfaces; nargs, metavar, etc.
+
++ **--nargs_two string string**<br>A command-line option with nargs=2, no metavar
+
++ **--metavar_one metavar**<br>A command-line option with nargs=1 and metavar="metavar"
+
++ **--metavar_two metavar metavar**<br>A command-line option with nargs=2 and metavar="metavar"
+
++ **--metavar_tuple metavar_one metavar_two**<br>A command-line option with nargs=2 and metavar=("metavar_one", "metavar_two")
+
++ **--append string**  *(multiple uses permitted)*<br>A command-line option with "append" action (can be specified multiple times)
+
++ **--unused**<br>An option deliberately left unread to exercise unused-option tracking
+
 #### Custom types
 
 + **--bool value**<br>A boolean input
@@ -28,6 +56,12 @@ Test operation of the Python command-line interface
 
 + **--float_seq values**<br>A comma-separated list of floating-points
 
++ **--lmax value**<br>A spherical-harmonic degree; non-negative even integer (minimum: 0) (must be even)
+
++ **--lmax_bounded value**<br>A spherical-harmonic degree with an explicit upper bound (range: 0 to 8) (must be even)
+
++ **--lmax_seq values**<br>A comma-separated sequence of spherical-harmonic degrees (values must be non-negative and even)
+
 + **--dir_in directory**<br>An input directory
 
 + **--dir_out directory**<br>An output directory
@@ -45,40 +79,6 @@ Test operation of the Python command-line interface
 + **--tracks_out trackfile**<br>An output tractogram
 
 + **--custom custom**<br>An option with custom type
-
-#### Complex interfaces; nargs, metavar, etc.
-
-+ **--nargs_two string string**<br>A command-line option with nargs=2, no metavar
-
-+ **--metavar_one metavar**<br>A command-line option with nargs=1 and metavar="metavar"
-
-+ **--metavar_two metavar metavar**<br>A command-line option with nargs=2 and metavar="metavar"
-
-+ **--metavar_tuple metavar_one metavar_two**<br>A command-line option with nargs=2 and metavar=("metavar_one", "metavar_two")
-
-+ **--append string**  *(multiple uses permitted)*<br>A command-line option with "append" action (can be specified multiple times)
-
-#### Built-in types
-
-+ **--flag**<br>A binary flag
-
-+ **--string_implicit string**<br>A built-in string (implicit)
-
-+ **--string_explicit str**<br>A built-in string (explicit)
-
-+ **--choice choice**<br>A selection of choices (choices: One, Two, Three) (default: One)
-
-+ **--int_builtin int**<br>An integer; built-in type
-
-+ **--float_builtin float**<br>A floating-point; built-in type
-
-#### Additional standard options for Python scripts
-
-+ **--nocleanup**<br>do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
-
-+ **--scratch /path/to/scratch/**<br>manually specify an existing directory in which to generate the scratch directory.
-
-+ **--continue ScratchDir LastFile**<br>continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 #### Standard options
 
@@ -99,6 +99,14 @@ Test operation of the Python command-line interface
 + **--quiet**<br>do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 + **--debug**<br>display debugging messages & debug input data.
+
+#### Additional standard options for Python scripts
+
++ **--nocleanup**<br>do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
++ **--scratch /path/to/scratch/**<br>manually specify an existing directory in which to generate the scratch directory.
+
++ **--continue ScratchDir LastFile**<br>continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 ## References
 

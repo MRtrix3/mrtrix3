@@ -17,21 +17,27 @@ Verify operation of the C++ command-line interface & parser
 
 + **-int_unbound value**<br>an integer input (unbounded)
 
-+ **-int_nonneg value**<br>a non-negative integer
++ **-int_nonneg value**<br>a non-negative integer (minimum: 0)
 
-+ **-int_bound value**<br>a bound integer
++ **-int_bound value**<br>a bound integer (range: 0 to 100) (default: 50)
 
 + **-float_unbound value**<br>a floating-point number (unbounded)
 
-+ **-float_nonneg value**<br>a non-negative floating-point number
++ **-float_nonneg value**<br>a non-negative floating-point number (minimum: 0)
 
-+ **-float_bound value**<br>a bound floating-point number
++ **-float_bound value**<br>a bound floating-point number (range: 0 to 1) (default: 0.5)
 
 + **-int_seq values**<br>a comma-separated sequence of integers
 
 + **-float_seq values**<br>a comma-separated sequence of floating-point numbers
 
-+ **-choice item**<br>a choice from a set of options
++ **-choice item**<br>a choice from a set of options (choices: one, two, three) (default: one)
+
++ **-lmax value**<br>a spherical-harmonic degree (non-negative even integer) (minimum: 0) (must be even)
+
++ **-lmax_bound value**<br>a spherical-harmonic degree with an explicit upper bound (range: 0 to 8) (must be even)
+
++ **-lmax_seq values**<br>a comma-separated sequence of spherical-harmonic degrees (values must be non-negative and even)
 
 + **-file_in input**<br>an input file
 
@@ -45,29 +51,47 @@ Verify operation of the C++ command-line interface & parser
 
 + **-tracks_out output**<br>an output tractogram
 
-+ **-any spec**<br>an argument that could accept any of the various forms
++ **-any spec**<br>an argument that could accept any of the various forms (choices: one, two, three)
 
 + **-nargs_two first second**<br>A command-line option that accepts two arguments
 
++ **-tuple_desc key value**<br>A command-line option whose tuple fields carry descriptions
+
+    - *key*: the key field
+    - *value*: the value field
 + **-multiple spec**  *(multiple uses permitted)*<br>A command-line option that can be specified multiple times
+
++ **-unused**<br>An option deliberately left unread to exercise unused-option tracking
+
+#### Grouped options demonstrating hierarchy
+
++ **-group_direct**<br>An option located directly within the parent group
+
+##### Mutually exclusive modes
+
++ **-mode_a**<br>The first mutually-exclusive mode
+
++ **-mode_b**<br>The second mutually-exclusive mode
 
 #### Standard options
 
-+ **-info**<br>display information messages.
-
-+ **-quiet**<br>do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-
-+ **-debug**<br>display debugging messages & debug input data.
-
 + **-force**<br>force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
-+ **-nthreads number**<br>use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
++ **-nthreads number**<br>use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 + **-config key value**  *(multiple uses permitted)*<br>temporarily set the value of an MRtrix config file entry.
 
 + **-help**<br>display this information page and exit.
 
 + **-version**<br>display version information and exit.
+
+##### Verbosity options
+
++ **-info**<br>display information messages.
+
++ **-quiet**<br>do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+
++ **-debug**<br>display debugging messages & debug input data.
 
 ## References
 

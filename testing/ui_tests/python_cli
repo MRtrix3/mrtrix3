@@ -121,6 +121,29 @@ testing_python_cli -int_bounded 0k 2>&1 | grep "int_bounded: 0"
 ! testing_python_cli -int_seq 5k
 testing_python_cli -int_seq 1,2,3 2>&1 | grep "int_seq: \[1, 2, 3\]"
 
+# Dedicated lmax argument types (mirrors the C++ type_lmax / type_lmax_sequence): a scalar lmax
+#   must be a non-negative even integer; a vector lmax requires each element to be non-negative
+#   and even. A command-authored numeric bound is a separate check applied after the even/sign check.
+testing_python_cli -lmax 0 2>&1 | grep "lmax: 0"
+testing_python_cli -lmax 8 2>&1 | grep "lmax: 8"
+# An odd or negative scalar lmax reports the dedicated lmax error.
+! testing_python_cli -lmax 3
+! testing_python_cli -lmax -2
+# An even value that merely exceeds a command-specified bound is rejected by the range check.
+testing_python_cli -lmax_bounded 8 2>&1 | grep "lmax_bounded: 8"
+! testing_python_cli -lmax_bounded 10
+! testing_python_cli -lmax_bounded 7
+# Vector lmax: every element must be non-negative and even.
+testing_python_cli -lmax_seq 0,2,4 2>&1 | grep "lmax_seq: \[0, 2, 4\]"
+! testing_python_cli -lmax_seq 0,3
+! testing_python_cli -lmax_seq 2,-4
+
+# Unused-option tracking: an option specified but never read emits a single end-of-run advisory
+#   (the command still succeeds). "-unused" is deliberately left unread by the command body.
+testing_python_cli -unused 2>&1 | grep "was specified but had no effect"
+# An option that IS read by the command does not trigger the advisory.
+! ( testing_python_cli -flag 2>&1 | grep "had no effect" )
+
 # Verify correct parsing of option arguments that begin with a dash.
 testing_python_cli -int_unbound -123 2>&1 | grep "int_unbound: -123"
 ! testing_python_cli -int_unbound --1

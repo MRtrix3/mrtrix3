@@ -22,21 +22,27 @@ Options
 
 -  **-int_unbound value** an integer input (unbounded)
 
--  **-int_nonneg value** a non-negative integer
+-  **-int_nonneg value** a non-negative integer (minimum: 0)
 
--  **-int_bound value** a bound integer
+-  **-int_bound value** a bound integer (range: 0 to 100) (default: 50)
 
 -  **-float_unbound value** a floating-point number (unbounded)
 
--  **-float_nonneg value** a non-negative floating-point number
+-  **-float_nonneg value** a non-negative floating-point number (minimum: 0)
 
--  **-float_bound value** a bound floating-point number
+-  **-float_bound value** a bound floating-point number (range: 0 to 1) (default: 0.5)
 
 -  **-int_seq values** a comma-separated sequence of integers
 
 -  **-float_seq values** a comma-separated sequence of floating-point numbers
 
--  **-choice item** a choice from a set of options
+-  **-choice item** a choice from a set of options (choices: one, two, three) (default: one)
+
+-  **-lmax value** a spherical-harmonic degree (non-negative even integer) (minimum: 0) (must be even)
+
+-  **-lmax_bound value** a spherical-harmonic degree with an explicit upper bound (range: 0 to 8) (must be even)
+
+-  **-lmax_seq values** a comma-separated sequence of spherical-harmonic degrees (values must be non-negative and even)
 
 -  **-file_in input** an input file
 
@@ -50,30 +56,51 @@ Options
 
 -  **-tracks_out output** an output tractogram
 
--  **-any spec** an argument that could accept any of the various forms
+-  **-any spec** an argument that could accept any of the various forms (choices: one, two, three)
 
 -  **-nargs_two first second** A command-line option that accepts two arguments
 
+-  **-tuple_desc key value** A command-line option whose tuple fields carry descriptions |br|
+   *key*: the key field |br|
+   *value*: the value field
+
 -  **-multiple spec** *(multiple uses permitted)* A command-line option that can be specified multiple times
+
+-  **-unused** An option deliberately left unread to exercise unused-option tracking
+
+Grouped options demonstrating hierarchy
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-group_direct** An option located directly within the parent group
+
+Mutually exclusive modes
+""""""""""""""""""""""""
+
+-  **-mode_a** The first mutually-exclusive mode
+
+-  **-mode_b** The second mutually-exclusive mode
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
--  **-info** display information messages.
-
--  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-
--  **-debug** display debugging messages & debug input data.
-
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
 -  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
 -  **-version** display version information and exit.
+
+Verbosity options
+"""""""""""""""""
+
+-  **-info** display information messages.
+
+-  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+
+-  **-debug** display debugging messages & debug input data.
 
 References
 ^^^^^^^^^^

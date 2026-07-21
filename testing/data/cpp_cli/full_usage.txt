@@ -16,6 +16,7 @@ ARGUMENT value 0 0 INT 0 9223372036854775807
 OPTION int_bound 1 0
 a bound integer
 ARGUMENT value 0 0 INT 0 100
+(default: 50)
 OPTION float_unbound 1 0
 a floating-point number (unbounded)
 ARGUMENT value 0 0 FLOAT -inf inf
@@ -25,6 +26,7 @@ ARGUMENT value 0 0 FLOAT 0 inf
 OPTION float_bound 1 0
 a bound floating-point number
 ARGUMENT value 0 0 FLOAT 0 1
+(default: 0.5)
 OPTION int_seq 1 0
 a comma-separated sequence of integers
 ARGUMENT values 0 0 ISEQ
@@ -34,6 +36,16 @@ ARGUMENT values 0 0 FSEQ
 OPTION choice 1 0
 a choice from a set of options
 ARGUMENT item 0 0 CHOICE one two three
+(default: one)
+OPTION lmax 1 0
+a spherical-harmonic degree (non-negative even integer)
+ARGUMENT value 0 0 INT 0 9223372036854775807
+OPTION lmax_bound 1 0
+a spherical-harmonic degree with an explicit upper bound
+ARGUMENT value 0 0 INT 0 8
+OPTION lmax_seq 1 0
+a comma-separated sequence of spherical-harmonic degrees
+ARGUMENT values 0 0 ISEQ
 OPTION file_in 1 0
 an input file
 ARGUMENT input 0 0 FILEIN
@@ -59,15 +71,23 @@ OPTION nargs_two 1 0
 A command-line option that accepts two arguments
 ARGUMENT first 0 0 TEXT
 ARGUMENT second 0 0 TEXT
+OPTION tuple_desc 1 0
+A command-line option whose tuple fields carry descriptions
+ARGUMENT key 0 0 TEXT
+the key field
+ARGUMENT value 0 0 TEXT
+the value field
 OPTION multiple 1 1
 A command-line option that can be specified multiple times
 ARGUMENT spec 0 0 TEXT
-OPTION info 1 0
-display information messages.
-OPTION quiet 1 0
-do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-OPTION debug 1 0
-display debugging messages & debug input data.
+OPTION unused 1 0
+An option deliberately left unread to exercise unused-option tracking
+OPTION group_direct 1 0
+An option located directly within the parent group
+OPTION mode_a 1 0
+The first mutually-exclusive mode
+OPTION mode_b 1 0
+The second mutually-exclusive mode
 OPTION force 1 0
 force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 OPTION nthreads 1 0
@@ -81,3 +101,9 @@ OPTION help 1 0
 display this information page and exit.
 OPTION version 1 0
 display version information and exit.
+OPTION info 1 0
+display information messages.
+OPTION quiet 1 0
+do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+OPTION debug 1 0
+display debugging messages & debug input data.

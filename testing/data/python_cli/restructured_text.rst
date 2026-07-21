@@ -19,6 +19,36 @@ Usage
 Options
 -------
 
+Built-in types
+^^^^^^^^^^^^^^
+
+- **-flag** A binary flag
+
+- **-string_implicit string** A built-in string (implicit)
+
+- **-string_explicit str** A built-in string (explicit)
+
+- **-choice choice** A selection of choices (choices: One, Two, Three) (default: One)
+
+- **-int_builtin int** An integer; built-in type
+
+- **-float_builtin float** A floating-point; built-in type
+
+Complex interfaces; nargs, metavar, etc.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nargs_two string string** A command-line option with nargs=2, no metavar
+
+- **-metavar_one metavar** A command-line option with nargs=1 and metavar="metavar"
+
+- **-metavar_two metavar metavar** A command-line option with nargs=2 and metavar="metavar"
+
+- **-metavar_tuple metavar_one metavar_two** A command-line option with nargs=2 and metavar=("metavar_one", "metavar_two")
+
+- **-append string**  *(multiple uses permitted)* A command-line option with "append" action (can be specified multiple times)
+
+- **-unused** An option deliberately left unread to exercise unused-option tracking
+
 Custom types
 ^^^^^^^^^^^^
 
@@ -40,6 +70,12 @@ Custom types
 
 - **-float_seq values** A comma-separated list of floating-points
 
+- **-lmax value** A spherical-harmonic degree; non-negative even integer (minimum: 0) (must be even)
+
+- **-lmax_bounded value** A spherical-harmonic degree with an explicit upper bound (range: 0 to 8) (must be even)
+
+- **-lmax_seq values** A comma-separated sequence of spherical-harmonic degrees (values must be non-negative and even)
+
 - **-dir_in directory** An input directory
 
 - **-dir_out directory** An output directory
@@ -57,43 +93,6 @@ Custom types
 - **-tracks_out trackfile** An output tractogram
 
 - **-custom custom** An option with custom type
-
-Complex interfaces; nargs, metavar, etc.
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-nargs_two string string** A command-line option with nargs=2, no metavar
-
-- **-metavar_one metavar** A command-line option with nargs=1 and metavar="metavar"
-
-- **-metavar_two metavar metavar** A command-line option with nargs=2 and metavar="metavar"
-
-- **-metavar_tuple metavar_one metavar_two** A command-line option with nargs=2 and metavar=("metavar_one", "metavar_two")
-
-- **-append string**  *(multiple uses permitted)* A command-line option with "append" action (can be specified multiple times)
-
-Built-in types
-^^^^^^^^^^^^^^
-
-- **-flag** A binary flag
-
-- **-string_implicit string** A built-in string (implicit)
-
-- **-string_explicit str** A built-in string (explicit)
-
-- **-choice choice** A selection of choices (choices: One, Two, Three) (default: One)
-
-- **-int_builtin int** An integer; built-in type
-
-- **-float_builtin float** A floating-point; built-in type
-
-Additional standard options for Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
-
-- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
-
-- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -116,6 +115,15 @@ Verbosity options
 - **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 - **-debug** display debugging messages & debug input data.
+
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
+
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 References
 ^^^^^^^^^^

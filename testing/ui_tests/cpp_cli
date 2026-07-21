@@ -141,6 +141,97 @@ testing_cpp_cli -bool 2
 ! testing_cpp_cli -int_seq Not,An,Int,Seq
 ! testing_cpp_cli -float_seq Not,A,Float,Seq
 
+# Multi-spelling option / choice-value aliases (spelling-design.md; the Python parser mirrors this).
+# The canonical "-choice" option also answers to the alias "-choose", and the choice value "one"
+#   additionally accepts the alias spelling "uno"; both resolve to the canonical value that is the
+#   sole spelling shown in help and every machine-readable export.
+# Canonical spelling of both the option and the choice value.
+testing_cpp_cli -choice one 2>&1 | grep "choice: one"
+# Full alias spelling of the option resolves to the canonical option.
+testing_cpp_cli -choose one 2>&1 | grep "choice: one"
+# A prefix shared by the canonical name and the alias collapses to the one option (no spurious
+#   "several matches"): "-cho" prefixes both "choice" and "choose", which are the same option.
+testing_cpp_cli -cho one 2>&1 | grep "choice: one"
+# A prefix specific to the canonical name, and one specific to the alias, each resolve.
+testing_cpp_cli -choic one 2>&1 | grep "choice: one"
+testing_cpp_cli -choos one 2>&1 | grep "choice: one"
+# The choice-value alias "uno" is canonicalised to "one" at parse time, via either option spelling.
+testing_cpp_cli -choice uno 2>&1 | grep "choice: one"
+testing_cpp_cli -choose uno 2>&1 | grep "choice: one"
+# An unknown choice value is still rejected (the alias adds a spelling, it does not relax validation).
+! testing_cpp_cli -choice NotAChoice
+
+# Integer suffix multipliers on scalar integer types (ParsedArgument::as_int(); decimal
+#   multipliers k/K=1e3, m/M=1e6, b/B=1e9, t/T=1e12).
+# Each multiplier, upper and lower case.
+testing_cpp_cli -int_unbound 5k 2>&1 | grep "int_unbound: 5000"
+testing_cpp_cli -int_unbound 5K 2>&1 | grep "int_unbound: 5000"
+testing_cpp_cli -int_unbound 3m 2>&1 | grep "int_unbound: 3000000"
+testing_cpp_cli -int_unbound 3M 2>&1 | grep "int_unbound: 3000000"
+# "b"/"B" is a decimal billion (1e9), NOT a bytes multiplier.
+testing_cpp_cli -int_unbound 2b 2>&1 | grep "int_unbound: 2000000000"
+testing_cpp_cli -int_unbound 2B 2>&1 | grep "int_unbound: 2000000000"
+testing_cpp_cli -int_unbound 1t 2>&1 | grep "int_unbound: 1000000000000"
+testing_cpp_cli -int_unbound 1T 2>&1 | grep "int_unbound: 1000000000000"
+# A fractional prefix is multiplied then rounded to the nearest integer.
+testing_cpp_cli -int_unbound 1.5k 2>&1 | grep "int_unbound: 1500"
+testing_cpp_cli -int_unbound 3.5b 2>&1 | grep "int_unbound: 3500000000"
+# A single mid-string "e"/"E" selects scientific-notation parsing, rounded to integer.
+testing_cpp_cli -int_unbound 1e3 2>&1 | grep "int_unbound: 1000"
+testing_cpp_cli -int_unbound 1e10 2>&1 | grep "int_unbound: 10000000000"
+# The range check is applied AFTER multiplication (-int_bound permits 0 to 100):
+#   "0k" multiplies to an in-range 0, but "1k" multiplies to an out-of-range 1000.
+testing_cpp_cli -int_bound 0k 2>&1 | grep "int_bound: 0"
+! testing_cpp_cli -int_bound 1k
+# Erroneous suffixes are rejected: an unknown postfix, a trailing non-suffix, or two letters.
+! testing_cpp_cli -int_unbound 5x
+! testing_cpp_cli -int_unbound 1k1
+! testing_cpp_cli -int_unbound 1e3k
+# Integer sequences deliberately do NOT apply multipliers (matches parse_ints()).
+! testing_cpp_cli -int_seq 5k
+
+# Dedicated lmax argument types: a scalar lmax must be a non-negative even integer; a vector lmax
+#   requires each element to be non-negative and even. Any command-authored numeric bound is a
+#   separate check applied AFTER the even/sign check (an even but out-of-range value reports the
+#   generic out-of-bounds error, not the lmax error).
+testing_cpp_cli -lmax 0 2>&1 | grep "lmax: 0"
+testing_cpp_cli -lmax 8 2>&1 | grep "lmax: 8"
+# An odd or negative scalar lmax reports the dedicated lmax error.
+! testing_cpp_cli -lmax 3
+! testing_cpp_cli -lmax -2
+# An even value that merely exceeds a command-specified bound reports the generic range error.
+testing_cpp_cli -lmax_bound 8 2>&1 | grep "lmax_bound: 8"
+! testing_cpp_cli -lmax_bound 10
+! testing_cpp_cli -lmax_bound 7
+# Vector lmax: every element must be non-negative and even.
+testing_cpp_cli -lmax_seq 0,2,4 2>&1 | grep "lmax_seq: \[0,2,4\]"
+! testing_cpp_cli -lmax_seq 0,3
+! testing_cpp_cli -lmax_seq 2,-4
+
+# Argument tuples: a multi-field option consumes exactly its field count and its fields are
+#   addressable by name. "-nargs_two" (no field descriptions) and "-tuple_desc" (described fields)
+#   both parse two tokens; too few tokens is an error.
+testing_cpp_cli -nargs_two first second 2>&1 | grep "nargs_two: \[first second\]"
+testing_cpp_cli -tuple_desc mykey myvalue 2>&1 | grep "tuple_desc: \[mykey myvalue\]"
+! testing_cpp_cli -tuple_desc onlyone
+
+# Parse-time group constraints: the nested "-mode_a"/"-mode_b" sub-group is mutually exclusive,
+#   so at most one may be specified. Neither, or exactly one, is valid; both is an error reported
+#   before any input file is accessed.
+testing_cpp_cli 2>&1
+testing_cpp_cli -mode_a 2>&1 | grep "mode_a option present"
+testing_cpp_cli -mode_b 2>&1 | grep "mode_b option present"
+! testing_cpp_cli -mode_a -mode_b
+# The inherited verbosity sub-group of Standard options is likewise mutually exclusive.
+testing_cpp_cli -info 2>&1
+! testing_cpp_cli -info -debug
+
+# Unused-option tracking: an option that is specified but never read by the command emits a
+#   single end-of-run advisory (the command still succeeds).
+testing_cpp_cli -unused 2>&1 | grep "was specified but had no effect"
+# An option that IS read by the command does not trigger the advisory.
+! ( testing_cpp_cli -flag 2>&1 | grep "had no effect" )
+
 # Verify correct parsing of option arguments that begin with a dash.
 testing_cpp_cli -int_unbound -123 2>&1 | grep "int_unbound: -123"
 ! testing_cpp_cli -int_unbound --1

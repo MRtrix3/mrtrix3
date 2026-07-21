@@ -24,19 +24,19 @@ OOPPTTIIOONNSS
      an integer input (unbounded)
 
   _-_i_n_t___n_o_n_n_e_g value
-     a non-negative integer
+     a non-negative integer (minimum: 0)
 
   _-_i_n_t___b_o_u_n_d value
-     a bound integer
+     a bound integer (range: 0 to 100) (default: 50)
 
   _-_f_l_o_a_t___u_n_b_o_u_n_d value
      a floating-point number (unbounded)
 
   _-_f_l_o_a_t___n_o_n_n_e_g value
-     a non-negative floating-point number
+     a non-negative floating-point number (minimum: 0)
 
   _-_f_l_o_a_t___b_o_u_n_d value
-     a bound floating-point number
+     a bound floating-point number (range: 0 to 1) (default: 0.5)
 
   _-_i_n_t___s_e_q values
      a comma-separated sequence of integers
@@ -45,7 +45,19 @@ OOPPTTIIOONNSS
      a comma-separated sequence of floating-point numbers
 
   _-_c_h_o_i_c_e item
-     a choice from a set of options
+     a choice from a set of options (choices: one, two, three) (default: one)
+
+  _-_l_m_a_x value
+     a spherical-harmonic degree (non-negative even integer) (minimum: 0) (must
+     be even)
+
+  _-_l_m_a_x___b_o_u_n_d value
+     a spherical-harmonic degree with an explicit upper bound (range: 0 to 8)
+     (must be even)
+
+  _-_l_m_a_x___s_e_q values
+     a comma-separated sequence of spherical-harmonic degrees (values must be
+     non-negative and even)
 
   _-_f_i_l_e___i_n input
      an input file
@@ -66,15 +78,56 @@ OOPPTTIIOONNSS
      an output tractogram
 
   _-_a_n_y spec
-     an argument that could accept any of the various forms
+     an argument that could accept any of the various forms (choices: one, two,
+     three)
 
   _-_n_a_r_g_s___t_w_o first second
      A command-line option that accepts two arguments
 
+  _-_t_u_p_l_e___d_e_s_c key value
+     A command-line option whose tuple fields carry descriptions
+
+        _k_e_y          the key field
+        _v_a_l_u_e        the value field
   _-_m_u_l_t_i_p_l_e spec  (multiple uses permitted)
      A command-line option that can be specified multiple times
 
+  _-_u_n_u_s_e_d
+     An option deliberately left unread to exercise unused-option tracking
+
+GGrroouuppeedd  ooppttiioonnss  ddeemmoonnssttrraattiinngg  hhiieerraarrcchhyy
+
+  _-_g_r_o_u_p___d_i_r_e_c_t
+     An option located directly within the parent group
+
+  MMuuttuuaallllyy  eexxcclluussiivvee  mmooddeess
+
+  _-_m_o_d_e___a
+     The first mutually-exclusive mode
+
+  _-_m_o_d_e___b
+     The second mutually-exclusive mode
+
 SSttaannddaarrdd  ooppttiioonnss
+
+  _-_f_o_r_c_e
+     force overwrite of output files (caution: using the same file as input and
+     output might cause unexpected behaviour).
+
+  _-_n_t_h_r_e_a_d_s number
+     use this number of threads in multi-threaded applications (set to 0 to
+     disable multi-threading). (minimum: 0)
+
+  _-_c_o_n_f_i_g key value  (multiple uses permitted)
+     temporarily set the value of an MRtrix config file entry.
+
+  _-_h_e_l_p
+     display this information page and exit.
+
+  _-_v_e_r_s_i_o_n
+     display version information and exit.
+
+  VVeerrbboossiittyy  ooppttiioonnss
 
   _-_i_n_f_o
      display information messages.
@@ -86,23 +139,6 @@ SSttaannddaarrdd  ooppttiioonnss
 
   _-_d_e_b_u_g
      display debugging messages & debug input data.
-
-  _-_f_o_r_c_e
-     force overwrite of output files (caution: using the same file as input and
-     output might cause unexpected behaviour).
-
-  _-_n_t_h_r_e_a_d_s number
-     use this number of threads in multi-threaded applications (set to 0 to
-     disable multi-threading).
-
-  _-_c_o_n_f_i_g key value  (multiple uses permitted)
-     temporarily set the value of an MRtrix config file entry.
-
-  _-_h_e_l_p
-     display this information page and exit.
-
-  _-_v_e_r_s_i_o_n
-     display version information and exit.
 
 AAUUTTHHOORR
      Robert E. Smith (robert.smith@florey.edu.au)
