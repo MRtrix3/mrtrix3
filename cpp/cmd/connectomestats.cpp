@@ -386,7 +386,9 @@ void run() {
                                       null_distribution,
                                       null_contributions,
                                       uncorrected_pvalues);
-    if (fwe_strong) {
+    // A single null distribution (strong FWE control, or just one hypothesis) is written without an
+    //   index suffix; one distribution per hypothesis is written with the per-hypothesis suffix.
+    if (null_distribution.cols() == 1) {
       File::Matrix::save_vector(null_distribution.col(0), output_dir / "null_dist.txt");
     } else {
       for (index_type i = 0; i != num_hypotheses; ++i)

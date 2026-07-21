@@ -527,7 +527,9 @@ void run() {
 
     ProgressBar progress("Outputting final results", (fwe_strong ? 1 : num_hypotheses) + 1 + 3 * num_hypotheses);
 
-    if (fwe_strong) {
+    // A single null distribution (strong FWE control, or just one hypothesis) is written without an
+    //   index suffix; one distribution per hypothesis is written with the per-hypothesis suffix.
+    if (null_distribution.cols() == 1) {
       File::Matrix::save_vector(null_distribution.col(0), (output_fixel_directory / "null_dist.txt"));
       ++progress;
     } else {
