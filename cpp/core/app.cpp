@@ -1323,11 +1323,40 @@ void parse_standard_options() {
   }
 }
 
+namespace {
+
+//! reject any option whose argument slot has been marked optional
+/*! The "optional" property mirrors argparse's nargs='?' and is meaningful only for positional
+ * arguments (a command may be invoked with the trailing positional omitted). Command-line
+ * options have fixed arity: an option is either absent, or supplied with exactly its declared
+ * number of arguments. Marking an option's argument optional is therefore always a command
+ * interface definition error, caught here at command startup. */
+void verify_no_optional_option_arguments(const OptionList &options) {
+  for (const auto &group : options) {
+    for (const auto &option : group) {
+      for (const auto &arg : option) {
+        if (!arg.flags.optional())
+          continue;
+        Exception e("Invalid command-line interface definition for command " + std::string(NAME));
+        e.push_back("Argument \"" + arg.id + "\" of option \"-" + option.id + "\" is marked optional");
+        e.push_back("The optional property is permitted only for positional arguments;"
+                    " command-line options have fixed arity");
+        throw e;
+      }
+    }
+  }
+}
+
+} // namespace
+
 void verify_usage() {
   if (AUTHOR.empty())
     throw Exception("No author specified for command " + std::string(NAME));
   if (SYNOPSIS.empty())
     throw Exception("No synopsis specified for command " + std::string(NAME));
+  verify_no_optional_option_arguments(OPTIONS);
+  for (const auto &sub : SUBCOMMANDS)
+    verify_no_optional_option_arguments(sub.options);
   if (!SUBCOMMANDS.empty()) {
     if (!ARGUMENTS.empty())
       throw Exception("A hierarchical command must not declare top-level ARGUMENTS"

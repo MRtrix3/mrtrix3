@@ -1769,9 +1769,27 @@ class Parser: # pylint: disable=too-many-public-methods
         target.print_version()
         sys.exit(0)
 
+  # Reject any option whose argument slot is marked optional (mirrors the C++
+  #   verify_no_optional_option_arguments in cpp/core/app.cpp). The "optional" property
+  #   (former nargs='?') is meaningful only for a positional argument: a command may be
+  #   invoked with the trailing positional omitted. Command-line options have fixed arity -
+  #   an option is either absent, or supplied with exactly its declared number of arguments -
+  #   so marking an option's argument optional is always a command-interface definition error.
+  def _verify_option_arguments(self):
+    for option in self._iter_options():
+      for leaf in option.leaves():
+        assert not leaf.optional, \
+            (f'Argument "{leaf.name}" of option "-{option.name}" is marked optional; '
+             'the optional property is permitted only for positional arguments '
+             '(command-line options have fixed arity)')
+
   def parse_args(self):
     assert self._author, 'Script author MUST be set in script\'s usage() function'
     assert self._synopsis, 'Script synopsis MUST be set in script\'s usage() function'
+    self._verify_option_arguments()
+    if self._subparsers is not None:
+      for child in self._subparsers.choices.values():
+        child._verify_option_arguments() # pylint: disable=protected-access
     tokens = sys.argv[1:]
     if self._subparsers is not None:
       return self._parse_subparser_args(tokens)
