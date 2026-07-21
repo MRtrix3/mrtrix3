@@ -628,7 +628,7 @@ class Parser: # pylint: disable=too-many-public-methods
     #   the number of command-line tokens it consumes (1 for a scalar, len(elements) for a
     #   tuple), and a multi-argument option is refactored to hold a single tuple argument
     #   whose elements are the former separate argument slots. Tuples do not nest.
-    def __init__(self, name, *, help_text='', argtype=None, choices=None, metavar=None,
+    def __init__(self, name, help_text, *, argtype=None, choices=None, metavar=None,
                  default=None, optional=False, allow_multiple=False, elements=None):
       self.name = name
       self.help = help_text
@@ -713,7 +713,7 @@ class Parser: # pylint: disable=too-many-public-methods
       return None
 
   class Option:
-    def __init__(self, name, *, help_text='', required=False, repeatable=False, dest=None,
+    def __init__(self, name, help_text, *, required=False, repeatable=False, dest=None,
                  default=None):
       self.name = name             # canonical spelling, WITHOUT the leading dash
       self.help = help_text
@@ -1534,7 +1534,10 @@ class Parser: # pylint: disable=too-many-public-methods
     assert len(name_or_flags) == 1, \
         'MRtrix3 add_argument() accepts exactly one argument/option name'
     name = name_or_flags[0]
-    help_text = kwargs.pop('help', None)
+    assert 'help' in kwargs, \
+        (f'add_argument({name}) requires a compulsory "help" string, mirroring the mandatory '
+         'MR::Argument/MR::Option description in cpp/core/cmdline_option.h')
+    help_text = kwargs.pop('help')
     argtype = kwargs.pop('type', None)
     nargs = kwargs.pop('nargs', None)
     metavar = kwargs.pop('metavar', None)
@@ -1557,7 +1560,7 @@ class Parser: # pylint: disable=too-many-public-methods
       if isinstance(argtype, Parser.SequenceLmax):
         argtype._source = f'option "-{opt_name}"' # pylint: disable=protected-access
       option = Parser.Option(opt_name,
-                             help_text=help_text,
+                             help_text,
                              repeatable=action == 'append',
                              dest=dest,
                              default=default)
@@ -1580,14 +1583,14 @@ class Parser: # pylint: disable=too-many-public-methods
           #   single option-level help string); the field-description rendering therefore
           #   emits nothing for these options, keeping their exports byte-identical.
           return Parser.Argument(opt_name,
-                                 help_text='' if arity > 1 else help_text,
+                                 '' if arity > 1 else help_text,
                                  argtype=argtype,
                                  choices=choices,
                                  metavar=slot_metavar)
         if arity > 1:
           # Multi-argument option: a single tuple argument whose elements are the fields.
           option.args.append(Parser.Argument(opt_name,
-                                              help_text=help_text,
+                                              help_text,
                                               argtype=argtype,
                                               choices=choices,
                                               elements=[make_slot(i) for i in range(arity)]))
@@ -1605,7 +1608,7 @@ class Parser: # pylint: disable=too-many-public-methods
     if isinstance(argtype, Parser.SequenceLmax):
       argtype._source = f'argument "{dest if dest is not None else name}"' # pylint: disable=protected-access
     argument = Parser.Argument(dest if dest is not None else name,
-                               help_text=help_text,
+                               help_text,
                                argtype=argtype,
                                choices=choices,
                                metavar=metavar if isinstance(metavar, str) else None,
