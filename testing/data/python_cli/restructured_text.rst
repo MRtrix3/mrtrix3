@@ -62,9 +62,9 @@ Custom types
 
 -  **-float_unbound value** A floating-point; unbounded
 
--  **-float_nonneg value** A floating-point; non-negative (minimum: 0)
+-  **-float_nonneg value** A floating-point; non-negative (minimum: 0.0)
 
--  **-float_bounded value** A floating-point; bound range (range: 0 to 1; default: 0.5)
+-  **-float_bounded value** A floating-point; bound range (range: 0.0 to 1.0; default: 0.5)
 
 -  **-int_seq values** A comma-separated list of integers
 

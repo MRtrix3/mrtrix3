@@ -105,6 +105,21 @@ template <typename T> typename std::enable_if<MR::is_integral<T>::value, T>::typ
 template <typename T> typename std::enable_if<MR::is_floating_point<T>::value, T>::type void_rangemin() {
   return -std::numeric_limits<T>::infinity();
 }
+//! render a floating-point value for help text, guaranteeing a decimal point for whole values
+/*! Uses the standard MR::str() formatting (full double precision, matching the numeric range /
+ * default rendering elsewhere), but appends ".0" when the result is a bare integer string (e.g.
+ * "0" -> "0.0", "-5" -> "-5.0"), so that a floating-point limit or default is visually
+ * distinguishable from an integer one. Values already carrying a decimal point, an exponent, or a
+ * non-numeric form (inf / nan) are left untouched. */
+inline std::string format_float(const default_type value) {
+  std::string result = MR::str(value);
+  const size_t first_digit = (!result.empty() && (result[0] == '-' || result[0] == '+')) ? 1 : 0;
+  const bool integer_like =
+      result.size() > first_digit && result.find_first_not_of("0123456789", first_digit) == std::string::npos;
+  if (integer_like)
+    result += ".0";
+  return result;
+}
 } // namespace
 
 //! \addtogroup CmdParse
@@ -217,10 +232,19 @@ public:
     return *this;
   }
 
-  //! declare the default value applied when this argument / option is absent (numeric convenience)
-  template <typename T, typename std::enable_if<MR::is_arithmetic<T>::value, int>::type = 0>
+  //! declare the default value applied when this argument / option is absent (integer convenience)
+  template <typename T, typename std::enable_if<MR::is_integral<T>::value, int>::type = 0>
   Argument &set_default(const T value) {
     default_value = MR::str(value);
+    return *this;
+  }
+
+  //! declare the default value applied when this argument / option is absent (floating-point convenience)
+  /*! A whole-valued floating-point default renders with a trailing ".0" (via format_float()) so that
+   * it is unambiguously floating-point, consistent with how floating-point ranges / limits render. */
+  template <typename T, typename std::enable_if<MR::is_floating_point<T>::value, int>::type = 0>
+  Argument &set_default(const T value) {
+    default_value = format_float(value);
     return *this;
   }
 

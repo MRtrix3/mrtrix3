@@ -541,12 +541,14 @@ std::string Argument::help_metadata() const {
       clauses.push_back("maximum: " + str(int_limits.max()));
   }
   if (types[ArgTypeFlags::Float]) {
+    // format_float() guarantees a decimal point for whole-valued bounds (e.g. "0.0" / "1.0"), so a
+    //   floating-point range / limit is visually distinct from an integer one in the help text.
     if (float_limits.has_min() && float_limits.has_max())
-      clauses.push_back("range: " + str(float_limits.min()) + " to " + str(float_limits.max()));
+      clauses.push_back("range: " + format_float(float_limits.min()) + " to " + format_float(float_limits.max()));
     else if (float_limits.has_min())
-      clauses.push_back("minimum: " + str(float_limits.min()));
+      clauses.push_back("minimum: " + format_float(float_limits.min()));
     else if (float_limits.has_max())
-      clauses.push_back("maximum: " + str(float_limits.max()));
+      clauses.push_back("maximum: " + format_float(float_limits.max()));
   }
   // For lmax arguments, the non-negative-and-even constraint is advertised automatically; the
   //   non-negativity is already conveyed by the integer range (whose lower bound is >= 0), so only

@@ -33,10 +33,10 @@ OOPPTTIIOONNSS
      a floating-point number (unbounded)
 
   _-_f_l_o_a_t___n_o_n_n_e_g value
-     a non-negative floating-point number (minimum: 0)
+     a non-negative floating-point number (minimum: 0.0)
 
   _-_f_l_o_a_t___b_o_u_n_d value
-     a bound floating-point number (range: 0 to 1; default: 0.5)
+     a bound floating-point number (range: 0.0 to 1.0; default: 0.5)
 
   _-_i_n_t___s_e_q values
      a comma-separated sequence of integers

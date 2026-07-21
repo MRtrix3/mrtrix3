@@ -664,10 +664,17 @@ class Parser: # pylint: disable=too-many-public-methods
       self.default_value = None
 
     # Declare the default value applied when this argument / option is absent, so that it is
-    #   auto-rendered rather than repeated by hand in the help text. A number is formatted with
-    #   the Python str() (pass a pre-formatted string to control precision or add units).
+    #   auto-rendered rather than repeated by hand in the help text. An integer uses the Python
+    #   str(); a floating-point value uses _format_float() so a whole-valued float default renders
+    #   with a trailing ".0" (byte-identical to the C++ Argument::set_default() float convenience).
+    #   Pass a pre-formatted string to control precision or add units.
     def set_default(self, value): #pylint: disable=unused-variable
-      self.default_value = value if isinstance(value, str) else str(value)
+      if isinstance(value, str):
+        self.default_value = value
+      elif isinstance(value, float):
+        self.default_value = Parser.CustomTypeBase._format_float(value) # pylint: disable=protected-access
+      else:
+        self.default_value = str(value)
       return self
 
     # The auto-rendered "(choices: ...; range: ...; default: ...)" annotation of this argument,
@@ -1096,6 +1103,19 @@ class Parser: # pylint: disable=too-many-public-methods
     #   ScalarRange rendering in Argument::help_metadata()).
     def _help_range(self):
       return []
+    # Render a floating-point value for help text, guaranteeing a decimal point for whole values.
+    #   Mirrors the C++ MR::App::format_float() (cpp/core/cmdline_option.h): the value is formatted
+    #   exactly as MR::str<double>() would (full double precision, "%.17g"), then ".0" is appended
+    #   when the result is a bare integer string (e.g. "0" -> "0.0", "-5" -> "-5.0"), so a floating-
+    #   point limit / default is byte-identical to the C++ rendering and visually distinct from an
+    #   integer one. Exponent / already-decimal / non-numeric (inf, nan) forms are left untouched.
+    @staticmethod
+    def _format_float(value):
+      result = f'{value:.17g}'
+      body = result[1:] if result[:1] in ('-', '+') else result
+      if body.isdigit():
+        return result + '.0'
+      return result
     # Parse a scalar integer with the same suffix-multiplier support as the C++ parser
     #   (MR::App::ParsedArgument::as_int(), cpp/core/app.cpp). Decimal multipliers only, no
     #   binary "G": k/K=1e3, m/M=1e6, b/B=1e9 (billion, NOT bytes), t/T=1e12. Edge rules mirror
@@ -1219,15 +1239,17 @@ class Parser: # pylint: disable=too-many-public-methods
       def _metavar():
         return 'value'
       def _help_range(self):
-        # Floating-point bounds are rendered exactly as the C++ MR::str<double>() would (full
-        #   double precision, "%.17g"), so that a Python range/limit clause is byte-identical to
-        #   the equivalent C++ command (e.g. type_float(1e-6) -> "(minimum: 9.9999999999999995e-07)").
+        # Floating-point bounds are rendered via _format_float(), matching the C++ format_float()
+        #   byte-for-byte: full double precision ("%.17g") with a trailing ".0" forced on whole
+        #   values, so a bound like type_float(0.0, 1.0) renders "range: 0.0 to 1.0" (distinct from
+        #   an integer range) and type_float(1e-6) renders "minimum: 9.9999999999999995e-07".
+        fmt = Parser.CustomTypeBase._format_float # pylint: disable=protected-access
         if min_value is not None and max_value is not None:
-          return [f'range: {min_value:.17g} to {max_value:.17g}']
+          return [f'range: {fmt(min_value)} to {fmt(max_value)}']
         if min_value is not None:
-          return [f'minimum: {min_value:.17g}']
+          return [f'minimum: {fmt(min_value)}']
         if max_value is not None:
-          return [f'maximum: {max_value:.17g}']
+          return [f'maximum: {fmt(max_value)}']
         return []
     return FloatBounded()
 

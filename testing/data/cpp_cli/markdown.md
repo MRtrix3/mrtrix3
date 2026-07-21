@@ -22,9 +22,9 @@ Verify operation of the C++ command-line interface & parser
 
 + **-float_unbound value**<br>a floating-point number (unbounded)
 
-+ **-float_nonneg value**<br>a non-negative floating-point number (minimum: 0)
++ **-float_nonneg value**<br>a non-negative floating-point number (minimum: 0.0)
 
-+ **-float_bound value**<br>a bound floating-point number (range: 0 to 1; default: 0.5)
++ **-float_bound value**<br>a bound floating-point number (range: 0.0 to 1.0; default: 0.5)
 
 + **-int_seq values**<br>a comma-separated sequence of integers
 

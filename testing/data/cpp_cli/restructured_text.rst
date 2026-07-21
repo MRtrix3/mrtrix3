@@ -28,9 +28,9 @@ Options
 
 -  **-float_unbound value** a floating-point number (unbounded)
 
--  **-float_nonneg value** a non-negative floating-point number (minimum: 0)
+-  **-float_nonneg value** a non-negative floating-point number (minimum: 0.0)
 
--  **-float_bound value** a bound floating-point number (range: 0 to 1; default: 0.5)
+-  **-float_bound value** a bound floating-point number (range: 0.0 to 1.0; default: 0.5)
 
 -  **-int_seq values** a comma-separated sequence of integers
 

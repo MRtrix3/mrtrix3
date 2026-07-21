@@ -48,9 +48,9 @@ Test operation of the Python command-line interface
 
 + **-float_unbound value**<br>A floating-point; unbounded
 
-+ **-float_nonneg value**<br>A floating-point; non-negative (minimum: 0)
++ **-float_nonneg value**<br>A floating-point; non-negative (minimum: 0.0)
 
-+ **-float_bounded value**<br>A floating-point; bound range (range: 0 to 1; default: 0.5)
++ **-float_bounded value**<br>A floating-point; bound range (range: 0.0 to 1.0; default: 0.5)
 
 + **-int_seq values**<br>A comma-separated list of integers
 
