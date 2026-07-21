@@ -1691,6 +1691,20 @@ class Parser: # pylint: disable=too-many-public-methods
     for group in self._option_groups:
       yield from group.all_options()
 
+  # The named option groups in the order they are rendered by every help / export format:
+  #   command-specific groups first, in author-declared (definition) order, followed by the
+  #   standard-option groups. This mirrors the C++ parser (cpp/core/app.cpp OptionList::syntax
+  #   renders groups in definition order, with the standard options appended last); it also
+  #   matches the parse-time constraint-evaluation order (_enforce_constraints), so declaration
+  #   order is consistent across parsing, help and every machine-readable export. The ungrouped
+  #   'OPTIONS' group (index 0) is excluded here: each caller renders it first, without a heading.
+  #   Both partitions preserve definition order (stable), so the two standard groups render as
+  #   'Standard options' then 'Additional standard options for Python scripts'.
+  def _ordered_option_groups(self):
+    groups = self._option_groups[1:]
+    return [group for group in groups if not group.is_standard] \
+         + [group for group in groups if group.is_standard]
+
   @staticmethod
   def _without_leading_dashes(token):
     index = 0
@@ -2217,9 +2231,10 @@ class Parser: # pylint: disable=too-many-public-methods
       text += '\n'
       text += print_group_options(self._ungrouped)
       text += print_subgroups(self._ungrouped, 0)
-    # Named option groups, in reverse order of definition (matching prior behaviour);
-    #   within each group, sub-groups render in declaration order after the group's options.
-    for group in reversed(self._option_groups[1:]):
+    # Named option groups in author-declared order, standard-option groups last
+    #   (_ordered_option_groups); within each group, sub-groups render in declaration order
+    #   after the group's options.
+    for group in self._ordered_option_groups():
       if group.options or group.subgroups:
         text += bold(group.name) + '\n'
         text += '\n'
@@ -2347,11 +2362,12 @@ class Parser: # pylint: disable=too-many-public-methods
             if field_desc:
               sys.stdout.write(f'{field_desc}\n')
 
-    # Ungrouped options first (no heading), then the named groups in reverse order of
-    #   definition, matching the terminal help traversal and the pre-overhaul baseline.
+    # Ungrouped options first (no heading), then the named groups in author-declared order
+    #   with the standard-option groups last (_ordered_option_groups), matching the terminal
+    #   help traversal and the C++ full-usage export.
     if self._ungrouped.options:
       print_group_options(self._ungrouped)
-    for group in reversed(self._option_groups[1:]):
+    for group in self._ordered_option_groups():
       print_group_options(group)
     sys.stdout.flush()
 
@@ -2431,13 +2447,14 @@ class Parser: # pylint: disable=too-many-public-methods
         subgroup_text += print_subgroups(subgroup, depth + 1)
       return subgroup_text
 
-    # Ungrouped options first (no heading), then the named groups in reverse order of
-    #   definition, matching the terminal help traversal and the pre-overhaul baseline;
-    #   within each group, sub-groups render in declaration order after the group's options.
+    # Ungrouped options first (no heading), then the named groups in author-declared order
+    #   with the standard-option groups last (_ordered_option_groups), matching the terminal
+    #   help traversal and the C++ markdown export; within each group, sub-groups render in
+    #   declaration order after the group's options.
     if self._ungrouped.options or self._ungrouped.subgroups:
       text += print_group_options(self._ungrouped)
       text += print_subgroups(self._ungrouped, 0)
-    for group in reversed(self._option_groups[1:]):
+    for group in self._ordered_option_groups():
       if group.options or group.subgroups:
         text += f'#### {group.name}\n\n'
         text += print_group_options(group)
@@ -2549,13 +2566,14 @@ class Parser: # pylint: disable=too-many-public-methods
         subgroup_text += print_subgroups(subgroup, depth + 1)
       return subgroup_text
 
-    # Ungrouped options first (no heading), then the named groups in reverse order of
-    #   definition, matching the terminal help traversal and the pre-overhaul baseline;
-    #   within each group, sub-groups render in declaration order after the group's options.
+    # Ungrouped options first (no heading), then the named groups in author-declared order
+    #   with the standard-option groups last (_ordered_option_groups), matching the terminal
+    #   help traversal and the C++ reStructuredText export; within each group, sub-groups
+    #   render in declaration order after the group's options.
     if self._ungrouped.options or self._ungrouped.subgroups:
       text += print_group_options(self._ungrouped)
       text += print_subgroups(self._ungrouped, 0)
-    for group in reversed(self._option_groups[1:]):
+    for group in self._ordered_option_groups():
       if group.options or group.subgroups:
         text += '\n'
         text += f'{group.name}\n'
