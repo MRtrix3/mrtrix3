@@ -116,6 +116,9 @@ Verbosity options
 
 -  **-debug** display debugging messages & debug input data.
 
+*(these options are mutually exclusive; at most one may be specified)*
+
+
 Additional standard options for Python scripts
 """"""""""""""""""""""""""""""""""""""""""""""
 

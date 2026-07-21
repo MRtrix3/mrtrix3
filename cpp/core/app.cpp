@@ -209,6 +209,34 @@ std::string underline(std::string_view text, bool ignore_whitespace = false) {
   return retval;
 }
 
+//! the auto-generated help notes describing this command's cross-group mutual-exclusion sets
+/*! One parenthesised note per MUTUALLY_EXCLUSIVE_OPTIONS set (e.g.
+ *  "(the options -a, -b are mutually exclusive; at most one may be specified)"), its wording
+ *  matching the corresponding parse-time error message. Rendered by each human-readable help
+ *  surface after the command's option groups, so a cross-group exclusion need not be restated by
+ *  hand in any option description. Empty when the command declares no such set. */
+std::vector<std::string> cross_group_mutex_annotations() {
+  std::vector<std::string> result;
+  for (const MutuallyExclusiveOptions &set : MUTUALLY_EXCLUSIVE_OPTIONS) {
+    std::vector<std::string> ids;
+    ids.reserve(set.size());
+    for (const auto &id : set)
+      ids.push_back(std::string("-") + id);
+    result.push_back("(the options " + join(ids, ", ") + " are mutually exclusive; at most one may be specified)");
+  }
+  return result;
+}
+
+//! render one constraint note as a single, unwrapped terminal-help line at the option-help indent
+/*! Deliberately not word-wrapped: a note may embed hyphenated option ids, and the C++ paragraph()
+ *  and Python textwrap line-fillers differ by one column at the exact fit boundary, so wrapping a
+ *  long (cross-group) note would diverge between the two front-ends. A single line is byte-identical
+ *  by construction. Group-constraint notes always fit one line regardless, so their rendering is
+ *  unchanged. Trailing blank line matches the spacing between option-help paragraphs. */
+std::string terminal_constraint_line(std::string_view text) {
+  return std::string(help_formatting.purpose_indents.main + 1, ' ') + std::string(text) + "\n\n";
+}
+
 } // namespace
 
 // ---------------------------------------------------------------------------------------
@@ -610,6 +638,22 @@ std::string Option::syntax(const bool format) const {
   return opt;
 }
 
+std::string OptionGroup::constraint_annotation() const {
+  switch (constraint) {
+  case Constraint::RequireExactlyOne:
+    return "(exactly one of these options must be specified)";
+  case Constraint::RequireAtLeastOne:
+    return "(at least one of these options must be specified)";
+  case Constraint::MutuallyExclusive:
+    return "(these options are mutually exclusive; at most one may be specified)";
+  case Constraint::AllOrNone:
+    return "(these options must be specified together or not at all)";
+  case Constraint::None:
+    return {};
+  }
+  return {};
+}
+
 std::string OptionGroup::header(const bool format, const size_t depth) const {
   // Nested sub-groups are indented by two spaces per level of depth to convey the hierarchy.
   const std::string indent(2 * depth, ' ');
@@ -625,6 +669,11 @@ std::string OptionGroup::contents(const bool format, const size_t depth) const {
     s += subgroup.header(format, depth + 1);
     s += subgroup.contents(format, depth + 1);
   }
+  // A collective constraint (if any) is auto-annotated after all of the group's options and
+  //   sub-groups, so it is never restated by hand in an option description or group heading.
+  const std::string annotation = constraint_annotation();
+  if (!annotation.empty())
+    s += terminal_constraint_line(annotation);
   return s;
 }
 
@@ -770,8 +819,14 @@ std::string get_help_string(const bool format) {
     selection.push_back(Argument(SUBCOMMANDS_SELECTOR, selection_help_string()));
     arguments_section = selection.syntax(format);
   }
+  // Cross-group mutual-exclusion sets are annotated after the command's own option groups
+  //   (they span options not confined to a single group), before the standard-options section.
+  std::string cross_mutex_section;
+  for (const auto &note : cross_group_mutex_annotations())
+    cross_mutex_section += terminal_constraint_line(note);
+
   return help_head(format) + help_synopsis(format) + usage_syntax(format) + arguments_section +
-         DESCRIPTION.syntax(format) + EXAMPLES.syntax(format) + OPTIONS.syntax(format) +
+         DESCRIPTION.syntax(format) + EXAMPLES.syntax(format) + OPTIONS.syntax(format) + cross_mutex_section +
          _standard_options.header(format) + _standard_options.contents(format) + MR::App::OptionGroup::footer(format) +
          help_tail(format);
 }
@@ -996,6 +1051,14 @@ std::string markdown_usage() {
   //   maximum of six '#', the title degrades to emphasised text conveying further depth:
   //   level 7 -> bold, level 8 -> bold-italic (check_options_nesting_depth() has already
   //   rejected anything deeper).
+  // A group's collective constraint is auto-annotated as an emphasised note after all of its
+  //   options and sub-groups, so it need not be restated in a heading or option description.
+  auto emit_constraint = [&](const OptionGroup &group) {
+    const std::string annotation = group.constraint_annotation();
+    if (!annotation.empty())
+      s += std::string("*") + annotation + "*\n\n";
+  };
+
   std::function<void(const OptionGroup &, size_t)> render_subgroups = [&](const OptionGroup &group, size_t depth) {
     for (const auto &subgroup : group.subgroups) {
       const size_t heading_level = 5 + depth;
@@ -1008,6 +1071,7 @@ std::string markdown_usage() {
       for (size_t o = 0; o < subgroup.size(); ++o)
         s += format_option(subgroup[o]);
       render_subgroups(subgroup, depth + 1);
+      emit_constraint(subgroup);
     }
   };
 
@@ -1023,10 +1087,16 @@ std::string markdown_usage() {
         for (size_t o = 0; o < OPTIONS[n].size(); ++o)
           s += format_option(OPTIONS[n][o]);
         render_subgroups(OPTIONS[n], 0);
+        emit_constraint(OPTIONS[n]);
       }
       ++n;
     }
   }
+
+  // Cross-group mutual-exclusion sets follow the command's own option groups (they span options
+  //   not confined to a single group), before the standard-options section.
+  for (const auto &note : cross_group_mutex_annotations())
+    s += std::string("*") + note + "*\n\n";
 
   s += "#### Standard options\n\n";
   for (size_t i = 0; i < _standard_options.size(); ++i)
@@ -1195,6 +1265,14 @@ std::string restructured_text_usage() {
     static const std::array<char, 2> chars = {'"', '\''};
     return chars[depth];
   };
+  // A group's collective constraint is auto-annotated as an emphasised note after all of its
+  //   options and sub-groups, so it need not be restated in a heading or option description.
+  auto emit_constraint = [&](const OptionGroup &group) {
+    const std::string annotation = group.constraint_annotation();
+    if (!annotation.empty())
+      s += std::string("*") + annotation + "*\n\n";
+  };
+
   std::function<void(const OptionGroup &, size_t)> render_subgroups = [&](const OptionGroup &group, size_t depth) {
     for (const auto &subgroup : group.subgroups) {
       if (depth < max_heading_group_depth)
@@ -1206,6 +1284,7 @@ std::string restructured_text_usage() {
       for (size_t o = 0; o < subgroup.size(); ++o)
         s += format_option(subgroup[o]);
       render_subgroups(subgroup, depth + 1);
+      emit_constraint(subgroup);
     }
   };
 
@@ -1221,10 +1300,16 @@ std::string restructured_text_usage() {
         for (size_t o = 0; o < OPTIONS[n].size(); ++o)
           s += format_option(OPTIONS[n][o]);
         render_subgroups(OPTIONS[n], 0);
+        emit_constraint(OPTIONS[n]);
       }
       ++n;
     }
   }
+
+  // Cross-group mutual-exclusion sets follow the command's own option groups (they span options
+  //   not confined to a single group), before the standard-options section.
+  for (const auto &note : cross_group_mutex_annotations())
+    s += std::string("*") + note + "*\n\n";
 
   s += "Standard options\n^^^^^^^^^^^^^^^^\n\n";
   for (size_t i = 0; i < _standard_options.size(); ++i)

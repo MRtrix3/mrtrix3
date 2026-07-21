@@ -100,6 +100,8 @@ Test operation of the Python command-line interface
 
 + **-debug**<br>display debugging messages & debug input data.
 
+*(these options are mutually exclusive; at most one may be specified)*
+
 ##### Additional standard options for Python scripts
 
 + **-nocleanup**<br>do not delete intermediate files during script execution, and do not delete scratch directory at script completion.

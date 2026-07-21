@@ -902,6 +902,15 @@ public:
     return result;
   }
 
+  //! the auto-generated help annotation describing this group's collective constraint
+  /*! Returns a parenthesised note whose wording matches the corresponding parse-time error
+   *  message (e.g. "(exactly one of these options must be specified)" for RequireExactlyOne),
+   *  or an empty string when the group carries no constraint (Constraint::None). Every
+   *  human-readable help surface (the terminal -help and the Markdown / reStructuredText
+   *  exports) renders it beneath the group's options, so a declared constraint need not be
+   *  restated by hand in any option description or group heading. */
+  std::string constraint_annotation() const;
+
   //! the section heading for this group; depth controls the indentation / heading level
   std::string header(const bool format, const size_t depth = 0) const;
   //! this group's options followed by its sub-groups (each headed and rendered recursively)

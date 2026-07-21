@@ -108,6 +108,8 @@ GGrroouuppeedd  ooppttiioonnss  ddeemmoonnssttrraatti
   _-_m_o_d_e___b
      The second mutually-exclusive mode
 
+     (these options are mutually exclusive; at most one may be specified)
+
 SSttaannddaarrdd  ooppttiioonnss
 
   _-_f_o_r_c_e
@@ -139,6 +141,8 @@ SSttaannddaarrdd  ooppttiioonnss
 
   _-_d_e_b_u_g
      display debugging messages & debug input data.
+
+     (these options are mutually exclusive; at most one may be specified)
 
 AAUUTTHHOORR
      Robert E. Smith (robert.smith@florey.edu.au)

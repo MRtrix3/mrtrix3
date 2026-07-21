@@ -272,8 +272,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                                    ' into an output directory')
   app.add_dwgrad_export_options(cmdline)
   app.add_dwgrad_import_options(cmdline)
-  rpe_options = cmdline.add_argument_group('Options for specifying the acquisition phase-encoding design;'
-                                           ' note that one of the -rpe_* options MUST be provided')
+  rpe_options = cmdline.add_argument_group('Options for specifying the acquisition phase-encoding design')
   rpe_options.add_argument('-rpe_none',
                            action='store_true',
                            default=None,

@@ -923,6 +923,20 @@ class Parser: # pylint: disable=too-many-public-methods
       return self._set_constraint(Parser.OptionGroup.Constraint.MUTUALLY_EXCLUSIVE)
     def all_or_none(self): #pylint: disable=unused-variable
       return self._set_constraint(Parser.OptionGroup.Constraint.ALL_OR_NONE)
+    # The auto-generated help annotation describing this group's collective constraint (mirrors
+    #   the C++ OptionGroup::constraint_annotation()). Returns a parenthesised note whose wording
+    #   matches the corresponding parse-time error message, or '' when the group carries no
+    #   constraint. Every human-readable help surface (terminal -help and the Markdown /
+    #   reStructuredText exports) renders it beneath the group's options, so a declared constraint
+    #   need not be restated by hand in any option description or group heading.
+    def constraint_annotation(self):
+      constraint_cls = Parser.OptionGroup.Constraint
+      return {
+          constraint_cls.REQUIRE_EXACTLY_ONE: '(exactly one of these options must be specified)',
+          constraint_cls.REQUIRE_AT_LEAST_ONE: '(at least one of these options must be specified)',
+          constraint_cls.MUTUALLY_EXCLUSIVE: '(these options are mutually exclusive; at most one may be specified)',
+          constraint_cls.ALL_OR_NONE: '(these options must be specified together or not at all)',
+      }.get(self.constraint, '')
 
   # Simple attribute container returned by parse_args(); replaces argparse.Namespace.
   #   Supports vars()/getattr()/hasattr() and in-place attribute reassignment,
@@ -1603,6 +1617,15 @@ class Parser: # pylint: disable=too-many-public-methods
     assert isinstance(ids, (list, tuple)) and all(isinstance(item, str) for item in ids), \
         'Parser.flag_mutually_exclusive_options() accepts a list of option-name strings'
     self._mutually_exclusive_option_groups.append(list(ids))
+
+  # The auto-generated help notes describing this command's cross-group mutual-exclusion sets
+  #   (mirrors the C++ cross_group_mutex_annotations()). One parenthesised note per declared set,
+  #   its wording matching the corresponding parse-time error message; rendered by each
+  #   human-readable help surface after the command's option groups. Empty list when none declared.
+  def _cross_group_mutex_annotations(self):
+    return [f'(the options {", ".join("-" + item for item in id_set)} '
+            'are mutually exclusive; at most one may be specified)'
+            for id_set in self._mutually_exclusive_option_groups]
 
   def add_argument_group(self, name): #pylint: disable=unused-variable
     group = Parser.OptionGroup(self, name)
@@ -2291,6 +2314,13 @@ class Parser: # pylint: disable=too-many-public-methods
     #   - First printing any ungrouped command-line options;
     #   - Printing all contents of each named option group.
     wrapper_field = textwrap.TextWrapper(width=80, initial_indent='       ', subsequent_indent='       ')
+    # An auto-generated constraint note occupies a single (unwrapped) line at the option-help
+    #   indent (5 spaces): a note may embed hyphenated option ids, and the C++ paragraph() and
+    #   Python textwrap fillers differ by one column at the exact fit boundary, so wrapping a long
+    #   (cross-group) note would diverge between the two front-ends. Group notes fit one line
+    #   regardless. Mirrors the C++ terminal_constraint_line().
+    def constraint_line(note):
+      return f'     {note}\n\n'
     def print_group_options(group):
       group_text = ''
       for option in group.options:
@@ -2324,6 +2354,11 @@ class Parser: # pylint: disable=too-many-public-methods
         subgroup_text += '\n'
         subgroup_text += print_group_options(subgroup)
         subgroup_text += print_subgroups(subgroup, depth + 1)
+        # A collective constraint is auto-annotated after all of the sub-group's options and
+        #   any deeper sub-groups (mirrors the C++ OptionGroup::contents()).
+        annotation = subgroup.constraint_annotation()
+        if annotation:
+          subgroup_text += constraint_line(annotation)
       return subgroup_text
 
     # Before printing named option groups, print any command-line options that were not
@@ -2333,15 +2368,28 @@ class Parser: # pylint: disable=too-many-public-methods
       text += '\n'
       text += print_group_options(self._ungrouped)
       text += print_subgroups(self._ungrouped, 0)
+      annotation = self._ungrouped.constraint_annotation()
+      if annotation:
+        text += constraint_line(annotation)
     # Named option groups in author-declared order, standard-option groups last
     #   (_ordered_option_groups); within each group, sub-groups render in declaration order
-    #   after the group's options.
+    #   after the group's options. Cross-group mutual-exclusion sets are annotated after the
+    #   command's own option groups (they span options not confined to a single group), before
+    #   the standard-options groups (mirroring the C++ terminal-help placement).
+    cross_mutex_emitted = False
     for group in self._ordered_option_groups():
+      if group.is_standard and not cross_mutex_emitted:
+        for note in self._cross_group_mutex_annotations():
+          text += constraint_line(note)
+        cross_mutex_emitted = True
       if group.options or group.subgroups:
         text += bold(group.name) + '\n'
         text += '\n'
         text += print_group_options(group)
         text += print_subgroups(group, 0)
+        annotation = group.constraint_annotation()
+        if annotation:
+          text += constraint_line(annotation)
     text += bold('AUTHOR') + '\n'
     text += wrapper_other.fill(self._author) + '\n'
     text += '\n'
@@ -2548,6 +2596,12 @@ class Parser: # pylint: disable=too-many-public-methods
     #   exceed Markdown's maximum of six '#', the title degrades to emphasised text conveying
     #   further depth: level 7 -> bold, level 8 -> bold-italic (_check_options_nesting_depth()
     #   has already rejected anything deeper).
+    # A group's collective constraint is auto-annotated as an emphasised note after all of its
+    #   options and sub-groups (mirrors the C++ markdown exporter's emit_constraint()).
+    def constraint_note(group):
+      annotation = group.constraint_annotation()
+      return f'*{annotation}*\n\n' if annotation else ''
+
     def print_subgroups(group, depth):
       subgroup_text = ''
       for subgroup in group.subgroups:
@@ -2560,20 +2614,29 @@ class Parser: # pylint: disable=too-many-public-methods
           subgroup_text += f'***{subgroup.name}***\n\n'
         subgroup_text += print_group_options(subgroup)
         subgroup_text += print_subgroups(subgroup, depth + 1)
+        subgroup_text += constraint_note(subgroup)
       return subgroup_text
 
     # Ungrouped options first (no heading), then the named groups in author-declared order
     #   with the standard-option groups last (_ordered_option_groups), matching the terminal
     #   help traversal and the C++ markdown export; within each group, sub-groups render in
-    #   declaration order after the group's options.
+    #   declaration order after the group's options. Cross-group mutual-exclusion sets are
+    #   annotated after the command's own option groups, before the standard-options groups.
     if self._ungrouped.options or self._ungrouped.subgroups:
       text += print_group_options(self._ungrouped)
       text += print_subgroups(self._ungrouped, 0)
+      text += constraint_note(self._ungrouped)
+    cross_mutex_emitted = False
     for group in self._ordered_option_groups():
+      if group.is_standard and not cross_mutex_emitted:
+        for note in self._cross_group_mutex_annotations():
+          text += f'*{note}*\n\n'
+        cross_mutex_emitted = True
       if group.options or group.subgroups:
         text += f'#### {group.name}\n\n'
         text += print_group_options(group)
         text += print_subgroups(group, 0)
+        text += constraint_note(group)
     text += '## References\n\n'
     for entry in self._citation_list:
       ref_text = ''
@@ -2678,6 +2741,13 @@ class Parser: # pylint: disable=too-many-public-methods
     #   rendering. Own options first, then recursively the child's own sub-groups.
     def subgroup_underline(depth):
       return '"\''[depth]
+    # A group's collective constraint is auto-annotated as an emphasised note after all of its
+    #   options and sub-groups (mirrors the C++ reStructuredText exporter's emit_constraint()).
+    #   RST options carry a leading (not trailing) blank line, so the note supplies its own
+    #   leading blank line to sit one blank line below the group's last option.
+    def constraint_note(group):
+      annotation = group.constraint_annotation()
+      return f'\n*{annotation}*\n\n' if annotation else ''
     def print_subgroups(group, depth):
       subgroup_text = ''
       for subgroup in group.subgroups:
@@ -2691,22 +2761,31 @@ class Parser: # pylint: disable=too-many-public-methods
           subgroup_text += f'*{subgroup.name}*\n'
         subgroup_text += print_group_options(subgroup)
         subgroup_text += print_subgroups(subgroup, depth + 1)
+        subgroup_text += constraint_note(subgroup)
       return subgroup_text
 
     # Ungrouped options first (no heading), then the named groups in author-declared order
     #   with the standard-option groups last (_ordered_option_groups), matching the terminal
     #   help traversal and the C++ reStructuredText export; within each group, sub-groups
-    #   render in declaration order after the group's options.
+    #   render in declaration order after the group's options. Cross-group mutual-exclusion
+    #   sets are annotated after the command's own option groups, before the standard groups.
     if self._ungrouped.options or self._ungrouped.subgroups:
       text += print_group_options(self._ungrouped)
       text += print_subgroups(self._ungrouped, 0)
+      text += constraint_note(self._ungrouped)
+    cross_mutex_emitted = False
     for group in self._ordered_option_groups():
+      if group.is_standard and not cross_mutex_emitted:
+        for note in self._cross_group_mutex_annotations():
+          text += f'\n*{note}*\n\n'
+        cross_mutex_emitted = True
       if group.options or group.subgroups:
         text += '\n'
         text += f'{group.name}\n'
         text += f'{"^"*len(group.name)}\n'
         text += print_group_options(group)
         text += print_subgroups(group, 0)
+        text += constraint_note(group)
     text += '\n'
     text += 'References\n'
     text += '^^^^^^^^^^\n\n'

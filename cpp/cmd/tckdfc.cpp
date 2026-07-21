@@ -59,8 +59,7 @@ void usage () {
     " where the contribution from each streamline to the image"
     " is the Pearson correlation between the fMRI time series at the streamline endpoints."
 
-  + "The output image can be generated in one of two ways"
-    " (note that one of these two command-line options MUST be provided):"
+  + "The output image can be generated in one of two ways:"
 
   + "- \"Static\" functional connectivity"
     " (-static option):"
@@ -94,8 +93,7 @@ void usage () {
   + Argument ("output", "the output TW-dFC image").type_image_out();
 
   OPTIONS
-  + (OptionGroup ("Options for toggling between static and dynamic TW-dFC methods;"
-                  " note that one of these options MUST be provided")
+  + (OptionGroup ("Options for toggling between static and dynamic TW-dFC methods")
 
      + Option ("static", "generate a \"static\" (3D) output image.")
 

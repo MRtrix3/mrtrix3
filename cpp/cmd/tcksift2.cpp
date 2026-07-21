@@ -70,9 +70,7 @@ const OptionGroup SIFT2AlgorithmOption = OptionGroup ("Options for controlling t
                          " similar to the '-min_factor' option,"
                          " but using the exponential coefficient basis of the SIFT2 model;"
                          " these parameters are related as:"
-                         " factor = e^(coeff)."
-                         " Note that the -min_factor and -min_coeff options are mutually exclusive;"
-                         " you can only provide one.")
+                         " factor = e^(coeff).")
     + Argument ("coeff").type_float(-std::numeric_limits<default_type>::infinity(), 0.0)
         .set_default(str(SIFT2::default_minimum_coefficient, 2))
   + Option ("max_factor", "maximum weighting factor that can be assigned to any one streamline")
@@ -81,9 +79,7 @@ const OptionGroup SIFT2AlgorithmOption = OptionGroup ("Options for controlling t
                          " similar to the '-max_factor' option,"
                          " but using the exponential coefficient basis of the SIFT2 model;"
                          " these parameters are related as:"
-                         " factor = e^(coeff)."
-                         " Note that the -max_factor and -max_coeff options are mutually exclusive;"
-                         " you can only provide one.")
+                         " factor = e^(coeff).")
     + Argument ("coeff").type_float(1.0).set_default(str(SIFT2::default_maximum_coefficient, 2))
   + Option ("max_coeff_step", "maximum change to a streamline's weighting coefficient in a single iteration")
     + Argument ("step").type_float().set_default(str(SIFT2::default_maximum_coeffstep, 2))

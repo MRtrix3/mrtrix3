@@ -50,7 +50,7 @@ void usage() {
   + Argument ("in", "the input deformation field").type_image_in();
 
   OPTIONS
-  + (OptionGroup ("Output options (at least one is required)")
+  + (OptionGroup ("Output options")
 
      + Option ("fc", "use an input template fixel image to define fibre orientations"
                      " and output a fixel image describing the change in fibre cross-section (FC)"
