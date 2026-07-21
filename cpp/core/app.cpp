@@ -985,14 +985,10 @@ std::string markdown_usage() {
   s += std::string("**Author:** ") + AUTHOR + "\n\n";
   s += std::string("**Copyright:** ") + COPYRIGHT + "\n\n";
 
-  // Append one complete page per sub-interface, in declaration order. Iterate over a copy,
-  //   since render_subcommand() clears and restores the global SUBCOMMANDS while rendering.
-  if (hierarchical) {
-    const SubcommandList subcommands = SUBCOMMANDS;
-    for (const auto &sub : subcommands)
-      s += render_subcommand(sub, ExportFormat::Markdown);
-  }
-
+  // A hierarchical command's top-level page presents its own interface only (the
+  //   sub-interface selection in place of positional arguments). Each sub-interface's page
+  //   is obtained separately via "<command> <sub-interface> __print_usage_markdown__"; the
+  //   documentation generator writes those into a nested per-command sub-directory.
   return s;
 }
 
@@ -1176,15 +1172,11 @@ std::string restructured_text_usage() {
 
   s += std::string("--------------\n\n") + "\n\n**Author:** " + AUTHOR + "\n\n**Copyright:** " + COPYRIGHT + "\n\n";
 
-  // Append one complete section per sub-interface, in declaration order; each section
-  //   carries its own RST label and title (the top-level command's own label and title
-  //   are added by the documentation generator, matching every C++ command).
-  if (hierarchical) {
-    const SubcommandList subcommands = SUBCOMMANDS;
-    for (const auto &sub : subcommands)
-      s += subcommand_rst_section(sub);
-  }
-
+  // A hierarchical command's top-level page presents its own interface only (the
+  //   sub-interface selection in place of positional arguments). Each sub-interface's page
+  //   is obtained separately via "<command> <sub-interface> __print_usage_rst__" (a
+  //   complete, self-labelled RST section); the documentation generator writes those into a
+  //   nested per-command sub-directory and wires them into the command list and toctree.
   return s;
 }
 
@@ -1208,8 +1200,11 @@ std::string render_subcommand(const Subcommand &sub, const ExportFormat format) 
   const SubcommandList saved_subcommands = SUBCOMMANDS;
 
   install_subcommand(sub);
-  SUBCOMMANDS = SubcommandList();
+  // "sub" may reference an element of the global SUBCOMMANDS (e.g. the standalone
+  //   per-sub-interface export path passes SUBCOMMANDS.find(...)); read sub.id before the
+  //   clear below invalidates it, otherwise the subsequent access is a use-after-free.
   NAME = saved_name + " " + sub.id;
+  SUBCOMMANDS = SubcommandList();
 
   std::string out;
   switch (format) {
@@ -1401,9 +1396,21 @@ void parse_special_options() {
   if (raw_arguments_list.empty())
     return;
 
+  const std::string_view last = raw_arguments_list.back();
+
+  // Enumerate a hierarchical command's sub-interfaces, one id per line (in declaration
+  //   order), for the documentation generator to produce one nested page per sub-interface;
+  //   an ordinary command emits nothing.
+  if (last == "__print_subcommands__") {
+    std::string s;
+    for (const auto &id : SUBCOMMANDS.ids())
+      s += id + "\n";
+    print(s);
+    throw 0;
+  }
+
   bool synopsis = false;
   ExportFormat format = ExportFormat::FullUsage;
-  const std::string_view last = raw_arguments_list.back();
   if (last == "__print_full_usage__") {
     format = ExportFormat::FullUsage;
   } else if (last == "__print_usage_markdown__") {
@@ -1417,16 +1424,22 @@ void parse_special_options() {
   }
 
   if (!SUBCOMMANDS.empty()) {
-    // A per-sub-interface export is requested as "<command> <sub-interface> <keyword>";
-    //   any other keyword-terminated form (including __print_synopsis__) emits the
-    //   top-level page. This mirrors the Python parser's dispatch on the second-to-last
-    //   command-line token.
-    if (!synopsis && raw_arguments_list.size() >= 2) {
+    // A per-sub-interface export is requested as "<command> <sub-interface> <keyword>", the
+    //   sub-interface being the second-to-last token; any other keyword-terminated form
+    //   emits the top-level page. This mirrors the Python parser's dispatch on the
+    //   second-to-last command-line token.
+    if (raw_arguments_list.size() >= 2) {
       const Subcommand *sub = SUBCOMMANDS.find(raw_arguments_list[raw_arguments_list.size() - 2]);
       if (sub != nullptr) {
-        // The rst form carries the sub-interface's own label and title (a complete section);
-        //   markdown / full_usage emit the sub-interface page alone.
-        print(format == ExportFormat::Rst ? subcommand_rst_section(*sub) : render_subcommand(*sub, format));
+        if (synopsis) {
+          // The sub-interface's own synopsis (used by the documentation generator for the
+          //   nested command-list row).
+          print(sub->synopsis);
+        } else {
+          // The rst form carries the sub-interface's own label and title (a complete section);
+          //   markdown / full_usage emit the sub-interface page alone.
+          print(format == ExportFormat::Rst ? subcommand_rst_section(*sub) : render_subcommand(*sub, format));
+        }
         throw 0;
       }
     }

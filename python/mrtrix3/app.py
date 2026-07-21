@@ -162,6 +162,9 @@ def _execute(usage_function, execute_function): #pylint: disable=unused-variable
   elif sys.argv[-1] == '__print_usage_rst__':
     CMDLINE.print_usage_rst()
     sys.exit(0)
+  elif sys.argv[-1] == '__print_subcommands__':
+    CMDLINE.print_subcommands()
+    sys.exit(0)
 
   # Do the main command-line input parsing
   ARGS = CMDLINE.parse_args()
@@ -2353,6 +2356,12 @@ class Parser: # pylint: disable=too-many-public-methods
     sys.stdout.flush()
 
   def print_synopsis(self):
+    # A per-algorithm synopsis is requested as "<command> <algorithm> __print_synopsis__";
+    #   emit that algorithm's synopsis alone (used by the documentation generator for the
+    #   nested command-list row).
+    if self._subparsers is not None and len(sys.argv) >= 3 and sys.argv[-2] in self._subparsers.choices:
+      self._subparsers.choices[sys.argv[-2]].print_synopsis()
+      return
     # Emit the stored synopsis string verbatim, with no trailing newline (matching the
     #   pre-overhaul baseline that inline-wrote CMDLINE._synopsis).
     sys.stdout.write(self._synopsis)
@@ -2446,11 +2455,10 @@ class Parser: # pylint: disable=too-many-public-methods
     text += f'**Copyright:** {self._copyright}\n\n'
     sys.stdout.write(text)
     sys.stdout.flush()
-    # Append one complete section per algorithm, reproducing the pre-overhaul behaviour of
-    #   re-invoking the executable once per algorithm (done here in-process on the model).
-    if self._subparsers is not None:
-      for child in self._subparsers.choices.values():
-        child.print_usage_markdown()
+    # A multi-algorithm command's top-level page presents its own interface only (the
+    #   algorithm selection in place of positional arguments). Each algorithm's page is
+    #   obtained separately via "<command> <algorithm> __print_usage_markdown__"; the
+    #   documentation generator writes those into a nested per-command sub-directory.
 
   def print_usage_rst(self):
     # A per-algorithm interface is requested as "<command> <algorithm> __print_usage_rst__";
@@ -2569,11 +2577,20 @@ class Parser: # pylint: disable=too-many-public-methods
     text += f'**Copyright:** {self._copyright}\n\n'
     sys.stdout.write(text)
     sys.stdout.flush()
-    # Append one complete section per algorithm, reproducing the pre-overhaul behaviour of
-    #   re-invoking the executable once per algorithm (done here in-process on the model).
+    # A multi-algorithm command's top-level page presents its own interface only (the
+    #   algorithm selection in place of positional arguments). Each algorithm's page is
+    #   obtained separately via "<command> <algorithm> __print_usage_rst__" (a complete,
+    #   self-labelled RST section); the documentation generator writes those into a nested
+    #   per-command sub-directory and wires them into the command list and toctree.
+
+  def print_subcommands(self):
+    # Enumerate a multi-algorithm command's algorithms, one per line (in ALGORITHMS order),
+    #   for the documentation generator to produce one nested page per algorithm; a
+    #   single-level command emits nothing.
     if self._subparsers is not None:
-      for child in self._subparsers.choices.values():
-        child.print_usage_rst()
+      for name in self._subparsers.algorithms:
+        sys.stdout.write(f'{name}\n')
+    sys.stdout.flush()
 
   def print_version(self):
     text = f'== {self.prog} {self._git_version if self._is_project else version.VERSION} ==\n'

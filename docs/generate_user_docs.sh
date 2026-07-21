@@ -38,6 +38,12 @@ function prepend {
   echo -e "$1" | cat - "$2" > "$2".tmp && mv "$2".tmp "$2"
 }
 
+# Escape double-quotes within a synopsis for safe embedding in a csv-table quoted field
+#   (RFC-4180 doubling); a synopsis free of quotes is emitted unchanged.
+function csv_escape {
+  printf '%s' "$1" | sed 's/"/""/g'
+}
+
 
 # Generating documentation for all commands
 
@@ -102,7 +108,20 @@ for n in `echo "$cmdlist" | sort`; do
     prepend ".. _${cmdname}:\n\n${cmdname}\n===================\n" $dirpath/$cmdname.rst
   esac
   echo '    commands/'"$cmdname" >> $toctree_file
-  echo '    |'"$logopath"'|, :ref:`'"$cmdname"'`, "'`$cmdpath __print_synopsis__`'"' >> $table_file
+  synopsis=$(csv_escape "`$cmdpath __print_synopsis__`")
+  echo '    |'"$logopath"'|, :ref:`'"$cmdname"'`, "'"$synopsis"'"' >> $table_file
+  # Hierarchical commands (C++ sub-command / Python multi-algorithm): emit one page per
+  #   sub-command into a nested sub-directory, and index each in the toctree and command
+  #   list. Each sub-command's RST already carries its own ".. _<cmd>_<sub>:" label and
+  #   title, so (unlike the top-level C++ page) it needs no prepend. An ordinary command
+  #   prints nothing for __print_subcommands__, so the loop body is skipped.
+  for sub in `$cmdpath __print_subcommands__`; do
+    mkdir -p $dirpath/$cmdname
+    $cmdpath $sub __print_usage_rst__ > $dirpath/$cmdname/$sub.rst
+    echo '    commands/'"$cmdname"'/'"$sub" >> $toctree_file
+    sub_synopsis=$(csv_escape "`$cmdpath $sub __print_synopsis__`")
+    echo '    |'"$logopath"'|, :ref:`'"${cmdname}_${sub}"'`, "'"$sub_synopsis"'"' >> $table_file
+  done
 done
 cat $toctree_file $table_file >> ${mrtrix_root}/docs/reference/commands_list.rst
 rm -f $toctree_file $table_file
