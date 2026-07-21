@@ -52,15 +52,13 @@ const OptionGroup SeedMechanismOption =
     + Option("seed_random_per_voxel",
              "seed a fixed number of streamlines per voxel in a mask image;"
              " random placement of seeds in each voxel").allow_multiple()
-      + Argument("image").type_image_in()
-      + Argument("num_per_voxel").type_integer(1)
+      + ArgumentTuple(Argument("image").type_image_in(), Argument("num_per_voxel").type_integer(1))
     + Option("seed_grid_per_voxel",
              "seed a fixed number of streamlines per voxel in a mask image;"
              " place seeds on a 3D mesh grid"
              " (grid_size argument is per axis,"
              " so a grid_size of 3 results in 27 seeds per voxel)").allow_multiple()
-      + Argument("image").type_image_in()
-      + Argument("grid_size").type_integer(1)
+      + ArgumentTuple(Argument("image").type_image_in(), Argument("grid_size").type_integer(1))
     + Option("seed_rejection_per_voxel",
              "seed from an image using rejection sampling"
              " (higher values = more probable to seed from)"
@@ -88,8 +86,8 @@ const OptionGroup SeedMechanismOption =
     + Option("seed_per_coordinate",
              "provide realspace coordinates as an Mx3 matrix (XYZ per row)"
              " and seed a fixed number of streamlines per coordinate").allow_multiple()
-      + Argument("coords_path").type_file_in()
-      + Argument("number_seeds_per_coordinate").type_integer(1)
+      + ArgumentTuple(Argument("coords_path").type_file_in(),
+                      Argument("number_seeds_per_coordinate").type_integer(1))
     + Option ("seed_rejection_per_coordinate",
               "provide realspace coordinates and respective seeding probability"
               " as an Mx4 matrix (XYZ then weight per row)"

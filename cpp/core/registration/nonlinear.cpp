@@ -29,8 +29,7 @@ const OptionGroup nonlinear_options =
              " and warp2 to transform image2->image1."
              " The deformation fields also encapsulate any linear transformation"
              " estimated prior to non-linear registration.")
-      + Argument("warp1").type_image_out()
-      + Argument("warp2").type_image_out()
+      + ArgumentTuple(Argument("warp1").type_image_out(), Argument("warp2").type_image_out())
 
     + Option("nl_warp_full",
              "output all warps used during registration."

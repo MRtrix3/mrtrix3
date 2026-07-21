@@ -626,13 +626,12 @@ class Parser: # pylint: disable=too-many-public-methods
     #   instance of a Parser.CustomTypeBase subclass. Preserved verbatim so that the
     #   machine-readable exporters (stages 2-5) can reproduce the legacy type strings.
     #
-    #   A tuple argument owns an ordered list of typed scalar sub-arguments ("elements"),
-    #   mirroring the C++ Argument tuple model (cpp/core/cmdline_option.h): its "arity" is
-    #   the number of command-line tokens it consumes (1 for a scalar, len(elements) for a
-    #   tuple), and a multi-argument option is refactored to hold a single tuple argument
-    #   whose elements are the former separate argument slots. Tuples do not nest.
+    #   An Argument is always a single scalar command-line token (arity 1). A multi-token
+    #   argument is instead an ArgumentTuple (below), a distinct first-class type, mirroring the
+    #   C++ split between Argument and ArgumentTuple (cpp/core/cmdline_option.h): a multi-argument
+    #   option holds one ArgumentTuple whose elements are the former separate argument slots.
     def __init__(self, name, help_text, *, argtype=None, choices=None, metavar=None,
-                 default=None, optional=False, allow_multiple=False, elements=None):
+                 default=None, optional=False, allow_multiple=False):
       self.name = name
       self.help = help_text
       self.argtype = argtype
@@ -641,7 +640,6 @@ class Parser: # pylint: disable=too-many-public-methods
       self.default = default
       self.optional = optional
       self.allow_multiple = allow_multiple
-      self.elements = list(elements) if elements else []
       # Choice-value aliases: an ordered list of (lowercased alias spelling, canonical choice)
       #   pairs mapping an additional accepted spelling of a choice value to its canonical
       #   spelling, mirroring the C++ Argument::choice_aliases (spelling-design.md section 3).
@@ -653,8 +651,6 @@ class Parser: # pylint: disable=too-many-public-methods
       #   "0.5 per cent", "mean"). When set it is auto-rendered as "(default: <value>)" in the
       #   help and every export, mirroring the C++ Argument::default_value (autohelp-design.md).
       self.default_value = None
-      assert not any(element.is_tuple for element in self.elements), \
-          'Argument tuples must not nest'
 
     # Declare the default value applied when this argument / option is absent, so that it is
     #   auto-rendered rather than repeated by hand in the help text. A number is formatted with
@@ -679,17 +675,17 @@ class Parser: # pylint: disable=too-many-public-methods
 
     @property
     def is_tuple(self):
-      return bool(self.elements)
+      # An Argument is always scalar; a multi-token argument is an ArgumentTuple (below).
+      return False
 
     @property
     def arity(self):
-      # Number of command-line tokens consumed: 1 for a scalar, len(elements) for a tuple.
-      return len(self.elements) if self.elements else 1
+      # A scalar argument consumes exactly one command-line token.
+      return 1
 
     def leaves(self):
-      # Flattened scalar sub-arguments (this argument itself when scalar); the k-th leaf
-      #   corresponds to the k-th consumed token.
-      return list(self.elements) if self.elements else [self]
+      # The flattened scalar sub-arguments of a scalar argument: itself.
+      return [self]
 
     # Declare an additional accepted spelling of a choice value that maps to the canonical
     #   choice, mirroring the C++ Argument::choice_alias(). type_choice (choices=...) must be
@@ -714,6 +710,56 @@ class Parser: # pylint: disable=too-many-public-methods
         if alias == lowered:
           return canonical
       return None
+
+  # A fixed-arity group of individually-typed scalar Arguments, consumed as one logical, permutable
+  #   command-line argument (one token per element), mirroring the C++ ArgumentTuple
+  #   (cpp/core/cmdline_option.h). It is a first-class alternative to a scalar Argument: a
+  #   multi-argument option holds a single ArgumentTuple whose elements are the individual fields,
+  #   and a positional slot may be an ArgumentTuple to accept (optionally repeated) groups of
+  #   fields. The tuple carries no type of its own; only its member Arguments are type-checked. Its
+  #   command-line syntax is derived from the member argument display ids (their metavar / name).
+  #   Tuples do not nest (every element is a scalar Argument). The interface (is_tuple / arity /
+  #   leaves() / help_metadata()) matches Argument's so both can be held interchangeably wherever a
+  #   positional slot or an option's single argument item is expected.
+  class ArgumentTuple:
+    def __init__(self, name, help_text, elements, *, optional=False, allow_multiple=False):
+      self.name = name
+      # Group-level description; unused for option tuples (the option carries the help), retained
+      #   for parity with the C++ ArgumentTuple::desc used on a positional tuple's summary line.
+      self.help = help_text
+      self.elements = list(elements)
+      self.optional = optional
+      self.allow_multiple = allow_multiple
+      # Attributes present on a scalar Argument that consumers may read uniformly; a tuple has no
+      #   scalar type / choices / default of its own (each element carries its own).
+      self.argtype = None
+      self.choices = None
+      self.metavar = None
+      self.choice_aliases = []
+      self.default = None
+      self.default_value = None
+      assert self.elements and not any(element.is_tuple for element in self.elements), \
+          'An ArgumentTuple requires scalar Argument elements and must not nest'
+
+    @property
+    def is_tuple(self):
+      return True
+
+    @property
+    def arity(self):
+      # Number of command-line tokens consumed: one per member element.
+      return len(self.elements)
+
+    def leaves(self):
+      # The flattened member (scalar) arguments; the k-th leaf corresponds to the k-th token.
+      return list(self.elements)
+
+    # The concatenated choice / range / default annotation of member fields that carry no
+    #   description: a described member renders its metadata on its own listing line, whereas a
+    #   member with no description contributes its metadata here so that it is appended to the
+    #   owning option's description line (mirroring the C++ ArgumentTuple::help_metadata()).
+    def help_metadata(self):
+      return ''.join(element.help_metadata() for element in self.elements if not element.help)
 
   class Option:
     def __init__(self, name, help_text, *, required=False, repeatable=False, dest=None,
@@ -778,11 +824,12 @@ class Parser: # pylint: disable=too-many-public-methods
           'choice_alias() is only applicable to a single-argument option'
       self.args[0].choice_alias(alias_spelling, canonical_choice)
       return self
-    # The auto-rendered choice / range / default annotation of this option's scalar arguments,
-    #   concatenated in argument order (tuple sub-arguments are excluded here; their metadata is
-    #   rendered on their own listing lines), mirroring the C++ Option::help_metadata().
+    # The auto-rendered choice / range / default annotation of this option's argument item,
+    #   mirroring the C++ Option::help_metadata(). A scalar argument yields its own metadata; a
+    #   tuple yields the metadata of its description-less member fields (a described field renders
+    #   its metadata on its own listing line instead).
     def help_metadata(self):
-      return ''.join(arg.help_metadata() for arg in self.args if not arg.is_tuple)
+      return ''.join(arg.help_metadata() for arg in self.args)
 
   # A named, ordered collection of Options that additionally owns an ordered list of nested
   #   child groups (sub-groups), mirroring the C++ OptionGroup (cpp/core/cmdline_option.h).
@@ -1591,12 +1638,10 @@ class Parser: # pylint: disable=too-many-public-methods
                                  choices=choices,
                                  metavar=slot_metavar)
         if arity > 1:
-          # Multi-argument option: a single tuple argument whose elements are the fields.
-          option.args.append(Parser.Argument(opt_name,
-                                              help_text,
-                                              argtype=argtype,
-                                              choices=choices,
-                                              elements=[make_slot(i) for i in range(arity)]))
+          # Multi-argument option: a single ArgumentTuple whose elements are the fields.
+          option.args.append(Parser.ArgumentTuple(opt_name,
+                                                  help_text,
+                                                  [make_slot(i) for i in range(arity)]))
         else:
           option.args.append(make_slot(0))
       group.options.append(option)
@@ -2204,10 +2249,9 @@ class Parser: # pylint: disable=too-many-public-methods
           if not arg.is_tuple:
             continue
           for leaf in arg.elements:
-            leaf_desc = leaf.help + leaf.help_metadata()
-            if leaf_desc:
+            if leaf.help:
               leaf_id = Parser._leaf_id(leaf)
-              group_text += wrapper_field.fill(f'{leaf_id}: {leaf_desc}') + '\n'
+              group_text += wrapper_field.fill(f'{leaf_id}: {leaf.help}{leaf.help_metadata()}') + '\n'
         group_text += '\n'
       return group_text
 
@@ -2431,7 +2475,7 @@ class Parser: # pylint: disable=too-many-public-methods
         #   field's own choice / range / default metadata is appended to its description.
         field_lines = [f'    - *{Parser._leaf_id(leaf)}*: {leaf.help}{leaf.help_metadata()}'
                        for arg in option.args if arg.is_tuple
-                       for leaf in arg.elements if leaf.help or leaf.help_metadata()]
+                       for leaf in arg.elements if leaf.help]
         if field_lines:
           group_text += '\n'.join(field_lines) + '\n'
       return group_text
@@ -2541,9 +2585,8 @@ class Parser: # pylint: disable=too-many-public-methods
           if not arg.is_tuple:
             continue
           for leaf in arg.elements:
-            leaf_desc = leaf.help + leaf.help_metadata()
-            if leaf_desc:
-              leaf_help = leaf_desc.replace('|', '\\|')
+            if leaf.help:
+              leaf_help = (leaf.help + leaf.help_metadata()).replace('|', '\\|')
               field_lines.append(f'   *{Parser._leaf_id(leaf)}*: {leaf_help}')
         if field_lines:
           group_text += ' |br|\n' + ' |br|\n'.join(field_lines)

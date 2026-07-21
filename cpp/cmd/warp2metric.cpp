@@ -55,11 +55,10 @@ void usage() {
      + Option ("fc", "use an input template fixel image to define fibre orientations"
                      " and output a fixel image describing the change in fibre cross-section (FC)"
                      " in the perpendicular plane to the fixel orientation.")
-       + Argument ("fc_spec")
-           .type_tuple({Argument ("template_fixel_directory",
+       + ArgumentTuple (Argument ("template_fixel_directory",
                                  "the input template fixel directory defining fibre orientations").type_directory_in(),
                         Argument ("output_fixel_directory", "the output fixel directory").type_text(),
-                        Argument ("output_fixel_data", "the output fixel data file describing the FC").type_text()})
+                        Argument ("output_fixel_data", "the output fixel data file describing the FC").type_text())
 
      + Option ("jmat", "output a Jacobian matrix image stored in column-major order"
                        " along the 4th dimension."

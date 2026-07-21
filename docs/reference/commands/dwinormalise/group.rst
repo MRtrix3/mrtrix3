@@ -1,0 +1,92 @@
+.. _dwinormalise_group:
+
+dwinormalise group
+==================
+
+Synopsis
+--------
+
+Performs a global DWI intensity normalisation on a group of subjects using the median b=0 white matter value as the reference
+
+Usage
+-----
+
+::
+
+    dwinormalise group input_dir mask_dir output_dir fa_template wm_mask [ options ]
+
+-  *input_dir*: The input directory containing all DWI images
+-  *mask_dir*: Input directory containing brain masks, corresponding to one per input image (with the same file name prefix)
+-  *output_dir*: The output directory containing all of the intensity normalised DWI images
+-  *fa_template*: The output population-specific FA template, which is thresholded to estimate a white matter mask
+-  *wm_mask*: The output white matter mask (in template space), used to estimate the median b=0 white matter value for normalisation
+
+Description
+-----------
+
+The white matter mask is estimated from a population average FA template then warped back to each subject to perform the intensity normalisation. Note that bias field correction should be performed prior to this step.
+
+All input DWI files must contain an embedded diffusion gradient table; for this reason, these images must all be in either .mif or .mif.gz format.
+
+Options
+-------
+
+- **-fa_threshold value** The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask (default: 0.4) (range: 0 to 1)
+
+Standard options
+^^^^^^^^^^^^^^^^
+
+- **-force** force overwrite of output files.
+
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
+
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+
+- **-help** display this information page and exit.
+
+- **-version** display version information and exit.
+
+Verbosity options
+"""""""""""""""""
+
+- **-info** display information messages.
+
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+
+- **-debug** display debugging messages & debug input data.
+
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
+
+- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+
+References
+^^^^^^^^^^
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
+
+--------------
+
+
+
+**Author:** David Raffelt (david.raffelt@florey.edu.au)
+
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
+
+For more details, see http://www.mrtrix.org/.
+

@@ -71,10 +71,10 @@ void usage() {
             " the input and output images are provided as a consecutive pair.");
 
   ARGUMENTS
-  + Argument("input_output", "list of all input and output tissue compartment files"
-                             " (see example usage).")
-      .type_tuple({Argument("input",  "an input tissue compartment image").type_image_in(),
-                   Argument("output", "the corresponding output tissue compartment image").type_image_out()})
+  + ArgumentTuple(Argument("input",  "an input tissue compartment image").type_image_in(),
+                  Argument("output", "the corresponding output tissue compartment image").type_image_out())
+      .set_description("list of all input and output tissue compartment files"
+                       " (see example usage).")
       .allow_multiple();
 
   OPTIONS

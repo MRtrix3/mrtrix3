@@ -112,10 +112,12 @@ public:
   std::string syntax(const bool format) const;
 };
 
-//! a class to hold the list of Argument's
-class ArgumentList : public std::vector<Argument> {
+//! a class to hold the list of positional argument elements (each a scalar Argument or an ArgumentTuple)
+class ArgumentList : public std::vector<ArgumentElement> {
 public:
   ArgumentList &operator+(const Argument &argument);
+
+  ArgumentList &operator+(const ArgumentTuple &tuple);
 
   std::string syntax(const bool format) const;
 };
@@ -128,6 +130,8 @@ public:
   OptionList &operator+(const Option &option);
 
   OptionList &operator+(const Argument &argument);
+
+  OptionList &operator+(const ArgumentTuple &tuple);
 
   OptionGroup &back();
 

@@ -51,18 +51,18 @@ const OptionGroup ResampleOption =
     + Option("line",
              "resample tracks at 'num' equidistant locations along a line between 'start' and 'end'"
              " (specified as comma-separated 3-vectors in scanner coordinates)")
-      + Argument("num").type_integer(2)
-      + Argument("start").type_sequence_float()
-      + Argument("end").type_sequence_float()
+      + ArgumentTuple(Argument("num").type_integer(2),
+                      Argument("start").type_sequence_float(),
+                      Argument("end").type_sequence_float())
 
     + Option("arc",
              "resample tracks at 'num' equidistant locations"
              " along a circular arc specified by points 'start', 'mid' and 'end'"
              " (specified as comma-separated 3-vectors in scanner coordinates)")
-      + Argument("num").type_integer(2)
-      + Argument("start").type_sequence_float()
-      + Argument("mid").type_sequence_float()
-      + Argument("end").type_sequence_float();
+      + ArgumentTuple(Argument("num").type_integer(2),
+                      Argument("start").type_sequence_float(),
+                      Argument("mid").type_sequence_float(),
+                      Argument("end").type_sequence_float());
 // clang-format on
 
 namespace {

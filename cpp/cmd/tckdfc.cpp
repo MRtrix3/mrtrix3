@@ -102,8 +102,8 @@ void usage () {
      + Option ("dynamic", "generate a \"dynamic\" (4D) output image;"
                           " must additionally provide the shape and width (in volumes)"
                           " of the sliding window.")
-       + Argument ("shape").type_choice<WindowShape>()
-       + Argument ("width").type_integer(3)).require_exactly_one()
+       + ArgumentTuple (Argument ("shape").type_choice<WindowShape>(),
+                        Argument ("width").type_integer(3))).require_exactly_one()
 
   + OptionGroup ("Options for setting the properties of the output image")
 

@@ -117,9 +117,9 @@ void usage() {
   ARGUMENTS
     + Argument ("algorithm", "the algorithm to use for FOD estimation.").type_choice<Algorithm>()
     + Argument ("dwi", "the input diffusion-weighted image").type_image_in()
-    + Argument ("response_odf", "pairs of input tissue response and output ODF images")
-        .type_tuple({Argument ("response", "an input tissue response function").type_file_in(),
-                     Argument ("odf",      "the corresponding output ODF image").type_image_out()})
+    + ArgumentTuple (Argument ("response", "an input tissue response function").type_file_in(),
+                     Argument ("odf",      "the corresponding output ODF image").type_image_out())
+        .set_description ("pairs of input tissue response and output ODF images")
         .allow_multiple();
 
   OPTIONS

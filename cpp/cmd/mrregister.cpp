@@ -127,9 +127,8 @@ void usage() {
   + Option ("transformed_midway", "image1 and image2 after registration transformed and regridded to the midway space."
                                   " Note that -transformed_midway needs to be repeated for each contrast"
                                   " if multi-contrast registration is used.").allow_multiple()
-    + Argument ("images_transformed")
-        .type_tuple({Argument ("image1_transformed", "the output for image1 in the midway space").type_image_out (),
-                     Argument ("image2_transformed", "the output for image2 in the midway space").type_image_out ()})
+    + ArgumentTuple (Argument ("image1_transformed", "the output for image1 in the midway space").type_image_out (),
+                     Argument ("image2_transformed", "the output for image2 in the midway space").type_image_out ())
 
   + Option ("mask1", "a mask to define the region of image1 to use for optimisation.")
     + Argument ("filename").type_image_in ()

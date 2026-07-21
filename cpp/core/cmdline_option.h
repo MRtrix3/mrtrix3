@@ -417,39 +417,21 @@ public:
     return *this;
   }
 
-  //! for a tuple argument, the ordered list of typed sub-arguments
-  /*! When non-empty, this Argument is a "tuple": a single logical, permutable
-   * command-line argument that consumes elements.size() tokens, one per sub-argument,
-   * each validated against that sub-argument's type. Each sub-argument carries its own
-   * id, description and type. A tuple must not itself contain a tuple (one level only). */
-  std::vector<Argument> elements;
+  //! the number of command-line tokens this (scalar) argument consumes
+  /*! Always 1 for an Argument; provided so that Argument and ArgumentTuple present a
+   * uniform interface to the ArgumentElement variant helpers (see element_arity()). */
+  size_t arity() const { return 1; }
 
-  //! true if this argument is a tuple (an ordered group of sub-arguments)
-  bool is_tuple() const { return !elements.empty(); }
+  //! the flattened scalar (leaf) arguments of this argument: just itself
+  /*! Provided so that Argument and ArgumentTuple present a uniform interface to the
+   * ArgumentElement variant helpers (see element_leaves()); the k-th leaf corresponds to
+   * the k-th consumed token. */
+  std::vector<const Argument *> leaves() const { return {this}; }
 
-  //! the number of command-line tokens this argument consumes
-  /*! 1 for a scalar argument; the number of sub-arguments for a tuple. */
-  size_t arity() const { return elements.empty() ? size_t(1) : elements.size(); }
-
-  //! specifies that the argument is a tuple of ordered, individually-typed sub-arguments
-  /*! Each sub-argument is provided with its own id, description and type. The tuple is
-   * consumed as a single logical argument of fixed arity (equal to the number of
-   * sub-arguments) that remains permutable with the other arguments and options. A tuple
-   * positional argument may be declared .allow_multiple() to accept repeated groups of
-   * sub-arguments (e.g. repeated input/output pairs).
-   * \note sub-arguments must be scalar; a tuple cannot itself contain a tuple. */
-  Argument &type_tuple(std::vector<Argument> subarguments) {
-    assert(!subarguments.empty());
-    for (const auto &element : subarguments)
-      assert(!element.is_tuple());
-    elements = std::move(subarguments);
-    return *this;
-  }
-
-  //! the display representation of this argument's identifier(s)
-  /*! For a scalar argument this is simply its id; for a tuple it is the space-joined
-   * ids of its sub-arguments, so that the command-line syntax lines read naturally. */
-  std::string syntax_id() const;
+  //! the display representation of this argument's identifier: simply its id
+  /*! Provided for interface uniformity with ArgumentTuple::syntax_id(), whose display id is
+   * the space-joined ids of its sub-arguments. */
+  std::string syntax_id() const { return id; }
 
   //! the auto-rendered annotation of permitted choices, numeric range and default value
   /*! Returns a string of parenthesised clauses, each preceded by a single space (e.g.
@@ -461,6 +443,158 @@ public:
   std::string syntax(const bool format) const;
   std::string usage() const;
 };
+
+//! A class to specify a fixed-arity group of individually-typed command-line arguments
+/*! An ArgumentTuple is a single, permutable command-line argument that consumes several
+ * tokens at once, one per member Argument, each validated against that member's own type.
+ * It is a first-class alternative to a plain Argument wherever a single logical argument is
+ * naturally composed of several fields: a multi-argument option holds one ArgumentTuple
+ * instead of several Arguments, and a positional slot may be an ArgumentTuple to accept
+ * (optionally repeated) groups of fields (e.g. input/output image pairs).
+ *
+ * The tuple carries no type of its own; only its member Arguments are type-checked. Its
+ * command-line syntax is derived (manifested) from the member argument names — its
+ * syntax_id() is the space-joined member ids — so the usage line reads naturally without a
+ * separate opaque metavar. Tuples do not nest (a member must be a scalar Argument).
+ *
+ * \code
+ * ARGUMENTS
+ *   + ArgumentTuple(Argument("response", "an input tissue response function").type_file_in(),
+ *                   Argument("odf",      "the corresponding output ODF image").type_image_out())
+ *     .set_description("pairs of input tissue response and output ODF images")
+ *     .allow_multiple();
+ *
+ * OPTIONS
+ *   + Option("fslgrad", "...")
+ *     + ArgumentTuple(Argument("bvecs").type_file_in(), Argument("bvals").type_file_in());
+ * \endcode */
+class ArgumentTuple {
+public:
+  //! construct from two or more individually-typed member Arguments
+  /*! The tuple manifests its syntax from these members' ids; each member must be a scalar
+   * Argument (tuples do not nest). At least two members are required (a single-field tuple
+   * would be an ordinary Argument). */
+  template <
+      typename... Rest,
+      typename = std::enable_if_t<(sizeof...(Rest) >= 1) && (std::is_same<std::decay_t<Rest>, Argument>::value && ...)>>
+  ArgumentTuple(Argument first, Rest... rest) {
+    elements.push_back(std::move(first));
+    (elements.push_back(std::move(rest)), ...);
+  }
+
+  //! construct from a pre-built list of member Arguments (must be non-empty; none a tuple)
+  explicit ArgumentTuple(std::vector<Argument> members) : elements(std::move(members)) { assert(!elements.empty()); }
+
+  //! the ordered, individually-typed member (field) arguments
+  std::vector<Argument> elements;
+  //! the group-level description rendered on a positional tuple's summary line (empty for options)
+  /*! For a positional ArgumentTuple this describes the group as a whole (e.g. "pairs of input
+   * response and output ODF images") and is rendered on the summary line alongside the
+   * space-joined member ids; for an option tuple the option itself carries the description,
+   * so this is left empty. */
+  std::string desc;
+  //! the tuple flags (Optional and/or AllowMultiple), applied to the group as a whole
+  ArgModifierFlags flags;
+
+  //! declare the group-level description of this (positional) tuple
+  ArgumentTuple &set_description(std::string description) {
+    desc = std::move(description);
+    return *this;
+  }
+
+  //! specifies that the tuple (as a whole) is optional
+  ArgumentTuple &optional() {
+    flags.set_optional();
+    return *this;
+  }
+
+  //! specifies that repeated groups of the tuple's fields may be supplied
+  ArgumentTuple &allow_multiple() {
+    flags.set_allow_multiple();
+    return *this;
+  }
+
+  //! the number of command-line tokens the tuple consumes: one per member
+  size_t arity() const { return elements.size(); }
+
+  //! the flattened member (leaf) arguments; the k-th leaf corresponds to the k-th token
+  std::vector<const Argument *> leaves() const {
+    std::vector<const Argument *> result;
+    result.reserve(elements.size());
+    for (const auto &element : elements)
+      result.push_back(&element);
+    return result;
+  }
+
+  //! the display representation: the space-joined ids of the member arguments
+  std::string syntax_id() const;
+
+  //! the concatenated choice / range / default annotation of member fields that carry no description
+  /*! A member with its own description renders its metadata on its own listing line; a member with
+   * no description instead contributes its metadata here, so that — exactly as in the former
+   * multi-scalar-argument option form — it is appended to the owning option's description line. */
+  std::string help_metadata() const {
+    std::string result;
+    for (const auto &element : elements)
+      if (element.desc.empty())
+        result += element.help_metadata();
+    return result;
+  }
+
+  std::string syntax(const bool format) const;
+  std::string usage() const;
+};
+
+//! a single element of an ARGUMENTS list or of an Option: either a scalar Argument or an ArgumentTuple
+using ArgumentElement = std::variant<Argument, ArgumentTuple>;
+
+//! the number of command-line tokens the element consumes (1 for a scalar; the field count for a tuple)
+inline size_t element_arity(const ArgumentElement &element) {
+  return std::visit([](const auto &held) { return held.arity(); }, element);
+}
+
+//! the element's display id (the scalar's id, or the tuple's space-joined member ids)
+inline std::string element_syntax_id(const ArgumentElement &element) {
+  return std::visit([](const auto &held) { return held.syntax_id(); }, element);
+}
+
+//! the element's flags (Optional / AllowMultiple)
+inline const ArgModifierFlags &element_flags(const ArgumentElement &element) {
+  return std::visit([](const auto &held) -> const ArgModifierFlags & { return held.flags; }, element);
+}
+
+//! the flattened scalar (leaf) arguments of the element; the k-th leaf corresponds to the k-th token
+inline std::vector<const Argument *> element_leaves(const ArgumentElement &element) {
+  return std::visit([](const auto &held) { return held.leaves(); }, element);
+}
+
+//! the element's summary-line description (a scalar's description, or a tuple's group description)
+inline std::string element_description(const ArgumentElement &element) {
+  return std::visit([](const auto &held) { return held.desc; }, element);
+}
+
+//! the element's scalar choice / range / default annotation (empty for a tuple)
+inline std::string element_help_metadata(const ArgumentElement &element) {
+  return std::visit([](const auto &held) { return held.help_metadata(); }, element);
+}
+
+//! the tuple's member (field) arguments, or an empty list for a scalar element
+inline const std::vector<Argument> &tuple_fields(const ArgumentElement &element) {
+  static const std::vector<Argument> none;
+  if (const auto *const tuple = std::get_if<ArgumentTuple>(&element))
+    return tuple->elements;
+  return none;
+}
+
+//! the element's terminal-help rendering (summary line plus, for a tuple, its member field lines)
+inline std::string element_syntax(const ArgumentElement &element, const bool format) {
+  return std::visit([format](const auto &held) { return held.syntax(format); }, element);
+}
+
+//! the element's __print_full_usage__ serialisation (one ARGUMENT line per leaf field)
+inline std::string element_usage(const ArgumentElement &element) {
+  return std::visit([](const auto &held) { return held.usage(); }, element);
+}
 
 //! A class to specify a command-line option
 /*! Command-line options that are accepted by a particular command are
@@ -499,7 +633,7 @@ public:
  * Options can also be specified as required (see required() function), or
  * as multiple (see allow_multiple() function).
  */
-class Option : public std::vector<Argument> {
+class Option {
 public:
   Option() { flags.set_optional(); }
 
@@ -507,8 +641,22 @@ public:
     flags.set_optional();
   }
 
+  //! the option's single argument item: a scalar Argument, an ArgumentTuple, or none (a flag)
+  /*! An option accepts at most one item. A flag has no item (nullopt); a single-argument option
+   * holds a scalar Argument; a multi-argument option holds one ArgumentTuple whose members are
+   * the individual fields. The tokens consumed follow from this single item (see arity()). */
+  std::optional<ArgumentElement> item;
+
+  //! attach the option's sole scalar argument
   Option &operator+(const Argument &arg) {
-    push_back(arg);
+    assert(!item.has_value());
+    item = arg;
+    return *this;
+  }
+  //! attach the option's sole argument tuple (a multi-field option)
+  Option &operator+(const ArgumentTuple &tuple) {
+    assert(!item.has_value());
+    item = tuple;
     return *this;
   }
   operator bool() const { return !id.empty(); }
@@ -590,39 +738,24 @@ public:
     return false;
   }
 
-  //! the total number of command-line tokens consumed by this option's arguments
-  /*! Equal to the number of arguments for an option of scalar arguments; a tuple
-   * argument contributes as many tokens as it has sub-arguments. This is the count of
-   * tokens the parser consumes immediately following the option on the command-line. */
-  size_t arity() const {
-    size_t total = 0;
-    for (const auto &arg : *this)
-      total += arg.arity();
-    return total;
-  }
+  //! the total number of command-line tokens consumed by this option's argument item
+  /*! Zero for a flag, one for a scalar argument, or the field count for an argument tuple.
+   * This is the count of tokens the parser consumes immediately following the option. */
+  size_t arity() const { return item.has_value() ? element_arity(*item) : 0; }
 
   //! the flattened list of scalar (leaf) sub-arguments of this option
-  /*! Tuple arguments are expanded into their constituent sub-arguments; scalar arguments
-   * map to themselves. The k-th leaf corresponds to the k-th command-line token consumed
-   * by the option, i.e. to ParsedOption::operator[](k). */
+  /*! An argument tuple is expanded into its member fields; a scalar argument maps to itself; a
+   * flag yields none. The k-th leaf corresponds to the k-th command-line token consumed by the
+   * option, i.e. to ParsedOption::operator[](k). */
   std::vector<const Argument *> leaves() const {
-    std::vector<const Argument *> result;
-    result.reserve(arity());
-    for (const auto &arg : *this) {
-      if (arg.is_tuple())
-        for (const auto &element : arg.elements)
-          result.push_back(&element);
-      else
-        result.push_back(&arg);
-    }
-    return result;
+    return item.has_value() ? element_leaves(*item) : std::vector<const Argument *>();
   }
 
-  //! the auto-rendered choice / range / default annotation of this option's scalar arguments
-  /*! Concatenates the help_metadata() of each non-tuple argument, so that an option's permitted
-   * choices, numeric range and default value are appended to its description automatically.
-   * Tuple sub-arguments are excluded here; their metadata is rendered on their own listing lines. */
-  std::string help_metadata() const;
+  //! the auto-rendered choice / range / default annotation of this option's scalar argument
+  /*! The option's scalar argument metadata (choices / range / default) appended to its
+   * description automatically; empty for a flag or for a tuple item (whose member fields render
+   * their own metadata on their listing lines). */
+  std::string help_metadata() const { return item.has_value() ? element_help_metadata(*item) : std::string(); }
 
   std::string syntax(const bool format) const;
   std::string usage() const;
@@ -685,6 +818,12 @@ public:
   OptionGroup &operator+(const Argument &argument) {
     assert(!empty());
     back() + argument;
+    return *this;
+  }
+
+  OptionGroup &operator+(const ArgumentTuple &tuple) {
+    assert(!empty());
+    back() + tuple;
     return *this;
   }
 

@@ -29,8 +29,7 @@ const OptionGroup ImportOptions =
     + Option("import_pe_topup", "import a phase-encoding table intended for FSL topup from file")
       + Argument("file").type_file_in()
     + Option("import_pe_eddy", "import phase-encoding information from an EDDY-style config / index file pair")
-      + Argument("config").type_file_in()
-      + Argument("indices").type_file_in();
+      + ArgumentTuple(Argument("config").type_file_in(), Argument("indices").type_file_in());
 
 const OptionGroup SelectOptions =
     OptionGroup("Options for selecting volumes based on phase-encoding")
@@ -48,8 +47,7 @@ const OptionGroup ExportOptions =
     + Option("export_pe_topup", "export phase-encoding table to file intended for FSL topup")
       + Argument("file").type_file_out()
     + Option("export_pe_eddy", "export phase-encoding information to an EDDY-style config / index file pair")
-      + Argument("config").type_file_out()
-      + Argument("indices").type_file_out();
+      + ArgumentTuple(Argument("config").type_file_out(), Argument("indices").type_file_out());
 // clang-format on
 
 void check(const scheme_type &PE) {

@@ -66,9 +66,8 @@ void usage() {
             "the direction of a peak to estimate."
             " The algorithm will attempt to find the same number of peaks"
             " as have been specified using this option.").allow_multiple()
-    + Argument ("phi_theta")
-        .type_tuple({Argument ("phi",   "the azimuthal angle of the peak direction").type_float(),
-                     Argument ("theta", "the polar angle of the peak direction").type_float()})
+    + ArgumentTuple (Argument ("phi",   "the azimuthal angle of the peak direction").type_float(),
+                     Argument ("theta", "the polar angle of the peak direction").type_float())
 
   + Option ("peaks",
             "the program will try to find the peaks that most closely match those"

@@ -44,8 +44,7 @@ OptionGroup GradImportOptions() {
                " in FSL bvecs/bvals format files."
                " If a diffusion gradient scheme is present in the input image header,"
                " the data provided with this option will be instead used.")
-        + Argument("bvecs_bvals")
-            .type_tuple({Argument("bvecs").type_file_in(), Argument("bvals").type_file_in()});
+        + ArgumentTuple(Argument("bvecs").type_file_in(), Argument("bvals").type_file_in());
 }
 
 OptionGroup GradExportOptions() {
@@ -56,8 +55,7 @@ OptionGroup GradExportOptions() {
 
       + Option("export_grad_fsl",
                "export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format")
-        + Argument("bvecs_bvals_path")
-            .type_tuple({Argument("bvecs_path").type_file_out(), Argument("bvals_path").type_file_out()});
+        + ArgumentTuple(Argument("bvecs_path").type_file_out(), Argument("bvals_path").type_file_out());
 }
 
 const Option bvalue_scaling_option = Option("bvalue_scaling",

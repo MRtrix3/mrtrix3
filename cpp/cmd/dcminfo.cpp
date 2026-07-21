@@ -45,9 +45,8 @@ void usage() {
   + Option ("tag", "print field specified by the group & element tags supplied."
                    " Tags should be supplied as Hexadecimal"
                    " (i.e. as they appear in the -all listing).").allow_multiple()
-    + Argument ("group_element")
-        .type_tuple({Argument ("group",   "the hexadecimal DICOM group of the tag").type_text(),
-                     Argument ("element", "the hexadecimal DICOM element of the tag").type_text()});
+    + ArgumentTuple (Argument ("group",   "the hexadecimal DICOM group of the tag").type_text(),
+                     Argument ("element", "the hexadecimal DICOM element of the tag").type_text());
 
 }
 // clang-format on

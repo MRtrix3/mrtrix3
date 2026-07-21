@@ -62,10 +62,9 @@ void usage() {
     + Argument ("text").type_text()
 
   + Option ("tag", "replace specific tag.").allow_multiple()
-    + Argument ("group_element_newvalue")
-        .type_tuple({Argument ("group",    "the DICOM group of the tag to be replaced").type_text(),
+    + ArgumentTuple (Argument ("group",    "the DICOM group of the tag to be replaced").type_text(),
                      Argument ("element",  "the DICOM element of the tag to be replaced").type_text(),
-                     Argument ("newvalue", "the new value to assign to the tag").type_text()});
+                     Argument ("newvalue", "the new value to assign to the tag").type_text());
 }
 // clang-format on
 

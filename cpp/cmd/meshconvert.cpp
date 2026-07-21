@@ -46,8 +46,8 @@ void usage() {
 
   + Option ("transform", "transform vertices from one coordinate space to another,"
                          " based on a template image")
-    + Argument ("mode").type_choice<TransformChoice>()
-    + Argument ("image").type_image_in();
+    + ArgumentTuple (Argument ("mode").type_choice<TransformChoice>(),
+                     Argument ("image").type_image_in());
 
 }
 // clang-format on

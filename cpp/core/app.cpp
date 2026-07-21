@@ -84,7 +84,7 @@ const OptionGroup _standard_options = OptionGroup("Standard options")
            " (set to 0 to disable multi-threading).")
     + Argument("number").type_integer(0)
   + Option("config", "temporarily set the value of an MRtrix config file entry.").allow_multiple()
-    + Argument("key_value").type_tuple({Argument("key").type_text(), Argument("value").type_text()})
+    + ArgumentTuple(Argument("key").type_text(), Argument("value").type_text())
   + Option("help", "display this information page and exit.")
   + Option("version", "display version information and exit.")
   + (OptionGroup("Verbosity options")
@@ -407,17 +407,18 @@ std::string usage_syntax(const bool format) {
   s += " [ options ]";
 
   for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+    const ArgModifierFlags &arg_flags = element_flags(ARGUMENTS[i]);
 
-    if (ARGUMENTS[i].flags.optional())
+    if (arg_flags.optional())
       s += " [";
-    s += std::string(" ") + ARGUMENTS[i].syntax_id();
+    s += std::string(" ") + element_syntax_id(ARGUMENTS[i]);
 
-    if (ARGUMENTS[i].flags.allow_multiple()) {
-      if (ARGUMENTS[i].flags.required())
-        s += std::string(" [ ") + ARGUMENTS[i].syntax_id();
+    if (arg_flags.allow_multiple()) {
+      if (arg_flags.required())
+        s += std::string(" [ ") + element_syntax_id(ARGUMENTS[i]);
       s += " ...";
     }
-    if (ARGUMENTS[i].flags.any())
+    if (arg_flags.any())
       s += " ]";
   }
   return s + "\n\n";
@@ -485,9 +486,7 @@ std::string ExampleList::syntax(const bool format) const {
   return s;
 }
 
-std::string Argument::syntax_id() const {
-  if (elements.empty())
-    return id;
+std::string ArgumentTuple::syntax_id() const {
   std::string result;
   for (size_t i = 0; i < elements.size(); ++i) {
     if (i != 0)
@@ -532,28 +531,27 @@ std::string Argument::help_metadata() const {
   return result;
 }
 
-std::string Option::help_metadata() const {
-  std::string result;
-  for (const auto &arg : *this) {
-    if (arg.is_tuple())
-      continue;
-    result += arg.help_metadata();
-  }
-  return result;
+std::string Argument::syntax(const bool format) const {
+  std::string retval =
+      paragraph((format ? underline(id, true) : id), desc + help_metadata(), help_formatting.arg_indents);
+  if (format)
+    retval += "\n";
+  return retval;
 }
 
-std::string Argument::syntax(const bool format) const {
+std::string ArgumentTuple::syntax(const bool format) const {
   const std::string header = syntax_id();
   std::string retval =
       paragraph((format ? underline(header, true) : header), desc + help_metadata(), help_formatting.arg_indents);
-  // For a tuple argument, list each sub-argument (id and description) beneath the summary line.
+  // List each described member field (id and description) beneath the tuple summary line. A field
+  //   with no description contributes its metadata to the summary line (help_metadata()) instead.
   const HelpFormatting::Indents element_indents{help_formatting.arg_indents.header + 2,
                                                 help_formatting.arg_indents.main + 2};
   for (const auto &element : elements) {
-    const std::string element_desc = element.desc + element.help_metadata();
-    if (element_desc.empty())
+    if (element.desc.empty())
       continue;
-    retval += paragraph((format ? underline(element.id, true) : element.id), element_desc, element_indents);
+    retval += paragraph(
+        (format ? underline(element.id, true) : element.id), element.desc + element.help_metadata(), element_indents);
   }
   if (format)
     retval += "\n";
@@ -565,10 +563,15 @@ ArgumentList &ArgumentList::operator+(const Argument &argument) {
   return *this;
 }
 
+ArgumentList &ArgumentList::operator+(const ArgumentTuple &tuple) {
+  push_back(tuple);
+  return *this;
+}
+
 std::string ArgumentList::syntax(const bool format) const {
   std::string s;
   for (size_t i = 0; i < size(); ++i)
-    s += (*this)[i].syntax(format);
+    s += element_syntax((*this)[i], format);
   return s + "\n";
 }
 
@@ -593,15 +596,15 @@ std::string Option::syntax(const bool format) const {
   else
     opt = paragraph(opt, augmented_desc, help_formatting.option_indents);
 
-  // For a tuple argument, list each described sub-argument (id and description) beneath the option.
-  for (const auto &arg : *this) {
-    if (!arg.is_tuple())
-      continue;
-    for (const auto &element : arg.elements) {
-      const std::string element_desc = element.desc + element.help_metadata();
-      if (element_desc.empty())
+  // For an argument tuple, list each described member field (id and description) beneath the option.
+  //   A field with no description contributes its metadata to the option line (help_metadata()).
+  if (item.has_value()) {
+    for (const auto &element : tuple_fields(*item)) {
+      if (element.desc.empty())
         continue;
-      opt += paragraph((format ? underline(element.id, true) : element.id), element_desc, help_formatting.arg_indents);
+      opt += paragraph((format ? underline(element.id, true) : element.id),
+                       element.desc + element.help_metadata(),
+                       help_formatting.arg_indents);
     }
   }
   return opt;
@@ -648,6 +651,11 @@ OptionList &OptionList::operator+(const Argument &argument) {
   return *this;
 }
 
+OptionList &OptionList::operator+(const ArgumentTuple &tuple) {
+  back() + tuple;
+  return *this;
+}
+
 std::string OptionList::syntax(const bool format) const {
   std::vector<std::string> group_names;
   for (size_t i = 0; i < size(); ++i) {
@@ -673,18 +681,6 @@ std::string OptionList::syntax(const bool format) const {
 }
 
 std::string Argument::usage() const {
-  // A tuple argument is serialised as one ARGUMENT line per sub-argument, each carrying the
-  //   tuple's optional / allow_multiple flags so that repeated groups remain identifiable.
-  if (is_tuple()) {
-    std::string s;
-    for (const auto &element : elements) {
-      Argument line(element);
-      line.flags = flags;
-      s += line.usage();
-    }
-    return s;
-  }
-
   std::ostringstream stream;
   stream << "ARGUMENT " << id                            //
          << " " << (flags.optional() ? '1' : '0')        //
@@ -737,6 +733,18 @@ std::string Argument::usage() const {
   return stream.str();
 }
 
+std::string ArgumentTuple::usage() const {
+  // A tuple is serialised as one ARGUMENT line per member field, each carrying the tuple's
+  //   optional / allow_multiple flags so that repeated groups remain identifiable.
+  std::string s;
+  for (const auto &element : elements) {
+    Argument line(element);
+    line.flags = flags;
+    s += line.usage();
+  }
+  return s;
+}
+
 std::string Option::usage() const {
   std::ostringstream stream;
   stream << "OPTION " << id << " " << (flags.optional() ? '1' : '0') << " " << (flags.allow_multiple() ? '1' : '0')
@@ -745,8 +753,8 @@ std::string Option::usage() const {
   if (!desc.empty())
     stream << desc << "\n";
 
-  for (size_t i = 0; i < size(); ++i)
-    stream << (*this)[i].usage();
+  if (item.has_value())
+    stream << element_usage(*item);
 
   return stream.str();
 }
@@ -830,7 +838,7 @@ std::string full_usage() {
   //   line, no per-sub-interface recursion at top level).
   if (SUBCOMMANDS.empty()) {
     for (size_t i = 0; i < ARGUMENTS.size(); ++i)
-      s += ARGUMENTS[i].usage();
+      s += element_usage(ARGUMENTS[i]);
   } else {
     s += "ARGUMENT " + SUBCOMMANDS_SELECTOR + " 0 0 CHOICE " + join(SUBCOMMANDS.ids(), " ") + "\n";
   }
@@ -874,29 +882,29 @@ std::string markdown_usage() {
 
     // Syntax line:
     for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+      const ArgModifierFlags &arg_flags = element_flags(ARGUMENTS[i]);
 
-      if (ARGUMENTS[i].flags.optional())
+      if (arg_flags.optional())
         s += "[";
-      s += std::string(" ") + ARGUMENTS[i].syntax_id();
+      s += std::string(" ") + element_syntax_id(ARGUMENTS[i]);
 
-      if (ARGUMENTS[i].flags.allow_multiple()) {
-        if (ARGUMENTS[i].flags.required())
-          s += std::string(" [ ") + ARGUMENTS[i].syntax_id();
+      if (arg_flags.allow_multiple()) {
+        if (arg_flags.required())
+          s += std::string(" [ ") + element_syntax_id(ARGUMENTS[i]);
         s += " ...";
       }
-      if (ARGUMENTS[i].flags.any())
+      if (arg_flags.any())
         s += " ]";
     }
     s += "\n\n";
 
-    // Argument description (tuple sub-arguments listed as an indented sub-list):
+    // Argument description (tuple member fields listed as an indented sub-list):
     for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-      s += std::string("- *") + ARGUMENTS[i].syntax_id() + "*: " + ARGUMENTS[i].desc + ARGUMENTS[i].help_metadata() +
-           "\n";
-      for (const auto &element : ARGUMENTS[i].elements) {
-        const std::string element_desc = element.desc + element.help_metadata();
-        if (!element_desc.empty())
-          s += std::string("    - *") + element.id + "*: " + element_desc + "\n";
+      s += std::string("- *") + element_syntax_id(ARGUMENTS[i]) + "*: " + element_description(ARGUMENTS[i]) +
+           element_help_metadata(ARGUMENTS[i]) + "\n";
+      for (const auto &element : tuple_fields(ARGUMENTS[i])) {
+        if (!element.desc.empty())
+          s += std::string("    - *") + element.id + "*: " + element.desc + element.help_metadata() + "\n";
       }
     }
   }
@@ -932,14 +940,12 @@ std::string markdown_usage() {
     if (opt.flags.allow_multiple())
       f += "  *(multiple uses permitted)*";
     f += std::string("<br>") + opt.desc + opt.help_metadata() + "\n\n";
-    // Tuple sub-arguments listed as an indented sub-list beneath the option.
-    for (const auto &arg : opt)
-      if (arg.is_tuple())
-        for (const auto &element : arg.elements) {
-          const std::string element_desc = element.desc + element.help_metadata();
-          if (!element_desc.empty())
-            f += std::string("    - *") + element.id + "*: " + element_desc + "\n";
-        }
+    // Tuple member fields listed as an indented sub-list beneath the option.
+    if (opt.item.has_value())
+      for (const auto &element : tuple_fields(*opt.item)) {
+        if (!element.desc.empty())
+          f += std::string("    - *") + element.id + "*: " + element.desc + element.help_metadata() + "\n";
+      }
     return f;
   };
 
@@ -1031,32 +1037,33 @@ std::string restructured_text_usage() {
 
     // Syntax line:
     for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+      const ArgModifierFlags &arg_flags = element_flags(ARGUMENTS[i]);
 
-      if (ARGUMENTS[i].flags.optional())
+      if (arg_flags.optional())
         s += "[";
-      s += std::string(" ") + ARGUMENTS[i].syntax_id();
+      s += std::string(" ") + element_syntax_id(ARGUMENTS[i]);
 
-      if (ARGUMENTS[i].flags.allow_multiple()) {
-        if (ARGUMENTS[i].flags.required())
-          s += std::string(" [ ") + ARGUMENTS[i].syntax_id();
+      if (arg_flags.allow_multiple()) {
+        if (arg_flags.required())
+          s += std::string(" [ ") + element_syntax_id(ARGUMENTS[i]);
         s += " ...";
       }
-      if (ARGUMENTS[i].flags.any())
+      if (arg_flags.any())
         s += " ]";
     }
     s += "\n\n";
 
-    // Argument description (a tuple's sub-arguments follow on |br| continuation lines):
+    // Argument description (a tuple's member fields follow on |br| continuation lines):
     for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-      auto desc = split_lines(escape_special(ARGUMENTS[i].desc + ARGUMENTS[i].help_metadata()), false);
-      s += std::string("-  *") + ARGUMENTS[i].syntax_id() + "*: " + desc[0];
+      auto desc =
+          split_lines(escape_special(element_description(ARGUMENTS[i]) + element_help_metadata(ARGUMENTS[i])), false);
+      s += std::string("-  *") + element_syntax_id(ARGUMENTS[i]) + "*: " + desc[0];
       for (size_t n = 1; n < desc.size(); ++n)
         s += " |br|\n   " + desc[n];
-      for (const auto &element : ARGUMENTS[i].elements) {
-        const std::string element_desc = element.desc + element.help_metadata();
-        if (element_desc.empty())
+      for (const auto &element : tuple_fields(ARGUMENTS[i])) {
+        if (element.desc.empty())
           continue;
-        auto edesc = split_lines(escape_special(element_desc), false);
+        auto edesc = split_lines(escape_special(element.desc + element.help_metadata()), false);
         s += " |br|\n   *" + element.id + "*: " + edesc[0];
         for (size_t n = 1; n < edesc.size(); ++n)
           s += " |br|\n   " + edesc[n];
@@ -1104,15 +1111,12 @@ std::string restructured_text_usage() {
     f += escape_special(desc[0]);
     for (size_t n = 1; n < desc.size(); ++n)
       f += " |br|\n   " + escape_special(desc[n]);
-    // A tuple's sub-arguments follow on |br| continuation lines.
-    for (const auto &arg : opt) {
-      if (!arg.is_tuple())
-        continue;
-      for (const auto &element : arg.elements) {
-        const std::string element_desc = element.desc + element.help_metadata();
-        if (element_desc.empty())
+    // A tuple's member fields follow on |br| continuation lines.
+    if (opt.item.has_value()) {
+      for (const auto &element : tuple_fields(*opt.item)) {
+        if (element.desc.empty())
           continue;
-        auto edesc = split_lines(escape_special(element_desc), false);
+        auto edesc = split_lines(escape_special(element.desc + element.help_metadata()), false);
         f += " |br|\n   *" + element.id + "*: " + edesc[0];
         for (size_t n = 1; n < edesc.size(); ++n)
           f += " |br|\n   " + edesc[n];
@@ -1329,15 +1333,14 @@ namespace {
 void verify_no_optional_option_arguments(const OptionList &options) {
   for (const auto &group : options) {
     for (const auto &option : group) {
-      for (const auto &arg : option) {
-        if (!arg.flags.optional())
-          continue;
-        Exception e("Invalid command-line interface definition for command " + std::string(NAME));
-        e.push_back("Argument \"" + arg.id + "\" of option \"-" + option.id + "\" is marked optional");
-        e.push_back("The optional property is permitted only for positional arguments;"
-                    " command-line options have fixed arity");
-        throw e;
-      }
+      if (!option.item.has_value() || !element_flags(*option.item).optional())
+        continue;
+      Exception e("Invalid command-line interface definition for command " + std::string(NAME));
+      e.push_back("Argument \"" + element_syntax_id(*option.item) + "\" of option \"-" + option.id +
+                  "\" is marked optional");
+      e.push_back("The optional property is permitted only for positional arguments;"
+                  " command-line options have fixed arity");
+      throw e;
     }
   }
 }
@@ -1639,12 +1642,13 @@ void parse() {
 
   ArgModifierFlags flags;
   for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-    const size_t slot_arity = ARGUMENTS[i].arity();
-    if (ARGUMENTS[i].flags.any()) {
-      if (flags.any() && (flags != ARGUMENTS[i].flags || flagged_arity != slot_arity))
+    const size_t slot_arity = element_arity(ARGUMENTS[i]);
+    const ArgModifierFlags &arg_flags = element_flags(ARGUMENTS[i]);
+    if (arg_flags.any()) {
+      if (flags.any() && (flags != arg_flags || flagged_arity != slot_arity))
         throw Exception("FIXME: all arguments declared optional() or allow_multiple()"
                         " should have matching flags in command-line syntax");
-      flags = ARGUMENTS[i].flags;
+      flags = arg_flags;
       flagged_arity = slot_arity;
       ++num_optional_slots;
       if (!flags.optional())
@@ -1666,7 +1670,7 @@ void parse() {
     Exception e("Expected exactly " + str(num_required_tokens) + " arguments (" + str(argument.size()) + " supplied)");
     std::string s = "Usage: " + NAME;
     for (const auto &a : ARGUMENTS)
-      s += " " + a.syntax_id();
+      s += " " + element_syntax_id(a);
     e.push_back(s);
     s = "Yours: " + NAME;
     for (const auto &a : argument)
@@ -1698,14 +1702,16 @@ void parse() {
     tokens_per_optional_slot += group;
 
   // assign each parsed positional token to its corresponding (leaf) Argument definition; a
-  //   tuple positional maps consecutive tokens to its sub-arguments in cyclic order.
+  //   tuple positional maps consecutive tokens to its member fields in cyclic order.
   {
     size_t n = 0;
     for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-      const Argument &slot = ARGUMENTS[i];
-      const size_t slot_tokens = slot.flags.any() ? tokens_per_optional_slot : slot.arity();
+      const ArgumentElement &slot = ARGUMENTS[i];
+      const size_t slot_arity = element_arity(slot);
+      const std::vector<const Argument *> slot_leaves = element_leaves(slot);
+      const size_t slot_tokens = element_flags(slot).any() ? tokens_per_optional_slot : slot_arity;
       for (size_t t = 0; t < slot_tokens; ++t, ++n)
-        argument[n].arg = slot.is_tuple() ? &slot.elements[t % slot.arity()] : &slot;
+        argument[n].arg = slot_leaves[t % slot_arity];
     }
     assert(n == argument.size());
   }
