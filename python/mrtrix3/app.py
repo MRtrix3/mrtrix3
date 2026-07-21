@@ -2512,15 +2512,15 @@ class Parser: # pylint: disable=too-many-public-methods
     text += '## Options\n\n'
 
     # Render one option group as markdown.
-    #   The double dash in the emitted option name (e.g. "--grad") is a faithful
-    #   reproduction of the pre-overhaul baseline: the former renderer joined the
-    #   already-dashed option_strings ("-grad") and prefixed a further "-".
+    #   The option name carries exactly one leading dash (e.g. "-grad"), matching the
+    #   single-dash MRtrix command-line convention and the C++ markdown exporter; the
+    #   metavars for the option's argument slots follow.
     def print_group_options(group):
       group_text = ''
       for option in group.options:
         option_text = '-' + option.name + Parser._option_metavar(option)
         option_text = option_text.replace('<', '\\<').replace('>', '\\>')
-        group_text += f'+ **-{option_text}**'
+        group_text += f'+ **{option_text}**'
         if option.repeatable:
           group_text += '  *(multiple uses permitted)*'
         group_text += f'<br>{option.help}{option.help_metadata()}\n\n'

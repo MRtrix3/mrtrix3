@@ -149,7 +149,7 @@ SSttaannddaarrdd  ooppttiioonnss
   _-_d_e_b_u_g
      display debugging messages & debug input data.
 
-AAddddiittiioonnaall  ssttaannddaarrdd  ooppttiioonnss  ffoorr  PPyytthhoonn  ssccrriippttss
+  AAddddiittiioonnaall  ssttaannddaarrdd  ooppttiioonnss  ffoorr  PPyytthhoonn  ssccrriippttss
 
   _-_n_o_c_l_e_a_n_u_p
      do not delete intermediate files during script execution, and do not delete

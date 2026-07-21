@@ -117,7 +117,7 @@ Verbosity options
 -  **-debug** display debugging messages & debug input data.
 
 Additional standard options for Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""""""""""""""""
 
 -  **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
