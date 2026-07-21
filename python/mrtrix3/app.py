@@ -899,21 +899,30 @@ class Parser: # pylint: disable=too-many-public-methods
       for subgroup in self.subgroups:
         result = max(result, 1 + subgroup.max_subgroup_depth())
       return result
+    # Apply a single collective constraint, rejecting any second constraint modifier on this
+    #   group. The group holds exactly one Constraint value, so a second constraint-modification
+    #   method would silently override the first: a command-author error. Mirrors the C++
+    #   OptionGroup::set_constraint() guard (which throws); Python uses assert per house style.
+    #   Detected during command-interface construction (the usage() call), naming the group and
+    #   both constraints.
+    def _set_constraint(self, requested):
+      assert self.constraint is Parser.OptionGroup.Constraint.NONE, \
+          (f'option group "{self.name}" already carries constraint {self.constraint.name}; '
+           f'cannot additionally apply constraint {requested.name} '
+           f'(at most one constraint modifier may be applied to any one option group)')
+      self.constraint = requested
+      return self
     # Collective-constraint builder methods (mirror the C++ OptionGroup builders). Each sets
     #   this group's constraint and returns the group, so an author can parenthesise the group
     #   and apply the method inline, matching the C++ author idiom.
     def require_exactly_one(self): #pylint: disable=unused-variable
-      self.constraint = Parser.OptionGroup.Constraint.REQUIRE_EXACTLY_ONE
-      return self
+      return self._set_constraint(Parser.OptionGroup.Constraint.REQUIRE_EXACTLY_ONE)
     def require_at_least_one(self): #pylint: disable=unused-variable
-      self.constraint = Parser.OptionGroup.Constraint.REQUIRE_AT_LEAST_ONE
-      return self
+      return self._set_constraint(Parser.OptionGroup.Constraint.REQUIRE_AT_LEAST_ONE)
     def mutually_exclusive(self): #pylint: disable=unused-variable
-      self.constraint = Parser.OptionGroup.Constraint.MUTUALLY_EXCLUSIVE
-      return self
+      return self._set_constraint(Parser.OptionGroup.Constraint.MUTUALLY_EXCLUSIVE)
     def all_or_none(self): #pylint: disable=unused-variable
-      self.constraint = Parser.OptionGroup.Constraint.ALL_OR_NONE
-      return self
+      return self._set_constraint(Parser.OptionGroup.Constraint.ALL_OR_NONE)
 
   # Simple attribute container returned by parse_args(); replaces argparse.Namespace.
   #   Supports vars()/getattr()/hasattr() and in-place attribute reassignment,

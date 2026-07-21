@@ -834,28 +834,16 @@ public:
   }
 
   //! require that exactly one of this group's member options is specified
-  OptionGroup &require_exactly_one() {
-    constraint = Constraint::RequireExactlyOne;
-    return *this;
-  }
+  OptionGroup &require_exactly_one() { return set_constraint(Constraint::RequireExactlyOne); }
 
   //! require that at least one of this group's member options is specified
-  OptionGroup &require_at_least_one() {
-    constraint = Constraint::RequireAtLeastOne;
-    return *this;
-  }
+  OptionGroup &require_at_least_one() { return set_constraint(Constraint::RequireAtLeastOne); }
 
   //! permit at most one of this group's member options to be specified (all mutually exclusive)
-  OptionGroup &mutually_exclusive() {
-    constraint = Constraint::MutuallyExclusive;
-    return *this;
-  }
+  OptionGroup &mutually_exclusive() { return set_constraint(Constraint::MutuallyExclusive); }
 
   //! require that this group's member options are either all specified or none specified
-  OptionGroup &all_or_none() {
-    constraint = Constraint::AllOrNone;
-    return *this;
-  }
+  OptionGroup &all_or_none() { return set_constraint(Constraint::AllOrNone); }
 
   Option &back() {
     if (empty())
@@ -919,6 +907,26 @@ public:
   //! this group's options followed by its sub-groups (each headed and rendered recursively)
   std::string contents(const bool format, const size_t depth = 0) const;
   static std::string footer(const bool format);
+
+private:
+  //! apply a single collective constraint, rejecting any second constraint modifier on this group
+  /*! The group holds exactly one Constraint value, so a second constraint-modification method
+   *  (require_exactly_one() / require_at_least_one() / mutually_exclusive() / all_or_none()) would
+   *  silently override the first — a command-author error. Because the modifiers all return
+   *  OptionGroup& to support builder chaining and the group is stored as a plain OptionGroup in the
+   *  OPTIONS builder, a second application cannot be rejected at compile time without a type-state
+   *  redesign of the whole builder API; it is instead caught here during command-interface
+   *  construction (usage()) and fails fast with a hierarchical exception naming the group and both
+   *  constraints. This fires in every build (unlike an assert stripped under NDEBUG). */
+  OptionGroup &set_constraint(const Constraint requested) {
+    if (constraint != Constraint::None)
+      throw Exception(std::string("option group \"") + name + "\" already carries constraint " +
+                      MR::Enum::name(constraint) + "; cannot additionally apply constraint " +
+                      MR::Enum::name(requested) +
+                      " (at most one constraint modifier may be applied to any one option group)");
+    constraint = requested;
+    return *this;
+  }
 };
 
 } // namespace MR::App
