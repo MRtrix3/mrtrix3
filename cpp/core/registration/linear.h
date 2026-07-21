@@ -193,8 +193,13 @@ public:
     do_reorientation = true;
   }
 
-  // Non-negativity and evenness of each lmax are enforced at parse time by the lmax argument type.
+  // This is a library API boundary reachable by callers other than the command-line parser;
+  //   evenness must therefore be validated here rather than relying on the CLI lmax argument type
+  //   (mirrors the equivalent guard retained in Registration::NonLinear::set_lmax).
   void set_lmax(const std::vector<uint32_t> &lmax) {
+    for (size_t i = 0; i < lmax.size(); ++i)
+      if (lmax[i] % 2 != 0)
+        throw Exception("the input lmax must be even");
     if (lmax.size() == stages.size()) {
       for (size_t i = 0; i < stages.size(); ++i)
         stages[i].fod_lmax = lmax[i];

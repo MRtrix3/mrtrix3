@@ -103,6 +103,11 @@ public:
         if (lmax.size() != num_tissues())
           throw Exception("Number of lmaxes specified (" + str(lmax.size()) + ") does not match number of tissues (" +
                           str(num_tissues()) + ")");
+        // lmax is a public member settable by any caller, not just the command-line parser;
+        //   evenness must therefore be validated here rather than relying on the CLI lmax argument type.
+        for (const auto i : lmax)
+          if (i % 2 != 0)
+            throw Exception("each value of lmax must be a non-negative even integer");
       }
 
       for (size_t t = 0; t != num_tissues(); ++t) {
