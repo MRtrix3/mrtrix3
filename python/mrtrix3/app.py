@@ -1324,7 +1324,7 @@ class Parser: # pylint: disable=too-many-public-methods
       return 'values'
 
   # A comma-separated list of spherical-harmonic degrees, each a non-negative even integer.
-  #   Mirrors the C++ vector lmax type (Argument::type_lmax_sequence()): a refinement of the
+  #   Mirrors the C++ vector lmax type (Argument::type_sequence_lmax()): a refinement of the
   #   integer-sequence type that validates each parsed element. The per-element error names the
   #   owning option/argument, so the parser records that source on the instance when the option
   #   is declared (see _add_argument). Negative entries are unified onto the same lmax message

@@ -76,7 +76,7 @@ void usage() {
 
     + Option ("lmax", "specify the maximum harmonic degree of the response function to estimate"
                       " (can be a comma-separated list for multi-shell data)")
-      + Argument ("values").type_lmax_sequence();
+      + Argument ("values").type_sequence_lmax();
 
   REFERENCES
     + "Smith, R. E.; Dhollander, T. & Connelly, A. " // Internal

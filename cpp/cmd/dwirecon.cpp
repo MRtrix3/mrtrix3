@@ -61,7 +61,7 @@ const OptionGroup combinepredicted_options = OptionGroup("Options specific to \"
   + Option("lmax", "set the maximal spherical harmonic degrees to use"
                    " (one for each b-value)"
                    " during signal reconstruction")
-      + Argument("value").type_lmax_sequence()
+      + Argument("value").type_sequence_lmax()
   + Option("exponent", "set the exponent modulating relative contributions"
                        " between empirical and predicted signal"
                        " (see Description)")

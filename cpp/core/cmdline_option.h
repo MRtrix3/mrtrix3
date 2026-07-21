@@ -423,7 +423,7 @@ public:
    * automatically in the help. Command-specific validation of the list (e.g. matching the number
    * of entries to the number of shells or tissues, or clamping to a per-shell upper bound) remains
    * the responsibility of the individual command. */
-  Argument &type_lmax_sequence() {
+  Argument &type_sequence_lmax() {
     types.set(ArgTypeFlags::IntSeq);
     types.set(ArgTypeFlags::LmaxSeq);
     return *this;

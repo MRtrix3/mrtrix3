@@ -81,7 +81,7 @@ void usage() {
     + Argument("value").type_lmax(0, 8)
 
   + Option("lmax_seq", "a comma-separated sequence of spherical-harmonic degrees")
-    + Argument("values").type_lmax_sequence()
+    + Argument("values").type_sequence_lmax()
 
   + Option("file_in", "an input file")
     + Argument("input").type_file_in()

@@ -110,7 +110,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   custom.add_argument('-float_seq',
                       type=app.Parser.SequenceFloat(),
                       help='A comma-separated list of floating-points')
-  # Dedicated spherical-harmonic degree types (mirrors the C++ type_lmax / type_lmax_sequence):
+  # Dedicated spherical-harmonic degree types (mirrors the C++ type_lmax / type_sequence_lmax):
   #   a scalar lmax (non-negative even integer) and a comma-separated vector (each non-negative even).
   custom.add_argument('-lmax',
                       type=app.Parser.Lmax(),

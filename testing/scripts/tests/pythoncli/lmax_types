@@ -1,6 +1,6 @@
 #!/bin/bash
 # Scalar and vector lmax argument types, Python parser (mirrors the C++ lmax types,
-#   cpp/core/cmdline_option.h Argument::type_lmax() / type_lmax_sequence()).
+#   cpp/core/cmdline_option.h Argument::type_lmax() / type_sequence_lmax()).
 # No shipped Python command declares a SCALAR lmax option (its C++ counterparts are amp2sh etc.),
 #   and the vector wording must match verbatim regardless of the owning command, so this exercises
 #   the native parser (python/mrtrix3/app.py) directly: the even/non-negative constraint must reject

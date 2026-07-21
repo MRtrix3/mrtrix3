@@ -121,7 +121,7 @@ testing_python_cli -int_bounded 0k 2>&1 | grep "int_bounded: 0"
 ! testing_python_cli -int_seq 5k
 testing_python_cli -int_seq 1,2,3 2>&1 | grep "int_seq: \[1, 2, 3\]"
 
-# Dedicated lmax argument types (mirrors the C++ type_lmax / type_lmax_sequence): a scalar lmax
+# Dedicated lmax argument types (mirrors the C++ type_lmax / type_sequence_lmax): a scalar lmax
 #   must be a non-negative even integer; a vector lmax requires each element to be non-negative
 #   and even. A command-authored numeric bound is a separate check applied after the even/sign check.
 testing_python_cli -lmax 0 2>&1 | grep "lmax: 0"
