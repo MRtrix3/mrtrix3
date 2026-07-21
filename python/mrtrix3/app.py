@@ -1497,8 +1497,17 @@ class Parser: # pylint: disable=too-many-public-methods
                                   default=None,
                                   help='display debugging messages & debug input data.')
     verbosity_options.mutually_exclusive()
-    script_options = self.add_argument_group('Additional standard options for Python scripts')
-    script_options.is_standard = True
+    # The Python-script-only options ( -nocleanup / -scratch / -continue ) are nested as an
+    #   "Additional standard options for Python scripts" sub-group of Standard options, a sibling
+    #   of the verbosity sub-group. They have no C++ equivalent, so there is no cross-language
+    #   mirror to update; nesting them under Standard options simply keeps the human-readable help
+    #   and every export consistent with the single-Standard-options block. Per the ordering
+    #   invariant (own direct options first, then sub-groups in declaration order) it renders after
+    #   the remaining standard options and the verbosity sub-group. It needs no own is_standard flag:
+    #   its options are reached (and thus exempted from the unused-option check, and enforced for
+    #   constraints) via the recursive all_options() of the is_standard Standard options parent,
+    #   exactly as the verbosity sub-group is.
+    script_options = standard_options.add_subgroup('Additional standard options for Python scripts')
     script_options.add_argument('-nocleanup',
                                 action='store_true',
                                 default=None,
@@ -1743,8 +1752,9 @@ class Parser: # pylint: disable=too-many-public-methods
   #   matches the parse-time constraint-evaluation order (_enforce_constraints), so declaration
   #   order is consistent across parsing, help and every machine-readable export. The ungrouped
   #   'OPTIONS' group (index 0) is excluded here: each caller renders it first, without a heading.
-  #   Both partitions preserve definition order (stable), so the two standard groups render as
-  #   'Standard options' then 'Additional standard options for Python scripts'.
+  #   Both partitions preserve definition order (stable). The sole top-level standard group is
+  #   'Standard options', which in turn nests the 'Verbosity options' and 'Additional standard
+  #   options for Python scripts' sub-groups (rendered by the recursive sub-group traversal).
   def _ordered_option_groups(self):
     groups = self._option_groups[1:]
     return [group for group in groups if not group.is_standard] \
