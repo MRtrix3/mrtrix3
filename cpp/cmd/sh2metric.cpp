@@ -105,9 +105,14 @@ void usage() {
     + Option ("spectrum", "output the power spectrum,"
                           " i.e., the power contained within each harmonic degree (l=0, 2, 4, ...)"
                           " as a 4D image.");
+  // clang-format on
 
+  // -normalised and -invnorm are alternative parameterisations of the same entropy normalisation;
+  //   they are mutually exclusive. As only a subset of the "entropy" option group (which also
+  //   holds the unrelated -directions option), the exclusion is declared as a cross-group mutex set
+  //   rather than an OptionGroup constraint.
+  MUTUALLY_EXCLUSIVE_OPTIONS = {{"normalised", "invnorm"}};
 }
-// clang-format on
 
 const DWI::Directions::Set get_directions() {
   auto opt = get_options("directions");
@@ -148,8 +153,8 @@ void run_entropy() {
   const DWI::Directions::Set dirs(get_directions());
   const bool opt_normalised = !get_options("normalised").empty();
   const bool opt_invnorm = !get_options("invnorm").empty();
-  if (opt_normalised && opt_invnorm)
-    throw Exception("Options \"-normalised\" and \"-invnorm\" are mutually exclusive");
+  // Mutual exclusion of -normalised and -invnorm is enforced at parse time via
+  //   MUTUALLY_EXCLUSIVE_OPTIONS (declared in usage()).
   const entropy_normalisation norm_mode =
       opt_normalised ? entropy_normalisation::NORM
                      : (opt_invnorm ? entropy_normalisation::INVNORM : entropy_normalisation::NONE);

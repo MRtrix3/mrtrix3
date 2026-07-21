@@ -108,9 +108,13 @@ void usage ()
     "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
     "SIFT: Spherical-deconvolution informed filtering of tractograms. "
     "NeuroImage, 2013, 67, 298-312";
+  // clang-format on
 
+  // -nointerp and -precise select alternative streamline-to-voxel sampling mechanisms;
+  //   they are mutually exclusive. As ungrouped options (a subset of the command's options),
+  //   the exclusion is declared as a cross-group mutex set rather than an OptionGroup constraint.
+  MUTUALLY_EXCLUSIVE_OPTIONS = {{"nointerp", "precise"}};
 }
-// clang-format on
 
 using value_type = float;
 using vector_type = Eigen::VectorXf;
@@ -864,8 +868,8 @@ void run() {
 
   const bool nointerp = !get_options("nointerp").empty();
   const bool precise = !get_options("precise").empty();
-  if (nointerp && precise)
-    throw Exception("Options -nointerp and -precise are mutually exclusive");
+  // Mutual exclusion of -nointerp and -precise is enforced at parse time via
+  //   MUTUALLY_EXCLUSIVE_OPTIONS (declared in usage()).
   const interp_type interp = nointerp ? interp_type::NEAREST : (precise ? interp_type::PRECISE : interp_type::LINEAR);
   if (!statistic.has_value() && interp == interp_type::PRECISE)
     throw Exception("Cannot combine per-vertex values with precise mapping mechanism");

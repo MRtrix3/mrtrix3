@@ -145,9 +145,14 @@ void usage() {
      + SmoothOption
      + ZcleanOption)
   + Stride::Options;
+  // clang-format on
 
+  // -stdev and -fwhm are alternative parameterisations of the same Gaussian smoothing kernel width;
+  //   they are mutually exclusive. As only a subset of the smooth filter's option group (which also
+  //   holds the unrelated -extent option), the exclusion is declared as a cross-group mutex set
+  //   rather than an OptionGroup constraint.
+  MUTUALLY_EXCLUSIVE_OPTIONS = {{"stdev", "fwhm"}};
 }
-// clang-format on
 
 void run() {
   const std::filesystem::path input_path{argument[0]};
@@ -304,8 +309,8 @@ void run() {
       filter.set_stdev(parse_floats(opt[0][0]));
     opt = get_options("fwhm");
     if (!opt.empty()) {
-      if (stdev_supplied)
-        throw Exception("the stdev and FWHM options are mutually exclusive.");
+      // Mutual exclusion of -stdev and -fwhm is enforced at parse time via
+      //   MUTUALLY_EXCLUSIVE_OPTIONS (declared in usage()).
       std::vector<default_type> stdevs = parse_floats((opt[0][0]));
       for (size_t d = 0; d < stdevs.size(); ++d)
         stdevs[d] = stdevs[d] / 2.3548; // convert FWHM to stdev

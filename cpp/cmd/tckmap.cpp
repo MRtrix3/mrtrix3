@@ -61,7 +61,7 @@ const OptionGroup OutputHeaderOption = OptionGroup ("Options for the header of t
   + Option ("datatype", "specify output image data type.")
     + Argument ("spec").type_choice<DataType::Identifier>();
 
-const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality of the output image")
+const OptionGroup OutputDimOption = (OptionGroup ("Options for the dimensionality of the output image")
   + Option ("dec",
       "perform track mapping in directionally-encoded colour (DEC) space")
   + Option ("dixel",
@@ -75,7 +75,7 @@ const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality
       "generate a Track Orientation Distribution (TOD) in each voxel;"
       " need to specify the maximum spherical harmonic degree lmax to use"
       " when generating Apodised Point Spread Functions")
-    + Argument ("lmax").type_lmax (2, 20);
+    + Argument ("lmax").type_lmax (2, 20)).mutually_exclusive();
 
 const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast properties")
   + Option ("contrast",
@@ -220,9 +220,13 @@ void usage () {
   + TWIOption
   + MappingOption
   + Tractography::TrackWeightsInOption;
+  // clang-format on
 
+  // -precise and -ends_only select mutually incompatible streamline mapping behaviours. As only a
+  //   subset of MappingOption (which also holds the unrelated -upsample option), the exclusion is
+  //   declared as a cross-group mutex set rather than an OptionGroup constraint.
+  MUTUALLY_EXCLUSIVE_OPTIONS = {{"precise", "ends_only"}};
 }
-// clang-format on
 
 MapWriterBase *
 make_writer(Header &H, const std::filesystem::path &name, const vox_stat_t stat_vox, const writer_dim dim) {
@@ -346,8 +350,8 @@ void run() {
   std::unique_ptr<Directions::FastLookupSet> dirs;
   opt = get_options("dixel");
   if (!opt.empty()) {
-    if (writer_type != writer_dim::GREYSCALE)
-      throw Exception("Options for setting output image dimensionality are mutually exclusive");
+    // Mutual exclusion of the output-dimensionality options (-dec, -dixel, -tod) is enforced at
+    //   parse time via the OutputDimOption group .mutually_exclusive() constraint.
     writer_type = writer_dim::DIXEL;
     if (std::filesystem::exists(opt[0][0]))
       dirs.reset(new Directions::FastLookupSet(static_cast<std::filesystem::path>(opt[0][0])));
@@ -370,8 +374,8 @@ void run() {
 
   opt = get_options("tod");
   if (!opt.empty()) {
-    if (writer_type != writer_dim::GREYSCALE)
-      throw Exception("Options for setting output image dimensionality are mutually exclusive");
+    // Mutual exclusion of the output-dimensionality options is enforced at parse time via the
+    //   OutputDimOption group .mutually_exclusive() constraint.
     writer_type = writer_dim::TOD;
     // Non-negativity and evenness are enforced at parse time by the lmax argument type.
     const size_t lmax = opt[0][0];
@@ -434,12 +438,11 @@ void run() {
   // Figure out how the streamlines will be mapped
   const bool precise = !get_options("precise").empty();
   header.keyval()["precise_mapping"] = precise ? "1" : "0";
+  // Mutual exclusion of -precise and -ends_only is enforced at parse time via
+  //   MUTUALLY_EXCLUSIVE_OPTIONS (declared in usage()).
   const bool ends_only = !get_options("ends_only").empty();
-  if (ends_only) {
-    if (precise)
-      throw Exception("Options -precise and -ends_only are mutually exclusive");
+  if (ends_only)
     header.keyval()["endpoints_only"] = "1";
-  }
 
   size_t upsample_ratio = 1;
   opt = get_options("upsample");
