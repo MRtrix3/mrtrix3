@@ -4,7 +4,7 @@ Synopsis
 Verify operation of the C++ command-line interface & parser
 
 Usage
---------
+-----
 
 ::
 
@@ -64,7 +64,7 @@ Options
    *key*: the key field |br|
    *value*: the value field
 
--  **-multiple spec** *(multiple uses permitted)* A command-line option that can be specified multiple times
+-  **-multiple spec**  *(multiple uses permitted)* A command-line option that can be specified multiple times
 
 -  **-unused** An option deliberately left unread to exercise unused-option tracking
 
@@ -87,7 +87,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 

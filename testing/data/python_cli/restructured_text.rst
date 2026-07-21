@@ -22,108 +22,108 @@ Options
 Built-in types
 ^^^^^^^^^^^^^^
 
-- **-flag** A binary flag
+-  **-flag** A binary flag
 
-- **-string_implicit string** A built-in string (implicit)
+-  **-string_implicit string** A built-in string (implicit)
 
-- **-string_explicit str** A built-in string (explicit)
+-  **-string_explicit str** A built-in string (explicit)
 
-- **-choice choice** A selection of choices (choices: One, Two, Three) (default: One)
+-  **-choice choice** A selection of choices (choices: One, Two, Three) (default: One)
 
-- **-int_builtin int** An integer; built-in type
+-  **-int_builtin int** An integer; built-in type
 
-- **-float_builtin float** A floating-point; built-in type
+-  **-float_builtin float** A floating-point; built-in type
 
 Complex interfaces; nargs, metavar, etc.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-nargs_two string string** A command-line option with nargs=2, no metavar
+-  **-nargs_two string string** A command-line option with nargs=2, no metavar
 
-- **-metavar_one metavar** A command-line option with nargs=1 and metavar="metavar"
+-  **-metavar_one metavar** A command-line option with nargs=1 and metavar="metavar"
 
-- **-metavar_two metavar metavar** A command-line option with nargs=2 and metavar="metavar"
+-  **-metavar_two metavar metavar** A command-line option with nargs=2 and metavar="metavar"
 
-- **-metavar_tuple metavar_one metavar_two** A command-line option with nargs=2 and metavar=("metavar_one", "metavar_two")
+-  **-metavar_tuple metavar_one metavar_two** A command-line option with nargs=2 and metavar=("metavar_one", "metavar_two")
 
-- **-append string**  *(multiple uses permitted)* A command-line option with "append" action (can be specified multiple times)
+-  **-append string**  *(multiple uses permitted)* A command-line option with "append" action (can be specified multiple times)
 
-- **-unused** An option deliberately left unread to exercise unused-option tracking
+-  **-unused** An option deliberately left unread to exercise unused-option tracking
 
 Custom types
 ^^^^^^^^^^^^
 
-- **-bool value** A boolean input
+-  **-bool value** A boolean input
 
-- **-int_unbound value** An integer; unbounded
+-  **-int_unbound value** An integer; unbounded
 
-- **-int_nonnegative value** An integer; non-negative (minimum: 0)
+-  **-int_nonnegative value** An integer; non-negative (minimum: 0)
 
-- **-int_bounded value** An integer; bound range (range: 0 to 100) (default: 50)
+-  **-int_bounded value** An integer; bound range (range: 0 to 100) (default: 50)
 
-- **-float_unbound value** A floating-point; unbounded
+-  **-float_unbound value** A floating-point; unbounded
 
-- **-float_nonneg value** A floating-point; non-negative (minimum: 0)
+-  **-float_nonneg value** A floating-point; non-negative (minimum: 0)
 
-- **-float_bounded value** A floating-point; bound range (range: 0 to 1) (default: 0.5)
+-  **-float_bounded value** A floating-point; bound range (range: 0 to 1) (default: 0.5)
 
-- **-int_seq values** A comma-separated list of integers
+-  **-int_seq values** A comma-separated list of integers
 
-- **-float_seq values** A comma-separated list of floating-points
+-  **-float_seq values** A comma-separated list of floating-points
 
-- **-lmax value** A spherical-harmonic degree; non-negative even integer (minimum: 0) (must be even)
+-  **-lmax value** A spherical-harmonic degree; non-negative even integer (minimum: 0) (must be even)
 
-- **-lmax_bounded value** A spherical-harmonic degree with an explicit upper bound (range: 0 to 8) (must be even)
+-  **-lmax_bounded value** A spherical-harmonic degree with an explicit upper bound (range: 0 to 8) (must be even)
 
-- **-lmax_seq values** A comma-separated sequence of spherical-harmonic degrees (values must be non-negative and even)
+-  **-lmax_seq values** A comma-separated sequence of spherical-harmonic degrees (values must be non-negative and even)
 
-- **-dir_in directory** An input directory
+-  **-dir_in directory** An input directory
 
-- **-dir_out directory** An output directory
+-  **-dir_out directory** An output directory
 
-- **-file_in file** An input file
+-  **-file_in file** An input file
 
-- **-file_out file** An output file
+-  **-file_out file** An output file
 
-- **-image_in image** An input image
+-  **-image_in image** An input image
 
-- **-image_out image** An output image
+-  **-image_out image** An output image
 
-- **-tracks_in trackfile** An input tractogram
+-  **-tracks_in trackfile** An input tractogram
 
-- **-tracks_out trackfile** An output tractogram
+-  **-tracks_out trackfile** An output tractogram
 
-- **-custom custom** An option with custom type
+-  **-custom custom** An option with custom type
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-force** force overwrite of output files.
+-  **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
-- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-help** display this information page and exit.
+-  **-help** display this information page and exit.
 
-- **-version** display version information and exit.
+-  **-version** display version information and exit.
 
 Verbosity options
 """""""""""""""""
 
-- **-info** display information messages.
+-  **-info** display information messages.
 
-- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages & debug input data.
+-  **-debug** display debugging messages & debug input data.
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+-  **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
+-  **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+-  **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 References
 ^^^^^^^^^^

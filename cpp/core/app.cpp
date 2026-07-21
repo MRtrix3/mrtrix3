@@ -910,13 +910,13 @@ std::string markdown_usage() {
   }
 
   if (!DESCRIPTION.empty()) {
-    s += "\n## Description\n\n";
+    s += "## Description\n\n";
     for (size_t i = 0; i < DESCRIPTION.size(); ++i)
       s += std::string(DESCRIPTION[i]) + "\n\n";
   }
 
   if (!EXAMPLES.empty()) {
-    s += "\n## Example usages\n\n";
+    s += "## Example usages\n\n";
     for (size_t i = 0; i < EXAMPLES.size(); ++i) {
       s += std::string("__") + EXAMPLES[i].title + ":__\n";
       s += std::string("`$ ") + EXAMPLES[i].code + "`\n";
@@ -961,7 +961,7 @@ std::string markdown_usage() {
     }
   };
 
-  s += "\n## Options\n\n";
+  s += "## Options\n\n";
   for (size_t i = 0; i < group_names.size(); ++i) {
     size_t n = i;
     while (OPTIONS[n].name != group_names[i])
@@ -988,6 +988,9 @@ std::string markdown_usage() {
     s += std::string(REFERENCES[i]) + "\n\n";
   s += core_reference + "\n\n";
 
+  // A thematic break separates the reference list from the author / copyright footer, matching
+  //   the reStructuredText exporter's "--------------" rule and the Python front-end.
+  s += "---\n\n";
   s += std::string("**Author:** ") + AUTHOR + "\n\n";
   s += std::string("**Copyright:** ") + COPYRIGHT + "\n\n";
 
@@ -1030,10 +1033,10 @@ std::string restructured_text_usage() {
   if (hierarchical) {
     // A hierarchical command presents the sub-interface selection in place of any
     //   positional arguments (of which the top-level command has none).
-    s += "Usage\n--------\n\n::\n\n    " + std::string(NAME) + " " + SUBCOMMANDS_SELECTOR + " [ options ] ...\n\n";
+    s += "Usage\n-----\n\n::\n\n    " + std::string(NAME) + " " + SUBCOMMANDS_SELECTOR + " [ options ] ...\n\n";
     s += std::string("-  *") + SUBCOMMANDS_SELECTOR + "*: " + selection_help_string() + "\n\n";
   } else {
-    s += "Usage\n--------\n\n::\n\n    " + std::string(NAME) + " [ options ] ";
+    s += "Usage\n-----\n\n::\n\n    " + std::string(NAME) + " [ options ] ";
 
     // Syntax line:
     for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
@@ -1104,9 +1107,13 @@ std::string restructured_text_usage() {
     std::string f = std::string("-  **-") + opt.id;
     for (const Argument *leaf : opt.leaves())
       f += std::string(" ") + leaf->id;
-    f += std::string("** ");
+    // Two spaces precede the "(multiple uses permitted)" annotation, matching the Markdown
+    //   exporter and the Python front-end; a single space separates the option (or annotation)
+    //   from the following description text.
+    f += "**";
     if (opt.flags.allow_multiple())
-      f += "*(multiple uses permitted)* ";
+      f += "  *(multiple uses permitted)*";
+    f += " ";
     auto desc = split_lines(opt.desc + opt.help_metadata(), false);
     f += escape_special(desc[0]);
     for (size_t n = 1; n < desc.size(); ++n)

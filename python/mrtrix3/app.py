@@ -2379,10 +2379,12 @@ class Parser: # pylint: disable=too-many-public-methods
         sys.stdout.write(f'ARGUMENT {argument.name} 0 {allow_multiple} {arg2str(argument)}\n')
         sys.stdout.write(f'{Parser._fullusage_desc(argument.help, argument.default_value)}\n')
 
-    # Options: the required field is inverted (0 if required, else 1); the option-level
-    #   allow_multiple field is always 0 (repeatable/append options are NOT flagged here);
-    #   one ARGUMENT line per argument slot, using each slot's metavar (falling back to the
-    #   option name) and its own type token.
+    # Options: the option name is emitted WITHOUT a leading dash, matching the C++ exporter and
+    #   the bash-completion consumer (generate_bash_completion.py), which prepends the dash(es)
+    #   itself; emitting "-name" here would yield a malformed "--name" completion. The required
+    #   field is inverted (0 if required, else 1); the allow_multiple field reflects whether the
+    #   option is repeatable (matching the C++ exporter). One ARGUMENT line per argument slot,
+    #   using each slot's metavar (falling back to the option name) and its own type token.
     # full_usage is deliberately flat: it carries no group headings (it never encoded even
     #   flat groups), so nesting adds nothing structurally; every option across the whole
     #   subtree is emitted via all_options() (own options first, then each sub-group's), in
@@ -2390,7 +2392,8 @@ class Parser: # pylint: disable=too-many-public-methods
     def print_group_options(group):
       for option in group.all_options():
         required = '0' if option.required else '1'
-        sys.stdout.write(f'OPTION -{option.name} {required} 0\n')
+        allow_multiple = '1' if option.repeatable else '0'
+        sys.stdout.write(f'OPTION {option.name} {required} {allow_multiple}\n')
         # A scalar option's default value is preserved on the OPTION description line, exactly where
         #   the prose used to carry it before it was declared via set_default() (no dedicated machine
         #   token: the choice / range tokens remain on the ARGUMENT lines, so bash completion is
@@ -2572,7 +2575,10 @@ class Parser: # pylint: disable=too-many-public-methods
       for option in group.options:
         option_text = '-' + option.name + Parser._option_metavar(option)
         group_text += '\n'
-        group_text += f'- **{option_text}**'
+        # Two spaces after the bullet, matching both the C++ reStructuredText exporter and this
+        #   renderer's own positional-argument bullets ("-  *name*:"), so option and argument list
+        #   items render identically across the two language front-ends.
+        group_text += f'-  **{option_text}**'
         if option.repeatable:
           group_text += '  *(multiple uses permitted)*'
         option_help = (option.help + option.help_metadata()).replace('|', '\\|')
@@ -2627,7 +2633,11 @@ class Parser: # pylint: disable=too-many-public-methods
     text += 'References\n'
     text += '^^^^^^^^^^\n\n'
     for entry in self._citation_list:
-      ref_text = '* '
+      # Each reference renders as a plain paragraph (no bullet marker), matching the C++
+      #   reStructuredText exporter and the un-bulleted MRtrix3 core reference emitted below;
+      #   a leading "* " here would bullet only the command-specific citations, leaving the
+      #   core reference an unmarked paragraph in the same list.
+      ref_text = ''
       if entry[0]:
         ref_text += f'{entry[0]}: '
       ref_text += entry[1]

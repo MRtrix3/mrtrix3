@@ -6,7 +6,6 @@ Verify operation of the C++ command-line interface & parser
 
     testing_cpp_cli [ options ] 
 
-
 ## Options
 
 + **-flag**<br>An option flag that takes no arguments
@@ -96,6 +95,8 @@ Verify operation of the C++ command-line interface & parser
 ## References
 
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
+
+---
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
