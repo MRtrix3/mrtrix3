@@ -16,7 +16,7 @@ Test operation of the Python command-line interface
 
 + **-string_explicit str**<br>A built-in string (explicit)
 
-+ **-choice choice**<br>A selection of choices (choices: One, Two, Three) (default: One)
++ **-choice choice**<br>A selection of choices (choices: One, Two, Three; default: One)
 
 + **-int_builtin int**<br>An integer; built-in type
 
@@ -44,21 +44,21 @@ Test operation of the Python command-line interface
 
 + **-int_nonnegative value**<br>An integer; non-negative (minimum: 0)
 
-+ **-int_bounded value**<br>An integer; bound range (range: 0 to 100) (default: 50)
++ **-int_bounded value**<br>An integer; bound range (range: 0 to 100; default: 50)
 
 + **-float_unbound value**<br>A floating-point; unbounded
 
 + **-float_nonneg value**<br>A floating-point; non-negative (minimum: 0)
 
-+ **-float_bounded value**<br>A floating-point; bound range (range: 0 to 1) (default: 0.5)
++ **-float_bounded value**<br>A floating-point; bound range (range: 0 to 1; default: 0.5)
 
 + **-int_seq values**<br>A comma-separated list of integers
 
 + **-float_seq values**<br>A comma-separated list of floating-points
 
-+ **-lmax value**<br>A spherical-harmonic degree; non-negative even integer (minimum: 0) (must be even)
++ **-lmax value**<br>A spherical-harmonic degree; non-negative even integer (minimum: 0; must be even)
 
-+ **-lmax_bounded value**<br>A spherical-harmonic degree with an explicit upper bound (range: 0 to 8) (must be even)
++ **-lmax_bounded value**<br>A spherical-harmonic degree with an explicit upper bound (range: 0 to 8; must be even)
 
 + **-lmax_seq values**<br>A comma-separated sequence of spherical-harmonic degrees (values must be non-negative and even)
 

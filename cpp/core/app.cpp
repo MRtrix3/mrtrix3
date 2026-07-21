@@ -525,38 +525,41 @@ std::string ArgumentTuple::syntax_id() const {
 }
 
 std::string Argument::help_metadata() const {
-  // Each present piece of metadata is rendered as one parenthesised clause preceded by a single
-  //   space, in a fixed order (choices, then numeric range, then default), so that every
-  //   human-readable help surface presents them identically.
-  std::string result;
+  // Each present piece of metadata forms one clause, in a fixed order (choices, then numeric
+  //   range, then default), so that every human-readable help surface presents them identically.
+  //   Multiple clauses of a single argument are semicolon-separated inside one pair of brackets
+  //   (e.g. "(choices: a, b, c; default: b)"); a solitary clause keeps its own single brackets.
+  std::vector<std::string> clauses;
   if (!choices.empty())
-    result += " (choices: " + join(choices, ", ") + ")";
+    clauses.push_back("choices: " + join(choices, ", "));
   if (types[ArgTypeFlags::Integer]) {
     if (int_limits.has_min() && int_limits.has_max())
-      result += " (range: " + str(int_limits.min()) + " to " + str(int_limits.max()) + ")";
+      clauses.push_back("range: " + str(int_limits.min()) + " to " + str(int_limits.max()));
     else if (int_limits.has_min())
-      result += " (minimum: " + str(int_limits.min()) + ")";
+      clauses.push_back("minimum: " + str(int_limits.min()));
     else if (int_limits.has_max())
-      result += " (maximum: " + str(int_limits.max()) + ")";
+      clauses.push_back("maximum: " + str(int_limits.max()));
   }
   if (types[ArgTypeFlags::Float]) {
     if (float_limits.has_min() && float_limits.has_max())
-      result += " (range: " + str(float_limits.min()) + " to " + str(float_limits.max()) + ")";
+      clauses.push_back("range: " + str(float_limits.min()) + " to " + str(float_limits.max()));
     else if (float_limits.has_min())
-      result += " (minimum: " + str(float_limits.min()) + ")";
+      clauses.push_back("minimum: " + str(float_limits.min()));
     else if (float_limits.has_max())
-      result += " (maximum: " + str(float_limits.max()) + ")";
+      clauses.push_back("maximum: " + str(float_limits.max()));
   }
   // For lmax arguments, the non-negative-and-even constraint is advertised automatically; the
   //   non-negativity is already conveyed by the integer range (whose lower bound is >= 0), so only
   //   the evenness requirement need be added for the scalar form.
   if (types[ArgTypeFlags::Lmax])
-    result += " (must be even)";
+    clauses.push_back("must be even");
   if (types[ArgTypeFlags::LmaxSeq])
-    result += " (values must be non-negative and even)";
+    clauses.push_back("values must be non-negative and even");
   if (default_value)
-    result += " (default: " + *default_value + ")";
-  return result;
+    clauses.push_back("default: " + *default_value);
+  if (clauses.empty())
+    return {};
+  return " (" + join(clauses, "; ") + ")";
 }
 
 std::string Argument::syntax(const bool format) const {

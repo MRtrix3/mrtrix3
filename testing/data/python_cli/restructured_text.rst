@@ -28,7 +28,7 @@ Built-in types
 
 -  **-string_explicit str** A built-in string (explicit)
 
--  **-choice choice** A selection of choices (choices: One, Two, Three) (default: One)
+-  **-choice choice** A selection of choices (choices: One, Two, Three; default: One)
 
 -  **-int_builtin int** An integer; built-in type
 
@@ -58,21 +58,21 @@ Custom types
 
 -  **-int_nonnegative value** An integer; non-negative (minimum: 0)
 
--  **-int_bounded value** An integer; bound range (range: 0 to 100) (default: 50)
+-  **-int_bounded value** An integer; bound range (range: 0 to 100; default: 50)
 
 -  **-float_unbound value** A floating-point; unbounded
 
 -  **-float_nonneg value** A floating-point; non-negative (minimum: 0)
 
--  **-float_bounded value** A floating-point; bound range (range: 0 to 1) (default: 0.5)
+-  **-float_bounded value** A floating-point; bound range (range: 0 to 1; default: 0.5)
 
 -  **-int_seq values** A comma-separated list of integers
 
 -  **-float_seq values** A comma-separated list of floating-points
 
--  **-lmax value** A spherical-harmonic degree; non-negative even integer (minimum: 0) (must be even)
+-  **-lmax value** A spherical-harmonic degree; non-negative even integer (minimum: 0; must be even)
 
--  **-lmax_bounded value** A spherical-harmonic degree with an explicit upper bound (range: 0 to 8) (must be even)
+-  **-lmax_bounded value** A spherical-harmonic degree with an explicit upper bound (range: 0 to 8; must be even)
 
 -  **-lmax_seq values** A comma-separated sequence of spherical-harmonic degrees (values must be non-negative and even)
 

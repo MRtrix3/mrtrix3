@@ -18,23 +18,23 @@ Verify operation of the C++ command-line interface & parser
 
 + **-int_nonneg value**<br>a non-negative integer (minimum: 0)
 
-+ **-int_bound value**<br>a bound integer (range: 0 to 100) (default: 50)
++ **-int_bound value**<br>a bound integer (range: 0 to 100; default: 50)
 
 + **-float_unbound value**<br>a floating-point number (unbounded)
 
 + **-float_nonneg value**<br>a non-negative floating-point number (minimum: 0)
 
-+ **-float_bound value**<br>a bound floating-point number (range: 0 to 1) (default: 0.5)
++ **-float_bound value**<br>a bound floating-point number (range: 0 to 1; default: 0.5)
 
 + **-int_seq values**<br>a comma-separated sequence of integers
 
 + **-float_seq values**<br>a comma-separated sequence of floating-point numbers
 
-+ **-choice item**<br>a choice from a set of options (choices: one, two, three) (default: one)
++ **-choice item**<br>a choice from a set of options (choices: one, two, three; default: one)
 
-+ **-lmax value**<br>a spherical-harmonic degree (non-negative even integer) (minimum: 0) (must be even)
++ **-lmax value**<br>a spherical-harmonic degree (non-negative even integer) (minimum: 0; must be even)
 
-+ **-lmax_bound value**<br>a spherical-harmonic degree with an explicit upper bound (range: 0 to 8) (must be even)
++ **-lmax_bound value**<br>a spherical-harmonic degree with an explicit upper bound (range: 0 to 8; must be even)
 
 + **-lmax_seq values**<br>a comma-separated sequence of spherical-harmonic degrees (values must be non-negative and even)
 

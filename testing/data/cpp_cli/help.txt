@@ -27,7 +27,7 @@ OOPPTTIIOONNSS
      a non-negative integer (minimum: 0)
 
   _-_i_n_t___b_o_u_n_d value
-     a bound integer (range: 0 to 100) (default: 50)
+     a bound integer (range: 0 to 100; default: 50)
 
   _-_f_l_o_a_t___u_n_b_o_u_n_d value
      a floating-point number (unbounded)
@@ -36,7 +36,7 @@ OOPPTTIIOONNSS
      a non-negative floating-point number (minimum: 0)
 
   _-_f_l_o_a_t___b_o_u_n_d value
-     a bound floating-point number (range: 0 to 1) (default: 0.5)
+     a bound floating-point number (range: 0 to 1; default: 0.5)
 
   _-_i_n_t___s_e_q values
      a comma-separated sequence of integers
@@ -45,15 +45,15 @@ OOPPTTIIOONNSS
      a comma-separated sequence of floating-point numbers
 
   _-_c_h_o_i_c_e item
-     a choice from a set of options (choices: one, two, three) (default: one)
+     a choice from a set of options (choices: one, two, three; default: one)
 
   _-_l_m_a_x value
-     a spherical-harmonic degree (non-negative even integer) (minimum: 0) (must
+     a spherical-harmonic degree (non-negative even integer) (minimum: 0; must
      be even)
 
   _-_l_m_a_x___b_o_u_n_d value
-     a spherical-harmonic degree with an explicit upper bound (range: 0 to 8)
-     (must be even)
+     a spherical-harmonic degree with an explicit upper bound (range: 0 to 8;
+     must be even)
 
   _-_l_m_a_x___s_e_q values
      a comma-separated sequence of spherical-harmonic degrees (values must be

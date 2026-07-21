@@ -20,7 +20,7 @@ BBuuiilltt--iinn  ttyyppeess
      A built-in string (explicit)
 
   _-_c_h_o_i_c_e choice
-     A selection of choices (choices: One, Two, Three) (default: One)
+     A selection of choices (choices: One, Two, Three; default: One)
 
   _-_i_n_t___b_u_i_l_t_i_n int
      An integer; built-in type
@@ -62,7 +62,7 @@ CCuussttoomm  ttyyppeess
      An integer; non-negative (minimum: 0)
 
   _-_i_n_t___b_o_u_n_d_e_d value
-     An integer; bound range (range: 0 to 100) (default: 50)
+     An integer; bound range (range: 0 to 100; default: 50)
 
   _-_f_l_o_a_t___u_n_b_o_u_n_d value
      A floating-point; unbounded
@@ -71,7 +71,7 @@ CCuussttoomm  ttyyppeess
      A floating-point; non-negative (minimum: 0)
 
   _-_f_l_o_a_t___b_o_u_n_d_e_d value
-     A floating-point; bound range (range: 0 to 1) (default: 0.5)
+     A floating-point; bound range (range: 0 to 1; default: 0.5)
 
   _-_i_n_t___s_e_q values
      A comma-separated list of integers
@@ -80,12 +80,12 @@ CCuussttoomm  ttyyppeess
      A comma-separated list of floating-points
 
   _-_l_m_a_x value
-     A spherical-harmonic degree; non-negative even integer (minimum: 0) (must
-     be even)
+     A spherical-harmonic degree; non-negative even integer (minimum: 0; must be
+     even)
 
   _-_l_m_a_x___b_o_u_n_d_e_d value
-     A spherical-harmonic degree with an explicit upper bound (range: 0 to 8)
-     (must be even)
+     A spherical-harmonic degree with an explicit upper bound (range: 0 to 8;
+     must be even)
 
   _-_l_m_a_x___s_e_q values
      A comma-separated sequence of spherical-harmonic degrees (values must be

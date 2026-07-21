@@ -24,23 +24,23 @@ Options
 
 -  **-int_nonneg value** a non-negative integer (minimum: 0)
 
--  **-int_bound value** a bound integer (range: 0 to 100) (default: 50)
+-  **-int_bound value** a bound integer (range: 0 to 100; default: 50)
 
 -  **-float_unbound value** a floating-point number (unbounded)
 
 -  **-float_nonneg value** a non-negative floating-point number (minimum: 0)
 
--  **-float_bound value** a bound floating-point number (range: 0 to 1) (default: 0.5)
+-  **-float_bound value** a bound floating-point number (range: 0 to 1; default: 0.5)
 
 -  **-int_seq values** a comma-separated sequence of integers
 
 -  **-float_seq values** a comma-separated sequence of floating-point numbers
 
--  **-choice item** a choice from a set of options (choices: one, two, three) (default: one)
+-  **-choice item** a choice from a set of options (choices: one, two, three; default: one)
 
--  **-lmax value** a spherical-harmonic degree (non-negative even integer) (minimum: 0) (must be even)
+-  **-lmax value** a spherical-harmonic degree (non-negative even integer) (minimum: 0; must be even)
 
--  **-lmax_bound value** a spherical-harmonic degree with an explicit upper bound (range: 0 to 8) (must be even)
+-  **-lmax_bound value** a spherical-harmonic degree with an explicit upper bound (range: 0 to 8; must be even)
 
 -  **-lmax_seq values** a comma-separated sequence of spherical-harmonic degrees (values must be non-negative and even)
 

@@ -670,19 +670,20 @@ class Parser: # pylint: disable=too-many-public-methods
       self.default_value = value if isinstance(value, str) else str(value)
       return self
 
-    # The auto-rendered "(choices: ...) (range: ...) (default: ...)" annotation of this argument,
-    #   each clause preceded by a single space in that fixed order (empty when no such metadata);
-    #   appended to the description by every human-readable help surface, mirroring the C++
-    #   Argument::help_metadata() (autohelp-design.md section 2).
+    # The auto-rendered "(choices: ...; range: ...; default: ...)" annotation of this argument,
+    #   its clauses in that fixed order (empty when no such metadata); appended to the description
+    #   by every human-readable help surface, mirroring the C++ Argument::help_metadata()
+    #   (autohelp-design.md section 2). Multiple clauses of a single argument are semicolon-
+    #   separated inside one pair of brackets; a solitary clause keeps its own single brackets.
     def help_metadata(self):
-      result = ''
+      clauses = []
       if self.choices:
-        result += f' (choices: {", ".join(str(choice) for choice in self.choices)})'
+        clauses.append(f'choices: {", ".join(str(choice) for choice in self.choices)}')
       if isinstance(self.argtype, Parser.CustomTypeBase):
-        result += self.argtype._help_range() # pylint: disable=protected-access
+        clauses.extend(self.argtype._help_range()) # pylint: disable=protected-access
       if self.default_value is not None:
-        result += f' (default: {self.default_value})'
-      return result
+        clauses.append(f'default: {self.default_value}')
+      return f' ({"; ".join(clauses)})' if clauses else ''
 
     @property
     def is_tuple(self):
@@ -1089,11 +1090,12 @@ class Parser: # pylint: disable=too-many-public-methods
     @staticmethod
     def _metavar():
       assert False
-    # The auto-rendered "(range: ...)" / "(minimum: ...)" / "(maximum: ...)" clause contributed
-    #   by a bounded numeric type; empty for every unbounded / non-numeric type. Overridden by the
-    #   Int / Float factories (mirrors the C++ ScalarRange rendering in Argument::help_metadata()).
+    # The auto-rendered "range: ..." / "minimum: ..." / "maximum: ..." clause bodies contributed
+    #   by a bounded numeric type, as a list (empty for every unbounded / non-numeric type); the
+    #   caller wraps and joins them. Overridden by the Int / Float factories (mirrors the C++
+    #   ScalarRange rendering in Argument::help_metadata()).
     def _help_range(self):
-      return ''
+      return []
     # Parse a scalar integer with the same suffix-multiplier support as the C++ parser
     #   (MR::App::ParsedArgument::as_int(), cpp/core/app.cpp). Decimal multipliers only, no
     #   binary "G": k/K=1e3, m/M=1e6, b/B=1e9 (billion, NOT bytes), t/T=1e12. Edge rules mirror
@@ -1187,12 +1189,12 @@ class Parser: # pylint: disable=too-many-public-methods
         return 'value'
       def _help_range(self):
         if min_value is not None and max_value is not None:
-          return f' (range: {min_value} to {max_value})'
+          return [f'range: {min_value} to {max_value}']
         if min_value is not None:
-          return f' (minimum: {min_value})'
+          return [f'minimum: {min_value}']
         if max_value is not None:
-          return f' (maximum: {max_value})'
-        return ''
+          return [f'maximum: {max_value}']
+        return []
     return IntBounded()
 
   def Float(min_value=None, max_value=None): # pylint: disable=invalid-name,no-self-argument
@@ -1221,12 +1223,12 @@ class Parser: # pylint: disable=too-many-public-methods
         #   double precision, "%.17g"), so that a Python range/limit clause is byte-identical to
         #   the equivalent C++ command (e.g. type_float(1e-6) -> "(minimum: 9.9999999999999995e-07)").
         if min_value is not None and max_value is not None:
-          return f' (range: {min_value:.17g} to {max_value:.17g})'
+          return [f'range: {min_value:.17g} to {max_value:.17g}']
         if min_value is not None:
-          return f' (minimum: {min_value:.17g})'
+          return [f'minimum: {min_value:.17g}']
         if max_value is not None:
-          return f' (maximum: {max_value:.17g})'
-        return ''
+          return [f'maximum: {max_value:.17g}']
+        return []
     return FloatBounded()
 
   # A single spherical-harmonic degree: a non-negative even integer. Mirrors the C++ scalar lmax
@@ -1262,15 +1264,15 @@ class Parser: # pylint: disable=too-many-public-methods
       def _metavar():
         return 'value'
       def _help_range(self):
+        clauses = []
         if min_value is not None and max_value is not None:
-          base = f' (range: {min_value} to {max_value})'
+          clauses.append(f'range: {min_value} to {max_value}')
         elif min_value is not None:
-          base = f' (minimum: {min_value})'
+          clauses.append(f'minimum: {min_value}')
         elif max_value is not None:
-          base = f' (maximum: {max_value})'
-        else:
-          base = ''
-        return f'{base} (must be even)'
+          clauses.append(f'maximum: {max_value}')
+        clauses.append('must be even')
+        return clauses
     return LmaxScalar()
 
   class SequenceInt(CustomTypeBase):
@@ -1326,7 +1328,7 @@ class Parser: # pylint: disable=too-many-public-methods
     def _metavar():
       return 'values'
     def _help_range(self):
-      return ' (values must be non-negative and even)'
+      return ['values must be non-negative and even']
 
   class DirectoryIn(CustomTypeBase):
     def __call__(self, input_value):
