@@ -18,10 +18,12 @@
 #include <array>
 #include <cerrno>
 #include <clocale>
+#include <cmath>
 #include <cstddef>
 #include <fcntl.h>
 #include <filesystem>
 #include <functional>
+#include <limits>
 #include <locale>
 #include <set>
 #include <unistd.h>
@@ -2221,6 +2223,82 @@ void check_unused_options() {
   }
 }
 
+namespace {
+
+//! decomposition of a plain decimal literal into sign, significand digits, and fractional length
+/*! The significand is the concatenation of the integer-part and fractional-part digits interpreted
+ *  as a single non-negative integer; the represented magnitude is that integer divided by
+ *  10^fractional_length. No exponent is handled here (the caller supplies the power of ten). */
+struct DecimalParts {
+  bool negative = false;
+  std::string digits;           // integer-part and fractional-part digits, concatenated
+  size_t fractional_length = 0; // count of digits following the decimal point
+};
+
+//! parse a plain decimal literal (optional sign, digits, at most one '.') into its parts
+/*! Throws an Exception on any character other than a leading sign, digits, or a single '.',
+ *  or if no digit is present, so that malformed input reaches the caller's parse-error path. */
+DecimalParts parse_decimal(std::string_view text) {
+  DecimalParts result;
+  size_t index = 0;
+  if (index < text.size() && (text[index] == '+' || text[index] == '-')) {
+    result.negative = (text[index] == '-');
+    ++index;
+  }
+  bool seen_dot = false;
+  bool seen_digit = false;
+  for (; index < text.size(); ++index) {
+    const char c = text[index];
+    if (c == '.') {
+      if (seen_dot)
+        throw Exception("multiple decimal points");
+      seen_dot = true;
+    } else if (std::isdigit(static_cast<unsigned char>(c)) != 0) {
+      result.digits.push_back(c);
+      if (seen_dot)
+        ++result.fractional_length;
+      seen_digit = true;
+    } else {
+      throw Exception(std::string("unexpected character '") + c + "'");
+    }
+  }
+  if (!seen_digit)
+    throw Exception("no digits");
+  return result;
+}
+
+//! evaluate round_half_away_from_zero(significand * 10^power) using exact integer arithmetic
+/*! The magnitude represented by "parts" is (digits as integer) * 10^-fractional_length; scaling by
+ *  10^power gives a net exponent (power - fractional_length). A non-negative net exponent yields an
+ *  exact integer; a negative net exponent divides by a power of ten, rounding halves away from zero
+ *  without any floating-point conversion. Overflow of the int64_t range throws (reported as a
+ *  parse failure), rather than invoking undefined behaviour as the previous double-based path did. */
+int64_t decimal_to_int(const DecimalParts &parts, int power) {
+  const int64_t significand = to<int64_t>(parts.digits);
+  const int net_power = power - static_cast<int>(parts.fractional_length);
+  int64_t magnitude = 0;
+  if (net_power >= 0) {
+    magnitude = significand;
+    for (int i = 0; i < net_power; ++i) {
+      if (magnitude > std::numeric_limits<int64_t>::max() / 10)
+        throw Exception("value too large");
+      magnitude *= 10;
+    }
+  } else {
+    int64_t denominator = 1;
+    for (int i = 0; i < -net_power; ++i) {
+      if (denominator > std::numeric_limits<int64_t>::max() / 10)
+        throw Exception("value too large");
+      denominator *= 10;
+    }
+    // significand is non-negative here, so adding half the denominator rounds halves away from zero
+    magnitude = (significand + denominator / 2) / denominator;
+  }
+  return parts.negative ? -magnitude : magnitude;
+}
+
+} // namespace
+
 int64_t App::ParsedArgument::as_int() const {
 
   std::string as_choice_msg;
@@ -2277,36 +2355,48 @@ int64_t App::ParsedArgument::as_int() const {
         std::string num(p);
         const char postfix = num.back();
         num.pop_back();
-        int64_t multiplier = 1.0;
+        int64_t multiplier = 1;
+        int multiplier_exponent = 0;
         switch (postfix) {
         case 'k':
         case 'K':
           multiplier = 1000;
+          multiplier_exponent = 3;
           break;
         case 'm':
         case 'M':
           multiplier = 1000000;
+          multiplier_exponent = 6;
           break;
         case 'b':
         case 'B':
           multiplier = 1000000000;
+          multiplier_exponent = 9;
           break;
         case 't':
         case 'T':
           multiplier = 1000000000000;
+          multiplier_exponent = 12;
           break;
         default:
           throw Exception(std::string("unexpected postfix \'") + postfix + "\'");
         }
         if (contains_dotpoint) {
-          const default_type prefix = to<default_type>(num);
-          retval = std::round(prefix * static_cast<default_type>(multiplier));
+          // Exact integer evaluation of (fractional prefix x multiplier): scale the significand by
+          //   10^multiplier_exponent rather than converting the prefix to double and multiplying,
+          //   which avoids floating-point round-off at the half-way boundary.
+          retval = decimal_to_int(parse_decimal(num), multiplier_exponent);
         } else {
           retval = to<int64_t>(num) * multiplier;
         }
       } else if (alpha_char == 'e' || alpha_char == 'E') {
-        const default_type as_float = to<default_type>(p);
-        retval = std::round(as_float);
+        // Exact integer evaluation of scientific notation (mantissa x 10^exponent): combine the
+        //   mantissa's significand with the base-10 exponent by integer scaling, avoiding the
+        //   double conversion previously used.
+        const size_t e_pos = p.find_first_of("eE");
+        const DecimalParts mantissa = parse_decimal(p.substr(0, e_pos));
+        const int exponent = to<int>(p.substr(e_pos + 1));
+        retval = decimal_to_int(mantissa, exponent);
       } else {
         throw Exception("unexpected character");
       }

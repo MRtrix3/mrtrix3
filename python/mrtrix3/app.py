@@ -1119,18 +1119,55 @@ class Parser: # pylint: disable=too-many-public-methods
     #   binary "G": k/K=1e3, m/M=1e6, b/B=1e9 (billion, NOT bytes), t/T=1e12. Edge rules mirror
     #   the C++ implementation exactly:
     #   - Exactly one trailing alpha character is treated as a multiplier suffix; a fractional
-    #     prefix (a '.' anywhere before the suffix) is parsed as float, multiplied, then rounded,
-    #     otherwise the integer prefix is multiplied directly.
-    #   - A single mid-string 'e'/'E' selects scientific-notation parsing (float, then rounded).
+    #     prefix (a '.' anywhere before the suffix) is evaluated by exact integer scaling (scale
+    #     the significand by 10^multiplier_exponent), rounding halves away from zero; an integer
+    #     prefix is multiplied directly.
+    #   - A single mid-string 'e'/'E' selects scientific notation, evaluated by the same integer
+    #     scaling of the mantissa's significand by the base-10 exponent.
     #   - More than one alpha character, or any other single trailing alpha, is rejected.
-    #   Rounding matches C++ std::round() (half away from zero), not Python's banker's rounding.
+    #   The fractional and scientific paths use exact integer arithmetic (no float conversion),
+    #   matching the C++ MR::App::ParsedArgument::as_int() implementation byte-for-byte and rounding
+    #   halves away from zero (as C++ std::round()), not Python's banker's rounding.
     #   Range-checking against min/max is the caller's responsibility, applied AFTER multiplication.
     #   Sequence-integer types deliberately do NOT use this (C++ applies multipliers to scalar
     #   as_int() only; parse_ints() does not).
     @staticmethod
     def _parse_int_multiplier(input_value):
-      def round_half_away(value):
-        return math.floor(value + 0.5) if value >= 0.0 else math.ceil(value - 0.5)
+      # Decompose a plain decimal literal (optional sign, digits, at most one '.') into its sign,
+      #   significand digits (integer and fractional parts concatenated), and fractional-digit count.
+      def parse_decimal(text):
+        negative = False
+        index = 0
+        if text[:1] in ('+', '-'):
+          negative = text[0] == '-'
+          index = 1
+        digits = ''
+        fractional_length = 0
+        seen_dot = False
+        for char in text[index:]:
+          if char == '.':
+            if seen_dot:
+              raise ValueError('multiple decimal points')
+            seen_dot = True
+          elif char.isdigit():
+            digits += char
+            if seen_dot:
+              fractional_length += 1
+          else:
+            raise ValueError(f'unexpected character \'{char}\'')
+        if not digits:
+          raise ValueError('no digits')
+        return negative, digits, fractional_length
+      # Exact integer evaluation of round_half_away_from_zero(significand * 10^power).
+      def decimal_to_int(negative, digits, fractional_length, power):
+        significand = int(digits)
+        net_power = power - fractional_length
+        if net_power >= 0:
+          magnitude = significand * (10 ** net_power)
+        else:
+          denominator = 10 ** (-net_power)
+          magnitude = (significand + denominator // 2) // denominator
+        return -magnitude if negative else magnitude
       alpha_count = 0
       alpha_is_last = False
       contains_dotpoint = False
@@ -1149,20 +1186,22 @@ class Parser: # pylint: disable=too-many-public-methods
       if not alpha_count:
         return int(input_value)
       if alpha_is_last:
-        multipliers = {'k': 1000, 'K': 1000,
-                       'm': 1000000, 'M': 1000000,
-                       'b': 1000000000, 'B': 1000000000,
-                       't': 1000000000000, 'T': 1000000000000}
+        multiplier_exponents = {'k': 3, 'K': 3,
+                                'm': 6, 'M': 6,
+                                'b': 9, 'B': 9,
+                                't': 12, 'T': 12}
         postfix = input_value[-1]
-        if postfix not in multipliers:
+        if postfix not in multiplier_exponents:
           raise ValueError(f'unexpected postfix \'{postfix}\'')
-        multiplier = multipliers[postfix]
         prefix = input_value[:-1]
         if contains_dotpoint:
-          return round_half_away(float(prefix) * multiplier)
-        return int(prefix) * multiplier
+          return decimal_to_int(*parse_decimal(prefix), multiplier_exponents[postfix])
+        return int(prefix) * (10 ** multiplier_exponents[postfix])
       if alpha_char in ('e', 'E'):
-        return round_half_away(float(input_value))
+        exponent_index = input_value.lower().index('e')
+        mantissa = parse_decimal(input_value[:exponent_index])
+        exponent = int(input_value[exponent_index + 1:])
+        return decimal_to_int(*mantissa, exponent)
       raise ValueError('unexpected character')
 
   class Bool(CustomTypeBase):
