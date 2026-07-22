@@ -2176,9 +2176,78 @@ void init(int cmdline_argc, const char *const *cmdline_argv) { // check_syntax o
   std::setlocale(LC_ALL, "C"); // NOLINT(concurrency-mt-unsafe)
 }
 
+namespace {
+
+//! option ids that shared IO helpers legitimately probe on commands that do not register them
+/*! MRtrix's generic image / tractogram IO helpers consult a fixed vocabulary of options as an
+ *  optional feature test — an empty result meaning "the command did not offer this, use the
+ *  default / embedded value". These helpers run irrespective of whether the invoking command
+ *  registered the corresponding option group (e.g. mrcat loading a DWI with an embedded gradient
+ *  table triggers the -grad probe though mrcat offers no gradient import), so the queried id is
+ *  legitimately absent from that command's interface. These ids are therefore exempt from the
+ *  registered-option invariant below; a drifted query of any other id remains a hard error.
+ *  The set is derived structurally from the generic IO helpers, not from test coverage:
+ *   - gradient table import / b-value scaling / export  (core/dwi/gradient.cpp, file/json_utils.cpp)
+ *   - phase-encoding table import / export               (core/metadata/phase_encoding.cpp)
+ *   - shell selection                                    (core/dwi/shells.cpp)
+ *   - output striding and datatype                       (core/stride.cpp, core/datatype.cpp)
+ *   - tractogram per-streamline weight import / export   (core/dwi/tractography/file.h)
+ *   - SIFT model construction (processing mask, ACT      (core/dwi/tractography/SIFT/proc_mask.cpp,
+ *     image, FMLS lookup-table / null-lobe / GM scaling)  core/dwi/tractography/SIFT/model_base.h),
+ *     probed by commands that reuse the SIFT model without exposing its options (afdconnectivity,
+ *     tckgen dynamic seeding), not only by tcksift / tcksift2. */
+bool is_framework_probe_option(std::string_view name) {
+  static const std::set<std::string, std::less<>> framework_probe_ids = {"grad",
+                                                                         "fslgrad",
+                                                                         "bvalue_scaling",
+                                                                         "export_grad_mrtrix",
+                                                                         "export_grad_fsl", //
+                                                                         "import_pe_table",
+                                                                         "import_pe_topup",
+                                                                         "import_pe_eddy", //
+                                                                         "export_pe_table",
+                                                                         "export_pe_topup",
+                                                                         "export_pe_eddy", //
+                                                                         "shells",
+                                                                         "strides",
+                                                                         "datatype", //
+                                                                         "tck_weights_in",
+                                                                         "tck_weights_out", //
+                                                                         "proc_mask",
+                                                                         "act",
+                                                                         "no_dilate_lut",
+                                                                         "make_null_lobes",
+                                                                         "fd_scale_gm"};
+  return framework_probe_ids.find(name) != framework_probe_ids.end();
+}
+
+//! true if `name` (canonical id or alias) is registered in the current command's interface
+/*! The registered set is every option across the command's OPTIONS groups — recursing nested
+ *  sub-groups via OptionGroup::find() / all_options() — plus the standard-options group. This
+ *  mirrors the set match_option() resolves user tokens against, so an id/alias absent here can
+ *  never be supplied on the command line and can only be the result of a query that has drifted
+ *  from the option definition it was meant to read — except for the shared IO probes above. */
+bool is_registered_option(std::string_view name) {
+  const auto group_provides = [name](const OptionGroup &group) { return group.find(name) != nullptr; };
+  return std::any_of(OPTIONS.begin(), OPTIONS.end(), group_provides) || _standard_options.find(name) != nullptr ||
+         is_framework_probe_option(name);
+}
+
+} // namespace
+
 std::vector<ParsedOption> get_options(std::string_view name) {
   assert(!name.empty());
   assert(name[0] != '-');
+  // Developer-correspondence invariant: querying an id/alias that no Option in this command's
+  //   interface provides means the read site has drifted from (or never matched) the definition;
+  //   such a query would otherwise be silently read as "option absent" forever. Debug-only.
+#ifndef NDEBUG
+  if (!is_registered_option(name)) {
+    std::cerr << NAME << ": option-access invariant violated: queried option \"-" << name
+              << "\" is not registered in this command's interface\n";
+    assert(false && "get_options() queried an option id/alias absent from the command's registered interface");
+  }
+#endif
   std::vector<ParsedOption> matches;
   for (size_t i = 0; i < option.size(); ++i) {
     assert(option[i].opt);

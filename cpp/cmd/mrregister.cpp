@@ -418,13 +418,6 @@ void run() {
     rigid_registration.set_scale_factor(parse_floats(opt[0][0]));
   }
 
-  opt = get_options("rigid_loop_density");
-  if (!opt.empty()) {
-    if (!do_rigid)
-      throw Exception("the rigid sparsity factor was input when no rigid registration is requested");
-    rigid_registration.set_loop_density(parse_floats(opt[0][0]));
-  }
-
   opt = get_options("rigid_niter");
   if (!opt.empty()) {
     if (!do_rigid)
@@ -527,13 +520,6 @@ void run() {
     if (!do_affine)
       throw Exception("the affine multi-resolution scale factors were input when no affine registration is requested");
     affine_registration.set_scale_factor(parse_floats(opt[0][0]));
-  }
-
-  opt = get_options("affine_loop_density");
-  if (!opt.empty()) {
-    if (!do_affine)
-      throw Exception("the affine sparsity factor was input when no affine registration is requested");
-    affine_registration.set_loop_density(parse_floats(opt[0][0]));
   }
 
   const Registration::LinearMetricType affine_metric =

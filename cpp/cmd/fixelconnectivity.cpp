@@ -98,7 +98,7 @@ template <class WriterType> void set_optional_outputs(WriterType &writer) {
 
 void run() {
   const value_type connectivity_threshold =
-      get_option_value("connectivity", static_cast<value_type>(default_connectivity_threshold));
+      get_option_value("threshold", static_cast<value_type>(default_connectivity_threshold));
   const value_type angular_threshold =
       get_option_value("angle", static_cast<value_type>(DWI::Tractography::Mapping::default_streamline2fixel_angle));
 

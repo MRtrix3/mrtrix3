@@ -296,7 +296,7 @@ void run() {
     if (crop_unbound && !do_crop)
       throw Exception("-crop_unbound only applies only to the crop operation");
 
-    const size_t nd = !get_options("nd").empty() ? input_header.ndim() : size_t(3);
+    const size_t nd = !get_options("all_axes").empty() ? input_header.ndim() : size_t(3);
 
     std::vector<std::vector<ssize_t>> bounds(input_header.ndim(), std::vector<ssize_t>(2));
     for (size_t axis = 0; axis < input_header.ndim(); axis++) {
