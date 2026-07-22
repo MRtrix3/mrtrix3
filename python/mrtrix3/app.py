@@ -1120,14 +1120,13 @@ class Parser: # pylint: disable=too-many-public-methods
     #   the C++ implementation exactly:
     #   - Exactly one trailing alpha character is treated as a multiplier suffix; a fractional
     #     prefix (a '.' anywhere before the suffix) is evaluated by exact integer scaling (scale
-    #     the significand by 10^multiplier_exponent), rounding halves away from zero; an integer
-    #     prefix is multiplied directly.
+    #     the significand by 10^multiplier_exponent); an integer prefix is multiplied directly.
     #   - A single mid-string 'e'/'E' selects scientific notation, evaluated by the same integer
     #     scaling of the mantissa's significand by the base-10 exponent.
     #   - More than one alpha character, or any other single trailing alpha, is rejected.
     #   The fractional and scientific paths use exact integer arithmetic (no float conversion),
-    #   matching the C++ MR::App::ParsedArgument::as_int() implementation byte-for-byte and rounding
-    #   halves away from zero (as C++ std::round()), not Python's banker's rounding.
+    #   matching the C++ MR::App::ParsedArgument::as_int() implementation byte-for-byte. A value that
+    #   does not scale to an exact integer (e.g. '1.2345k', '2.5e-2') is rejected rather than rounded.
     #   Range-checking against min/max is the caller's responsibility, applied AFTER multiplication.
     #   Sequence-integer types deliberately do NOT use this (C++ applies multipliers to scalar
     #   as_int() only; parse_ints() does not).
@@ -1158,7 +1157,9 @@ class Parser: # pylint: disable=too-many-public-methods
         if not digits:
           raise ValueError('no digits')
         return negative, digits, fractional_length
-      # Exact integer evaluation of round_half_away_from_zero(significand * 10^power).
+      # Exact integer evaluation of significand * 10^power, rejecting any input that loses precision:
+      #   a negative net exponent is accepted only when the division is exact (no remainder), so a
+      #   fractional part an integer cannot represent raises rather than being silently rounded away.
       def decimal_to_int(negative, digits, fractional_length, power):
         significand = int(digits)
         net_power = power - fractional_length
@@ -1166,7 +1167,9 @@ class Parser: # pylint: disable=too-many-public-methods
           magnitude = significand * (10 ** net_power)
         else:
           denominator = 10 ** (-net_power)
-          magnitude = (significand + denominator // 2) // denominator
+          if significand % denominator != 0:
+            raise ValueError('value cannot be represented exactly as an integer')
+          magnitude = significand // denominator
         return -magnitude if negative else magnitude
       alpha_count = 0
       alpha_is_last = False

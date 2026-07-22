@@ -103,12 +103,19 @@ testing_python_cli -int_unbound 2b 2>&1 | grep "int_unbound: 2000000000"
 testing_python_cli -int_unbound 2B 2>&1 | grep "int_unbound: 2000000000"
 testing_python_cli -int_unbound 1t 2>&1 | grep "int_unbound: 1000000000000"
 testing_python_cli -int_unbound 1T 2>&1 | grep "int_unbound: 1000000000000"
-# A fractional prefix is multiplied then rounded to the nearest integer.
+# A fractional prefix is evaluated by exact integer scaling when the result is an exact integer.
 testing_python_cli -int_unbound 1.5k 2>&1 | grep "int_unbound: 1500"
+testing_python_cli -int_unbound 2.5k 2>&1 | grep "int_unbound: 2500"
 testing_python_cli -int_unbound 3.5b 2>&1 | grep "int_unbound: 3500000000"
-# A single mid-string "e"/"E" selects scientific-notation parsing, rounded to integer.
+# A single mid-string "e"/"E" selects scientific-notation parsing (also exact-integer only).
 testing_python_cli -int_unbound 1e3 2>&1 | grep "int_unbound: 1000"
 testing_python_cli -int_unbound 1e10 2>&1 | grep "int_unbound: 10000000000"
+# A large-but-exact scientific value is accepted (no precision loss).
+testing_python_cli -int_unbound 1.2345e10 2>&1 | grep "int_unbound: 12345000000"
+# A fractional prefix or scientific mantissa that would not scale to an exact integer is rejected
+#   rather than silently rounded.
+! testing_python_cli -int_unbound 1.2345k
+! testing_python_cli -int_unbound 2.5e-2
 # The range check is applied AFTER multiplication (-int_bounded permits 0 to 100):
 #   "0k" multiplies to an in-range 0, but "1k" multiplies to an out-of-range 1000.
 testing_python_cli -int_bounded 0k 2>&1 | grep "int_bounded: 0"

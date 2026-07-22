@@ -2336,12 +2336,14 @@ DecimalParts parse_decimal(std::string_view text) {
   return result;
 }
 
-//! evaluate round_half_away_from_zero(significand * 10^power) using exact integer arithmetic
+//! evaluate significand * 10^power as an exact integer, rejecting any input that loses precision
 /*! The magnitude represented by "parts" is (digits as integer) * 10^-fractional_length; scaling by
  *  10^power gives a net exponent (power - fractional_length). A non-negative net exponent yields an
- *  exact integer; a negative net exponent divides by a power of ten, rounding halves away from zero
- *  without any floating-point conversion. Overflow of the int64_t range throws (reported as a
- *  parse failure), rather than invoking undefined behaviour as the previous double-based path did. */
+ *  exact integer. A negative net exponent divides by a power of ten: this is accepted only when the
+ *  division is exact (no remainder); a non-zero remainder means the user-specified value carries a
+ *  fractional part that an integer cannot represent, so the conversion throws rather than silently
+ *  rounding it away. Overflow of the int64_t range likewise throws. Both are reported as a parse
+ *  failure rather than invoking undefined behaviour as the previous double-based path did. */
 int64_t decimal_to_int(const DecimalParts &parts, int power) {
   const int64_t significand = to<int64_t>(parts.digits);
   const int net_power = power - static_cast<int>(parts.fractional_length);
@@ -2360,8 +2362,9 @@ int64_t decimal_to_int(const DecimalParts &parts, int power) {
         throw Exception("value too large");
       denominator *= 10;
     }
-    // significand is non-negative here, so adding half the denominator rounds halves away from zero
-    magnitude = (significand + denominator / 2) / denominator;
+    if (significand % denominator != 0)
+      throw Exception("value cannot be represented exactly as an integer");
+    magnitude = significand / denominator;
   }
   return parts.negative ? -magnitude : magnitude;
 }
