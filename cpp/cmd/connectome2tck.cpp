@@ -280,7 +280,6 @@ void run() {
     return weights_dir ? std::optional<std::filesystem::path>{*weights_dir / std::string{filename}} : std::nullopt;
   };
   const node_t first_node = get_options("keep_unassigned").empty() ? 1 : 0;
-  const bool keep_self = !get_options("keep_self").empty();
 
   // Get the list of nodes of interest
   std::vector<node_t> nodes;
@@ -313,8 +312,9 @@ void run() {
 
   opt = get_options("exemplars");
   if (!opt.empty()) {
-    if (keep_self)
-      WARN("Exemplars cannot be calculated for node self-connections; -keep_self option ignored");
+    // -keep_self only has an effect when extracting streamlines (the non-exemplar branch); exemplars
+    //   are never generated for self-connections, so the option is left unread here and the
+    //   unused-option check reports it if specified.
 
     // Load the node image, get the centres of mass
     // Generate exemplars - these can _only_ be done per edge, and requires a mutex per edge to multi-thread
@@ -456,6 +456,7 @@ void run() {
 
   } else { // Old behaviour ie. all tracks, rather than generating exemplars
 
+    const bool keep_self = !get_options("keep_self").empty();
     WriterExtraction writer(properties, nodes, exclusive, keep_self);
 
     switch (file_format) {

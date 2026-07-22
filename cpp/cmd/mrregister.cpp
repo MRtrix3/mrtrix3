@@ -225,12 +225,6 @@ void run() {
   bool do_reorientation = !reorientation_forbidden;
 
   Eigen::MatrixXd directions_cartesian;
-  auto opt = get_options("directions");
-  if (!opt.empty()) {
-    const Eigen::MatrixXd directions = File::Matrix::load_matrix(opt[0][0]);
-    DWI::Directions::validate(directions, opt[0][0], false);
-    directions_cartesian = Math::Sphere::as_cartesian(directions).transpose();
-  }
 
   // check header transformations for equality
   Eigen::MatrixXd trafo = MR::Transform(input1[0]).scanner2voxel.linear();
@@ -305,12 +299,21 @@ void run() {
   });
   if (do_reorientation)
     CONSOLE("performing FOD registration");
-  if (!do_reorientation and directions_cartesian.cols())
-    WARN("-directions option ignored since no FOD reorientation is being performed");
+
+  // Read the user-specified reorientation directions only when FOD reorientation is actually being
+  //   performed; otherwise -directions is left unread so the unused-option check reports it.
+  if (do_reorientation) {
+    auto opt_directions = get_options("directions");
+    if (!opt_directions.empty()) {
+      const Eigen::MatrixXd directions = File::Matrix::load_matrix(opt_directions[0][0]);
+      DWI::Directions::validate(directions, opt_directions[0][0], false);
+      directions_cartesian = Math::Sphere::as_cartesian(directions).transpose();
+    }
+  }
 
   INFO("maximum input lmax: " + str(max_mc_image_lmax));
 
-  opt = get_options("transformed");
+  auto opt = get_options("transformed");
   std::vector<std::filesystem::path> im1_transformed_paths;
   if (!opt.empty()) {
     if (opt.size() > n_images)
@@ -651,6 +654,9 @@ void run() {
       WARN("no rigid registration will be performed when initialising with non-linear warps");
       do_rigid = false;
     }
+    // Manual WARN kept: the -affine_init_*/-rigid_init_* values were already consumed to build the
+    //   initial linear transform, so the unused-option tracker sees them as accessed; the message
+    //   reports that a non-linear init warp supersedes that already-applied linear initialisation.
     if (init_affine_matrix_set)
       WARN("-affine_init has no effect since the non-linear init warp"
            " also contains the linear transform in the image header");
@@ -659,17 +665,17 @@ void run() {
            " also contains the linear transform in the image header");
   }
 
-  opt = get_options("nl_scale");
-  if (!opt.empty()) {
-    if (!do_nonlinear)
-      throw Exception("the non-linear multi-resolution scale factors were input"
-                      " when no non-linear registration is requested");
-    std::vector<default_type> scale_factors = parse_floats(opt[0][0]);
-    if (nonlinear_init) {
-      WARN("-nl_scale option ignored since only the full resolution"
-           " will be performed when initialising with non-linear warp");
-    } else {
-      nl_registration.set_scale_factor(scale_factors);
+  // -nl_scale has no effect when initialising with a non-linear warp, since only the full
+  //   resolution is performed in that case; the option is then left unread so the unused-option
+  //   check reports it. (nl_init implies non-linear registration, so the no-non-linear error
+  //   below is unreachable when nonlinear_init is set.)
+  if (!nonlinear_init) {
+    opt = get_options("nl_scale");
+    if (!opt.empty()) {
+      if (!do_nonlinear)
+        throw Exception("the non-linear multi-resolution scale factors were input"
+                        " when no non-linear registration is requested");
+      nl_registration.set_scale_factor(parse_floats(opt[0][0]));
     }
   }
 

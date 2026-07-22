@@ -512,27 +512,21 @@ void run() {
   if (op == Operation::DEC_UNIT || op == Operation::DEC_SCALED) // dec
     in_directions = Fixel::find_directions_header(in_fixel_directory).get_image<float>(DirectIO(1));
 
+  // -weighted only applies to the operations that weight each fixel's contribution (mean, sum and
+  //   the directionally-encoded-colour operations); for any other operation it is left unread, so
+  //   the unused-option check reports it if specified.
   FixelDataType in_vol;
-  auto opt = get_options("weighted");
-  if (!opt.empty()) {
-    in_vol = FixelDataType::open(opt[0][0]);
-    check_dimensions(in_data, in_vol);
-  }
-
   switch (op) {
-  case Operation::PRODUCT:
-  case Operation::MIN:
-  case Operation::MAX:
-  case Operation::ABSMAX:
-  case Operation::MAGMAX:
-  case Operation::COUNT:
-  case Operation::COMPLEXITY:
-  case Operation::SF:
-  case Operation::ENTROPY:
-  case Operation::NONE:
-    if (in_vol.valid())
-      WARN("Option -weighted has no meaningful interpretation for the operation specified; ignoring");
-    break;
+  case Operation::MEAN:
+  case Operation::SUM:
+  case Operation::DEC_UNIT:
+  case Operation::DEC_SCALED: {
+    auto opt = get_options("weighted");
+    if (!opt.empty()) {
+      in_vol = FixelDataType::open(opt[0][0]);
+      check_dimensions(in_data, in_vol);
+    }
+  } break;
   default:
     break;
   }
@@ -541,7 +535,7 @@ void run() {
   //   unused-option check reports it if specified.
   float fill_value = 0.0;
   if (op == Operation::NONE) {
-    opt = get_options("fill");
+    auto opt = get_options("fill");
     if (!opt.empty())
       fill_value = opt[0][0];
   }

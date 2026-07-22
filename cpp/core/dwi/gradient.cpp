@@ -312,6 +312,9 @@ Eigen::MatrixXd get_DW_scheme(const Header &header, BValueScalingBehaviour bvalu
         CONSOLE(std::string("disabling b-value scaling during normalisation of DW vectors on user request") + //
                 " (maximum scaling factor would have been " + str(max_scaling_factor) + ")");                 //
       } else {
+        // Manual WARN kept: this is library code holding an already-parsed BValueScalingBehaviour
+        //   with no access to the ParsedOption, and the value had to be read to establish UserOff;
+        //   the message reports that the (used) option happened to have no effect on this data.
         WARN(std::string("use of -bvalue_scaling option had no effect:") +   //
              " gradient vector norms are all within tolerance" +             //
              " (maximum scaling factor = " + str(max_scaling_factor) + ")"); //

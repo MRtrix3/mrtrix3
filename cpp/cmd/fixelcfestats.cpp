@@ -498,6 +498,11 @@ void run() {
   // Perform permutation testing
   if (!get_options("notest").empty()) {
 
+    // Manual WARN kept: the -posthoc mask is loaded and validated eagerly against the fixel
+    //   template (fail-fast for the common, tested case), so the unused-option tracker already
+    //   sees it as accessed; deferring the load behind this -notest test would move that
+    //   validation to after the entire GLM computation. The message reports the (loaded) mask
+    //   has no effect because no statistical test is being run.
     if (!get_options("posthoc").empty()) {
       WARN("-posthoc option has no effect if -notest is also specified");
     }

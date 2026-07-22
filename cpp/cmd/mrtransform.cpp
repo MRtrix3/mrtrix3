@@ -585,9 +585,11 @@ void run() {
   }
 
   // Interpolator
-  const MR::Interp::interp_type interp = get_option_choice<MR::Interp::interp_type>("interp", default_interp);
-  if (!get_options("interp").empty() && !warp && !template_header)
-    WARN("interpolator choice ignored since the input image will not be regridded");
+  // The interpolator choice only applies when the input image is regridded (a warp or a template is
+  //   provided); otherwise -interp is left unread and the unused-option check reports it.
+  MR::Interp::interp_type interp = default_interp;
+  if (warp.valid() || template_header.valid())
+    interp = get_option_choice<MR::Interp::interp_type>("interp", default_interp);
 
   // over-sampling
   std::vector<uint32_t> oversample = Adapter::AutoOverSample;
