@@ -146,7 +146,7 @@ void load_streamline_properties_and_rois(Properties &properties) {
 
   // -stop is only meaningful when inclusion regions are specified; without them it is left unread,
   //   so the unused-option check reports it if specified.
-  if (properties.include.size() || properties.ordered_include.size()) {
+  if (!properties.include.empty() || !properties.ordered_include.empty()) {
     if (!get_options("stop").empty())
       properties["stop_on_all_include"] = "1";
   }

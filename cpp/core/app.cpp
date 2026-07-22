@@ -1827,7 +1827,7 @@ void parse() {
     throw 0;
   }
 
-  if (num_optional_slots && num_required_tokens > argument.size())
+  if (num_optional_slots != 0 && num_required_tokens > argument.size())
     throw Exception("Expected at least " + str(num_required_tokens) + " arguments (" + str(argument.size()) +
                     " supplied)");
 
