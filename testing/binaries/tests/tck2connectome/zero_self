@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify that -zero_self zeroes the connectome matrix diagonal (self-connections) on output,
+#   and that the deprecated -zero_diagonal spelling remains accepted as an alias that yields
+#   identical output.
+tck2connectome SIFT_phantom/tracks.tck SIFT_phantom/parc.mif tmp_self.csv -zero_self -force
+tck2connectome SIFT_phantom/tracks.tck SIFT_phantom/parc.mif tmp_diag.csv -zero_diagonal -force
+# The alias must produce numerically identical output
+testing_diff_matrix tmp_self.csv tmp_diag.csv
+# Every diagonal entry (field N of line N) must be zero
+awk -F, '{ if ($NR+0 != 0) { print "ERROR: diagonal entry on line " NR " is nonzero: " $NR; exit 1 } }' tmp_self.csv

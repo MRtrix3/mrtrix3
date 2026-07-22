@@ -127,6 +127,14 @@ void usage() {
   + Option ("vector", "output a vector representing connectivities from a given seed point to target nodes,"
                       " rather than a matrix of node-node connectivities");
 
+  // -symmetric (from the shared MatrixOutputOptions group) and -vector (command-local) describe
+  //   incompatible output structures: symmetrising is meaningful only for a square node-node
+  //   matrix, never for a connectivity vector. The two options reside in different OptionGroups,
+  //   so a per-group OptionGroup::mutually_exclusive() constraint (which operates only within a
+  //   single group's own options) cannot express the exclusion; the command-level cross-group
+  //   MUTUALLY_EXCLUSIVE_OPTIONS set is the appropriate mechanism.
+  MUTUALLY_EXCLUSIVE_OPTIONS = {{"symmetric", "vector"}};
+
   REFERENCES
   + "If using the default \"radial search\" streamline-parcel assignment mechanism"
     " (or -assignment_radial_search option):\n" // Internal
@@ -188,7 +196,7 @@ void execute(Image<node_t> &node_image, const node_t max_node_index, const std::
   connectome.save(argument[2],
                   get_options("keep_unassigned").size(),
                   get_options("symmetric").size(),
-                  get_options("zero_diagonal").size());
+                  get_options("zero_self").size());
 
   auto opt = get_options("out_assignments");
   if (!opt.empty())

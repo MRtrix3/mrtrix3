@@ -1,0 +1,4 @@
+#!/bin/bash
+# -symmetric (matrix-only) and -vector describe incompatible output structures and are declared
+#   mutually exclusive; supplying both must be rejected.
+! tck2connectome SIFT_phantom/tracks.tck SIFT_phantom/parc.mif tmp_mutex.csv -symmetric -vector -force

@@ -1,0 +1,22 @@
+#!/bin/bash
+# -zero_self is now applicable to connectivity vectors, where it zeroes the single self-connection
+#   (the entry indexed by the seed node) rather than a whole diagonal. Verify that the vector
+#   produced with -zero_self matches the plain vector in every entry except at most one, and that
+#   any entry which does differ has been set to zero.
+tck2connectome SIFT_phantom/tracks.tck SIFT_phantom/parc.mif tmp_vec.csv -vector -force
+tck2connectome SIFT_phantom/tracks.tck SIFT_phantom/parc.mif tmp_vec_self.csv -vector -zero_self -force
+plain=$(grep -v '^#' tmp_vec.csv | head -1)
+self=$(grep -v '^#' tmp_vec_self.csv | head -1)
+awk -v p="$plain" -v s="$self" 'BEGIN {
+  np = split(p, P, ",");
+  ns = split(s, S, ",");
+  if (np != ns) { print "ERROR: vector length changed (" np " vs " ns ")"; exit 1 }
+  diff = 0;
+  for (i = 1; i <= np; i++) {
+    if (P[i] != S[i]) {
+      diff++;
+      if (S[i] + 0 != 0) { print "ERROR: differing entry " i " was not zeroed: " S[i]; exit 1 }
+    }
+  }
+  if (diff > 1) { print "ERROR: more than one entry changed (" diff ")"; exit 1 }
+}'

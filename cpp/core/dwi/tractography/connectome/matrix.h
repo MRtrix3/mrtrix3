@@ -17,6 +17,7 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 #include <set>
 
 #include "types.h"
@@ -79,6 +80,11 @@ private:
   const std::unique_ptr<MR::Connectome::Mat2Vec> mat2vec;
 
   vector_type data, counts;
+  // For a connectivity vector (seed-based fingerprint), the "self" connection is the entry
+  //   indexed by the (constant) seed node, i.e. the first node of each assigned pair. It is
+  //   captured here so that -zero_self can zero that single entry on output; it remains unset
+  //   for nodelist-based assignment, which has no seed-node concept.
+  std::optional<node_t> vector_self_node;
   std::vector<node_t> assignments_single;
   std::vector<NodePair> assignments_pairs;
   std::vector<std::vector<node_t>> assignments_lists;

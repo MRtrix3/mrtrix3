@@ -83,7 +83,7 @@ Options for outputting connectome matrices
 
 -  **-symmetric** Make matrices symmetric on output
 
--  **-zero_diagonal** Set matrix diagonal to zero on output
+-  **-zero_self** Set self-connections to zero on output (the matrix diagonal, or for a connectivity vector the single self-connection)
 
 Other options for tck2connectome
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -97,6 +97,8 @@ Other options for tck2connectome
 -  **-out_assignments path** output the node assignments of each streamline to a file; this can be used subsequently e.g. by the command connectome2tck
 
 -  **-vector** output a vector representing connectivities from a given seed point to target nodes, rather than a matrix of node-node connectivities
+
+*(the options -symmetric, -vector are mutually exclusive; at most one may be specified)*
 
 Standard options
 ^^^^^^^^^^^^^^^^

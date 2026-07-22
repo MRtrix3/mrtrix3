@@ -36,6 +36,10 @@ template <typename T> bool Matrix<T>::operator()(const Mapped_track_nodepair &in
   assert(assignments_lists.empty());
   if (is_vector()) {
     assert(assignments_pairs.empty());
+    // The seed node (first node of the pair) is constant across a seed-based fingerprint;
+    //   record it so that -zero_self can zero the single self-connection entry on output.
+    if (!vector_self_node)
+      vector_self_node = in.get_first_node();
     apply_data(in.get_second_node(), in.get_factor(), in.get_weight());
     inc_count(in.get_second_node(), in.get_weight());
     if (track_assignments) {
@@ -189,19 +193,23 @@ template <typename T>
 void Matrix<T>::save(const std::filesystem::path &path,
                      const bool keep_unassigned,
                      const bool symmetric,
-                     const bool zero_diagonal) const {
+                     const bool zero_self) const {
   // Write the output file one line at a time
   // No point in keeping a dense matrix version of this function;
   //   it would just increase code management
   if (vector_output) {
-    if (symmetric)
-      WARN("Option -symmetric not applicable when generating connectivity vector; ignored");
-    if (zero_diagonal)
-      WARN("Option -zero_diagonal not applicable when generating connectivity vector; ignored");
+    // -symmetric is meaningless for a vector and is barred from co-occurring with -vector by the
+    //   command-level MUTUALLY_EXCLUSIVE_OPTIONS set, so it can never be set in this branch.
+    assert(!symmetric);
+    vector_type out = data;
+    // For a connectivity vector, -zero_self zeroes the single self-connection: the entry indexed
+    //   by the seed node. It is left unchanged when no seed node was captured (nodelist mode).
+    if (zero_self && vector_self_node)
+      out[*vector_self_node] = T(0.0);
     if (keep_unassigned)
-      File::Matrix::save_vector(data, path);
+      File::Matrix::save_vector(out, path);
     else
-      File::Matrix::save_vector(data.tail(data.size() - 1), path);
+      File::Matrix::save_vector(out.tail(out.size() - 1), path);
     return;
   }
 
@@ -218,7 +226,7 @@ void Matrix<T>::save(const std::filesystem::path &path,
       if (symmetric || col >= row)
         temp[col] = data[(*mat2vec)(row, col)];
     }
-    if (zero_diagonal)
+    if (zero_self)
       temp[row] = T(0.0);
     if (keep_unassigned)
       out << temp.transpose().format(fmt) << "\n";

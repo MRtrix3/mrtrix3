@@ -564,6 +564,9 @@ add_bash_binary_test(shconv/msmt NO_FILESYSTEM_LOCK)
 
 add_bash_binary_test(tck2connectome/assignment_forward_search)
 add_bash_binary_test(tck2connectome/default)
+add_bash_binary_test(tck2connectome/symmetric_vector_mutex)
+add_bash_binary_test(tck2connectome/vector_zero_self)
+add_bash_binary_test(tck2connectome/zero_self)
 
 add_bash_binary_test(tck2fixel/default)
 add_bash_binary_test(tck2fixel/phantom_precise)

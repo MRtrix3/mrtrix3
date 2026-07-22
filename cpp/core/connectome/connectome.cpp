@@ -23,6 +23,9 @@ using namespace App;
 const OptionGroup MatrixOutputOptions =
     OptionGroup("Options for outputting connectome matrices")
     + Option("symmetric", "Make matrices symmetric on output")
-    + Option("zero_diagonal", "Set matrix diagonal to zero on output");
+    + Option("zero_self",
+             "Set self-connections to zero on output"
+             " (the matrix diagonal, or for a connectivity vector the single self-connection)")
+      .alias("zero_diagonal");
 // clang-format on
 } // namespace MR::Connectome
