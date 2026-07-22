@@ -1762,7 +1762,7 @@ void enforce_group_constraints(const OptionGroup &group) {
 void enforce_cross_group_mutex() {
   for (const MutuallyExclusiveOptions &set : MUTUALLY_EXCLUSIVE_OPTIONS) {
     std::vector<std::string> specified;
-    for (const auto &id : set) {
+    for (const std::string &id : set) {
       if (std::any_of(option.begin(), option.end(), [&id](const ParsedOption &parsed) { return parsed.opt->is(id); }))
         specified.push_back(std::string("-") + id);
     }

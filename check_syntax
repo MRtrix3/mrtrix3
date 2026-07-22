@@ -159,12 +159,16 @@ run_checks() {
     $grep -Po '\b(srand|rand)\s*\('
   )
 
-# - Detect instances of const std::string &
+# - Detect instances of const std::string & as a function argument or return type
 #   most can be changed to std::string_view,
 #   others would be safer to return a copy
+#   The trailing negative lookahead exempts a range-based-for / iteration variable
+#   (form "const std::string &x : container"), for which const std::string& is correct
+#   and std::string_view is not the intent; the space-delimited ": " disambiguates it
+#   from a scope-resolution "::" (so a qualified function return stays flagged)
   res="$res"$(
     cat .check_syntax4.tmp | \
-    $grep -Po '\bconst\sstd::string\s?\&'
+    $grep -Po '\bconst\sstd::string\s?\&(?!\s*\w+\s+:\s)'
   )
 
 # - Detect namespaces that could have been nested
@@ -278,7 +282,7 @@ else
   - Define numerical constants using constexpr rather than preprocessor macros;
   - Use static_cast<>() rather than C-style casts;
   - Use std::string (and optionally std::string_view) rather than C-style char* and relevant functions;
-  - Use std::string_view rather than const std::string& for function arguments, but std::string for function returns;
+  - Use std::string_view rather than const std::string& for function arguments, but std::string for function returns (a range-based-for / iteration variable of type const std::string& is permitted);
   - Do not use \"using namespace std\";
   - Replace all instances of std::abs() or naked abs() with either std::fabs() (for scalar floating-point only) or MR::abs() (for complex data, integers and template types);
   - Replace all instances of std::is_arithmetic<>, std::is_floating_point<>, std::is_fundamental<>, std::is_integral<> and std::is_unsigned<> with equivalents in MR namespace (cpp/core/types.h);
