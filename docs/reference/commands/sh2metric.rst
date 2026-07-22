@@ -9,14 +9,14 @@ Synopsis
 Compute voxel-wise metrics from one or more spherical harmonics images
 
 Usage
---------
+-----
 
 ::
 
     sh2metric [ options ]  SH [ SH ... ] metric output
 
 -  *SH*: the input spherical harmonics coefficients image(s)
--  *metric*: the metrc to compute (choices: entropy, power)
+-  *metric*: the metric to compute (choices: entropy, power)
 -  *output*: the output metric image
 
 Description
@@ -48,11 +48,16 @@ Options
 Options specific to the "entropy" metric
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+-  **-directions spec** specify the direction set to be used for SH amplitude sampling; either an input file containing a set of directions, or an integer corresponding to a built-in direction set (minimum: 1)
+
+Entropy measure normalisation
+"""""""""""""""""""""""""""""
+
 -  **-normalised** normalise the voxel-wise entropy measure to the range [0.0, 1.0]
 
 -  **-invnorm** compute the complement of the normalised voxel-wise entropy measure (ie. 1.0 - normalised), such that values closer to 1.0 reflect greater concentration of the function
 
--  **-directions spec** specify the direction set to be used for SH amplitude sampling; either an input file containing a set of directions, or an integer corresponding to a built-in direction set (minimum: 1)
+*(these options are mutually exclusive; at most one may be specified)*
 
 Options specific to the "power" metric
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -66,7 +71,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -80,6 +85,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

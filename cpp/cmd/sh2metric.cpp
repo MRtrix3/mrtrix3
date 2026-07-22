@@ -87,31 +87,31 @@ void usage() {
 
   ARGUMENTS
     + Argument ("SH", "the input spherical harmonics coefficients image(s)").type_image_in().allow_multiple()
-    + Argument ("metric", "the metrc to compute").type_choice<metrics>()
+    + Argument ("metric", "the metric to compute").type_choice<metrics>()
     + Argument ("output", "the output metric image").type_image_out();
 
   OPTIONS
-    + OptionGroup ("Options specific to the \"entropy\" metric")
-    + Option ("normalised", "normalise the voxel-wise entropy measure to the range [0.0, 1.0]").alias("normalized")
-    + Option ("invnorm", "compute the complement of the normalised voxel-wise entropy measure"
-                         " (ie. 1.0 - normalised),"
-                         " such that values closer to 1.0 reflect greater concentration of the function")
-    + Option ("directions", "specify the direction set to be used for SH amplitude sampling;"
-                            " either an input file containing a set of directions,"
-                            " or an integer corresponding to a built-in direction set")
-      + Argument ("spec").type_file_in().type_integer(1)
+    + (OptionGroup ("Options specific to the \"entropy\" metric")
+       // -normalised and -invnorm are alternative parameterisations of the same entropy
+       //   normalisation, and are therefore mutually exclusive; as only a subset of the "entropy"
+       //   option group (which also holds the unrelated -directions option), the exclusion is
+       //   expressed via a nested mutually-exclusive sub-group rather than a cross-group mutex set.
+       + (OptionGroup ("Entropy measure normalisation")
+          + Option ("normalised", "normalise the voxel-wise entropy measure to the range [0.0, 1.0]").alias("normalized")
+          + Option ("invnorm", "compute the complement of the normalised voxel-wise entropy measure"
+                               " (ie. 1.0 - normalised),"
+                               " such that values closer to 1.0 reflect greater concentration of the function"))
+         .mutually_exclusive()
+       + Option ("directions", "specify the direction set to be used for SH amplitude sampling;"
+                               " either an input file containing a set of directions,"
+                               " or an integer corresponding to a built-in direction set")
+         + Argument ("spec").type_file_in().type_integer(1))
 
     + OptionGroup ("Options specific to the \"power\" metric")
     + Option ("spectrum", "output the power spectrum,"
                           " i.e., the power contained within each harmonic degree (l=0, 2, 4, ...)"
                           " as a 4D image.");
   // clang-format on
-
-  // -normalised and -invnorm are alternative parameterisations of the same entropy normalisation;
-  //   they are mutually exclusive. As only a subset of the "entropy" option group (which also
-  //   holds the unrelated -directions option), the exclusion is declared as a cross-group mutex set
-  //   rather than an OptionGroup constraint.
-  MUTUALLY_EXCLUSIVE_OPTIONS = {{"normalised", "invnorm"}};
 }
 
 const DWI::Directions::Set get_directions() {
@@ -154,7 +154,7 @@ void run_entropy() {
   const bool opt_normalised = !get_options("normalised").empty();
   const bool opt_invnorm = !get_options("invnorm").empty();
   // Mutual exclusion of -normalised and -invnorm is enforced at parse time via
-  //   MUTUALLY_EXCLUSIVE_OPTIONS (declared in usage()).
+  //   the nested OptionGroup .mutually_exclusive() constraint (declared in usage()).
   const entropy_normalisation norm_mode =
       opt_normalised ? entropy_normalisation::NORM
                      : (opt_invnorm ? entropy_normalisation::INVNORM : entropy_normalisation::NONE);

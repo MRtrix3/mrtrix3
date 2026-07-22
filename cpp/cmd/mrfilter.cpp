@@ -84,17 +84,22 @@ const OptionGroup NormaliseOption = OptionGroup ("Options for normalisation filt
                       "or as a comma-separated list of 3 values (one for each axis)")
     + Argument ("size").type_sequence_int().set_default("3x3x3");
 
+// -stdev and -fwhm are alternative parameterisations of the same Gaussian smoothing kernel width,
+//   and are therefore mutually exclusive; as only a subset of the smooth filter's options (which
+//   also holds the unrelated -extent option), the exclusion is expressed via a nested mutually-
+//   exclusive sub-group rather than a cross-group mutex set.
 const OptionGroup SmoothOption = OptionGroup ("Options for smooth filter")
-  + Option ("stdev", "apply Gaussian smoothing with the specified standard deviation."
-                     " The standard deviation is defined in mm (Default 1 voxel)."
-                     " This can be specified either as a single value to be used for all axes,"
-                     " or as a comma-separated list of the stdev for each axis.")
-    + Argument ("mm").type_sequence_float()
-  + Option ("fwhm", "apply Gaussian smoothing with the specified full-width half maximum."
-                    " The FWHM is defined in mm (Default 1 voxel * 2.3548)."
-                    " This can be specified either as a single value to be used for all axes,"
-                    " or as a comma-separated list of the FWHM for each axis.")
-  + Argument ("mm").type_sequence_float()
+  + (OptionGroup ("Gaussian kernel width specification")
+     + Option ("stdev", "apply Gaussian smoothing with the specified standard deviation."
+                        " The standard deviation is defined in mm (Default 1 voxel)."
+                        " This can be specified either as a single value to be used for all axes,"
+                        " or as a comma-separated list of the stdev for each axis.")
+       + Argument ("mm").type_sequence_float()
+     + Option ("fwhm", "apply Gaussian smoothing with the specified full-width half maximum."
+                       " The FWHM is defined in mm (Default 1 voxel * 2.3548)."
+                       " This can be specified either as a single value to be used for all axes,"
+                       " or as a comma-separated list of the FWHM for each axis.")
+       + Argument ("mm").type_sequence_float()).mutually_exclusive()
   + Option ("extent", "specify the extent (width) of kernel size in voxels."
                       " This can be specified either as a single value to be used for all axes,"
                       " or as a comma-separated list of the extent for each axis."
@@ -146,12 +151,6 @@ void usage() {
      + ZcleanOption)
   + Stride::Options;
   // clang-format on
-
-  // -stdev and -fwhm are alternative parameterisations of the same Gaussian smoothing kernel width;
-  //   they are mutually exclusive. As only a subset of the smooth filter's option group (which also
-  //   holds the unrelated -extent option), the exclusion is declared as a cross-group mutex set
-  //   rather than an OptionGroup constraint.
-  MUTUALLY_EXCLUSIVE_OPTIONS = {{"stdev", "fwhm"}};
 }
 
 void run() {
@@ -310,7 +309,7 @@ void run() {
     opt = get_options("fwhm");
     if (!opt.empty()) {
       // Mutual exclusion of -stdev and -fwhm is enforced at parse time via
-      //   MUTUALLY_EXCLUSIVE_OPTIONS (declared in usage()).
+      //   the nested OptionGroup .mutually_exclusive() constraint (declared in usage()).
       std::vector<default_type> stdevs = parse_floats((opt[0][0]));
       for (size_t d = 0; d < stdevs.size(); ++d)
         stdevs[d] = stdevs[d] / 2.3548; // convert FWHM to stdev

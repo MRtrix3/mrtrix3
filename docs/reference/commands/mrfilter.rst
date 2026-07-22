@@ -9,7 +9,7 @@ Synopsis
 Perform filtering operations on 3D / 4D MR images
 
 Usage
---------
+-----
 
 ::
 
@@ -74,20 +74,25 @@ Options for normalisation filter
 Options for smooth filter
 """""""""""""""""""""""""
 
+-  **-extent voxels** specify the extent (width) of kernel size in voxels. This can be specified either as a single value to be used for all axes, or as a comma-separated list of the extent for each axis. The default extent is 2 * ceil(2.5 * stdev / voxel_size) - 1.
+
+Gaussian kernel width specification
+'''''''''''''''''''''''''''''''''''
+
 -  **-stdev mm** apply Gaussian smoothing with the specified standard deviation. The standard deviation is defined in mm (Default 1 voxel). This can be specified either as a single value to be used for all axes, or as a comma-separated list of the stdev for each axis.
 
 -  **-fwhm mm** apply Gaussian smoothing with the specified full-width half maximum. The FWHM is defined in mm (Default 1 voxel * 2.3548). This can be specified either as a single value to be used for all axes, or as a comma-separated list of the FWHM for each axis.
 
--  **-extent voxels** specify the extent (width) of kernel size in voxels. This can be specified either as a single value to be used for all axes, or as a comma-separated list of the extent for each axis. The default extent is 2 * ceil(2.5 * stdev / voxel_size) - 1.
+*(these options are mutually exclusive; at most one may be specified)*
 
 Options for zclean filter
 """""""""""""""""""""""""
 
--  **-zupper num** define high intensity outliers (minimum: 0.10000000000000001) (default: 2.5)
+-  **-zupper num** define high intensity outliers (minimum: 0.10000000000000001; default: 2.5)
 
--  **-zlower num** define low intensity outliers (minimum: 0.10000000000000001) (default: 2.5)
+-  **-zlower num** define low intensity outliers (minimum: 0.10000000000000001; default: 2.5)
 
--  **-bridge num** number of voxels to gap to fill holes in mask (minimum: 0) (default: 4)
+-  **-bridge num** number of voxels to gap to fill holes in mask (minimum: 0; default: 4)
 
 -  **-maskin image** initial mask that defines the maximum spatial extent and the region from which to smaple the intensity range.
 
@@ -105,7 +110,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -119,6 +124,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

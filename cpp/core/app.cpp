@@ -1703,8 +1703,14 @@ namespace {
 std::vector<std::string> specified_options(const std::vector<const Option *> &candidates) {
   std::vector<std::string> result;
   for (const Option *const candidate : candidates) {
-    if (std::any_of(
-            option.begin(), option.end(), [candidate](const ParsedOption &parsed) { return parsed.opt == candidate; }))
+    // Match by canonical id rather than pointer identity: where the same option id is registered in
+    //   more than one group (e.g. a per-filter option repeated across filters), match_option()
+    //   resolves the user's token to whichever Option object was registered first, which need not be
+    //   the instance held by this group. Comparing ids counts the option as specified regardless, and
+    //   is identical to the pointer test for the common case of a group whose ids are all unique.
+    if (std::any_of(option.begin(), option.end(), [candidate](const ParsedOption &parsed) {
+          return parsed.opt->id == candidate->id;
+        }))
       result.push_back(std::string("-") + candidate->id);
   }
   return result;

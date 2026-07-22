@@ -113,17 +113,22 @@ const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast p
       " if the streamline endpoint is outside the FoV,"
       " backtrack along the streamline trajectory until an appropriate point is found");
 
+// -precise and -ends_only select mutually incompatible streamline mapping behaviours, and are
+//   therefore mutually exclusive; as only a subset of the mapping options (which also holds the
+//   unrelated -upsample option), the exclusion is expressed via a nested mutually-exclusive
+//   sub-group rather than a cross-group mutex set.
 const OptionGroup MappingOption = OptionGroup ("Options for the streamline-to-voxel mapping mechanism")
   + Option ("upsample",
       "upsample the tracks by some ratio using Hermite interpolation before mappping"
       " (if omitted, an appropriate ratio will be determined automatically)")
     + Argument ("factor").type_integer(1)
-  + Option ("precise",
-      "use a more precise streamline mapping strategy,"
-      " that accurately quantifies the length through each voxel"
-      " (these lengths are then taken into account during TWI calculation)")
-  + Option ("ends_only",
-      "only map the streamline endpoints to the image");
+  + (OptionGroup ("Streamline mapping strategy")
+     + Option ("precise",
+         "use a more precise streamline mapping strategy,"
+         " that accurately quantifies the length through each voxel"
+         " (these lengths are then taken into account during TWI calculation)")
+     + Option ("ends_only",
+         "only map the streamline endpoints to the image")).mutually_exclusive();
 
 void usage () {
 
@@ -221,11 +226,6 @@ void usage () {
   + MappingOption
   + Tractography::TrackWeightsInOption;
   // clang-format on
-
-  // -precise and -ends_only select mutually incompatible streamline mapping behaviours. As only a
-  //   subset of MappingOption (which also holds the unrelated -upsample option), the exclusion is
-  //   declared as a cross-group mutex set rather than an OptionGroup constraint.
-  MUTUALLY_EXCLUSIVE_OPTIONS = {{"precise", "ends_only"}};
 }
 
 MapWriterBase *
@@ -439,7 +439,7 @@ void run() {
   const bool precise = !get_options("precise").empty();
   header.keyval()["precise_mapping"] = precise ? "1" : "0";
   // Mutual exclusion of -precise and -ends_only is enforced at parse time via
-  //   MUTUALLY_EXCLUSIVE_OPTIONS (declared in usage()).
+  //   the nested OptionGroup .mutually_exclusive() constraint (declared in usage()).
   const bool ends_only = !get_options("ends_only").empty();
   if (ends_only)
     header.keyval()["endpoints_only"] = "1";

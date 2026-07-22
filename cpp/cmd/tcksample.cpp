@@ -81,12 +81,6 @@ void usage ()
   + Option ("stat_tck", "compute some statistic from the values along each streamline")
     + Argument ("statistic").type_choice<Statistic>()
 
-  + Option ("nointerp", "do not use trilinear interpolation when sampling image values")
-
-  + Option ("precise", "use the precise mechanism for mapping streamlines to voxels "
-                       "(obviates the need for trilinear interpolation) "
-                       "(only applicable if some per-streamline statistic is requested)")
-
   + Option ("use_tdi_fraction",
             "each streamline is assigned a fraction of the image intensity "
             "in each voxel based on the fraction of the track density "
@@ -97,7 +91,17 @@ void usage ()
   + Option ("sh",
             "Interpret a 4D image input as representing coefficients of a spherical harmonic function, "
             "and sample the amplitudes of that function along the streamline")
-    + Argument ("value").type_bool();
+    + Argument ("value").type_bool()
+
+  // -nointerp and -precise select alternative streamline-to-voxel sampling mechanisms, and are
+  //   therefore mutually exclusive; the exclusion is expressed via a dedicated mutually-exclusive
+  //   option group rather than a cross-group mutex set.
+  + (OptionGroup ("Options for the streamline sampling mechanism")
+     + Option ("nointerp", "do not use trilinear interpolation when sampling image values")
+     + Option ("precise", "use the precise mechanism for mapping streamlines to voxels "
+                          "(obviates the need for trilinear interpolation) "
+                          "(only applicable if some per-streamline statistic is requested)"))
+    .mutually_exclusive();
 
   // TODO add support for reading from fixel image
   //   (this would supersede fixel2tsf when used without -precise or -stat_tck options)
@@ -109,11 +113,6 @@ void usage ()
     "SIFT: Spherical-deconvolution informed filtering of tractograms. "
     "NeuroImage, 2013, 67, 298-312";
   // clang-format on
-
-  // -nointerp and -precise select alternative streamline-to-voxel sampling mechanisms;
-  //   they are mutually exclusive. As ungrouped options (a subset of the command's options),
-  //   the exclusion is declared as a cross-group mutex set rather than an OptionGroup constraint.
-  MUTUALLY_EXCLUSIVE_OPTIONS = {{"nointerp", "precise"}};
 }
 
 using value_type = float;
@@ -869,7 +868,7 @@ void run() {
   const bool nointerp = !get_options("nointerp").empty();
   const bool precise = !get_options("precise").empty();
   // Mutual exclusion of -nointerp and -precise is enforced at parse time via
-  //   MUTUALLY_EXCLUSIVE_OPTIONS (declared in usage()).
+  //   the OptionGroup .mutually_exclusive() constraint (declared in usage()).
   const interp_type interp = nointerp ? interp_type::NEAREST : (precise ? interp_type::PRECISE : interp_type::LINEAR);
   if (!statistic.has_value() && interp == interp_type::PRECISE)
     throw Exception("Cannot combine per-vertex values with precise mapping mechanism");
