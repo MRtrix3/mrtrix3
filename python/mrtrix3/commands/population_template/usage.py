@@ -85,6 +85,99 @@ def usage(cmdline): #pylint: disable=unused-variable
                             ' for a given contrast are to be provided as a pair,'
                             ' with the pairs corresponding to different contrasts provided sequentially.')
 
+  options = cmdline.add_argument_group('Input, output and general options')
+  registration_modes_string = ', '.join(f'"{x}"' for x in REGISTRATION_MODES if '_' in x)
+  options.add_argument('-type',
+                       choices=REGISTRATION_MODES,
+                       help='Specify the types of registration stages to perform.'
+                            ' Options are:'
+                            ' "rigid" (perform rigid registration only,'
+                            ' which might be useful for intra-subject registration in longitudinal analysis);'
+                            ' "affine" (perform affine registration);'
+                            ' "nonlinear";'
+                            f' as well as combinations of registration types: {registration_modes_string}.',
+                            default='rigid_affine_nonlinear').set_default('rigid_affine_nonlinear')
+  options.add_argument('-voxel_size',
+                       type=app.Parser.SequenceFloat(),
+                       help='Define the template voxel size in mm.'
+                            ' Use either a single value for isotropic voxels or 3 comma-separated values.')
+  options.add_argument('-initial_alignment',
+                       choices=INITIAL_ALIGNMENT,
+                       default='mass',
+                       help='Method of alignment to form the initial template.'
+                            ' Options are:'
+                            ' "mass";'
+                            ' "robust_mass" (requires masks);'
+                            ' "geometric";'
+                            ' "none".').set_default('mass')
+  options.add_argument('-mask_dir',
+                       type=app.Parser.DirectoryIn(),
+                       help='Optionally input a set of masks inside a single directory,'
+                            ' one per input image'
+                            ' (with the same file name prefix).'
+                            ' Using masks will speed up registration significantly.'
+                            ' Note that masks are used for registration,'
+                            ' not for aggregation.'
+                            ' To exclude areas from aggregation,'
+                            ' NaN-mask your input images.')
+  options.add_argument('-warp_dir',
+                       type=app.Parser.DirectoryOut(),
+                       help='Output a directory containing warps from each input to the template.'
+                            ' If the folder does not exist it will be created')
+  options.add_argument('-transformed_dir',
+                       type=SequenceDirectoryOut(),
+                       help='Output a directory containing the input images transformed to the template.'
+                            ' If the folder does not exist it will be created.'
+                            ' For multi-contrast registration,'
+                            ' provide a comma-separated list of directories.')
+  options.add_argument('-linear_transformations_dir',
+                       type=app.Parser.DirectoryOut(),
+                       help='Output a directory containing the linear transformations'
+                            ' used to generate the template.'
+                            ' If the folder does not exist it will be created')
+  options.add_argument('-template_mask',
+                       type=app.Parser.ImageOut(),
+                       help='Output a template mask.'
+                            ' Only works if -mask_dir has been input.'
+                            ' The template mask is computed as the intersection'
+                            ' of all subject masks in template space.')
+  options.add_argument('-noreorientation',
+                       action='store_true',
+                       default=None,
+                       help='Turn off FOD reorientation in mrregister.'
+                            ' Reorientation is on by default if the number of volumes in the 4th dimension'
+                            ' corresponds to the number of coefficients'
+                            ' in an antipodally symmetric spherical harmonic series'
+                            ' (i.e. 6, 15, 28, 45, 66 etc)')
+  options.add_argument('-leave_one_out',
+                       choices=LEAVE_ONE_OUT,
+                       default='auto',
+                       help='Register each input image to a template that does not contain that image.'
+                            ' (Default: auto (true if n_subjects larger than 2 and smaller than 15))')
+  options.add_argument('-aggregate',
+                       choices=AGGREGATION_MODES,
+                       help='Measure used to aggregate information from transformed images to the template image.'
+                            ).set_default('mean')
+  options.add_argument('-aggregation_weights',
+                       type=app.Parser.FileIn(),
+                       help='Comma-separated file containing weights used for weighted image aggregation.'
+                            ' Each row must contain the identifiers of the input image and its weight.'
+                            ' Note that this weighs intensity values not transformations (shape).')
+  options.add_argument('-nanmask',
+                       action='store_true',
+                       default=None,
+                       help='Optionally apply masks to (transformed) input images using NaN values'
+                            ' to specify include areas for registration and aggregation.'
+                            ' Only works if -mask_dir has been input.')
+  options.add_argument('-copy_input',
+                       action='store_true',
+                       default=None,
+                       help='Copy input images and masks into local scratch directory.')
+  options.add_argument('-delete_temporary_files',
+                       action='store_true',
+                       default=None,
+                       help='Delete temporary files from scratch directory during template creation.')
+
   options = cmdline.add_argument_group('Multi-contrast options')
   options.add_argument('-mc_weight_initial_alignment',
                        type=app.Parser.SequenceFloat(),
@@ -204,99 +297,5 @@ def usage(cmdline): #pylint: disable=unused-variable
                          help='The gradient step size for non-linear registration'
                               ).set_default(DEFAULT_NL_GRAD_STEP)
 
-
-
-  options = cmdline.add_argument_group('Input, output and general options')
-  registration_modes_string = ', '.join(f'"{x}"' for x in REGISTRATION_MODES if '_' in x)
-  options.add_argument('-type',
-                       choices=REGISTRATION_MODES,
-                       help='Specify the types of registration stages to perform.'
-                            ' Options are:'
-                            ' "rigid" (perform rigid registration only,'
-                            ' which might be useful for intra-subject registration in longitudinal analysis);'
-                            ' "affine" (perform affine registration);'
-                            ' "nonlinear";'
-                            f' as well as combinations of registration types: {registration_modes_string}.',
-                            default='rigid_affine_nonlinear').set_default('rigid_affine_nonlinear')
-  options.add_argument('-voxel_size',
-                       type=app.Parser.SequenceFloat(),
-                       help='Define the template voxel size in mm.'
-                            ' Use either a single value for isotropic voxels or 3 comma-separated values.')
-  options.add_argument('-initial_alignment',
-                       choices=INITIAL_ALIGNMENT,
-                       default='mass',
-                       help='Method of alignment to form the initial template.'
-                            ' Options are:'
-                            ' "mass";'
-                            ' "robust_mass" (requires masks);'
-                            ' "geometric";'
-                            ' "none".').set_default('mass')
-  options.add_argument('-mask_dir',
-                       type=app.Parser.DirectoryIn(),
-                       help='Optionally input a set of masks inside a single directory,'
-                            ' one per input image'
-                            ' (with the same file name prefix).'
-                            ' Using masks will speed up registration significantly.'
-                            ' Note that masks are used for registration,'
-                            ' not for aggregation.'
-                            ' To exclude areas from aggregation,'
-                            ' NaN-mask your input images.')
-  options.add_argument('-warp_dir',
-                       type=app.Parser.DirectoryOut(),
-                       help='Output a directory containing warps from each input to the template.'
-                            ' If the folder does not exist it will be created')
-  options.add_argument('-transformed_dir',
-                       type=SequenceDirectoryOut(),
-                       help='Output a directory containing the input images transformed to the template.'
-                            ' If the folder does not exist it will be created.'
-                            ' For multi-contrast registration,'
-                            ' provide a comma-separated list of directories.')
-  options.add_argument('-linear_transformations_dir',
-                       type=app.Parser.DirectoryOut(),
-                       help='Output a directory containing the linear transformations'
-                            ' used to generate the template.'
-                            ' If the folder does not exist it will be created')
-  options.add_argument('-template_mask',
-                       type=app.Parser.ImageOut(),
-                       help='Output a template mask.'
-                            ' Only works if -mask_dir has been input.'
-                            ' The template mask is computed as the intersection'
-                            ' of all subject masks in template space.')
-  options.add_argument('-noreorientation',
-                       action='store_true',
-                       default=None,
-                       help='Turn off FOD reorientation in mrregister.'
-                            ' Reorientation is on by default if the number of volumes in the 4th dimension'
-                            ' corresponds to the number of coefficients'
-                            ' in an antipodally symmetric spherical harmonic series'
-                            ' (i.e. 6, 15, 28, 45, 66 etc)')
-  options.add_argument('-leave_one_out',
-                       choices=LEAVE_ONE_OUT,
-                       default='auto',
-                       help='Register each input image to a template that does not contain that image.'
-                            ' (Default: auto (true if n_subjects larger than 2 and smaller than 15))')
-  options.add_argument('-aggregate',
-                       choices=AGGREGATION_MODES,
-                       help='Measure used to aggregate information from transformed images to the template image.'
-                            ).set_default('mean')
-  options.add_argument('-aggregation_weights',
-                       type=app.Parser.FileIn(),
-                       help='Comma-separated file containing weights used for weighted image aggregation.'
-                            ' Each row must contain the identifiers of the input image and its weight.'
-                            ' Note that this weighs intensity values not transformations (shape).')
-  options.add_argument('-nanmask',
-                       action='store_true',
-                       default=None,
-                       help='Optionally apply masks to (transformed) input images using NaN values'
-                            ' to specify include areas for registration and aggregation.'
-                            ' Only works if -mask_dir has been input.')
-  options.add_argument('-copy_input',
-                       action='store_true',
-                       default=None,
-                       help='Copy input images and masks into local scratch directory.')
-  options.add_argument('-delete_temporary_files',
-                       action='store_true',
-                       default=None,
-                       help='Delete temporary files from scratch directory during template creation.')
 
 # ENH: add option to initialise warps / transformations
