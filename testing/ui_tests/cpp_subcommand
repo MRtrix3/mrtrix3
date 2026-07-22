@@ -1,0 +1,146 @@
+#!/bin/bash
+# Tests for the C++ hierarchical (multi-sub-command) command-line interface, and the central
+#   coverage of every collective option-group constraint class.
+# testing_cpp_subcommand declares two sub-interfaces ("alpha", "beta") selected by the first
+#   positional token, common options shared across them (including a nested mutually-exclusive
+#   sub-group and a cross-group mutual-exclusion set), and per-sub-interface constraint groups.
+
+##############################
+# Hierarchical dispatch
+##############################
+
+# The first positional token selects the sub-interface; run() reports the selected operation.
+testing_cpp_subcommand alpha -exone_a 2>&1 | grep -q "operation: alpha"
+testing_cpp_subcommand beta -atleast_a 2>&1 | grep -q "operation: beta"
+
+# Options preceding the selection token are permutable with, and reachable across, the selection.
+testing_cpp_subcommand -mode_common alpha -exone_a 2>&1 | grep -q "operation: alpha"
+testing_cpp_subcommand alpha -exone_a -mode_common 2>&1 | grep -q "\-mode_common option present"
+
+# A non-empty command-line with no sub-interface selected is an error naming the valid operations.
+OUT=$(testing_cpp_subcommand -mode_common 2>&1) && { echo "ERROR: expected no-selection failure"; exit 1; }
+echo "$OUT" | grep -q "no algorithm selected (expected one of: alpha, beta)"
+
+# An unknown sub-interface is an error naming the valid operations.
+OUT=$(testing_cpp_subcommand bogus 2>&1) && { echo "ERROR: expected unknown-operation failure"; exit 1; }
+echo "$OUT" | grep -q "unknown algorithm \"bogus\" (expected one of: alpha, beta)"
+
+##############################
+# Interface export forms
+##############################
+
+# Enumeration of the sub-interfaces, one id per line in declaration order (drives per-sub docs).
+testing_cpp_subcommand __print_subcommands__ | \
+    diff -a --strip-trailing-cr - cpp_subcommand/subcommands.txt
+
+# Top-level (main-only) exports: the hierarchical landing page listing the sub-interfaces.
+testing_cpp_subcommand -help | \
+    tail -n +3 | \
+    diff -a --strip-trailing-cr - cpp_subcommand/help.txt
+testing_cpp_subcommand __print_full_usage__ | \
+    diff -a --strip-trailing-cr - cpp_subcommand/full_usage.txt
+testing_cpp_subcommand __print_usage_markdown__ | \
+    diff -a --strip-trailing-cr - cpp_subcommand/markdown.md
+testing_cpp_subcommand __print_usage_rst__ | \
+    diff -a --strip-trailing-cr - cpp_subcommand/restructured_text.rst
+
+# Per-sub-command -help: the selected sub-interface's own page (its specific options and constraints).
+testing_cpp_subcommand alpha -help | \
+    tail -n +3 | \
+    diff -a --strip-trailing-cr - cpp_subcommand/alpha_help.txt
+testing_cpp_subcommand beta -help | \
+    tail -n +3 | \
+    diff -a --strip-trailing-cr - cpp_subcommand/beta_help.txt
+
+# Per-sub-command single-page exports (full_usage / markdown-equivalent).
+testing_cpp_subcommand alpha __print_full_usage__ | \
+    diff -a --strip-trailing-cr - cpp_subcommand/alpha_full_usage.txt
+
+# Nested RST subdirectory generation: a per-sub-interface export in RST form carries the
+#   sub-interface's own label and title (a complete section), as embedded into the nested page
+#   the documentation generator writes for each sub-interface.
+testing_cpp_subcommand alpha __print_usage_rst__ | \
+    diff -a --strip-trailing-cr - cpp_subcommand/alpha_restructured_text.rst
+testing_cpp_subcommand beta __print_usage_rst__ | \
+    diff -a --strip-trailing-cr - cpp_subcommand/beta_restructured_text.rst
+
+##############################
+# Constraint class: require_exactly_one (alpha sub-interface)
+##############################
+
+# Neither member specified: rejected, naming all members (a non-empty line, so help is not printed).
+OUT=$(testing_cpp_subcommand alpha -mode_common 2>&1) && { echo "ERROR: expected exactly-one failure (neither)"; exit 1; }
+echo "$OUT" | grep -q "exactly one of the following options must be specified: -exone_a, -exone_b"
+
+# Both members specified: rejected as mutually exclusive.
+OUT=$(testing_cpp_subcommand alpha -exone_a -exone_b 2>&1) && { echo "ERROR: expected exactly-one failure (both)"; exit 1; }
+echo "$OUT" | grep -q "the options -exone_a, -exone_b are mutually exclusive; exactly one must be specified"
+
+# Exactly one member: accepted.
+testing_cpp_subcommand alpha -exone_a 2>&1 | grep -q "\-exone_a option present"
+
+# Help annotation.
+testing_cpp_subcommand alpha -help 2>&1 | grep -q "(exactly one of these options must be specified)"
+
+##############################
+# Constraint class: require_at_least_one (beta sub-interface)
+##############################
+
+# No member specified: rejected, naming all members.
+OUT=$(testing_cpp_subcommand beta -beta_flag 2>&1) && { echo "ERROR: expected at-least-one failure"; exit 1; }
+echo "$OUT" | grep -q "at least one of the following options must be specified: -atleast_a, -atleast_b"
+
+# One member: accepted.
+testing_cpp_subcommand beta -atleast_a 2>&1 | grep -q "\-atleast_a option present"
+
+# Help annotation.
+testing_cpp_subcommand beta -help 2>&1 | grep -q "(at least one of these options must be specified)"
+
+##############################
+# Constraint class: all_or_none (beta sub-interface)
+##############################
+
+# Only one member of the all-or-none group: rejected, naming the incomplete subset.
+OUT=$(testing_cpp_subcommand beta -atleast_a -both_a 2>&1) && { echo "ERROR: expected all-or-none failure"; exit 1; }
+echo "$OUT" | grep -q "the options -both_a, -both_b must be specified together or not at all; only -both_a specified"
+
+# Every member: accepted.
+testing_cpp_subcommand beta -atleast_a -both_a -both_b 2>&1 | grep -q "\-both_b option present"
+
+# No member (the constraint is satisfied by the empty set): accepted.
+testing_cpp_subcommand beta -atleast_a 2>&1 | grep -q "operation: beta"
+
+# Help annotation.
+testing_cpp_subcommand beta -help 2>&1 | grep -q "(these options must be specified together or not at all)"
+
+##############################
+# Constraint class: mutually_exclusive (nested common sub-group)
+##############################
+
+# Both members of the nested mutually-exclusive sub-group: rejected.
+OUT=$(testing_cpp_subcommand alpha -exone_a -mutex_a -mutex_b 2>&1) && { echo "ERROR: expected mutex failure"; exit 1; }
+echo "$OUT" | grep -q "the options -mutex_a, -mutex_b are mutually exclusive; at most one may be specified"
+
+# One member: accepted.
+testing_cpp_subcommand alpha -exone_a -mutex_a 2>&1 | grep -q "\-mutex_a option present"
+
+# Help annotation (rendered beneath the nested sub-group's options).
+testing_cpp_subcommand -help 2>&1 | grep -q "(these options are mutually exclusive; at most one may be specified)"
+
+# The inherited verbosity sub-group of the standard options is likewise mutually exclusive.
+OUT=$(testing_cpp_subcommand alpha -exone_a -info -debug 2>&1) && { echo "ERROR: expected verbosity mutex failure"; exit 1; }
+echo "$OUT" | grep -q "the options -info, -debug are mutually exclusive; at most one may be specified"
+
+##############################
+# Constraint class: cross-group MUTUALLY_EXCLUSIVE_OPTIONS
+##############################
+
+# Both members of the cross-group set (each in a different option group): rejected.
+OUT=$(testing_cpp_subcommand alpha -exone_a -cross_a -cross_b 2>&1) && { echo "ERROR: expected cross-group mutex failure"; exit 1; }
+echo "$OUT" | grep -q "the options -cross_a, -cross_b are mutually exclusive; at most one may be specified"
+
+# One member: accepted.
+testing_cpp_subcommand alpha -exone_a -cross_a 2>&1 | grep -q "\-cross_a option present"
+
+# Help annotation (rendered after the command's option groups).
+testing_cpp_subcommand -help 2>&1 | grep -q "(the options -cross_a, -cross_b are mutually exclusive; at most one may be specified)"

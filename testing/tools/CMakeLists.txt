@@ -1,5 +1,6 @@
 set(CPP_TOOLS_SRCS
     testing_cpp_cli.cpp
+    testing_cpp_subcommand.cpp
     testing_diff_dir.cpp
     testing_diff_fixel.cpp
     testing_diff_header.cpp
@@ -21,6 +22,12 @@ set(PYTHON_TOOLS_STANDALONE
 
 set(PYTHON_TOOLS_MRTRIXAPI
     testing_python_cli.py
+)
+
+# Multi-sub-command (multi-algorithm) Python test tools: a package directory holding an
+#   __init__.py (ALGORITHMS), a same-named dispatcher module, and one module per algorithm.
+set(PYTHON_TOOLS_MRTRIXAPI_PACKAGE
+    testing_python_subcommand
 )
 
 add_custom_target(testing_tools ALL)
@@ -66,4 +73,30 @@ endforeach(CMD)
 
 foreach(CMD ${PYTHON_TOOLS_MRTRIXAPI})
     add_python_tool_mrtrixapi(${CMD})
+endforeach(CMD)
+
+# A package-structured Python tool (commands/<name>/<name>.py plus __init__.py and per-algorithm
+# modules) is copied wholesale into the built library alongside the real multi-algorithm commands,
+# then given the same MakePythonExecutable launcher (which detects the package structure).
+function(add_python_tool_mrtrixapi_package TOOL_NAME)
+    set(MRTRIX_PYTHON_LIB_PATH "${PROJECT_BINARY_DIR}/lib")
+    set(TOOL_DST_DIR "${MRTRIX_PYTHON_LIB_PATH}/mrtrix3/commands/${TOOL_NAME}")
+    add_custom_command(
+        TARGET testing_tools PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${TOOL_DST_DIR}
+    )
+    file(GLOB TOOL_PACKAGE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/${TOOL_NAME}/*.py")
+    foreach(PY_FILE ${TOOL_PACKAGE_FILES})
+        get_filename_component(PY_NAME ${PY_FILE} NAME)
+        configure_file(${PY_FILE} ${TOOL_DST_DIR}/${PY_NAME} COPYONLY)
+    endforeach()
+    add_custom_command(
+        TARGET testing_tools PRE_BUILD
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DCMDNAME=${TOOL_NAME} -DOUTPUT_DIR="${PROJECT_BINARY_DIR}/bin" -P ${PROJECT_SOURCE_DIR}/cmake/MakePythonExecutable.cmake
+    )
+endfunction()
+
+foreach(CMD ${PYTHON_TOOLS_MRTRIXAPI_PACKAGE})
+    add_python_tool_mrtrixapi_package(${CMD})
 endforeach(CMD)

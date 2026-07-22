@@ -1,0 +1,131 @@
+     tteessttiinngg__ppyytthhoonn__ssuubbccoommmmaanndd  bbeettaa: part of the MRtrix3 package
+
+SSYYNNOOPPSSIISS
+
+     Second sub-interface; demonstrates the require_at_least_one and all_or_none
+     constraints
+
+UUSSAAGGEE
+
+     _t_e_s_t_i_n_g___p_y_t_h_o_n___s_u_b_c_o_m_m_a_n_d _b_e_t_a [ options ]
+
+OOPPTTIIOONNSS
+
+  _-_b_e_t_a___f_l_a_g
+     A flag specific to the beta sub-interface
+
+GGrroouuppeedd  ccoommmmoonn  ooppttiioonnss  ddeemmoonnssttrraattiinngg  hhiieerraarrcchhyy
+
+  _-_m_o_d_e___c_o_m_m_o_n
+     An option located directly within the common parent group
+
+  MMuuttuuaallllyy  eexxcclluussiivvee  ccoommmmoonn  mmooddeess
+
+  _-_m_u_t_e_x___a
+     The first mutually-exclusive common mode
+
+  _-_m_u_t_e_x___b
+     The second mutually-exclusive common mode
+
+     (these options are mutually exclusive; at most one may be specified)
+
+CCrroossss--ggrroouupp  sseett,,  ffiirrsstt  mmeemmbbeerr
+
+  _-_c_r_o_s_s___a
+     The first member of the cross-group mutual-exclusion set
+
+CCrroossss--ggrroouupp  sseett,,  sseeccoonndd  mmeemmbbeerr
+
+  _-_c_r_o_s_s___b
+     The second member of the cross-group mutual-exclusion set
+
+AAtt--lleeaasstt--oonnee  ooppttiioonnss
+
+  _-_a_t_l_e_a_s_t___a
+     The first at-least-one member
+
+  _-_a_t_l_e_a_s_t___b
+     The second at-least-one member
+
+     (at least one of these options must be specified)
+
+AAllll--oorr--nnoonnee  ooppttiioonnss
+
+  _-_b_o_t_h___a
+     The first all-or-none member
+
+  _-_b_o_t_h___b
+     The second all-or-none member
+
+     (these options must be specified together or not at all)
+
+     (the options -cross_a, -cross_b are mutually exclusive; at most one may be specified)
+
+SSttaannddaarrdd  ooppttiioonnss
+
+  _-_f_o_r_c_e
+     force overwrite of output files.
+
+  _-_n_t_h_r_e_a_d_s number
+     use this number of threads in multi-threaded applications (set to 0 to
+     disable multi-threading). (minimum: 0)
+
+  _-_c_o_n_f_i_g key value  (multiple uses permitted)
+     temporarily set the value of an MRtrix config file entry.
+
+  _-_h_e_l_p
+     display this information page and exit.
+
+  _-_v_e_r_s_i_o_n
+     display version information and exit.
+
+  VVeerrbboossiittyy  ooppttiioonnss
+
+  _-_i_n_f_o
+     display information messages.
+
+  _-_q_u_i_e_t
+     do not display information messages or progress status. Alternatively, this
+     can be achieved by setting the MRTRIX_QUIET environment variable to a non-
+     empty string.
+
+  _-_d_e_b_u_g
+     display debugging messages & debug input data.
+
+     (these options are mutually exclusive; at most one may be specified)
+
+  AAddddiittiioonnaall  ssttaannddaarrdd  ooppttiioonnss  ffoorr  PPyytthhoonn  ssccrriippttss
+
+  _-_n_o_c_l_e_a_n_u_p
+     do not delete intermediate files during script execution, and do not delete
+     scratch directory at script completion.
+
+  _-_s_c_r_a_t_c_h /path/to/scratch/
+     manually specify an existing directory in which to generate the scratch
+     directory.
+
+  _-_c_o_n_t_i_n_u_e ScratchDir LastFile
+     continue the script from a previous execution; must provide the scratch
+     directory path, and the name of the last successfully-generated file.
+
+AAUUTTHHOORR
+     Robert E. Smith (robert.smith@florey.edu.au)
+
+CCOOPPYYRRIIGGHHTT
+     Copyright (c) 2008-2026 the MRtrix3 contributors.  This Source Code Form is
+     subject to the terms of the Mozilla Public License, v. 2.0. If a copy of
+     the MPL was not distributed with this file, You can obtain one at
+     http://mozilla.org/MPL/2.0/.  Covered Software is provided under this
+     License on an "as is" basis, without warranty of any kind, either
+     expressed, implied, or statutory, including, without limitation, warranties
+     that the Covered Software is free of defects, merchantable, fit for a
+     particular purpose or non-infringing. See the Mozilla Public License v. 2.0
+     for more details.  For more details, see http://www.mrtrix.org/.
+
+RREEFFEERREENNCCEESS
+
+     Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.;
+     Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A.
+     MRtrix3: A fast, flexible and open software framework for medical image
+     processing and visualisation. NeuroImage, 2019, 202, 116137
+

@@ -8,7 +8,9 @@ target_compile_definitions(gtest PRIVATE
 
 set(UI_TESTS_BASH_SRCS
     cpp_cli
+    cpp_subcommand
     python_cli
+    python_subcommand
 )
 
 get_filename_component(SOURCE_PARENT_DIR ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
