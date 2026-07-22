@@ -9,7 +9,7 @@ Synopsis
 Register two images together using a symmetric rigid, affine or non-linear transformation model
 
 Usage
---------
+-----
 
 ::
 
@@ -30,11 +30,11 @@ Non-linear registration computes warps to map from both image1->image2 and image
 Options
 -------
 
--  **-type choice** the registration type. (choices: rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear) (default: affine_nonlinear)
+-  **-type choice** the registration type. (choices: rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear; default: affine_nonlinear)
 
--  **-transformed image** *(multiple uses permitted)* image1 after registration transformed and regridded to the space of image2. Note that -transformed needs to be repeated for each contrast if multi-contrast registration is used.
+-  **-transformed image**  *(multiple uses permitted)* image1 after registration transformed and regridded to the space of image2. Note that -transformed needs to be repeated for each contrast if multi-contrast registration is used.
 
--  **-transformed_midway image1_transformed image2_transformed** *(multiple uses permitted)* image1 and image2 after registration transformed and regridded to the midway space. Note that -transformed_midway needs to be repeated for each contrast if multi-contrast registration is used. |br|
+-  **-transformed_midway image1_transformed image2_transformed**  *(multiple uses permitted)* image1 and image2 after registration transformed and regridded to the midway space. Note that -transformed_midway needs to be repeated for each contrast if multi-contrast registration is used. |br|
    *image1_transformed*: the output for image1 in the midway space |br|
    *image2_transformed*: the output for image2 in the midway space
 
@@ -53,9 +53,9 @@ Rigid registration options
 
 -  **-rigid_2tomidway file** the output text file containing the rigid transformation that aligns image2 to image1 in their common midway space as a 4x4 matrix
 
--  **-rigid_init_translation type** initialise the translation and centre of rotation. mass (aligns the centers of mass of both images); geometric (aligns geometric image centres); none. (choices: mass, geometric, none) (default: mass)
+-  **-rigid_init_translation type** initialise the translation and centre of rotation. mass (aligns the centers of mass of both images); geometric (aligns geometric image centres); none. (choices: mass, geometric, none; default: mass)
 
--  **-rigid_init_rotation type** Method to use to initialise the rotation. search (search for the best rotation using mean squared residuals); moments (rotation based on directions of intensity variance with respect to centre of mass); none. (choices: search, moments, none) (default: none)
+-  **-rigid_init_rotation type** Method to use to initialise the rotation. search (search for the best rotation using mean squared residuals); moments (rotation based on directions of intensity variance with respect to centre of mass); none. (choices: search, moments, none; default: none)
 
 -  **-rigid_init_matrix file** initialise either the rigid, affine, or syn registration with the supplied rigid transformation (as a 4x4 matrix in scanner coordinates).Note that this overrides rigid_init_translation and rigid_init_rotation initialisation
 
@@ -63,9 +63,9 @@ Rigid registration options
 
 -  **-rigid_niter num** the maximum number of gradient descent iterations per stage. This can be specified either as a single number for all multi-resolution levels, or a single value for each level. (default: 1000)
 
--  **-rigid_metric type** diff (intensity differences). (choices: diff, ncc) (default: diff)
+-  **-rigid_metric type** diff (intensity differences). (choices: diff, ncc; default: diff)
 
--  **-rigid_metric.diff.estimator type** Robust estimator to use during rigid-body registration. l1 (least absolute: \|x\|); l2 (ordinary least squares); lp (least powers: \|x\|^1.2); none. (choices: l1, l2, lp, none) (default: none)
+-  **-rigid_metric.diff.estimator type** Robust estimator to use during rigid-body registration. l1 (least absolute: \|x\|); l2 (ordinary least squares); lp (least powers: \|x\|^1.2); none. (choices: l1, l2, lp, none; default: none)
 
 -  **-rigid_lmax num** explicitly set the lmax to be used per scale factor in rigid FOD registration. By default, FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0. (values must be non-negative and even)
 
@@ -80,9 +80,9 @@ Affine registration options
 
 -  **-affine_2tomidway file** the output text file containing the affine transformation that aligns image2 to image1 in their common midway space as a 4x4 matrix
 
--  **-affine_init_translation type** initialise the translation and centre of rotation. mass (aligns the centers of mass of both images); geometric (aligns geometric image centres); none. (choices: mass, geometric, none) (default: mass)
+-  **-affine_init_translation type** initialise the translation and centre of rotation. mass (aligns the centers of mass of both images); geometric (aligns geometric image centres); none. (choices: mass, geometric, none; default: mass)
 
--  **-affine_init_rotation type** initialise the rotation. search (search for the best rotation using mean squared residuals); moments (rotation based on directions of intensity variance with respect to centre of mass); none. (choices: search, moments, none) (default: none)
+-  **-affine_init_rotation type** initialise the rotation. search (search for the best rotation using mean squared residuals); moments (rotation based on directions of intensity variance with respect to centre of mass); none. (choices: search, moments, none; default: none)
 
 -  **-affine_init_matrix file** initialise either the affine or syn registration with the supplied affine transformation (as a 4x4 matrix in scanner coordinates). Note that this overrides affine_init_translation and affine_init_rotation initialisation
 
@@ -90,9 +90,9 @@ Affine registration options
 
 -  **-affine_niter num** the maximum number of gradient descent iterations per stage. This can be specified either as a single number for all multi-resolution levels, or a single value for each level. (default: 1000)
 
--  **-affine_metric type** diff (intensity differences). (choices: diff, ncc) (default: diff)
+-  **-affine_metric type** diff (intensity differences). (choices: diff, ncc; default: diff)
 
--  **-affine_metric.diff.estimator type** Robust estimator to use durring affine registration. l1 (least absolute: \|x\|); l2 (ordinary least squares); lp (least powers: \|x\|^1.2); none. (choices: l1, l2, lp, none) (default: none)
+-  **-affine_metric.diff.estimator type** Robust estimator to use durring affine registration. l1 (least absolute: \|x\|); l2 (ordinary least squares); lp (least powers: \|x\|^1.2); none. (choices: l1, l2, lp, none; default: none)
 
 -  **-affine_lmax num** explicitly set the lmax to be used per scale factor in affine FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0. (values must be non-negative and even)
 
@@ -111,24 +111,24 @@ Advanced linear transformation initialisation options
 
 -  **-init_rotation.search.angles angles** rotation angles for the local search in degrees between 0 and 180. (default: 2,5,10,15,20)
 
--  **-init_rotation.search.scale scale** relative size of the images used for the rotation search. (range: 0.0001 to 1) (default: 0.15)
+-  **-init_rotation.search.scale scale** relative size of the images used for the rotation search. (range: 0.0001 to 1.0; default: 0.15)
 
--  **-init_rotation.search.directions num** number of rotation axis for local search. (range: 1 to 10000) (default: 250)
+-  **-init_rotation.search.directions num** number of rotation axis for local search. (range: 1 to 10000; default: 250)
 
 -  **-init_rotation.search.run_global** perform a global rather than local initial rotation search.
 
--  **-init_rotation.search.global.iterations num** number of rotations to investigate (range: 1 to 10000000000) (default: 10000)
+-  **-init_rotation.search.global.iterations num** number of rotations to investigate (range: 1 to 10000000000; default: 10000)
 
 Advanced linear registration stage options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-linstage.iterations value(s)** number of iterations for each registration stage. Not to be confused with -rigid_niter or -affine_niter. This can be used to generate intermediate diagnostics images (-linstage.diagnostics.dir) or to change the cost function optimiser during registration (without the need to repeatedly resize the images). (Default: 1 == no repetition)
 
--  **-linstage.optimiser.first algorithm** Cost function optimisation algorithm to use at first iteration of all stages. BBGD (Barzilai-Borwein gradient descent); GD (simple gradient descent). (choices: bbgd, gd) (default: bbgd)
+-  **-linstage.optimiser.first algorithm** Cost function optimisation algorithm to use at first iteration of all stages. BBGD (Barzilai-Borwein gradient descent); GD (simple gradient descent). (choices: bbgd, gd; default: bbgd)
 
--  **-linstage.optimiser.last algorithm** Cost function optimisation algorithm to use at last iteration of all stages (if there are more than one). BBGD (Barzilai-Borwein gradient descent); GD (simple gradient descent). (choices: bbgd, gd) (default: bbgd)
+-  **-linstage.optimiser.last algorithm** Cost function optimisation algorithm to use at last iteration of all stages (if there are more than one). BBGD (Barzilai-Borwein gradient descent); GD (simple gradient descent). (choices: bbgd, gd; default: bbgd)
 
--  **-linstage.optimiser.default algorithm** Cost function optimisation algorithm to use at any stage iteration other than first or last iteration. BBGD (Barzilai-Borwein gradient descent); GD (simple gradient descent). (choices: bbgd, gd) (default: bbgd)
+-  **-linstage.optimiser.default algorithm** Cost function optimisation algorithm to use at any stage iteration other than first or last iteration. BBGD (Barzilai-Borwein gradient descent); GD (simple gradient descent). (choices: bbgd, gd; default: bbgd)
 
 -  **-linstage.diagnostics.dir dir** generate diagnostics images after every registration stage
 
@@ -149,7 +149,7 @@ Non-linear registration options
 
 -  **-nl_disp_smooth stdev** regularise the displacement field with Gaussian smoothing (standard deviation in voxel units; Default 1.0)
 
--  **-nl_grad_step num** the gradient step size for non-linear registration (Default: 0.5) (range: 0.0001 to 1)
+-  **-nl_grad_step num** the gradient step size for non-linear registration (Default: 0.5) (range: 0.0001 to 1.0)
 
 -  **-nl_lmax num** explicitly set the lmax to be used per scale factor in non-linear FOD registration. By default, FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0. (values must be non-negative and even)
 
@@ -179,7 +179,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -193,6 +193,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

@@ -25,54 +25,60 @@ MRtrix3 expects "peaks" images to be stored using the real / scanner space axes 
 Options
 -------
 
-- **-mask image** Provide a mask image within which to seed & constrain tracking
+-  **-mask image** Provide a mask image within which to seed & constrain tracking
 
-- **-number value** Set the number of tracks to generate for each test (minimum: 1)
+-  **-number value** Set the number of tracks to generate for each test (minimum: 1)
 
-- **-threshold value** Modulate thresold on the ratio of empirical to maximal mean length to issue an error (range: 0 to 1)
+-  **-threshold value** Modulate thresold on the ratio of empirical to maximal mean length to issue an error (range: 0.0 to 1.0)
 
-- **-format choice** The format in which peak orientations are specified (choices: spherical, unitspherical, cartesian, unitcartesian)
+-  **-format choice** The format in which peak orientations are specified (choices: spherical, unitspherical, cartesian, unitcartesian)
 
-- **-reference choice** The a priori expected references axes against which the input orientations are defined (choices: xyz, ijk, fsl)
+-  **-reference choice** The a priori expected references axes against which the input orientations are defined (choices: xyz, ijk, fsl)
 
-- **-noshuffle** Do not evaluate possibility of requiring shuffles of axes or angles; only consider prospective transforms from alternative reference frames to real / scanner space
+-  **-noshuffle** Do not evaluate possibility of requiring shuffles of axes or angles; only consider prospective transforms from alternative reference frames to real / scanner space
 
-- **-notransform** Do not evaluate possibility of requiring transform of peak orientations from image to real / scanner space; only consider prospective shuffles of axes or angles
+-  **-notransform** Do not evaluate possibility of requiring transform of peak orientations from image to real / scanner space; only consider prospective shuffles of axes or angles
 
-- **-all** Print table containing all results to standard output
+-  **-all** Print table containing all results to standard output
 
-- **-out_table file** Write text file with table containing all results
+-  **-out_table file** Write text file with table containing all results
 
-Additional standard options for Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+*(the options -noshuffle, -notransform are mutually exclusive; at most one may be specified)*
 
-- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
-
-- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
-
-- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-force** force overwrite of output files.
+-  **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
-- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-help** display this information page and exit.
+-  **-help** display this information page and exit.
 
-- **-version** display version information and exit.
+-  **-version** display version information and exit.
 
 Verbosity options
 """""""""""""""""
 
-- **-info** display information messages.
+-  **-info** display information messages.
 
-- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages & debug input data.
+-  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
+
+
+Additional standard options for Python scripts
+""""""""""""""""""""""""""""""""""""""""""""""
+
+-  **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+-  **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
+
+-  **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 References
 ^^^^^^^^^^

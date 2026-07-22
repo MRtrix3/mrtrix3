@@ -9,7 +9,7 @@ Synopsis
 The MRtrix image viewer
 
 Usage
---------
+-----
 
 ::
 
@@ -30,56 +30,56 @@ Options
 View options
 ^^^^^^^^^^^^
 
--  **-mode index** *(multiple uses permitted)* Switch to view mode specified by the integer index, as per the view menu.
+-  **-mode index**  *(multiple uses permitted)* Switch to view mode specified by the integer index, as per the view menu.
 
--  **-load image** *(multiple uses permitted)* Load image specified and make it current.
+-  **-load image**  *(multiple uses permitted)* Load image specified and make it current.
 
--  **-reset** *(multiple uses permitted)* Reset the view according to current image. This resets the FOV, projection and focus.
+-  **-reset**  *(multiple uses permitted)* Reset the view according to current image. This resets the FOV, projection and focus.
 
--  **-fov value** *(multiple uses permitted)* Set the field of view, in mm.
+-  **-fov value**  *(multiple uses permitted)* Set the field of view, in mm.
 
--  **-focus spec** *(multiple uses permitted)* Either set the position of the crosshairs in scanner coordinates, with the new position supplied as a comma-separated list of floating-point values, or show or hide the focus cross hair using a boolean value as argument.
+-  **-focus spec**  *(multiple uses permitted)* Either set the position of the crosshairs in scanner coordinates, with the new position supplied as a comma-separated list of floating-point values, or show or hide the focus cross hair using a boolean value as argument.
 
--  **-target x,y,z** *(multiple uses permitted)* Set the target location for the viewing window (the scanner coordinate that will appear at the centre of the viewing window)
+-  **-target x,y,z**  *(multiple uses permitted)* Set the target location for the viewing window (the scanner coordinate that will appear at the centre of the viewing window)
 
 -  **-orientation w,x,y,z** Set the orientation of the camera for the viewing window, in the form of a quaternion representing the rotation away from the z-axis. This should be provided as a list of 4 comma-separated floating point values (this will be automatically normalised).
 
--  **-voxel x,y,z** *(multiple uses permitted)* Set the position of the crosshairs in voxel coordinates, relative the image currently displayed. The new position should be supplied as a comma-separated list of floating-point values.
+-  **-voxel x,y,z**  *(multiple uses permitted)* Set the position of the crosshairs in voxel coordinates, relative the image currently displayed. The new position should be supplied as a comma-separated list of floating-point values.
 
--  **-volume idx** *(multiple uses permitted)* Set the volume index for the image displayed, as a comma-separated list of integers.
+-  **-volume idx**  *(multiple uses permitted)* Set the volume index for the image displayed, as a comma-separated list of integers.
 
--  **-plane index** *(multiple uses permitted)* Set the viewing plane, according to the mappping: 0: sagittal; 1: coronal; 2: axial. (range: 0 to 2)
+-  **-plane index**  *(multiple uses permitted)* Set the viewing plane, according to the mappping: 0: sagittal; 1: coronal; 2: axial. (range: 0 to 2)
 
--  **-lock yesno** *(multiple uses permitted)* Set whether view is locked to image axes (0: no, 1: yes).
+-  **-lock yesno**  *(multiple uses permitted)* Set whether view is locked to image axes (0: no, 1: yes).
 
--  **-select_image index** *(multiple uses permitted)* Switch to image number specified, with reference to the list of currently loaded images. (minimum: 0)
+-  **-select_image index**  *(multiple uses permitted)* Switch to image number specified, with reference to the list of currently loaded images. (minimum: 0)
 
--  **-autoscale** *(multiple uses permitted)* Reset the image scaling to automatically determined range.
+-  **-autoscale**  *(multiple uses permitted)* Reset the image scaling to automatically determined range.
 
--  **-interpolation boolean** *(multiple uses permitted)* Enable or disable image interpolation in main image.
+-  **-interpolation boolean**  *(multiple uses permitted)* Enable or disable image interpolation in main image.
 
--  **-colourmap index** *(multiple uses permitted)* Switch the image colourmap to that specified, as per the colourmap menu. (minimum: 0)
+-  **-colourmap index**  *(multiple uses permitted)* Switch the image colourmap to that specified, as per the colourmap menu. (minimum: 0)
 
--  **-noannotations** *(multiple uses permitted)* Hide all image annotation overlays
+-  **-noannotations**  *(multiple uses permitted)* Hide all image annotation overlays
 
--  **-comments boolean** *(multiple uses permitted)* Show or hide image comments overlay.
+-  **-comments boolean**  *(multiple uses permitted)* Show or hide image comments overlay.
 
--  **-voxelinfo boolean** *(multiple uses permitted)* Show or hide voxel information overlay.
+-  **-voxelinfo boolean**  *(multiple uses permitted)* Show or hide voxel information overlay.
 
--  **-orientlabel boolean** *(multiple uses permitted)* Show or hide orientation label overlay.
+-  **-orientlabel boolean**  *(multiple uses permitted)* Show or hide orientation label overlay.
 
--  **-colourbar boolean** *(multiple uses permitted)* Show or hide colourbar overlay.
+-  **-colourbar boolean**  *(multiple uses permitted)* Show or hide colourbar overlay.
 
--  **-imagevisible boolean** *(multiple uses permitted)* Show or hide the main image.
+-  **-imagevisible boolean**  *(multiple uses permitted)* Show or hide the main image.
 
--  **-intensity_range min,max** *(multiple uses permitted)* Set the image intensity range to that specified.
+-  **-intensity_range min,max**  *(multiple uses permitted)* Set the image intensity range to that specified.
 
 Window management options
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-size width,height** *(multiple uses permitted)* Set the size of the view area, in pixel units.
+-  **-size width,height**  *(multiple uses permitted)* Set the size of the view area, in pixel units.
 
--  **-position x,y** *(multiple uses permitted)* Set the position of the main window, in pixel units.
+-  **-position x,y**  *(multiple uses permitted)* Set the position of the main window, in pixel units.
 
 -  **-fullscreen** Start fullscreen.
 
@@ -98,95 +98,95 @@ Debugging options
 Overlay tool options
 ^^^^^^^^^^^^^^^^^^^^
 
--  **-overlay.load image** *(multiple uses permitted)* Loads the specified image on the overlay tool.
+-  **-overlay.load image**  *(multiple uses permitted)* Loads the specified image on the overlay tool.
 
--  **-overlay.opacity value** *(multiple uses permitted)* Sets the overlay opacity to floating value [0-1]. (range: 0 to 1)
+-  **-overlay.opacity value**  *(multiple uses permitted)* Sets the overlay opacity to floating value [0-1]. (range: 0.0 to 1.0)
 
--  **-overlay.colourmap index** *(multiple uses permitted)* Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.
+-  **-overlay.colourmap index**  *(multiple uses permitted)* Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.
 
--  **-overlay.colour R,G,B** *(multiple uses permitted)* Specify a manual colour for the overlay, as three comma-separated values
+-  **-overlay.colour R,G,B**  *(multiple uses permitted)* Specify a manual colour for the overlay, as three comma-separated values
 
--  **-overlay.intensity Min,Max** *(multiple uses permitted)* Set the intensity windowing of the overlay
+-  **-overlay.intensity Min,Max**  *(multiple uses permitted)* Set the intensity windowing of the overlay
 
--  **-overlay.threshold_min value** *(multiple uses permitted)* Set the lower threshold value of the overlay
+-  **-overlay.threshold_min value**  *(multiple uses permitted)* Set the lower threshold value of the overlay
 
--  **-overlay.threshold_max value** *(multiple uses permitted)* Set the upper threshold value of the overlay
+-  **-overlay.threshold_max value**  *(multiple uses permitted)* Set the upper threshold value of the overlay
 
--  **-overlay.no_threshold_min** *(multiple uses permitted)* Disable the lower threshold for the overlay
+-  **-overlay.no_threshold_min**  *(multiple uses permitted)* Disable the lower threshold for the overlay
 
--  **-overlay.no_threshold_max** *(multiple uses permitted)* Disable the upper threshold for the overlay
+-  **-overlay.no_threshold_max**  *(multiple uses permitted)* Disable the upper threshold for the overlay
 
--  **-overlay.interpolation value** *(multiple uses permitted)* Enable or disable overlay image interpolation.
+-  **-overlay.interpolation value**  *(multiple uses permitted)* Enable or disable overlay image interpolation.
 
 ROI editor tool options
 ^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-roi.load image** *(multiple uses permitted)* Loads the specified image on the ROI editor tool.
+-  **-roi.load image**  *(multiple uses permitted)* Loads the specified image on the ROI editor tool.
 
--  **-roi.opacity value** *(multiple uses permitted)* Sets the overlay opacity to floating value [0-1]. (range: 0 to 1)
+-  **-roi.opacity value**  *(multiple uses permitted)* Sets the overlay opacity to floating value [0-1]. (range: 0.0 to 1.0)
 
--  **-roi.colour R,G,B** *(multiple uses permitted)* Sets the colour of the ROI overlay
+-  **-roi.colour R,G,B**  *(multiple uses permitted)* Sets the colour of the ROI overlay
 
 Tractography tool options
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-tractography.load tracks** *(multiple uses permitted)* Load the specified tracks file into the tractography tool.
+-  **-tractography.load tracks**  *(multiple uses permitted)* Load the specified tracks file into the tractography tool.
 
--  **-tractography.thickness value** *(multiple uses permitted)* Line thickness of tractography display. (range: -1 to 1) (default: 0.0)
+-  **-tractography.thickness value**  *(multiple uses permitted)* Line thickness of tractography display. (range: -1.0 to 1.0; default: 0.0)
 
--  **-tractography.geometry value** *(multiple uses permitted)* The geometry type to use when rendering tractograms (choices: pseudotubes, lines, points)
+-  **-tractography.geometry value**  *(multiple uses permitted)* The geometry type to use when rendering tractograms (choices: pseudotubes, lines, points)
 
--  **-tractography.opacity value** *(multiple uses permitted)* Opacity of tractography display. (range: 0 to 1) (default: 1.0)
+-  **-tractography.opacity value**  *(multiple uses permitted)* Opacity of tractography display. (range: 0.0 to 1.0; default: 1.0)
 
--  **-tractography.slab value** *(multiple uses permitted)* Slab thickness of tractography display, in mm. -1 to turn off crop to slab. (range: -1 to 1000000)
+-  **-tractography.slab value**  *(multiple uses permitted)* Slab thickness of tractography display, in mm. -1 to turn off crop to slab. (range: -1.0 to 1000000.0)
 
--  **-tractography.lighting value** *(multiple uses permitted)* Toggle the use of lighting of tractogram geometry
+-  **-tractography.lighting value**  *(multiple uses permitted)* Toggle the use of lighting of tractogram geometry
 
--  **-tractography.colour R,G,B** *(multiple uses permitted)* Specify a manual colour for the tractogram, as three comma-separated values
+-  **-tractography.colour R,G,B**  *(multiple uses permitted)* Specify a manual colour for the tractogram, as three comma-separated values
 
--  **-tractography.tsf_load tsf** *(multiple uses permitted)* Load the specified tractography scalar file.
+-  **-tractography.tsf_load tsf**  *(multiple uses permitted)* Load the specified tractography scalar file.
 
--  **-tractography.tsf_range RangeMin,RangeMax** *(multiple uses permitted)* Set range for the tractography scalar file. Requires -tractography.tsf_load already provided.
+-  **-tractography.tsf_range RangeMin,RangeMax**  *(multiple uses permitted)* Set range for the tractography scalar file. Requires -tractography.tsf_load already provided.
 
--  **-tractography.tsf_thresh ThresholdMin,ThresholdMax** *(multiple uses permitted)* Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.
+-  **-tractography.tsf_thresh ThresholdMin,ThresholdMax**  *(multiple uses permitted)* Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.
 
--  **-tractography.tsf_colourmap index** *(multiple uses permitted)* Sets the colourmap of the .tsf file as indexed in the tsf colourmap dropdown menu. Requires -tractography.tsf_load already.
+-  **-tractography.tsf_colourmap index**  *(multiple uses permitted)* Sets the colourmap of the .tsf file as indexed in the tsf colourmap dropdown menu. Requires -tractography.tsf_load already.
 
 ODF tool options
 ^^^^^^^^^^^^^^^^
 
--  **-odf.load_sh image** *(multiple uses permitted)* Loads the specified SH-based ODF image on the ODF tool.
+-  **-odf.load_sh image**  *(multiple uses permitted)* Loads the specified SH-based ODF image on the ODF tool.
 
--  **-odf.load_tensor image** *(multiple uses permitted)* Loads the specified tensor image on the ODF tool.
+-  **-odf.load_tensor image**  *(multiple uses permitted)* Loads the specified tensor image on the ODF tool.
 
--  **-odf.load_dixel image** *(multiple uses permitted)* Loads the specified dixel-based image on the ODF tool.
+-  **-odf.load_dixel image**  *(multiple uses permitted)* Loads the specified dixel-based image on the ODF tool.
 
 Fixel plot tool options
 ^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-fixel.load image** *(multiple uses permitted)* Load a fixel data file inside a fixel directory into the fixel tool.
+-  **-fixel.load image**  *(multiple uses permitted)* Load a fixel data file inside a fixel directory into the fixel tool.
 
 Connectome tool options
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-connectome.init image** Initialise the connectome tool using a parcellation image.
 
--  **-connectome.load path** *(multiple uses permitted)* Load a matrix file into the connectome tool.
+-  **-connectome.load path**  *(multiple uses permitted)* Load a matrix file into the connectome tool.
 
 Screen Capture tool options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-capture.folder path** *(multiple uses permitted)* Set the output folder for the screen capture tool.
+-  **-capture.folder path**  *(multiple uses permitted)* Set the output folder for the screen capture tool.
 
--  **-capture.prefix string** *(multiple uses permitted)* Set the output file prefix for the screen capture tool.
+-  **-capture.prefix string**  *(multiple uses permitted)* Set the output file prefix for the screen capture tool.
 
--  **-capture.supersample factor** *(multiple uses permitted)* Set the super-sampling (super-resolution) factor for the screen capture tool. (minimum: 1)
+-  **-capture.supersample factor**  *(multiple uses permitted)* Set the super-sampling (super-resolution) factor for the screen capture tool. (minimum: 1)
 
--  **-capture.msaa factor** *(multiple uses permitted)* Set the multi-sample anti-aliasing factor for the screen capture tool (rounded to a supported power of two). (minimum: 1)
+-  **-capture.msaa factor**  *(multiple uses permitted)* Set the multi-sample anti-aliasing factor for the screen capture tool (rounded to a supported power of two). (minimum: 1)
 
--  **-capture.downsample factor** *(multiple uses permitted)* Set the down-sampling factor for the screen capture tool; the exported resolution is the native resolution times the super-sampling factor divided by this factor. (minimum: 1)
+-  **-capture.downsample factor**  *(multiple uses permitted)* Set the down-sampling factor for the screen capture tool; the exported resolution is the native resolution times the super-sampling factor divided by this factor. (minimum: 1)
 
--  **-capture.grab** *(multiple uses permitted)* Start the screen capture process.
+-  **-capture.grab**  *(multiple uses permitted)* Start the screen capture process.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -195,7 +195,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -209,6 +209,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

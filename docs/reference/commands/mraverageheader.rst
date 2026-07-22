@@ -9,7 +9,7 @@ Synopsis
 Calculate the average (unbiased) coordinate space of all input images
 
 Usage
---------
+-----
 
 ::
 
@@ -26,9 +26,9 @@ The voxel spacings of the calculated average header can be determined from the s
 Options
 -------
 
--  **-padding value** boundary box padding in voxels. (minimum: 0) (default: 0)
+-  **-padding value** boundary box padding in voxels. (minimum: 0.0; default: 0.0)
 
--  **-spacing type** Method for determination of voxel spacings based on the set of input images and the average header axes (see Description). (choices: min_projection, mean_projection, min_nearest, mean_nearest) (default: mean_projection)
+-  **-spacing type** Method for determination of voxel spacings based on the set of input images and the average header axes (see Description). (choices: min_projection, mean_projection, min_nearest, mean_nearest; default: mean_projection)
 
 -  **-fill** set the intensity in the first volume of the average space to 1
 
@@ -44,7 +44,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -58,6 +58,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

@@ -28,42 +28,45 @@ While the name of this script indicates that a binary mask image is required as 
 Options
 -------
 
-- **-dilate iterations** Provide number of iterations for dilation step; default = 2 (minimum: 0)
+-  **-dilate iterations** Provide number of iterations for dilation step; default = 2 (minimum: 0)
 
-- **-scale value** Provide resolution upscaling value; default = 2.0 (minimum: 0)
+-  **-scale value** Provide resolution upscaling value; default = 2.0 (minimum: 0.0)
 
-- **-smooth value** Provide standard deviation of smoothing (in mm); default = 1.0 (minimum: 0)
-
-Additional standard options for Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
-
-- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
-
-- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+-  **-smooth value** Provide standard deviation of smoothing (in mm); default = 1.0 (minimum: 0.0)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-force** force overwrite of output files.
+-  **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
-- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-help** display this information page and exit.
+-  **-help** display this information page and exit.
 
-- **-version** display version information and exit.
+-  **-version** display version information and exit.
 
 Verbosity options
 """""""""""""""""
 
-- **-info** display information messages.
+-  **-info** display information messages.
 
-- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages & debug input data.
+-  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
+
+
+Additional standard options for Python scripts
+""""""""""""""""""""""""""""""""""""""""""""""
+
+-  **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+-  **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
+
+-  **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 References
 ^^^^^^^^^^

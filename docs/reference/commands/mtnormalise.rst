@@ -9,7 +9,7 @@ Synopsis
 Multi-tissue informed log-domain intensity normalisation
 
 Usage
---------
+-----
 
 ::
 
@@ -40,11 +40,11 @@ Options
 
 -  **-mask image** the mask defines the data used to compute the intensity normalisation. This option is mandatory.
 
--  **-order number** the maximum order of the polynomial basis used to fit the normalisation field in the log-domain. An order of 0 is equivalent to not allowing spatial variance of the intensity normalisation factor. (range: 0 to 3) (default: 3)
+-  **-order number** the maximum order of the polynomial basis used to fit the normalisation field in the log-domain. An order of 0 is equivalent to not allowing spatial variance of the intensity normalisation factor. (range: 0 to 3; default: 3)
 
 -  **-niter number** set the number of iterations. The first (and potentially only) entry applies to the main loop. If supplied as a comma-separated list of integers, the second entry applies to the inner loop to update the balance factors. (default: 15,7).
 
--  **-reference number** specify the (positive) reference value to which the summed tissue compartments will be normalised (the SH DC term for unit angular integral) (minimum: 2.2250738585072014e-308) (default: 0.282095)
+-  **-reference number** specify the (positive) reference value to which the summed tissue compartments will be normalised (the SH DC term for unit angular integral) (minimum: 2.2250738585072014e-308; default: 0.282095)
 
 -  **-balanced** incorporate the per-tissue balancing factors into scaling of the output images. (NOTE: use of this option has critical consequences for AFD intensity normalisation; should not be used unless these consequences are fully understood)
 
@@ -64,7 +64,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -78,6 +78,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

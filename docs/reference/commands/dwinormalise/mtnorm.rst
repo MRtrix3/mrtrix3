@@ -33,62 +33,68 @@ Options
 Options specific to the "mtnorm" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-lmax values** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell and "4,0" for single-shell data) (values must be non-negative and even)
+-  **-lmax values** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell and "4,0" for single-shell data) (values must be non-negative and even)
 
-- **-mask image** Provide a mask image for relevant calculations (if not provided, the default dwi2mask algorithm will be used)
+-  **-mask image** Provide a mask image for relevant calculations (if not provided, the default dwi2mask algorithm will be used)
 
-- **-reference value** Set the target CSF b=0 intensity in the output DWI series (minimum: 0) (default: 1000)
+-  **-reference value** Set the target CSF b=0 intensity in the output DWI series (minimum: 0.0; default: 1000)
 
-- **-scale file** Write the scaling factor applied to the DWI series to a text file
+-  **-scale file** Write the scaling factor applied to the DWI series to a text file
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad file** Provide the diffusion gradient table in MRtrix format
+-  **-grad file** Provide the diffusion gradient table in MRtrix format
 
-- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+-  **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
+*(these options are mutually exclusive; at most one may be specified)*
+
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-force** force overwrite of output files.
+-  **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
-- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-help** display this information page and exit.
+-  **-help** display this information page and exit.
 
-- **-version** display version information and exit.
+-  **-version** display version information and exit.
 
 Verbosity options
 """""""""""""""""
 
-- **-info** display information messages.
+-  **-info** display information messages.
 
-- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages & debug input data.
+-  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
+
 
 Additional standard options for Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""""""""""""""""
 
-- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+-  **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
+-  **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+-  **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 References
 ^^^^^^^^^^
 
-* Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A & Sijbers, J. Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data. NeuroImage, 2014, 103, 411-426
+Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A & Sijbers, J. Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data. NeuroImage, 2014, 103, 411-426
 
-* Raffelt, D.; Dhollander, T.; Tournier, J.-D.; Tabbara, R.; Smith, R. E.; Pierre, E. & Connelly, A. Bias Field Correction and Intensity Normalisation for Quantitative Analysis of Apparent Fibre Density. In Proc. ISMRM, 2017, 26, 3541
+Raffelt, D.; Dhollander, T.; Tournier, J.-D.; Tabbara, R.; Smith, R. E.; Pierre, E. & Connelly, A. Bias Field Correction and Intensity Normalisation for Quantitative Analysis of Apparent Fibre Density. In Proc. ISMRM, 2017, 26, 3541
 
-* Dhollander, T.; Tabbara, R.; Rosnarho-Tornstrand, J.; Tournier, J.-D.; Raffelt, D. & Connelly, A. Multi-tissue log-domain intensity and inhomogeneity normalisation for quantitative apparent fibre density. In Proc. ISMRM, 2021, 29, 2472
+Dhollander, T.; Tabbara, R.; Rosnarho-Tornstrand, J.; Tournier, J.-D.; Raffelt, D. & Connelly, A. Multi-tissue log-domain intensity and inhomogeneity normalisation for quantitative apparent fibre density. In Proc. ISMRM, 2021, 29, 2472
 
-* Dhollander, T.; Raffelt, D. & Connelly, A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5
+Dhollander, T.; Raffelt, D. & Connelly, A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5
 
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 

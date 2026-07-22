@@ -9,7 +9,7 @@ Synopsis
 Extract streamlines from a tractogram based on their assignment to parcellated nodes
 
 Usage
---------
+-----
 
 ::
 
@@ -77,7 +77,7 @@ Options for determining the content / format of output files
 
 -  **-exclusive** only select tracks that exclusively connect nodes from within the list of nodes of interest
 
--  **-files option** select how the resulting streamlines will be grouped in output files (choices: per_edge, per_node, single) (default: per_edge)
+-  **-files option** select how the resulting streamlines will be grouped in output files (choices: per_edge, per_node, single; default: per_edge)
 
 -  **-exemplars image** generate a mean connection exemplar per edge, rather than keeping all streamlines (the parcellation node image must be provided in order to constrain the exemplar endpoints)
 
@@ -99,7 +99,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -113,6 +113,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

@@ -1,47 +1,25 @@
-.. _meshfilter:
+.. _warpconvert_deformation2displacement:
 
-meshfilter
-===================
+warpconvert deformation2displacement
+====================================
 
 Synopsis
 --------
 
-Apply filter operations to meshes
+Convert a deformation field to a displacement field
 
 Usage
 -----
 
 ::
 
-    meshfilter [ options ]  input filter output
+    warpconvert deformation2displacement [ options ]  in out
 
--  *input*: the input mesh file
--  *filter*: the filter to apply (choices: smooth)
--  *output*: the output mesh file
-
-Description
------------
-
-While this command has only one filter operation currently available, it nevertheless presents with a comparable interface to the MRtrix3 commands maskfilter and mrfilter
-
-Example usages
---------------
-
--   *Apply a mesh smoothing filter (currently the only filter available)*::
-
-        $ meshfilter input.vtk smooth output.vtk
-
-    The usage of this command may cause confusion due to the generic interface despite only one filtering operation being currently available. This simple example usage is therefore provided for clarity.
+-  *in*: the input deformation field image.
+-  *out*: the output displacement field image.
 
 Options
 -------
-
-Options for mesh smoothing filter
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
--  **-smooth_spatial value** spatial extent of smoothing (minimum: 0.0; default: 10mm)
-
--  **-smooth_influence value** influence factor for smoothing (minimum: 0.0; default: 10)
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -76,7 +54,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au)
+**Author:** David Raffelt (david.raffelt@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 

@@ -9,7 +9,7 @@ Synopsis
 Output DICOM fields in human-readable format
 
 Usage
---------
+-----
 
 ::
 
@@ -26,7 +26,7 @@ Options
 
 -  **-phoenix** print Siemens Phoenix protocol information
 
--  **-tag group element** *(multiple uses permitted)* print field specified by the group & element tags supplied. Tags should be supplied as Hexadecimal (i.e. as they appear in the -all listing). |br|
+-  **-tag group element**  *(multiple uses permitted)* print field specified by the group & element tags supplied. Tags should be supplied as Hexadecimal (i.e. as they appear in the -all listing). |br|
    *group*: the hexadecimal DICOM group of the tag |br|
    *element*: the hexadecimal DICOM element of the tag
 
@@ -37,7 +37,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -51,6 +51,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

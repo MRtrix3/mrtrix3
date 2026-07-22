@@ -24,51 +24,57 @@ Options
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad file** Provide the diffusion gradient table in MRtrix format
+-  **-grad file** Provide the diffusion gradient table in MRtrix format
 
-- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+-  **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
+*(these options are mutually exclusive; at most one may be specified)*
+
 
 Options specific to the "consensus" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-algorithms str** Provide a comma-separated list of dwi2mask algorithms that are to be utilised
+-  **-algorithms str** Provide a comma-separated list of dwi2mask algorithms that are to be utilised
 
-- **-masks image** Export a 4D image containing the individual algorithm masks
+-  **-masks image** Export a 4D image containing the individual algorithm masks
 
-- **-template TemplateImage MaskImage** Provide a template image and corresponding mask for those algorithms requiring such
+-  **-template TemplateImage MaskImage** Provide a template image and corresponding mask for those algorithms requiring such
 
-- **-threshold value** The fraction of algorithms that must include a voxel for that voxel to be present in the final mask (default: 0.501) (range: 0 to 1)
+-  **-threshold value** The fraction of algorithms that must include a voxel for that voxel to be present in the final mask (default: 0.501) (range: 0.0 to 1.0)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-force** force overwrite of output files.
+-  **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
-- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-help** display this information page and exit.
+-  **-help** display this information page and exit.
 
-- **-version** display version information and exit.
+-  **-version** display version information and exit.
 
 Verbosity options
 """""""""""""""""
 
-- **-info** display information messages.
+-  **-info** display information messages.
 
-- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages & debug input data.
+-  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
+
 
 Additional standard options for Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""""""""""""""""
 
-- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+-  **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
+-  **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+-  **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 References
 ^^^^^^^^^^

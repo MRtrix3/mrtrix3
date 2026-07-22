@@ -9,7 +9,7 @@ Synopsis
 Generate an image for visualisation purposes from an ACT 5TT segmented anatomical image
 
 Usage
---------
+-----
 
 ::
 
@@ -21,17 +21,17 @@ Usage
 Options
 -------
 
--  **-bg value** image intensity of background (range: 0 to 1) (default: 0)
+-  **-bg value** image intensity of background (range: 0.0 to 1.0; default: 0)
 
--  **-cgm value** image intensity of cortical grey matter (range: 0 to 1) (default: 0.5)
+-  **-cgm value** image intensity of cortical grey matter (range: 0.0 to 1.0; default: 0.5)
 
--  **-sgm value** image intensity of sub-cortical grey matter (range: 0 to 1) (default: 0.75)
+-  **-sgm value** image intensity of sub-cortical grey matter (range: 0.0 to 1.0; default: 0.75)
 
--  **-wm value** image intensity of white matter (range: 0 to 1) (default: 1)
+-  **-wm value** image intensity of white matter (range: 0.0 to 1.0; default: 1)
 
--  **-csf value** image intensity of CSF (range: 0 to 1) (default: 0.15)
+-  **-csf value** image intensity of CSF (range: 0.0 to 1.0; default: 0.15)
 
--  **-path value** image intensity of pathological tissue (range: 0 to 10) (default: 2)
+-  **-path value** image intensity of pathological tissue (range: 0.0 to 10.0; default: 2)
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -40,7 +40,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -54,6 +54,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

@@ -9,7 +9,7 @@ Synopsis
 Generate a set of uniformly distributed directions using a bipolar electrostatic repulsion model
 
 Usage
---------
+-----
 
 ::
 
@@ -26,13 +26,13 @@ Directions are distributed by analogy to an electrostatic repulsion system, with
 Options
 -------
 
--  **-power exp** specify exponent to use for repulsion power law. This must be a power of 2 (i.e. 1, 2, 4, 8, 16, ...). (range: 1 to 2147483647) (default: 1)
+-  **-power exp** specify exponent to use for repulsion power law. This must be a power of 2 (i.e. 1, 2, 4, 8, 16, ...). (range: 1 to 2147483647; default: 1)
 
--  **-niter num** specify the maximum number of iterations to perform. (range: 1 to 2147483647) (default: 10000)
+-  **-niter num** specify the maximum number of iterations to perform. (range: 1 to 2147483647; default: 10000)
 
--  **-restarts num** specify the number of restarts to perform. (range: 1 to 2147483647) (default: 10)
+-  **-restarts num** specify the number of restarts to perform. (range: 1 to 2147483647; default: 10)
 
--  **-fixed direction** *(multiple uses permitted)* specify a fixed direction (comm-separateed floats) that will always be included at the start of the scheme
+-  **-fixed direction**  *(multiple uses permitted)* specify a fixed direction (comm-separateed floats) that will always be included at the start of the scheme
 
 -  **-unipolar** optimise assuming a unipolar electrostatic repulsion model rather than the bipolar model normally assumed in DWI
 
@@ -45,7 +45,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -59,6 +59,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

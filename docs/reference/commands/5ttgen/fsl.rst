@@ -24,62 +24,68 @@ Options
 Options common to all 5ttgen algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-nocrop** Do NOT crop the resulting 5TT image to reduce its size (keep the same dimensions as the input image)
+-  **-nocrop** Do NOT crop the resulting 5TT image to reduce its size (keep the same dimensions as the input image)
 
-- **-sgm_amyg_hipp** Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image
+-  **-sgm_amyg_hipp** Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image
 
 Options specific to the "fsl" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-t2 image** Provide a T2-weighted image in addition to the default T1-weighted image; this will be used as a second input to FSL FAST
+-  **-t2 image** Provide a T2-weighted image in addition to the default T1-weighted image; this will be used as a second input to FSL FAST
 
-- **-mask image** Manually provide a brain mask, rather than deriving one in the script
+-  **-mask image** Manually provide a brain mask, rather than deriving one in the script
 
-- **-premasked** Indicate that brain masking has already been applied to the input image
+-  **-premasked** Indicate that brain masking has already been applied to the input image
+
+*(the options -mask, -premasked are mutually exclusive; at most one may be specified)*
+
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-force** force overwrite of output files.
+-  **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
-- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-help** display this information page and exit.
+-  **-help** display this information page and exit.
 
-- **-version** display version information and exit.
+-  **-version** display version information and exit.
 
 Verbosity options
 """""""""""""""""
 
-- **-info** display information messages.
+-  **-info** display information messages.
 
-- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages & debug input data.
+-  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
+
 
 Additional standard options for Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""""""""""""""""
 
-- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+-  **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
+-  **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+-  **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 References
 ^^^^^^^^^^
 
-* Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 2012, 62, 1924-1938
+Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 2012, 62, 1924-1938
 
-* Smith, S. M. Fast robust automated brain extraction. Human Brain Mapping, 2002, 17, 143-155
+Smith, S. M. Fast robust automated brain extraction. Human Brain Mapping, 2002, 17, 143-155
 
-* Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57
+Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57
 
-* Patenaude, B.; Smith, S. M.; Kennedy, D. N. & Jenkinson, M. A Bayesian model of shape and appearance for subcortical brain segmentation. NeuroImage, 2011, 56, 907-922
+Patenaude, B.; Smith, S. M.; Kennedy, D. N. & Jenkinson, M. A Bayesian model of shape and appearance for subcortical brain segmentation. NeuroImage, 2011, 56, 907-922
 
-* Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219
+Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219
 
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 

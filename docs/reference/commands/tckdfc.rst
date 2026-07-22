@@ -9,7 +9,7 @@ Synopsis
 Perform the Track-Weighted Dynamic Functional Connectivity (TW-dFC) method
 
 Usage
---------
+-----
 
 ::
 
@@ -24,7 +24,7 @@ Description
 
 This command generates a Track-Weighted Image (TWI), where the contribution from each streamline to the image is the Pearson correlation between the fMRI time series at the streamline endpoints.
 
-The output image can be generated in one of two ways (note that one of these two command-line options MUST be provided):
+The output image can be generated in one of two ways:
 
 - "Static" functional connectivity (-static option): Each streamline contributes to a static 3D output image based on the correlation between the signals at the streamline endpoints using the entirety of the input time series.
 
@@ -35,12 +35,14 @@ Note that the -backtrack option in this command is similar, but not precisely eq
 Options
 -------
 
-Options for toggling between static and dynamic TW-dFC methods; note that one of these options MUST be provided
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options for toggling between static and dynamic TW-dFC methods
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-static** generate a "static" (3D) output image.
 
 -  **-dynamic shape width** generate a "dynamic" (4D) output image; must additionally provide the shape and width (in volumes) of the sliding window. (choices: rectangle, triangle, cosine, hann, hamming, lanczos) (minimum: 3)
+
+*(exactly one of these options must be specified)*
 
 Options for setting the properties of the output image
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -49,7 +51,7 @@ Options for setting the properties of the output image
 
 -  **-vox size** provide either an isotropic voxel size (in mm), or comma-separated list of 3 voxel dimensions.
 
--  **-stat_vox type** define the statistic for choosing the final voxel intensities for a given contrast type given the individual values from the tracks passing through each voxel (choices: sum, min, mean, max) (default: mean)
+-  **-stat_vox type** define the statistic for choosing the final voxel intensities for a given contrast type given the individual values from the tracks passing through each voxel (choices: sum, min, mean, max; default: mean)
 
 Other options for affecting the streamline sampling & mapping behaviour
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -65,7 +67,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -79,6 +81,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

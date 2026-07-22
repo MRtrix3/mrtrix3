@@ -9,7 +9,7 @@ Synopsis
 Modify the grid of an image without interpolation (cropping or padding) or by regridding to an image grid with modified orientation, location and or resolution. The image content remains in place in real world coordinates.
 
 Usage
---------
+-----
 
 ::
 
@@ -65,7 +65,7 @@ Regridding options (involves image interpolation, applied to spatial axes only)
 
 -  **-scale factor** scale the image resolution by the supplied factor. This can be specified either as a single value to be used for all dimensions, or as a comma-separated list of scale factors for each dimension.
 
--  **-interp method** set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc) (default: cubic)
+-  **-interp method** set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc; default: cubic)
 
 -  **-oversample factor** set the amount of over-sampling (in the target space) to perform when regridding. This is particularly relevant when downsamping a high-resolution image to a low-resolution image, to avoid aliasing artefacts. This can consist of a single integer, or a comma-separated list of 3 integers if different oversampling factors are desired along the different axes. Default is determined from ratio of voxel dimensions (disabled for nearest-neighbour interpolation).
 
@@ -80,7 +80,7 @@ Pad and crop options (no image interpolation is performed, header transformation
 
 -  **-crop_unbound** Allow padding beyond the original FOV when cropping.
 
--  **-axis index spec** *(multiple uses permitted)* pad or crop the input image along the provided axis (defined by index). The specifier argument defines the number of voxels added or removed on the lower or upper end of the axis (-axis index delta_lower,delta_upper)or acts as a voxel selection range (-axis index start:stop). In both modes, values are relative to the input image  (overriding all other extent-specifying options). Negative delta specifier values trigger the inverse operation (pad instead of crop and vice versa) and negative range specifier trigger padding. Note that the deprecated commands 'mrcrop' and 'mrpad' used range-based and delta-based -axis indices, respectively. |br|
+-  **-axis index spec**  *(multiple uses permitted)* pad or crop the input image along the provided axis (defined by index). The specifier argument defines the number of voxels added or removed on the lower or upper end of the axis (-axis index delta_lower,delta_upper)or acts as a voxel selection range (-axis index start:stop). In both modes, values are relative to the input image  (overriding all other extent-specifying options). Negative delta specifier values trigger the inverse operation (pad instead of crop and vice versa) and negative range specifier trigger padding. Note that the deprecated commands 'mrcrop' and 'mrpad' used range-based and delta-based -axis indices, respectively. |br|
    *index*: the index of the axis to pad or crop (minimum: 0) |br|
    *spec*: the delta (lower,upper) or range (start:stop) specifier
 
@@ -108,7 +108,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -122,6 +122,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

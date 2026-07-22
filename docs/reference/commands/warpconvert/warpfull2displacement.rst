@@ -1,47 +1,31 @@
-.. _meshfilter:
+.. _warpconvert_warpfull2displacement:
 
-meshfilter
-===================
+warpconvert warpfull2displacement
+=================================
 
 Synopsis
 --------
 
-Apply filter operations to meshes
+Convert a 5D warpfull series to a displacement field
 
 Usage
 -----
 
 ::
 
-    meshfilter [ options ]  input filter output
+    warpconvert warpfull2displacement [ options ]  in out
 
--  *input*: the input mesh file
--  *filter*: the filter to apply (choices: smooth)
--  *output*: the output mesh file
-
-Description
------------
-
-While this command has only one filter operation currently available, it nevertheless presents with a comparable interface to the MRtrix3 commands maskfilter and mrfilter
-
-Example usages
---------------
-
--   *Apply a mesh smoothing filter (currently the only filter available)*::
-
-        $ meshfilter input.vtk smooth output.vtk
-
-    The usage of this command may cause confusion due to the generic interface despite only one filtering operation being currently available. This simple example usage is therefore provided for clarity.
+-  *in*: the input warpfull image.
+-  *out*: the output displacement field image.
 
 Options
 -------
 
-Options for mesh smoothing filter
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-  **-template image** define a template image (the warpfull grid lies in the midway space between image 1 & 2). For example, to generate the deformation field that maps image1 to image2, supply image2 as the template image
 
--  **-smooth_spatial value** spatial extent of smoothing (minimum: 0.0; default: 10mm)
+-  **-midway_space** output only the non-linear warp mapping an input image to the midway space defined by the warpfull grid. If a linear transform exists in the warpfull file header then it will be composed and included in the output.
 
--  **-smooth_influence value** influence factor for smoothing (minimum: 0.0; default: 10)
+-  **-from image** define the direction of the desired output field. Use -from 1 to obtain the image1->image2 field and -from 2 for image2->image1. Can be combined with -midway_space to produce a field that only maps to midway space. (range: 1 to 2)
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -76,7 +60,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au)
+**Author:** David Raffelt (david.raffelt@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 

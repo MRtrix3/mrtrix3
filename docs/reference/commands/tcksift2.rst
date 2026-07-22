@@ -9,7 +9,7 @@ Synopsis
 Optimise per-streamline cross-section multipliers to match a whole-brain tractogram to fixel-wise fibre densities
 
 Usage
---------
+-----
 
 ::
 
@@ -40,7 +40,7 @@ Options affecting the SIFT model
 
 -  **-remove_untracked** remove FOD lobes that do not have any streamline density attributed to them; this improves filtering slightly, at the expense of longer computation time (and you can no longer trivially do quantitative comparisons between reconstructions if this is enabled)
 
--  **-fd_thresh value** fibre density threshold; exclude an FOD lobe from filtering processing if its integral is less than this amount (streamlines will still be mapped to it, but it will not contribute to the cost function or the filtering) (range: 0 to 6.2831853071795862)
+-  **-fd_thresh value** fibre density threshold; exclude an FOD lobe from filtering processing if its integral is less than this amount (streamlines will still be mapped to it, but it will not contribute to the cost function or the filtering) (range: 0.0 to 6.2831853071795862)
 
 Options to make SIFT provide additional output files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -56,32 +56,36 @@ Options to make SIFT provide additional output files
 Regularisation options for SIFT2
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-reg_tikhonov value** provide coefficient for regularising streamline weighting coefficients (Tikhonov regularisation) (minimum: 0) (default: 0)
+-  **-reg_tikhonov value** provide coefficient for regularising streamline weighting coefficients (Tikhonov regularisation) (minimum: 0.0; default: 0)
 
--  **-reg_tv value** provide coefficient for regularising variance of streamline weighting coefficient to fixels along its length (Total Variation regularisation) (minimum: 0) (default: 0.1)
+-  **-reg_tv value** provide coefficient for regularising variance of streamline weighting coefficient to fixels along its length (Total Variation regularisation) (minimum: 0.0; default: 0.1)
 
 Options for controlling the SIFT2 optimisation algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-min_td_frac fraction** minimum fraction of the FOD integral reconstructed by streamlines; if the reconstructed streamline density is below this fraction, the fixel is excluded from optimisation (range: 0 to 1) (default: 0.1)
+-  **-min_td_frac fraction** minimum fraction of the FOD integral reconstructed by streamlines; if the reconstructed streamline density is below this fraction, the fixel is excluded from optimisation (range: 0.0 to 1.0; default: 0.1)
 
--  **-min_iters count** minimum number of iterations to run before testing for convergence; this can prevent premature termination at early iterations if the cost function increases slightly (minimum: 0) (default: 10)
+-  **-min_iters count** minimum number of iterations to run before testing for convergence; this can prevent premature termination at early iterations if the cost function increases slightly (minimum: 0; default: 10)
 
--  **-max_iters count** maximum number of iterations to run before terminating program (minimum: 0) (default: 1000)
+-  **-max_iters count** maximum number of iterations to run before terminating program (minimum: 0; default: 1000)
 
--  **-min_factor factor** minimum weighting factor for an individual streamline; if the factor falls below this number, the streamline will be rejected entirely (factor set to zero) (range: 0 to 1) (default: 0)
+-  **-min_factor factor** minimum weighting factor for an individual streamline; if the factor falls below this number, the streamline will be rejected entirely (factor set to zero) (range: 0.0 to 1.0; default: 0)
 
--  **-min_coeff coeff** minimum weighting coefficient for an individual streamline; similar to the '-min_factor' option, but using the exponential coefficient basis of the SIFT2 model; these parameters are related as: factor = e^(coeff). Note that the -min_factor and -min_coeff options are mutually exclusive; you can only provide one. (maximum: 0) (default: -inf)
+-  **-min_coeff coeff** minimum weighting coefficient for an individual streamline; similar to the '-min_factor' option, but using the exponential coefficient basis of the SIFT2 model; these parameters are related as: factor = e^(coeff). (maximum: 0.0; default: -inf)
 
--  **-max_factor factor** maximum weighting factor that can be assigned to any one streamline (minimum: 1) (default: inf)
+-  **-max_factor factor** maximum weighting factor that can be assigned to any one streamline (minimum: 1.0; default: inf)
 
--  **-max_coeff coeff** maximum weighting coefficient for an individual streamline; similar to the '-max_factor' option, but using the exponential coefficient basis of the SIFT2 model; these parameters are related as: factor = e^(coeff). Note that the -max_factor and -max_coeff options are mutually exclusive; you can only provide one. (minimum: 1) (default: inf)
+-  **-max_coeff coeff** maximum weighting coefficient for an individual streamline; similar to the '-max_factor' option, but using the exponential coefficient basis of the SIFT2 model; these parameters are related as: factor = e^(coeff). (minimum: 1.0; default: inf)
 
 -  **-max_coeff_step step** maximum change to a streamline's weighting coefficient in a single iteration (default: 1)
 
--  **-min_cf_decrease frac** minimum decrease in the cost function (as a fraction of the initial value) that must occur each iteration for the algorithm to continue (range: 0 to 1) (default: 2.5e-05)
+-  **-min_cf_decrease frac** minimum decrease in the cost function (as a fraction of the initial value) that must occur each iteration for the algorithm to continue (range: 0.0 to 1.0; default: 2.5e-05)
 
 -  **-linear** perform a linear estimation of streamline weights, rather than the standard non-linear optimisation (typically does not provide as accurate a model fit; but only requires a single pass)
+
+*(the options -min_factor, -min_coeff are mutually exclusive; at most one may be specified)*
+
+*(the options -max_factor, -max_coeff are mutually exclusive; at most one may be specified)*
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -90,7 +94,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -104,6 +108,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

@@ -24,70 +24,76 @@ Options
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad file** Provide the diffusion gradient table in MRtrix format
+-  **-grad file** Provide the diffusion gradient table in MRtrix format
 
-- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+-  **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
+*(these options are mutually exclusive; at most one may be specified)*
+
 
 Options specific to the "3dautomask" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-clfrac value** Set the "clip level fraction"; must be a number between 0.1 and 0.9. A small value means to make the initial threshold for clipping smaller, which will tend to make the mask larger. (range: 0.10000000000000001 to 0.90000000000000002)
+-  **-clfrac value** Set the "clip level fraction"; must be a number between 0.1 and 0.9. A small value means to make the initial threshold for clipping smaller, which will tend to make the mask larger. (range: 0.10000000000000001 to 0.90000000000000002)
 
-- **-nograd** The program uses a "gradual" clip level by default. Add this option to use a fixed clip level.
+-  **-nograd** The program uses a "gradual" clip level by default. Add this option to use a fixed clip level.
 
-- **-peels iterations** Peel (erode) the mask n times, then unpeel (dilate). (minimum: 0)
+-  **-peels iterations** Peel (erode) the mask n times, then unpeel (dilate). (minimum: 0)
 
-- **-nbhrs count** Define the number of neighbors needed for a voxel NOT to be eroded. It should be between 6 and 26. (range: 6 to 26)
+-  **-nbhrs count** Define the number of neighbors needed for a voxel NOT to be eroded. It should be between 6 and 26. (range: 6 to 26)
 
-- **-eclip** After creating the mask, remove exterior voxels below the clip threshold.
+-  **-eclip** After creating the mask, remove exterior voxels below the clip threshold.
 
-- **-SI value** After creating the mask, find the most superior voxel, then zero out everything more than SI millimeters inferior to that. 130 seems to be decent (i.e., for Homo Sapiens brains). (minimum: 0)
+-  **-SI value** After creating the mask, find the most superior voxel, then zero out everything more than SI millimeters inferior to that. 130 seems to be decent (i.e., for Homo Sapiens brains). (minimum: 0.0)
 
-- **-dilate iterations** Dilate the mask outwards n times (minimum: 0)
+-  **-dilate iterations** Dilate the mask outwards n times (minimum: 0)
 
-- **-erode iterations** Erode the mask outwards n times (minimum: 0)
+-  **-erode iterations** Erode the mask outwards n times (minimum: 0)
 
-- **-NN1** Erode and dilate based on mask faces
+-  **-NN1** Erode and dilate based on mask faces
 
-- **-NN2** Erode and dilate based on mask edges
+-  **-NN2** Erode and dilate based on mask edges
 
-- **-NN3** Erode and dilate based on mask corners
+-  **-NN3** Erode and dilate based on mask corners
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-force** force overwrite of output files.
+-  **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
-- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-help** display this information page and exit.
+-  **-help** display this information page and exit.
 
-- **-version** display version information and exit.
+-  **-version** display version information and exit.
 
 Verbosity options
 """""""""""""""""
 
-- **-info** display information messages.
+-  **-info** display information messages.
 
-- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages & debug input data.
+-  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
+
 
 Additional standard options for Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""""""""""""""""
 
-- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+-  **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
+-  **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+-  **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 References
 ^^^^^^^^^^
 
-* RW Cox. AFNI: Software for analysis and visualization of functional magnetic resonance neuroimages. Computers and Biomedical Research, 29:162-173, 1996.
+RW Cox. AFNI: Software for analysis and visualization of functional magnetic resonance neuroimages. Computers and Biomedical Research, 29:162-173, 1996.
 
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 

@@ -25,56 +25,62 @@ Options
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask image** Provide an initial mask for response voxel selection
+-  **-mask image** Provide an initial mask for response voxel selection
 
-- **-voxels image** Output an image showing the final voxel selection(s)
+-  **-voxels image** Output an image showing the final voxel selection(s)
 
-- **-shells bvalues** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values; b=0 must be included explicitly if desired)
+-  **-shells bvalues** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values; b=0 must be included explicitly if desired)
 
-- **-lmax values** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values) (values must be non-negative and even)
+-  **-lmax values** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values) (values must be non-negative and even)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad file** Provide the diffusion gradient table in MRtrix format
+-  **-grad file** Provide the diffusion gradient table in MRtrix format
 
-- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+-  **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
+*(these options are mutually exclusive; at most one may be specified)*
+
 
 Options specific to the "manual" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-dirs image** Provide an input image that contains a pre-estimated fibre direction in each voxel (a tensor fit will be used otherwise)
+-  **-dirs image** Provide an input image that contains a pre-estimated fibre direction in each voxel (a tensor fit will be used otherwise)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-force** force overwrite of output files.
+-  **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
-- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-help** display this information page and exit.
+-  **-help** display this information page and exit.
 
-- **-version** display version information and exit.
+-  **-version** display version information and exit.
 
 Verbosity options
 """""""""""""""""
 
-- **-info** display information messages.
+-  **-info** display information messages.
 
-- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages & debug input data.
+-  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
+
 
 Additional standard options for Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""""""""""""""""
 
-- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+-  **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
+-  **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+-  **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 References
 ^^^^^^^^^^

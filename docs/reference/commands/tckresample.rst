@@ -9,7 +9,7 @@ Synopsis
 Resample each streamline in a track file to a new set of vertices
 
 Usage
---------
+-----
 
 ::
 
@@ -35,7 +35,7 @@ Streamline resampling options
 
 -  **-downsample ratio** increase the density of points along the length of each streamline by some factor (decreases required storage space) (minimum: 1)
 
--  **-step_size value** re-sample the streamlines to a desired step size (in mm) (minimum: 0)
+-  **-step_size value** re-sample the streamlines to a desired step size (in mm) (minimum: 0.0)
 
 -  **-num_points count** re-sample each streamline to a fixed number of points (minimum: 2)
 
@@ -52,7 +52,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -66,6 +66,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

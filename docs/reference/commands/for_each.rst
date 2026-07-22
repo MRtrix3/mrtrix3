@@ -77,40 +77,43 @@ Example usages
 Options
 -------
 
-- **-exclude "regex"**  *(multiple uses permitted)* Exclude one specific input string / all strings matching a regular expression from being processed (see Example Usage)
+-  **-exclude "regex"**  *(multiple uses permitted)* Exclude one specific input string / all strings matching a regular expression from being processed (see Example Usage)
 
-- **-test** Test the operation of the for_each script, by printing the command strings following string substitution but not actually executing them
-
-Additional standard options for Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
-
-- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
-
-- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+-  **-test** Test the operation of the for_each script, by printing the command strings following string substitution but not actually executing them
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-force** force overwrite of output files.
+-  **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
-- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-help** display this information page and exit.
+-  **-help** display this information page and exit.
 
-- **-version** display version information and exit.
+-  **-version** display version information and exit.
 
 Verbosity options
 """""""""""""""""
 
-- **-info** display information messages.
+-  **-info** display information messages.
 
-- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages & debug input data.
+-  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
+
+
+Additional standard options for Python scripts
+""""""""""""""""""""""""""""""""""""""""""""""
+
+-  **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+-  **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
+
+-  **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 References
 ^^^^^^^^^^

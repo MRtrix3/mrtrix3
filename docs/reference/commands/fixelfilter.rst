@@ -9,7 +9,7 @@ Synopsis
 Perform filtering operations on fixel-based data
 
 Usage
---------
+-----
 
 ::
 
@@ -37,13 +37,13 @@ Options
 Parameters for the Connectivity-based Fixel Enhancement (CFE) algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-cfe_dh value** the height increment used in the cfe integration (default: 0.1) (range: 0.001 to 1)
+-  **-cfe_dh value** the height increment used in the cfe integration (default: 0.1) (range: 0.001 to 1.0)
 
--  **-cfe_e value** cfe extent exponent (default: 2) (range: 0 to 100)
+-  **-cfe_e value** cfe extent exponent (default: 2) (range: 0.0 to 100.0)
 
--  **-cfe_h value** cfe height exponent (default: 3) (range: 0 to 100)
+-  **-cfe_h value** cfe height exponent (default: 3) (range: 0.0 to 100.0)
 
--  **-cfe_c value** cfe connectivity exponent (default: 0.5) (range: 0 to 100)
+-  **-cfe_c value** cfe connectivity exponent (default: 0.5) (range: 0.0 to 100.0)
 
 -  **-cfe_legacy** use the legacy (non-normalised) form of the cfe equation
 
@@ -52,14 +52,14 @@ Options specific to the "connect" filter
 
 -  **-threshold_value value** specify a threshold for the input fixel data file values (default: 0.5)
 
--  **-threshold_connectivity value** specify a fixel-fixel connectivity threshold for connected-component analysis (minimum: 0) (default: 0.1)
+-  **-threshold_connectivity value** specify a fixel-fixel connectivity threshold for connected-component analysis (minimum: 0.0; default: 0.1)
 
 Options specific to the "smooth" filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-fwhm value** the full-width half-maximum (FWHM) of the spatial component of the smoothing filter (minimum: 0) (default: 10mm)
+-  **-fwhm value** the full-width half-maximum (FWHM) of the spatial component of the smoothing filter (minimum: 0.0; default: 10mm)
 
--  **-minweight value** apply a minimum threshold to smoothing weights (minimum: 0) (default: 0.01)
+-  **-minweight value** apply a minimum threshold to smoothing weights (minimum: 0.0; default: 0.01)
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -68,7 +68,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -82,6 +82,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

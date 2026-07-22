@@ -15,6 +15,11 @@ List of MRtrix3 commands
     commands/5tt2vis
     commands/5ttedit
     commands/5ttgen
+    commands/5ttgen/deep_atropos
+    commands/5ttgen/freesurfer
+    commands/5ttgen/fsl
+    commands/5ttgen/gif
+    commands/5ttgen/hsvs
     commands/5ttvalidate
     commands/afdconnectivity
     commands/amp2response
@@ -35,9 +40,29 @@ List of MRtrix3 commands
     commands/dwi2adc
     commands/dwi2fod
     commands/dwi2mask
+    commands/dwi2mask/3dautomask
+    commands/dwi2mask/ants
+    commands/dwi2mask/b02template
+    commands/dwi2mask/consensus
+    commands/dwi2mask/fslbet
+    commands/dwi2mask/hdbet
+    commands/dwi2mask/legacy
+    commands/dwi2mask/mean
+    commands/dwi2mask/mtnorm
+    commands/dwi2mask/synthstrip
+    commands/dwi2mask/trace
     commands/dwi2response
+    commands/dwi2response/dhollander
+    commands/dwi2response/fa
+    commands/dwi2response/manual
+    commands/dwi2response/msmt_5tt
+    commands/dwi2response/tax
+    commands/dwi2response/tournier
     commands/dwi2tensor
     commands/dwibiascorrect
+    commands/dwibiascorrect/ants
+    commands/dwibiascorrect/fsl
+    commands/dwibiascorrect/mtnorm
     commands/dwibiasnormmask
     commands/dwicat
     commands/dwidenoise
@@ -45,6 +70,9 @@ List of MRtrix3 commands
     commands/dwifslpreproc
     commands/dwigradcheck
     commands/dwinormalise
+    commands/dwinormalise/group
+    commands/dwinormalise/manual
+    commands/dwinormalise/mtnorm
     commands/dwirecon
     commands/dwishellmath
     commands/fixel2peaks
@@ -144,6 +172,10 @@ List of MRtrix3 commands
     commands/voxel2mesh
     commands/warp2metric
     commands/warpconvert
+    commands/warpconvert/deformation2displacement
+    commands/warpconvert/displacement2deformation
+    commands/warpconvert/warpfull2deformation
+    commands/warpconvert/warpfull2displacement
     commands/warpcorrect
     commands/warpinit
     commands/warpinvert
@@ -157,6 +189,11 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`5tt2vis`, "Generate an image for visualisation purposes from an ACT 5TT segmented anatomical image"
     |cpp.png|, :ref:`5ttedit`, "Manually set the partial volume fractions in an ACT five-tissue-type (5TT) image"
     |python.png|, :ref:`5ttgen`, "Generate a 5TT image suitable for ACT"
+    |python.png|, :ref:`5ttgen_deep_atropos`, "Generate the 5TT image based on a Deep Atropos segmentation or probabilities image"
+    |python.png|, :ref:`5ttgen_freesurfer`, "Generate the 5TT image based on a FreeSurfer parcellation image"
+    |python.png|, :ref:`5ttgen_fsl`, "Use FSL commands to generate the 5TT image based on a T1-weighted image"
+    |python.png|, :ref:`5ttgen_gif`, "Generate the 5TT image based on a Geodesic Information Flow (GIF) segmentation image"
+    |python.png|, :ref:`5ttgen_hsvs`, "Generate a 5TT image based on Hybrid Surface and Volume Segmentation (HSVS), using FreeSurfer and FSL tools"
     |cpp.png|, :ref:`5ttvalidate`, "Validate that one or more images conform to the expected ACT five-tissue-type (5TT) format"
     |cpp.png|, :ref:`afdconnectivity`, "Obtain an estimate of fibre connectivity between two regions using AFD and streamlines tractography"
     |cpp.png|, :ref:`amp2response`, "Estimate response function coefficients based on the DWI signal in single-fibre voxels"
@@ -177,9 +214,29 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`dwi2adc`, "Calculate ADC and/or IVIM parameters."
     |cpp.png|, :ref:`dwi2fod`, "Estimate fibre orientation distributions from diffusion data using spherical deconvolution"
     |python.png|, :ref:`dwi2mask`, "Generate a binary mask from DWI data"
+    |python.png|, :ref:`dwi2mask_3dautomask`, "Use AFNI 3dAutomask to derive a brain mask from the DWI mean b=0 image"
+    |python.png|, :ref:`dwi2mask_ants`, "Use ANTs Brain Extraction to derive a DWI brain mask"
+    |python.png|, :ref:`dwi2mask_b02template`, "Register the mean b=0 image to a T2-weighted template to back-propagate a brain mask"
+    |python.png|, :ref:`dwi2mask_consensus`, "Generate a brain mask based on the consensus of all dwi2mask algorithms"
+    |python.png|, :ref:`dwi2mask_fslbet`, "Use the FSL Brain Extraction Tool (bet) to generate a brain mask"
+    |python.png|, :ref:`dwi2mask_hdbet`, "Use HD-BET to derive a brain mask from the DWI mean b=0 image"
+    |python.png|, :ref:`dwi2mask_legacy`, "Use the legacy MRtrix3 dwi2mask heuristic (based on thresholded trace images)"
+    |python.png|, :ref:`dwi2mask_mean`, "Generate a mask based on simply averaging all volumes in the DWI series"
+    |python.png|, :ref:`dwi2mask_mtnorm`, "Derives a DWI brain mask by calculating and then thresholding a sum-of-tissue-densities image"
+    |python.png|, :ref:`dwi2mask_synthstrip`, "Use the FreeSurfer Synthstrip method on the mean b=0 image"
+    |python.png|, :ref:`dwi2mask_trace`, "A method to generate a brain mask from trace images of b-value shells"
     |python.png|, :ref:`dwi2response`, "Estimate response function(s) for spherical deconvolution"
+    |python.png|, :ref:`dwi2response_dhollander`, "Unsupervised estimation of WM, GM and CSF response functions that does not require a T1 image (or segmentation thereof)"
+    |python.png|, :ref:`dwi2response_fa`, "Use the old FA-threshold heuristic for single-fibre voxel selection and response function estimation"
+    |python.png|, :ref:`dwi2response_manual`, "Derive a response function using an input mask image alone (i.e. pre-selected voxels)"
+    |python.png|, :ref:`dwi2response_msmt_5tt`, "Derive MSMT-CSD tissue response functions based on a co-registered five-tissue-type (5TT) image"
+    |python.png|, :ref:`dwi2response_tax`, "Use the Tax et al. (2014) recursive calibration algorithm for single-fibre voxel selection and response function estimation"
+    |python.png|, :ref:`dwi2response_tournier`, "Use the Tournier et al. (2013) iterative algorithm for single-fibre voxel selection and response function estimation"
     |cpp.png|, :ref:`dwi2tensor`, "Diffusion (kurtosis) tensor estimation"
     |python.png|, :ref:`dwibiascorrect`, "Perform B1 field inhomogeneity correction for a DWI volume series"
+    |python.png|, :ref:`dwibiascorrect_ants`, "Perform DWI bias field correction using the N4 algorithm as provided in ANTs"
+    |python.png|, :ref:`dwibiascorrect_fsl`, "Perform DWI bias field correction using the ""fast"" command as provided in FSL"
+    |python.png|, :ref:`dwibiascorrect_mtnorm`, "Perform DWI bias field correction using the ""mtnormalise"" command"
     |python.png|, :ref:`dwibiasnormmask`, "Perform a combination of bias field correction, intensity normalisation, and mask derivation, for DWI data"
     |python.png|, :ref:`dwicat`, "Concatenating multiple DWI series accounting for differential intensity scaling"
     |cpp.png|, :ref:`dwidenoise`, "dMRI noise level estimation and denoising using Marchenko-Pastur PCA"
@@ -187,6 +244,9 @@ List of MRtrix3 commands
     |python.png|, :ref:`dwifslpreproc`, "Perform diffusion image pre-processing using FSL's eddy tool; including inhomogeneity distortion correction using FSL's topup tool if possible"
     |python.png|, :ref:`dwigradcheck`, "Check the orientation of the diffusion gradient table"
     |python.png|, :ref:`dwinormalise`, "Perform various forms of intensity normalisation of DWIs"
+    |python.png|, :ref:`dwinormalise_group`, "Performs a global DWI intensity normalisation on a group of subjects using the median b=0 white matter value as the reference"
+    |python.png|, :ref:`dwinormalise_manual`, "Intensity normalise a DWI series based on the b=0 signal within a supplied mask"
+    |python.png|, :ref:`dwinormalise_mtnorm`, "Normalise a DWI series to the estimated b=0 CSF intensity"
     |cpp.png|, :ref:`dwirecon`, "Perform reconstruction of DWI data from an input DWI series"
     |python.png|, :ref:`dwishellmath`, "Apply an mrmath operation to each b-value shell in a DWI series"
     |cpp.png|, :ref:`fixel2peaks`, "Convert data in the fixel directory format into a 4D image of 3-vectors"
@@ -286,6 +346,10 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`voxel2mesh`, "Generate a surface mesh representation from a voxel image"
     |cpp.png|, :ref:`warp2metric`, "Compute fixel-wise or voxel-wise metrics from a 4D deformation field"
     |cpp.png|, :ref:`warpconvert`, "Convert between different representations of a non-linear warp"
+    |cpp.png|, :ref:`warpconvert_deformation2displacement`, "Convert a deformation field to a displacement field"
+    |cpp.png|, :ref:`warpconvert_displacement2deformation`, "Convert a displacement field to a deformation field"
+    |cpp.png|, :ref:`warpconvert_warpfull2deformation`, "Convert a 5D warpfull series to a deformation field"
+    |cpp.png|, :ref:`warpconvert_warpfull2displacement`, "Convert a 5D warpfull series to a displacement field"
     |cpp.png|, :ref:`warpcorrect`, "Replaces voxels in a deformation field that point to a specific out-of-bounds location with nan,nan,nan"
     |cpp.png|, :ref:`warpinit`, "Create an initial warp image, representing an identity transformation"
     |cpp.png|, :ref:`warpinvert`, "Invert a non-linear warp field"

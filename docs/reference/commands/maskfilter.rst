@@ -9,7 +9,7 @@ Synopsis
 Perform filtering operations on 3D / 4D mask images
 
 Usage
---------
+-----
 
 ::
 
@@ -33,7 +33,7 @@ Filter-specific options
 Options for mask cleaning filter
 """"""""""""""""""""""""""""""""
 
--  **-scale value** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. (range: 1 to 1000000) (default: 2)
+-  **-scale value** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. (range: 1 to 1000000; default: 2)
 
 Options for connected-component filter
 """"""""""""""""""""""""""""""""""""""
@@ -44,7 +44,7 @@ Options for connected-component filter
 
 -  **-connectivity** use 26-voxel-neighbourhood connectivity (Default is 6-voxel-neighbourhood)
 
--  **-minsize value** impose minimum size of segmented components (range: 1 to 1000000) (default: select all components)
+-  **-minsize value** impose minimum size of segmented components (range: 1 to 1000000; default: select all components)
 
 Options for dilate / erode filters
 """"""""""""""""""""""""""""""""""
@@ -75,7 +75,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -89,6 +89,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

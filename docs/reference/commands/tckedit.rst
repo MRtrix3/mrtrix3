@@ -9,7 +9,7 @@ Synopsis
 Perform various editing operations on track files
 
 Usage
---------
+-----
 
 ::
 
@@ -56,20 +56,20 @@ Options
 Region Of Interest processing options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-include spec** *(multiple uses permitted)* specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion regions to be accepted.
+-  **-include spec**  *(multiple uses permitted)* specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion regions to be accepted.
 
--  **-include_ordered image** *(multiple uses permitted)* specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion_ordered regions in the order they are specified in order to be accepted.
+-  **-include_ordered image**  *(multiple uses permitted)* specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion_ordered regions in the order they are specified in order to be accepted.
 
--  **-exclude spec** *(multiple uses permitted)* specify an exclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines that enter ANY exclude region will be discarded.
+-  **-exclude spec**  *(multiple uses permitted)* specify an exclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines that enter ANY exclude region will be discarded.
 
--  **-mask spec** *(multiple uses permitted)* specify a masking region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, streamlines exiting the mask will be truncated.
+-  **-mask spec**  *(multiple uses permitted)* specify a masking region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, streamlines exiting the mask will be truncated.
 
 Streamline length threshold options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-maxlength value** set the maximum length of any streamline in mm (minimum: 0)
+-  **-maxlength value** set the maximum length of any streamline in mm (minimum: 0.0)
 
--  **-minlength value** set the minimum length of any streamline in mm (minimum: 0)
+-  **-minlength value** set the minimum length of any streamline in mm (minimum: 0.0)
 
 Streamline count truncation options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -81,9 +81,9 @@ Streamline count truncation options
 Thresholds pertaining to per-streamline weighting
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-maxweight value** set the maximum weight of any streamline (minimum: 0)
+-  **-maxweight value** set the maximum weight of any streamline (minimum: 0.0)
 
--  **-minweight value** set the minimum weight of any streamline (minimum: 0)
+-  **-minweight value** set the minimum weight of any streamline (minimum: 0.0)
 
 Other options specific to tckedit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -106,7 +106,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -120,6 +120,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

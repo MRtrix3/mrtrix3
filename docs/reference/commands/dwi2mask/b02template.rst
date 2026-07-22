@@ -31,66 +31,72 @@ Options
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad file** Provide the diffusion gradient table in MRtrix format
+-  **-grad file** Provide the diffusion gradient table in MRtrix format
 
-- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+-  **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
+*(these options are mutually exclusive; at most one may be specified)*
+
 
 Options specific to the "template" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-software choice** The software to use for template registration (choices: antsfull, antsquick, fsl) (default: antsquick)
+-  **-software choice** The software to use for template registration (choices: antsfull, antsquick, fsl; default: antsquick)
 
-- **-template TemplateImage MaskImage** Provide the template image to which the input data will be registered, and the mask to be projected to the input image. The template image should be T2-weighted.
+-  **-template TemplateImage MaskImage** Provide the template image to which the input data will be registered, and the mask to be projected to the input image. The template image should be T2-weighted.
 
 Options applicable when using the ANTs software for registration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-ants_options " ANTsOptions"** Provide options to be passed to the ANTs registration command (see Description)
+-  **-ants_options " ANTsOptions"** Provide options to be passed to the ANTs registration command (see Description)
 
 Options applicable when using the FSL software for registration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-flirt_options " FlirtOptions"** Command-line options to pass to the FSL flirt command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to flirt)
+-  **-flirt_options " FlirtOptions"** Command-line options to pass to the FSL flirt command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to flirt)
 
-- **-fnirt_config file** Specify a FNIRT configuration file for registration
+-  **-fnirt_config file** Specify a FNIRT configuration file for registration
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-force** force overwrite of output files.
+-  **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
-- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-help** display this information page and exit.
+-  **-help** display this information page and exit.
 
-- **-version** display version information and exit.
+-  **-version** display version information and exit.
 
 Verbosity options
 """""""""""""""""
 
-- **-info** display information messages.
+-  **-info** display information messages.
 
-- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages & debug input data.
+-  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
+
 
 Additional standard options for Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""""""""""""""""
 
-- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+-  **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
+-  **-scratch /path/to/scratch/** manually specify an existing directory in which to generate the scratch directory.
 
-- **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+-  **-continue ScratchDir LastFile** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 References
 ^^^^^^^^^^
 
-* If FSL software is used for registration: M. Jenkinson, C.F. Beckmann, T.E. Behrens, M.W. Woolrich, S.M. Smith. FSL. NeuroImage, 62:782-90, 2012
+If FSL software is used for registration: M. Jenkinson, C.F. Beckmann, T.E. Behrens, M.W. Woolrich, S.M. Smith. FSL. NeuroImage, 62:782-90, 2012
 
-* If ANTs software is used for registration: B. Avants, N.J. Tustison, G. Song, P.A. Cook, A. Klein, J.C. Jee. A reproducible evaluation of ANTs similarity metric performance in brain image registration. NeuroImage, 2011, 54, 2033-2044
+If ANTs software is used for registration: B. Avants, N.J. Tustison, G. Song, P.A. Cook, A. Klein, J.C. Jee. A reproducible evaluation of ANTs similarity metric performance in brain image registration. NeuroImage, 2011, 54, 2033-2044
 
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 

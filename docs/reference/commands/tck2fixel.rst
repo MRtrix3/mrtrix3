@@ -9,7 +9,7 @@ Synopsis
 Compute a fixel TDI map from a tractogram
 
 Usage
---------
+-----
 
 ::
 
@@ -23,7 +23,7 @@ Usage
 Options
 -------
 
--  **-angle value** the max angle threshold for assigning streamline tangents to fixels (range: 0 to 90) (default: 45 degrees)
+-  **-angle value** the max angle threshold for assigning streamline tangents to fixels (range: 0.0 to 90.0; default: 45 degrees)
 
 -  **-precise** utilise the precise length of streamline-voxel intersections rather than simply the number of streamlines / sum of streamline weights
 
@@ -36,7 +36,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -50,6 +50,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

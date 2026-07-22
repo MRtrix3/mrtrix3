@@ -9,7 +9,7 @@ Synopsis
 Edit DICOM file in-place
 
 Usage
---------
+-----
 
 ::
 
@@ -36,7 +36,7 @@ Options
 
 -  **-id text** replace all ID tags with string supplied. This consists of tags (0010, 0020) PatientID and (0010, 1000) OtherPatientIDs
 
--  **-tag group element newvalue** *(multiple uses permitted)* replace specific tag. |br|
+-  **-tag group element newvalue**  *(multiple uses permitted)* replace specific tag. |br|
    *group*: the DICOM group of the tag to be replaced |br|
    *element*: the DICOM element of the tag to be replaced |br|
    *newvalue*: the new value to assign to the tag
@@ -48,7 +48,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -62,6 +62,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

@@ -9,7 +9,7 @@ Synopsis
 Generate maps of tensor-derived parameters
 
 Usage
---------
+-----
 
 ::
 
@@ -39,7 +39,7 @@ Diffusion Tensor Imaging
 
 -  **-num sequence** specify the desired eigenvalue/eigenvector(s). Note that several eigenvalues can be specified as a number sequence. For example, '1,3' specifies the principal (1) and minor (3) eigenvalues/eigenvectors. (default: 1)
 
--  **-modulate choice** specify how to modulate the magnitude of the eigenvectors. (choices: none, fa, eigval) (default: fa)
+-  **-modulate choice** specify how to modulate the magnitude of the eigenvectors. (choices: none, fa, eigval; default: fa)
 
 -  **-cl image** compute the linearity metric of the diffusion tensor. (one of the three Westin shape metrics)
 
@@ -64,7 +64,7 @@ Diffusion Kurtosis Imaging
 
 -  **-mk_dirs file** specify the directions used to numerically calculate mean kurtosis (by default, the built-in 300 direction set is used). These should be supplied as a text file containing [ az in ] pairs for the directions.
 
--  **-rk_ndirs integer** specify the number of directions used to numerically calculate radial kurtosis (range: 0 to 1000) (default: 300)
+-  **-rk_ndirs integer** specify the number of directions used to numerically calculate radial kurtosis (range: 0 to 1000; default: 300)
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -73,7 +73,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -87,6 +87,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

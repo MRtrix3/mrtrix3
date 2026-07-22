@@ -9,7 +9,7 @@ Synopsis
 Extract the peaks of a spherical harmonic function in each voxel
 
 Usage
---------
+-----
 
 ::
 
@@ -31,15 +31,15 @@ https://mrtrix.readthedocs.io/en/3.0.8/concepts/spherical_harmonics.html
 Options
 -------
 
--  **-num peaks** the number of peaks to extract (minimum: 0) (default: 3)
+-  **-num peaks** the number of peaks to extract (minimum: 0; default: 3)
 
--  **-direction phi theta** *(multiple uses permitted)* the direction of a peak to estimate. The algorithm will attempt to find the same number of peaks as have been specified using this option. |br|
+-  **-direction phi theta**  *(multiple uses permitted)* the direction of a peak to estimate. The algorithm will attempt to find the same number of peaks as have been specified using this option. |br|
    *phi*: the azimuthal angle of the peak direction |br|
    *theta*: the polar angle of the peak direction
 
 -  **-peaks image** the program will try to find the peaks that most closely match those in the image provided.
 
--  **-threshold value** only peak amplitudes greater than the threshold will be considered. (minimum: 0)
+-  **-threshold value** only peak amplitudes greater than the threshold will be considered. (minimum: 0.0)
 
 -  **-seeds file** specify a set of directions from which to start the multiple restarts of the optimisation (by default, the built-in 60 direction set is used)
 
@@ -54,7 +54,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -68,6 +68,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

@@ -9,7 +9,7 @@ Synopsis
 Statistical testing of vector data using non-parametric permutation testing
 
 Usage
---------
+-----
 
 ::
 
@@ -41,7 +41,7 @@ Options relating to shuffling of data for nonparametric statistical inference
 
 -  **-notest** don't perform statistical inference; only output population statistics (effect size, stdev etc)
 
--  **-errors spec** specify nature of errors for shuffling. (choices: ee, ise, both) (default: ee)
+-  **-errors spec** specify nature of errors for shuffling. (choices: ee, ise, both; default: ee)
 
 -  **-exchange_within file** specify blocks of observations within each of which data may undergo restricted exchange
 
@@ -49,7 +49,7 @@ Options relating to shuffling of data for nonparametric statistical inference
 
 -  **-strong** use strong familywise error control across multiple hypotheses
 
--  **-nshuffles number** the number of shuffles (minimum: 1) (default: 5000)
+-  **-nshuffles number** the number of shuffles (minimum: 1; default: 5000)
 
 -  **-permutations file** manually define the permutations (relabelling). The input should be a text file defining a m x n matrix, where each relabelling is defined as a column vector of size m, and the number of columns, n, defines the number of permutations. Can be generated with the palm_quickperms function in PALM (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM). Overrides the -nshuffles option.
 
@@ -58,11 +58,11 @@ Options related to the General Linear Model (GLM)
 
 -  **-ttests path** perform one or more t-tests; input matrix text file should contain one row for each hypothesis, with each row performing a dot product with the GLM beta coefficients to form a contrast of interest
 
--  **-ftest path** *(multiple uses permitted)* perform an F-test; input matrix text file should contain one or more rows, with each row specifying an undirected contrast to contribute to the F-test
+-  **-ftest path**  *(multiple uses permitted)* perform an F-test; input matrix text file should contain one or more rows, with each row specifying an undirected contrast to contribute to the F-test
 
 -  **-variance file** define variance groups for the G-statistic; measurements for which the expected variance is equivalent should contain the same index
 
--  **-column path** *(multiple uses permitted)* add a column to the design matrix corresponding to subject element-wise values (note that the contrast matrix must include an additional column for each use of this option); the text file provided via this option should contain a file name for each subject
+-  **-column path**  *(multiple uses permitted)* add a column to the design matrix corresponding to subject element-wise values (note that the contrast matrix must include an additional column for each use of this option); the text file provided via this option should contain a file name for each subject
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -71,7 +71,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -85,6 +85,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

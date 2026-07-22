@@ -9,7 +9,7 @@ Synopsis
 Gaussian filter a track scalar file
 
 Usage
---------
+-----
 
 ::
 
@@ -21,7 +21,7 @@ Usage
 Options
 -------
 
--  **-stdev sigma** apply Gaussian smoothing with the specified standard deviation. The standard deviation is defined in units of track points (minimum: 9.9999999999999995e-07) (default: 4)
+-  **-stdev sigma** apply Gaussian smoothing with the specified standard deviation. The standard deviation is defined in units of track points (minimum: 9.9999999999999995e-07; default: 4)
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -30,7 +30,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -44,6 +44,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

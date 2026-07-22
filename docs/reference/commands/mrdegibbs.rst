@@ -9,7 +9,7 @@ Synopsis
 Remove Gibbs Ringing Artifacts
 
 Usage
---------
+-----
 
 ::
 
@@ -36,15 +36,15 @@ As this method is based on utilisation of the Fourier shift theorem, it operates
 Options
 -------
 
--  **-dimensionality value** specify the dimensionality of operation. A value of 2 corresponds to the original slice-wise approach as proposed by Kellner et al., appropriate for images acquired using 2D stack-of-slices approaches. Values greater than 2 select the 3D volume-wise extension proposed by Bautista et al., which is appropriate for images acquired using 3D Fourier encoding. (range: 2 to 3) (default: 2)
+-  **-dimensionality value** specify the dimensionality of operation. A value of 2 corresponds to the original slice-wise approach as proposed by Kellner et al., appropriate for images acquired using 2D stack-of-slices approaches. Values greater than 2 select the 3D volume-wise extension proposed by Bautista et al., which is appropriate for images acquired using 3D Fourier encoding. (range: 2 to 3; default: 2)
 
 -  **-axes list** select the slice axes (default: 0,1 - i.e. x-y).
 
--  **-nshifts value** discretization of subpixel spacing (range: 8 to 128) (default: 20)
+-  **-nshifts value** discretization of subpixel spacing (range: 8 to 128; default: 20)
 
--  **-minW value** left border of window used for TV computation (range: 0 to 10) (default: 1)
+-  **-minW value** left border of window used for TV computation (range: 0 to 10; default: 1)
 
--  **-maxW value** right border of window used for TV computation (range: 0 to 128) (default: 3)
+-  **-maxW value** right border of window used for TV computation (range: 0 to 128; default: 3)
 
 Data type options
 ^^^^^^^^^^^^^^^^^
@@ -58,7 +58,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -72,6 +72,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^
