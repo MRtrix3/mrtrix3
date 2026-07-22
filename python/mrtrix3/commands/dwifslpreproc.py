@@ -210,6 +210,36 @@ def usage(cmdline): #pylint: disable=unused-variable
                        type=app.Parser.FileIn(),
                        help='Import image header information from an associated JSON file'
                             ' (may be necessary to determine phase encoding information)')
+  rpe_options = cmdline.add_argument_group('Options for specifying the acquisition phase-encoding design')
+  rpe_options.add_argument('-rpe_none',
+                           action='store_true',
+                           default=None,
+                           help='Specify that no reversed phase-encoding image data is being provided;'
+                                ' eddy will perform eddy current and motion correction only')
+  rpe_options.add_argument('-rpe_pair',
+                           action='store_true',
+                           default=None,
+                           help='Specify that a set of images'
+                                ' (typically b=0 volumes)'
+                                ' will be provided for use in inhomogeneity field estimation only'
+                                ' (using the -se_epi option)')
+  rpe_options.add_argument('-rpe_split',
+                           action='store_true',
+                           default=None,
+                           help='Specify that input DWIs were split sequentially between two phase encoding directions')
+  rpe_options.add_argument('-rpe_all',
+                           action='store_true',
+                           default=None,
+                           help='Specify that ALL DWIs have been acquired with opposing phase-encoding')
+  rpe_options.add_argument('-rpe_header',
+                           action='store_true',
+                           default=None,
+                           help='Specify that the phase-encoding information can be found in the image header(s),'
+                                ' and that this is the information that the script should use')
+  # One (and only one) of the -rpe_* options must be provided (reinstates the ad-hoc mutex
+  #   removed in stage 1 as a principled group constraint; the whole rpe_options group is the
+  #   constrained set).
+  rpe_options.require_exactly_one()
   pe_options = cmdline.add_argument_group('Options for manually specifying the phase encoding of the input DWIs')
   pe_options.add_argument('-pe_dir',
                           metavar='PE',
@@ -272,36 +302,6 @@ def usage(cmdline): #pylint: disable=unused-variable
                                    ' into an output directory')
   app.add_dwgrad_export_options(cmdline)
   app.add_dwgrad_import_options(cmdline)
-  rpe_options = cmdline.add_argument_group('Options for specifying the acquisition phase-encoding design')
-  rpe_options.add_argument('-rpe_none',
-                           action='store_true',
-                           default=None,
-                           help='Specify that no reversed phase-encoding image data is being provided;'
-                                ' eddy will perform eddy current and motion correction only')
-  rpe_options.add_argument('-rpe_pair',
-                           action='store_true',
-                           default=None,
-                           help='Specify that a set of images'
-                                ' (typically b=0 volumes)'
-                                ' will be provided for use in inhomogeneity field estimation only'
-                                ' (using the -se_epi option)')
-  rpe_options.add_argument('-rpe_split',
-                           action='store_true',
-                           default=None,
-                           help='Specify that input DWIs were split sequentially between two phase encoding directions')
-  rpe_options.add_argument('-rpe_all',
-                           action='store_true',
-                           default=None,
-                           help='Specify that ALL DWIs have been acquired with opposing phase-encoding')
-  rpe_options.add_argument('-rpe_header',
-                           action='store_true',
-                           default=None,
-                           help='Specify that the phase-encoding information can be found in the image header(s),'
-                                ' and that this is the information that the script should use')
-  # One (and only one) of the -rpe_* options must be provided (reinstates the ad-hoc mutex
-  #   removed in stage 1 as a principled group constraint; the whole rpe_options group is the
-  #   constrained set).
-  rpe_options.require_exactly_one()
   # Cross-group mutual-exclusion sets: pairs of options (spread across the distortion-
   #   correction, phase-encoding, EddyQC and rpe groups) that must not be combined. Reinstates
   #   the ad-hoc mutexes removed in stage 1.
