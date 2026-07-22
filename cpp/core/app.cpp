@@ -749,6 +749,11 @@ std::string Argument::usage() const {
   if (types[ArgTypeFlags::Integer])
     stream << " INT " << int_limits.min() << " " << int_limits.max();
   if (types[ArgTypeFlags::Float])
+    // The machine-readable FLOAT bounds are emitted raw (MR::str()), NOT via format_float(): this
+    //   token is a stable external contract consumed by generate_bash_completion.py, and its
+    //   byte-for-byte stability is deliberate (commit 1bd01b85f). Human-facing float rendering is
+    //   made unambiguous separately in Argument::help_metadata() via format_float(); do not route
+    //   this line through it.
     stream << " FLOAT " << float_limits.min() << " " << float_limits.max();
   if (types[ArgTypeFlags::FileIn])
     stream << " FILEIN";
@@ -2529,8 +2534,12 @@ default_type App::ParsedArgument::as_float() const {
     else
       msg += std::string("argument \"") + arg->id;
     msg += "\" is out of bounds";
-    msg += " (valid range: " + str(arg->float_limits.min()) + " to " + str(arg->float_limits.max()) + ";";
-    msg += " value supplied: " + str(retval) + ")";
+    // Render the bounds via format_float() so the reported floating-point range is unambiguous
+    //   (e.g. "0.0 to 1.0", not "0 to 1"), consistent with the help-text rendering in
+    //   Argument::help_metadata().
+    msg += " (valid range: " + format_float(arg->float_limits.min()) + " to " + format_float(arg->float_limits.max()) +
+           ";";
+    msg += " value supplied: " + format_float(retval) + ")";
     throw Exception(msg);
   }
 

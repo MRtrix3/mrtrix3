@@ -1274,6 +1274,11 @@ class Parser: # pylint: disable=too-many-public-methods
         return value
       @staticmethod
       def _legacytypestring():
+        # The machine-readable FLOAT bounds are emitted raw (str()), NOT via _format_float(): this
+        #   token is a stable external contract consumed by generate_bash_completion.py, and its
+        #   byte-for-byte stability is deliberate (matching the C++ Argument::usage(), commit
+        #   1bd01b85f). Human-facing float rendering is made unambiguous separately in _help_range()
+        #   via _format_float(); do not route this token through it.
         return f'FLOAT {"-inf" if min_value is None else str(min_value)} {"inf" if max_value is None else str(max_value)}'
       @staticmethod
       def _metavar():
@@ -2530,6 +2535,8 @@ class Parser: # pylint: disable=too-many-public-methods
       if argtype is int:
         return f'INT {-sys.maxsize - 1} {sys.maxsize}'
       if argtype is float:
+        # Raw machine token, deliberately not routed through _format_float(): stable external
+        #   contract for generate_bash_completion.py (see FloatBounded._legacytypestring()).
         return 'FLOAT -inf inf'
       if argtype is str or argtype is None:
         return 'TEXT'
