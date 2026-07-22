@@ -175,11 +175,15 @@ void TrackMapperTWI::add_scalar_image(const std::filesystem::path &path) {
 void TrackMapperTWI::set_backtrack() {
   if (!image_plugin)
     throw Exception("Cannot backtrack if no TWI associated image provided");
+  // Backtracking searches inwards from a streamline endpoint for a voxel from which a valid sample
+  //   can be drawn. It is meaningful both for scalar-image endpoint statistics (TWIScalarImagePlugin)
+  //   and for the fMRI endpoint-correlation mapping used by tckdfc (the TWDFC plugins, which drive
+  //   the dedicated ENDS_CORR path of TWIImagePluginBase::set_backtrack() / get_end_index()).
+  //   It is not applicable to FOD-amplitude mapping, where sampling is along the streamline tangent.
   const TWIImagePluginBase *const base = image_plugin.get();
-  if (typeid(*base) != typeid(TWIScalarImagePlugin))
-    throw Exception("Backtracking is only applicable to scalar image TWI plugins");
-  TWIScalarImagePlugin *const ptr = dynamic_cast<TWIScalarImagePlugin *>(image_plugin.get());
-  ptr->set_backtrack();
+  if (typeid(*base) == typeid(TWIFODImagePlugin))
+    throw Exception("Backtracking is not applicable to FOD-amplitude TWI mapping");
+  image_plugin->set_backtrack();
 }
 
 void TrackMapperTWI::add_fod_image(const std::filesystem::path &path) {

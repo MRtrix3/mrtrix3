@@ -228,6 +228,7 @@ void run() {
   const std::filesystem::path output_path{argument[2]};
 
   const bool is_static = !get_options("static").empty();
+  const bool backtrack = !get_options("backtrack").empty();
   std::vector<float> window;
 
   auto opt = get_options("dynamic");
@@ -361,6 +362,8 @@ void run() {
     Mapping::TrackMapperTWI mapper(H_3D, contrast_t::SCALAR_MAP, tck_stat_t::ENDS_CORR);
     mapper.set_upsample_ratio(upsample_ratio);
     mapper.add_twdfc_static_image(fmri_image);
+    if (backtrack)
+      mapper.set_backtrack();
     Mapping::MapWriter<float> writer(header, output_path, stat_vox);
     Thread::run_queue(loader,
                       Thread::batch(Tractography::Streamline<>()),
@@ -397,6 +400,8 @@ void run() {
         Mapping::TrackMapperTWI mapper(H_3D, contrast_t::SCALAR_MAP, tck_stat_t::ENDS_CORR);
         mapper.set_upsample_ratio(upsample_ratio);
         mapper.add_twdfc_dynamic_image(fmri_image, window, timepoint);
+        if (backtrack)
+          mapper.set_backtrack();
         Receiver receiver(H_3D, stat_vox);
         Thread::run_queue(loader,
                           Thread::batch(Tractography::Streamline<>()),

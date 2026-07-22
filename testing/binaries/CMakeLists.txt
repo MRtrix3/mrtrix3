@@ -583,6 +583,7 @@ add_bash_binary_test(tckconvert/vtk_read_empty)
 add_bash_binary_test(tckconvert/vtk_write_ascii)
 add_bash_binary_test(tckconvert/vtk_write_binary)
 
+add_bash_binary_test(tckdfc/backtrack)
 add_bash_binary_test(tckdfc/exactly_one NO_FILESYSTEM_LOCK)
 
 add_bash_binary_test(tckedit/include_exclude_inverse)

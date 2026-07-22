@@ -1,0 +1,36 @@
+#!/bin/bash
+# tckdfc's -backtrack option must be live and have its documented effect.
+# When a streamline endpoint lies in a voxel with no valid fMRI time series, backtracking
+#   searches inward along the streamline trajectory for the nearest voxel that does carry a
+#   valid time series, and samples the correlation there instead. The option was historically
+#   defined but never read (a dead flag); this verifies it is now consulted and alters the result.
+# Construct a 4D "fMRI" (dwi.mif) whose time series is valid only within a small central sphere
+#   and zeroed (invalid) everywhere else, so that most streamline endpoints fall in invalid
+#   territory. Without backtracking those streamlines contribute nothing; with backtracking those
+#   that traverse the valid core are pulled inward and do contribute. The two outputs must
+#   therefore differ, and enabling backtracking must broaden the set of voxels receiving a value.
+
+rm -f tmp_bt_*.mif
+
+# Central-only validity mask, then an fMRI invalidated (zeroed) outside it.
+mrcalc dwi_mean.mif 0 -mult tmp_bt_zero.mif -force
+mredit tmp_bt_zero.mif tmp_bt_mask.mif -sphere 3,4,4 1.5 1 -force
+mrcalc dwi.mif tmp_bt_mask.mif -mult tmp_bt_fmri.mif -force
+
+# Static TW-dFC (endpoint correlation), summed per voxel, without and with backtracking.
+tckdfc tracks.tck tmp_bt_fmri.mif tmp_bt_off.mif -template dwi_mean.mif -static -stat_vox sum -force
+OUT=$(tckdfc tracks.tck tmp_bt_fmri.mif tmp_bt_on.mif -template dwi_mean.mif -static -stat_vox sum -backtrack -force 2>&1)
+
+# The option must be consulted: no "specified but had no effect" warning may be emitted.
+echo "$OUT" | grep -q "was specified but had no effect" && { echo "ERROR: -backtrack still unused"; exit 1; }
+
+# Enabling backtracking must change the output.
+OUT=$(testing_diff_image tmp_bt_off.mif tmp_bt_on.mif -abs 1e-6 2>&1) \
+  && { echo "ERROR: -backtrack had no effect on the output"; exit 1; }
+
+# ... and specifically broaden coverage: more voxels receive a value with backtracking than without.
+mrcalc tmp_bt_off.mif -abs 0 -gt tmp_bt_nz_off.mif -force
+mrcalc tmp_bt_on.mif  -abs 0 -gt tmp_bt_nz_on.mif  -force
+COUNT_OFF=$(mrstats tmp_bt_nz_off.mif -output count -mask tmp_bt_nz_off.mif -quiet)
+COUNT_ON=$(mrstats tmp_bt_nz_on.mif  -output count -mask tmp_bt_nz_on.mif  -quiet)
+(( COUNT_ON > COUNT_OFF ))
