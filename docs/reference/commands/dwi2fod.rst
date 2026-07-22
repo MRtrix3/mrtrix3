@@ -9,7 +9,7 @@ Synopsis
 Estimate fibre orientation distributions from diffusion data using spherical deconvolution
 
 Usage
---------
+-----
 
 ::
 
@@ -52,6 +52,8 @@ DW gradient table import options
 
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
+*(these options are mutually exclusive; at most one may be specified)*
+
 DW shell selection options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -74,20 +76,20 @@ Options for the Constrained Spherical Deconvolution algorithm
 
 -  **-filter spec** the linear frequency filtering parameters used for the initial linear spherical deconvolution step (default = [ 1 1 1 0 0 ]). These should be supplied as a text file containing the filtering coefficients for each even harmonic order.
 
--  **-neg_lambda value** the regularisation parameter lambda that controls the strength of the non-negativity constraint (minimum: 0) (default: 1)
+-  **-neg_lambda value** the regularisation parameter lambda that controls the strength of the non-negativity constraint (minimum: 0.0; default: 1)
 
--  **-norm_lambda value** the regularisation parameter lambda that controls the strength of the constraint on the norm of the solution (minimum: 0) (default: 1)
+-  **-norm_lambda value** the regularisation parameter lambda that controls the strength of the constraint on the norm of the solution (minimum: 0.0; default: 1)
 
--  **-threshold value** the threshold below which the amplitude of the FOD is assumed to be zero, expressed as an absolute amplitude (range: -1 to 10) (default: 0)
+-  **-threshold value** the threshold below which the amplitude of the FOD is assumed to be zero, expressed as an absolute amplitude (range: -1.0 to 10.0; default: 0)
 
--  **-niter number** the maximum number of iterations to perform for each voxel. Use '-niter 0' for a linear unconstrained spherical deconvolution. (range: 0 to 1000) (default: 50)
+-  **-niter number** the maximum number of iterations to perform for each voxel. Use '-niter 0' for a linear unconstrained spherical deconvolution. (range: 0 to 1000; default: 50)
 
 Options for the Multi-Shell, Multi-Tissue Constrained Spherical Deconvolution algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-norm_lambda value** the regularisation parameter lambda that controls the strength of the constraint on the norm of the solution (minimum: 0) (default: 1e-10)
+-  **-norm_lambda value** the regularisation parameter lambda that controls the strength of the constraint on the norm of the solution (minimum: 0.0; default: 1e-10)
 
--  **-neg_lambda value** the regularisation parameter lambda that controls the strength of the non-negativity constraint (minimum: 0) (default: 1e-10)
+-  **-neg_lambda value** the regularisation parameter lambda that controls the strength of the non-negativity constraint (minimum: 0.0; default: 1e-10)
 
 -  **-predicted_signal image** output the predicted dwi image.
 
@@ -103,7 +105,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -117,6 +119,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

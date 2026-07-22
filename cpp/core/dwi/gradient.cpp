@@ -27,7 +27,7 @@ using namespace Eigen;
 
 // clang-format off
 OptionGroup GradImportOptions() {
-  return OptionGroup("DW gradient table import options")
+  return (OptionGroup("DW gradient table import options")
       + Option("grad",
                "Provide the diffusion-weighted gradient scheme used in the acquisition"
                " in a text file."
@@ -44,7 +44,8 @@ OptionGroup GradImportOptions() {
                " in FSL bvecs/bvals format files."
                " If a diffusion gradient scheme is present in the input image header,"
                " the data provided with this option will be instead used.")
-        + ArgumentTuple(Argument("bvecs").type_file_in(), Argument("bvals").type_file_in());
+        + ArgumentTuple(Argument("bvecs").type_file_in(), Argument("bvals").type_file_in()))
+      .mutually_exclusive();
 }
 
 OptionGroup GradExportOptions() {
@@ -255,13 +256,11 @@ Eigen::MatrixXd get_raw_DW_scheme(const Header &header) {
   if (!opt_mrtrix.empty())
     grad = File::Matrix::load_matrix<>(opt_mrtrix[0][0]);
 
+  // -grad and -fslgrad are declared mutually exclusive on the CLI (GradImportOptions),
+  //   so at most one of these two branches can be taken; the exclusion is enforced at parse time.
   const auto opt_fsl = get_options("fslgrad");
-  if (!opt_fsl.empty()) {
-    if (!opt_mrtrix.empty())
-      throw Exception("Diffusion gradient table can be provided using either -grad or -fslgrad option,"
-                      " but NOT both");
+  if (!opt_fsl.empty())
     grad = load_bvecs_bvals(header, opt_fsl[0]["bvecs"], opt_fsl[0]["bvals"]);
-  }
 
   // otherwise use the information from the header:
   if (opt_mrtrix.empty() && opt_fsl.empty())

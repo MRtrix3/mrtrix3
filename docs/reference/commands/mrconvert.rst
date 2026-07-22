@@ -9,7 +9,7 @@ Synopsis
 Perform conversion between different file types and optionally extract a subset of the input image
 
 Usage
---------
+-----
 
 ::
 
@@ -92,7 +92,7 @@ Options
 Options for manipulating fundamental image properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-coord axis selection** *(multiple uses permitted)* retain data from the input image only at the coordinates specified in the selection along the specified axis. The selection argument expects a number sequence, which can also include the 'end' keyword. |br|
+-  **-coord axis selection**  *(multiple uses permitted)* retain data from the input image only at the coordinates specified in the selection along the specified axis. The selection argument expects a number sequence, which can also include the 'end' keyword. |br|
    *axis*: the image axis along which to make the selection (minimum: 0) |br|
    *selection*: the coordinates to retain along that axis
 
@@ -112,15 +112,15 @@ Options for handling JSON (JavaScript Object Notation) files
 Options to modify generic header entries
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-clear_property key** *(multiple uses permitted)* remove the specified key from the image header altogether.
+-  **-clear_property key**  *(multiple uses permitted)* remove the specified key from the image header altogether.
 
 -  **-clear_properties** remove all pre-existing key-value entries from the image header
 
--  **-set_property key value** *(multiple uses permitted)* set the value of the specified key in the image header. |br|
+-  **-set_property key value**  *(multiple uses permitted)* set the value of the specified key in the image header. |br|
    *key*: the header key to set |br|
    *value*: the value to assign to that key
 
--  **-append_property key value** *(multiple uses permitted)* append the given value to the specified key in the image header (this adds the value specified as a new line in the header value). |br|
+-  **-append_property key value**  *(multiple uses permitted)* append the given value to the specified key in the image header (this adds the value specified as a new line in the header value). |br|
    *key*: the header key to append to |br|
    *value*: the value to append to that key
 
@@ -144,6 +144,8 @@ DW gradient table import options
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
 -  **-bvalue_scaling mode** enable or disable scaling of diffusion b-values by the square of the corresponding DW gradient norm (see Desciption). Valid choices are: yes/no, true/false, 0/1 (default: automatic).
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 DW gradient table export options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -177,7 +179,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -191,6 +193,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

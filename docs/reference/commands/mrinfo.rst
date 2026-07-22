@@ -9,7 +9,7 @@ Synopsis
 Display image header information, or extract specific information from the header
 
 Usage
---------
+-----
 
 ::
 
@@ -66,7 +66,7 @@ Options
 Options for exporting image header fields
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-property key** *(multiple uses permitted)* any text properties embedded in the image header under the specified key (use 'all' to list all keys found)
+-  **-property key**  *(multiple uses permitted)* any text properties embedded in the image header under the specified key (use 'all' to list all keys found)
 
 -  **-json_keyval file** export header key/value entries to a JSON file
 
@@ -80,6 +80,8 @@ DW gradient table import options
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
 -  **-bvalue_scaling mode** enable or disable scaling of diffusion b-values by the square of the corresponding DW gradient norm (see Desciption). Valid choices are: yes/no, true/false, 0/1 (default: automatic).
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 DW gradient table export options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -119,7 +121,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -133,6 +135,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

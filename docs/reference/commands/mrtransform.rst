@@ -9,7 +9,7 @@ Synopsis
 Apply spatial transformations to an image
 
 Usage
---------
+-----
 
 ::
 
@@ -56,7 +56,7 @@ Regridding options
 
 -  **-midway_space** reslice the input image to the midway space. Requires either the -template or -warp option. If used with -template and -linear option, the input image will be resliced onto the grid halfway between the input and template. If used with the -warp option, the input will be warped to the midway space defined by the grid of the input warp (i.e. half way between image1 and image2)
 
--  **-interp method** set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc) (default: cubic)
+-  **-interp method** set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc; default: cubic)
 
 -  **-oversample factor** set the amount of over-sampling (in the target space) to perform when regridding. This is particularly relevant when downsamping a high-resolution image to a low-resolution image, to avoid aliasing artefacts. This can consist of a single integer, or a comma-separated list of 3 integers if different oversampling factors are desired along the different axes. Default is determined from ratio of voxel dimensions (disabled for nearest-neighbour interpolation).
 
@@ -84,6 +84,8 @@ DW gradient table import options
 -  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 DW gradient table export options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -116,7 +118,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -130,6 +132,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^

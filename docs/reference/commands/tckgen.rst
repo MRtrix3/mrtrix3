@@ -9,7 +9,7 @@ Synopsis
 Perform streamlines tractography
 
 Usage
---------
+-----
 
 ::
 
@@ -46,24 +46,24 @@ Note that the behaviour of the -angle option varies slightly depending on the or
 Options
 -------
 
--  **-algorithm name** specify the tractography algorithm to use. (choices: fact, ifod1, ifod2, nulldist1, nulldist2, sd_stream, seedtest, tensor_det, tensor_prob) (default: ifod2)
+-  **-algorithm name** specify the tractography algorithm to use. (choices: fact, ifod1, ifod2, nulldist1, nulldist2, sd_stream, seedtest, tensor_det, tensor_prob; default: ifod2)
 
 Streamlines tractography options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-select number** set the desired number of streamlines to be selected by tckgen, after all selection criteria have been applied (i.e. inclusion/exclusion ROIs, min/max length, etc). tckgen will keep seeding streamlines until this number of streamlines have been selected, or the maximum allowed number of seeds has been exceeded (see -seeds option). Set to zero to disable, which will result in streamlines being seeded until the number specified by -seeds has been reached. (minimum: 0) (default: 5000)
+-  **-select number** set the desired number of streamlines to be selected by tckgen, after all selection criteria have been applied (i.e. inclusion/exclusion ROIs, min/max length, etc). tckgen will keep seeding streamlines until this number of streamlines have been selected, or the maximum allowed number of seeds has been exceeded (see -seeds option). Set to zero to disable, which will result in streamlines being seeded until the number specified by -seeds has been reached. (minimum: 0; default: 5000)
 
--  **-step size** set the step size of the algorithm in mm (defaults: for first-order algorithms, 0.1 x voxelsize; if using RK4, 0.25 x voxelsize; for iFOD2: 0.5 x voxelsize). (minimum: 0)
+-  **-step size** set the step size of the algorithm in mm (defaults: for first-order algorithms, 0.1 x voxelsize; if using RK4, 0.25 x voxelsize; for iFOD2: 0.5 x voxelsize). (minimum: 0.0)
 
--  **-angle theta** set the maximum angle in degrees between successive steps (defaults: 60 for deterministic algorithms; 15 for iFOD1 / nulldist1; 45 for iFOD2 / nulldist2) (minimum: 0)
+-  **-angle theta** set the maximum angle in degrees between successive steps (defaults: 60 for deterministic algorithms; 15 for iFOD1 / nulldist1; 45 for iFOD2 / nulldist2) (minimum: 0.0)
 
--  **-minlength value** set the minimum length of any track in mm (defaults: without ACT, 5 x voxelsize; with ACT, 2 x voxelsize). (minimum: 0)
+-  **-minlength value** set the minimum length of any track in mm (defaults: without ACT, 5 x voxelsize; with ACT, 2 x voxelsize). (minimum: 0.0)
 
--  **-maxlength value** set the maximum length of any track in mm (default: 100 x voxelsize). (minimum: 0)
+-  **-maxlength value** set the maximum length of any track in mm (default: 100 x voxelsize). (minimum: 0.0)
 
--  **-cutoff value** set the FOD amplitude / fixel size / tensor FA cutoff for terminating tracks (defaults: 0.1 for FOD-based algorithms; 0.1 for fixel-based algorithms; 0.1 for tensor-based algorithms; threshold multiplied by 0.5 when using ACT). (minimum: 0)
+-  **-cutoff value** set the FOD amplitude / fixel size / tensor FA cutoff for terminating tracks (defaults: 0.1 for FOD-based algorithms; 0.1 for fixel-based algorithms; 0.1 for tensor-based algorithms; threshold multiplied by 0.5 when using ACT). (minimum: 0.0)
 
--  **-trials number** set the maximum number of sampling trials at each point (only used for iFOD1 / iFOD2). (minimum: 1) (default: 1000)
+-  **-trials number** set the maximum number of sampling trials at each point (only used for iFOD1 / iFOD2). (minimum: 1; default: 1000)
 
 -  **-noprecomputed** do NOT pre-compute legendre polynomial values. Warning: this will slow down the algorithm by a factor of approximately 4.
 
@@ -76,23 +76,23 @@ Streamlines tractography options
 Tractography seeding mechanisms; at least one must be provided
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-seed_voxels image** *(multiple uses permitted)* seed streamlines entirely at random within a voxel mask (formerly -seed_image)
+-  **-seed_voxels image**  *(multiple uses permitted)* seed streamlines entirely at random within a voxel mask (formerly -seed_image)
 
--  **-seed_sphere spec** *(multiple uses permitted)* spherical seed as four comma-separated values (XYZ position and radius)
+-  **-seed_sphere spec**  *(multiple uses permitted)* spherical seed as four comma-separated values (XYZ position and radius)
 
--  **-seed_random_per_voxel image num_per_voxel** *(multiple uses permitted)* seed a fixed number of streamlines per voxel in a mask image; random placement of seeds in each voxel (minimum: 1)
+-  **-seed_random_per_voxel image num_per_voxel**  *(multiple uses permitted)* seed a fixed number of streamlines per voxel in a mask image; random placement of seeds in each voxel (minimum: 1)
 
--  **-seed_grid_per_voxel image grid_size** *(multiple uses permitted)* seed a fixed number of streamlines per voxel in a mask image; place seeds on a 3D mesh grid (grid_size argument is per axis, so a grid_size of 3 results in 27 seeds per voxel) (minimum: 1)
+-  **-seed_grid_per_voxel image grid_size**  *(multiple uses permitted)* seed a fixed number of streamlines per voxel in a mask image; place seeds on a 3D mesh grid (grid_size argument is per axis, so a grid_size of 3 results in 27 seeds per voxel) (minimum: 1)
 
--  **-seed_rejection_per_voxel image** *(multiple uses permitted)* seed from an image using rejection sampling (higher values = more probable to seed from) (formerly -seed_rejection)
+-  **-seed_rejection_per_voxel image**  *(multiple uses permitted)* seed from an image using rejection sampling (higher values = more probable to seed from) (formerly -seed_rejection)
 
--  **-seed_gmwmi image** *(multiple uses permitted)* seed from the grey matter - white matter interface (only valid if using ACT framework). Input image should be a 3D seeding volume; seeds drawn within this image will be optimised to the interface using the 5TT image provided using the -act option.
+-  **-seed_gmwmi image**  *(multiple uses permitted)* seed from the grey matter - white matter interface (only valid if using ACT framework). Input image should be a 3D seeding volume; seeds drawn within this image will be optimised to the interface using the 5TT image provided using the -act option.
 
 -  **-seed_dynamic fod_image** determine seed points dynamically using the SIFT model (must not provide any other seeding mechanism). Note that while this seeding mechanism improves the distribution of reconstructed streamlines density, it should NOT be used as a substitute for the SIFT method itself.
 
 -  **-seed_coordinates coords_path** provide realspace coordinates as an Mx3 matrix (XYZ per row) and seed until target seed / streamline count is reached (must not provide any other seeding mechanism)
 
--  **-seed_per_coordinate coords_path number_seeds_per_coordinate** *(multiple uses permitted)* provide realspace coordinates as an Mx3 matrix (XYZ per row) and seed a fixed number of streamlines per coordinate (minimum: 1)
+-  **-seed_per_coordinate coords_path number_seeds_per_coordinate**  *(multiple uses permitted)* provide realspace coordinates as an Mx3 matrix (XYZ per row) and seed a fixed number of streamlines per coordinate (minimum: 1)
 
 -  **-seed_rejection_per_coordinate coords_path** provide realspace coordinates and respective seeding probability as an Mx4 matrix (XYZ then weight per row) and seed until global seed/streamline target is met (must not provide any other seeding mechanism)
 
@@ -101,9 +101,9 @@ Tractography seeding options and parameters
 
 -  **-seeds number** set the number of seeds that tckgen will attempt to track from. If this option is NOT provided, the default number of seeds is set to 1000 x the number of selected streamlines. If -select is NOT also specified, tckgen will continue tracking until this number of seeds has been attempted. However, if -select is also specified, tckgen will stop when the number of seeds attempted reaches the number specified here, OR when the number of streamlines selected reaches the number requested with the -select option. This can be used to prevent the program from running indefinitely  when no or very few streamlines can be found that match the selection criteria Setting this to zero will cause tckgen to keep attempting seeds until the number specified by -select has been reached. (minimum: 0)
 
--  **-max_attempts_per_seed number** set the maximum number of times that the tracking algorithm should attempt to find an appropriate tracking direction from a given seed point. This should be set high enough to ensure that an actual plausible seed point is not discarded prematurely as being unable to initiate tracking from. Higher settings may affect performance if many seeds are genuinely impossible to track from, as many attempts will still be made in vain for such seeds. (minimum: 1) (default: 1000)
+-  **-max_attempts_per_seed number** set the maximum number of times that the tracking algorithm should attempt to find an appropriate tracking direction from a given seed point. This should be set high enough to ensure that an actual plausible seed point is not discarded prematurely as being unable to initiate tracking from. Higher settings may affect performance if many seeds are genuinely impossible to track from, as many attempts will still be made in vain for such seeds. (minimum: 1; default: 1000)
 
--  **-seed_cutoff value** set the minimum FA or FOD amplitude for seeding tracks (default is the same as the normal -cutoff). (minimum: 0)
+-  **-seed_cutoff value** set the minimum FA or FOD amplitude for seeding tracks (default is the same as the normal -cutoff). (minimum: 0.0)
 
 -  **-seed_unidirectional** track from the seed point in one direction only (default is to track in both directions).
 
@@ -112,13 +112,13 @@ Tractography seeding options and parameters
 Region Of Interest processing options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-include spec** *(multiple uses permitted)* specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion regions to be accepted.
+-  **-include spec**  *(multiple uses permitted)* specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion regions to be accepted.
 
--  **-include_ordered image** *(multiple uses permitted)* specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion_ordered regions in the order they are specified in order to be accepted.
+-  **-include_ordered image**  *(multiple uses permitted)* specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion_ordered regions in the order they are specified in order to be accepted.
 
--  **-exclude spec** *(multiple uses permitted)* specify an exclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines that enter ANY exclude region will be discarded.
+-  **-exclude spec**  *(multiple uses permitted)* specify an exclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines that enter ANY exclude region will be discarded.
 
--  **-mask spec** *(multiple uses permitted)* specify a masking region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, streamlines exiting the mask will be truncated.
+-  **-mask spec**  *(multiple uses permitted)* specify a masking region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, streamlines exiting the mask will be truncated.
 
 Anatomically-Constrained Tractography options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -134,7 +134,7 @@ Anatomically-Constrained Tractography options
 Options specific to the iFOD tracking algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-power value** raise the FOD to the power specified (defaults are: 1.0 for iFOD1; 1.0/nsamples for iFOD2). (minimum: 0)
+-  **-power value** raise the FOD to the power specified (defaults are: 1.0 for iFOD1; 1.0/nsamples for iFOD2). (minimum: 0.0)
 
 Options specific to the iFOD2 tracking algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -155,6 +155,8 @@ DW gradient table import options
 
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
+*(these options are mutually exclusive; at most one may be specified)*
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
@@ -162,7 +164,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading). (minimum: 0)
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -176,6 +178,8 @@ Verbosity options
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages & debug input data.
+
+*(these options are mutually exclusive; at most one may be specified)*
 
 References
 ^^^^^^^^^^
