@@ -18,6 +18,7 @@
 
 #include <cinttypes>
 #include <filesystem>
+#include <optional>
 #include <string>
 
 #include "progressbar.h"
@@ -31,8 +32,12 @@ namespace MR::DWI::Tractography::Editing {
 class Receiver {
 
 public:
-  Receiver(const std::filesystem::path &path, const Properties &properties, const size_t n, const size_t s)
-      : writer(path, properties),
+  Receiver(const std::filesystem::path &path,
+           const Properties &properties,
+           const size_t n,
+           const size_t s,
+           const std::optional<std::filesystem::path> &weights_path = std::nullopt)
+      : writer(path, properties, weights_path),
         number(n),
         skip(s),
         // Need to use local counts instead of writer class members due to track cropping

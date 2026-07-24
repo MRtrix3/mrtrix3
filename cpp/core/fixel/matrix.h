@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <filesystem>
+#include <optional>
+
 #include "file/ofstream.h"
 #include "fixel/fixel.h"
 #include "image.h"
@@ -189,6 +192,7 @@ InitMatrixUnweighted generate_unweighted(const std::filesystem::path &track_file
                                          const float angular_threshold);
 
 InitMatrixWeighted generate_weighted(const std::filesystem::path &track_filepath,
+                                     const std::optional<std::filesystem::path> &weights_path,
                                      Image<fixel_index_type> &index_image,
                                      Image<bool> &fixel_mask,
                                      const float angular_threshold);

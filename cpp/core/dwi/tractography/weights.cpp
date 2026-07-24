@@ -23,12 +23,12 @@ using namespace App;
 // clang-format off
 const Option TrackWeightsInOption =
     Option("tck_weights_in",
-           "specify a text scalar file containing the streamline weights").framework_probe()
+           "specify a text scalar file containing the streamline weights")
       + Argument("path").type_file_in();
 
 const Option TrackWeightsOutOption =
     Option("tck_weights_out",
-           "specify the path for an output text scalar file containing streamline weights").framework_probe()
+           "specify the path for an output text scalar file containing streamline weights")
       + Argument("path").type_file_out();
 // clang-format on
 

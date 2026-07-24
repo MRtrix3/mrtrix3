@@ -15,6 +15,7 @@
  */
 
 #include <filesystem>
+#include <optional>
 
 #include "command.h"
 #include "dwi/tractography/mapping/mapping.h"
@@ -124,7 +125,8 @@ void run() {
       fixel_mask.value() = true;
   }
 
-  if (get_options("tck_weights_in").empty()) {
+  const std::optional<std::filesystem::path> weights_path = get_optional<std::filesystem::path>("tck_weights_in");
+  if (!weights_path.has_value()) {
     auto connectivity_matrix =
         Fixel::Matrix::generate_unweighted(argument[1], index_image, fixel_mask, angular_threshold);
     Fixel::Matrix::Writer<Fixel::Matrix::InitMatrixUnweighted> writer(connectivity_matrix, connectivity_threshold);
@@ -132,7 +134,7 @@ void run() {
     writer.save(argument[2]);
   } else {
     auto connectivity_matrix =
-        Fixel::Matrix::generate_weighted(argument[1], index_image, fixel_mask, angular_threshold);
+        Fixel::Matrix::generate_weighted(argument[1], weights_path, index_image, fixel_mask, angular_threshold);
     Fixel::Matrix::Writer<Fixel::Matrix::InitMatrixWeighted> writer(connectivity_matrix, connectivity_threshold);
     set_optional_outputs(writer);
     writer.save(argument[2]);

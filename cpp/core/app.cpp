@@ -819,26 +819,6 @@ std::string Option::usage() const {
 
   return stream.str();
 }
-
-namespace {
-//! the process-wide set of option ids flagged as shared-IO-framework probes at their definition
-/*! Populated by Option::framework_probe() (invoked as each such option is constructed during
- *  static initialisation) and consulted by is_framework_probe_option(). Being derived from the
- *  option definitions themselves, it cannot drift from them the way a hand-maintained list could.
- *  A function-local static so it is safely constructed on first use irrespective of the
- *  cross-translation-unit static-initialisation order of the option definitions that feed it. */
-std::set<std::string, std::less<>> &framework_probe_registry() {
-  static std::set<std::string, std::less<>> registry;
-  return registry;
-}
-} // namespace
-
-Option &Option::framework_probe() {
-  framework_probe_flag = true;
-  framework_probe_registry().insert(id);
-  return *this;
-}
-
 std::string get_help_string(const bool format) {
   // For a hierarchical command the sole leading positional is the sub-interface selection,
   //   rendered from the fixed selection help string in place of any real ARGUMENTS.
@@ -2208,32 +2188,18 @@ void init(int cmdline_argc, const char *const *cmdline_argv) { // check_syntax o
 
 namespace {
 
-//! true if `name` names an option flagged as a shared-IO-framework probe at its definition
-/*! MRtrix's generic image / tractogram IO helpers consult a fixed vocabulary of options as an
- *  optional feature test — an empty result meaning "the command did not offer this, use the
- *  default / embedded value". These helpers run irrespective of whether the invoking command
- *  registered the corresponding option group (e.g. mrcat loading a DWI with an embedded gradient
- *  table triggers the -grad probe though mrcat offers no gradient import), so the queried id is
- *  legitimately absent from that command's interface. Such options are marked at their definition
- *  with Option::framework_probe(), which is the sole populator of the registry consulted here;
- *  they are thereby exempt from the registered-option invariant below, while a drifted query of
- *  any other id remains a hard error. Because the registry is derived from the option definitions
- *  themselves — not a hand-maintained list stored apart from them — it cannot drift from them. */
-bool is_framework_probe_option(std::string_view name) {
-  const std::set<std::string, std::less<>> &registry = framework_probe_registry();
-  return registry.find(name) != registry.end();
-}
-
 //! true if `name` (canonical id or alias) is registered in the current command's interface
 /*! The registered set is every option across the command's OPTIONS groups — recursing nested
  *  sub-groups via OptionGroup::find() / all_options() — plus the standard-options group. This
  *  mirrors the set match_option() resolves user tokens against, so an id/alias absent here can
  *  never be supplied on the command line and can only be the result of a query that has drifted
- *  from the option definition it was meant to read — except for the shared IO probes above. */
+ *  from the option definition it was meant to read. Every command reads only options it exposes:
+ *  generic IO back-ends that once probed shared options (gradient tables, data type, streamline
+ *  weights) now receive the relevant path/value from the invoking command instead of querying it,
+ *  so the invariant applies universally with no exemptions. */
 bool is_registered_option(std::string_view name) {
   const auto group_provides = [name](const OptionGroup &group) { return group.find(name) != nullptr; };
-  return std::any_of(OPTIONS.begin(), OPTIONS.end(), group_provides) || _standard_options.find(name) != nullptr ||
-         is_framework_probe_option(name);
+  return std::any_of(OPTIONS.begin(), OPTIONS.end(), group_provides) || _standard_options.find(name) != nullptr;
 }
 
 } // namespace

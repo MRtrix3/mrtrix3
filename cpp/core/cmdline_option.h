@@ -700,15 +700,6 @@ public:
    * An alias must not introduce prefix-matching ambiguity with a *different* option. */
   std::vector<std::string> aliases;
 
-  //! true if this option is a shared-IO-framework probe (see framework_probe())
-  /*! Marks the small vocabulary of options that MRtrix's generic image / tractogram IO helpers
-   * feature-test irrespective of whether the invoking command exposed them (e.g. a gradient
-   * table embedded in an input image triggers a -grad probe even in a command offering no
-   * gradient import). Set at the option's definition via framework_probe(); consulted, when the
-   * option is absent from the executing command's interface, by App::is_framework_probe_option()
-   * to exempt such a query from the registered-option-access invariant in App::get_options(). */
-  bool framework_probe_flag = false;
-
   //! specifies that the option is required
   /*! An option specified as required must be supplied on the command line.
    * For example:
@@ -743,14 +734,6 @@ public:
     aliases.push_back(std::move(spelling));
     return *this;
   }
-
-  //! mark this option as a shared-IO-framework probe (see framework_probe_flag)
-  /*! Records the flag on the option and registers the option's id in a process-wide set, so that
-   * the property remains discoverable when the option is queried by a generic IO helper on a
-   * command whose interface does not include it. Definition-side counterpart to the read-side
-   * exemption applied by App::get_options(); the registry it populates is the sole source of the
-   * exempt-id vocabulary, so it cannot drift from the option definitions themselves. */
-  Option &framework_probe();
 
   //! true if `name` matches the canonical id or any alias exactly
   bool is(std::string_view name) const {

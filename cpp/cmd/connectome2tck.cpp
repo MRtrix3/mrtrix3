@@ -207,7 +207,8 @@ void run() {
   }
 
   Tractography::Properties properties;
-  Tractography::Reader<float> reader(tracks_input_path, properties);
+  const std::optional<std::filesystem::path> weights_in_path = get_optional<std::filesystem::path>("tck_weights_in");
+  Tractography::Reader<float> reader(tracks_input_path, properties, weights_in_path);
 
   std::vector<std::vector<node_t>> assignments_lists;
   assignments_lists.reserve(to<size_t>(properties["count"]));

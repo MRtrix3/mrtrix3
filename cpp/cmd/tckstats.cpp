@@ -14,6 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+#include <optional>
+
 #include "command.h"
 #include "enum.h"
 #include "memory.h"
@@ -91,7 +94,8 @@ LW operator+(const LW &one, const LW &two) {
 LW operator/(const LW &lw, const double div) { return LW(lw.get_length() / div, lw.get_weight() / div); }
 
 void run() {
-  const bool weights_provided = !get_options("tck_weights_in").empty();
+  const std::optional<std::filesystem::path> weights_path = get_optional<std::filesystem::path>("tck_weights_in");
+  const bool weights_provided = weights_path.has_value();
 
   float step_size = NaNF;
   size_t count = 0, header_count = 0;
@@ -105,7 +109,7 @@ void run() {
 
   {
     Tractography::Properties properties;
-    Tractography::Reader<float> reader(argument[0], properties);
+    Tractography::Reader<float> reader(argument[0], properties, weights_path);
 
     if (properties.find("count") != properties.end())
       header_count = to<size_t>(properties["count"]);

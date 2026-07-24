@@ -244,17 +244,12 @@ const std::unordered_map<uint8_t, DataType::Strings> DataType::dt2str{
     {Undefined, {"Undefined", "undefined"}}};
 
 // clang-format off
-namespace {
-// The -datatype option is a shared-IO-framework probe: the image writer queries it irrespective
-//   of whether the invoking command exposes it. Held as a file-scope singleton so that
-//   framework_probe() registers its id at static initialisation rather than only when
-//   DataType::options() is called.
-const App::Option datatype_option =
-    App::Option("datatype", "specify output image data type.")
-      + App::Argument("spec").type_choice<DataType::Identifier>();
-} // namespace
-
-App::OptionGroup DataType::options() { return App::OptionGroup("Data type options") + datatype_option; }
+App::OptionGroup DataType::options() {
+  using namespace App;
+  return OptionGroup("Data type options")
+         + Option("datatype", "specify output image data type.")
+          + Argument("spec").type_choice<DataType::Identifier>();
+}
 // clang-format on
 
 } // namespace MR

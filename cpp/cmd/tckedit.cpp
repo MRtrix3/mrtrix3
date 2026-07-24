@@ -15,6 +15,7 @@
  */
 
 #include <filesystem>
+#include <optional>
 #include <string>
 
 #include "command.h"
@@ -129,8 +130,11 @@ void run() {
   const std::filesystem::path output_path{argument.back()};
   const size_t num_inputs = argument.size() - 1;
 
+  const std::optional<std::filesystem::path> weights_in_path = get_optional<std::filesystem::path>("tck_weights_in");
+  const std::optional<std::filesystem::path> weights_out_path = get_optional<std::filesystem::path>("tck_weights_out");
+
   // Make sure configuration is sensible
-  if (!get_options("tck_weights_in").empty() && num_inputs > 1)
+  if (weights_in_path.has_value() && num_inputs > 1)
     throw Exception("Cannot use per-streamline weighting with multiple input files");
 
   // Get the consensus streamline properties from among the multiple input files
@@ -210,9 +214,9 @@ void run() {
   const size_t number = get_option_value("number", size_t(0));
   const size_t skip = get_option_value("skip", size_t(0));
 
-  Loader loader(input_file_list);
+  Loader loader(input_file_list, weights_in_path);
   Worker worker(properties, inverse, ends_only);
-  Receiver receiver(output_path, properties, number, skip);
+  Receiver receiver(output_path, properties, number, skip, weights_out_path);
 
   Thread::run_ordered_queue(
       loader, Thread::batch(Streamline<>()), Thread::multi(worker), Thread::batch(Streamline<>()), receiver);

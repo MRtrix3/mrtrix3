@@ -17,6 +17,7 @@
 #include "fixel/matrix.h"
 
 #include <filesystem>
+#include <optional>
 
 #include "app.h"
 #include "file/path.h"
@@ -188,11 +189,11 @@ private:
 };
 } // namespace
 
-#define FIXEL_MATRIX_GENERATE_SHARED                                                                                   \
+#define FIXEL_MATRIX_GENERATE_SHARED(WEIGHTS_PATH)                                                                     \
   auto directions_image = Fixel::find_directions_header(index_image.path().parent_path())                              \
                               .template get_image<default_type>(DirectIO{Stride::List{+2, +1}});                       \
   DWI::Tractography::Properties properties;                                                                            \
-  DWI::Tractography::Reader<float> track_file(track_filepath, properties);                                             \
+  DWI::Tractography::Reader<float> track_file(track_filepath, properties, (WEIGHTS_PATH));                             \
   const uint32_t num_tracks = properties["count"].empty() ? 0 : to<uint32_t>(properties["count"]);                     \
   DWI::Tractography::Mapping::TrackLoader loader(track_file, num_tracks, "computing fixel-fixel connectivity matrix"); \
   DWI::Tractography::Mapping::TrackMapperBase mapper(index_image);                                                     \
@@ -204,7 +205,7 @@ InitMatrixUnweighted generate_unweighted(const std::filesystem::path &track_file
                                          Image<index_type> &index_image,
                                          Image<bool> &fixel_mask,
                                          const float angular_threshold) {
-  FIXEL_MATRIX_GENERATE_SHARED
+  FIXEL_MATRIX_GENERATE_SHARED(std::nullopt)
   InitMatrixUnweighted connectivity_matrix(Fixel::get_number_of_fixels(index_image));
   Receiver<InitMatrixUnweighted> receiver(connectivity_matrix);
   Thread::run_queue(loader,
@@ -216,10 +217,11 @@ InitMatrixUnweighted generate_unweighted(const std::filesystem::path &track_file
 }
 
 InitMatrixWeighted generate_weighted(const std::filesystem::path &track_filepath,
+                                     const std::optional<std::filesystem::path> &weights_path,
                                      Image<index_type> &index_image,
                                      Image<bool> &fixel_mask,
                                      const float angular_threshold) {
-  FIXEL_MATRIX_GENERATE_SHARED
+  FIXEL_MATRIX_GENERATE_SHARED(weights_path)
   InitMatrixWeighted connectivity_matrix(Fixel::get_number_of_fixels(index_image));
   Receiver<InitMatrixWeighted> receiver(connectivity_matrix);
   Thread::run_queue(loader,

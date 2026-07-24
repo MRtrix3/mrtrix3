@@ -18,7 +18,9 @@
 
 #include <array>
 #include <cerrno>
+#include <filesystem>
 #include <map>
+#include <optional>
 
 #include "app.h"
 #include "dwi/tractography/file_base.h"
@@ -50,11 +52,15 @@ public:
 template <class ValueType = float> class Reader : public ReaderBase, public ReaderInterface<ValueType> {
 public:
   //! open the \c file for reading and load header into \c properties
-  Reader(const std::filesystem::path &path, Properties &properties) {
+  /*! if \a weights_path is provided, load per-streamline weights from that file; the path is
+   *  supplied by the invoking command (which exposes the corresponding option) rather than read
+   *  from the command-line here, so that this generic reader queries no option. */
+  Reader(const std::filesystem::path &path,
+         Properties &properties,
+         const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
     open(path, "tracks", properties);
-    auto opt = App::get_options("tck_weights_in");
-    if (!opt.empty())
-      weights = File::Matrix::load_vector<ValueType>(opt[0][0]);
+    if (weights_path.has_value())
+      weights = File::Matrix::load_vector<ValueType>(*weights_path);
   }
 
   //! fetch next track from file
@@ -186,7 +192,13 @@ public:
   using vector_type = Eigen::Matrix<ValueType, 3, 1>;
 
   //! create a new track file with the specified properties
-  WriterUnbuffered(const std::filesystem::path &path, const Properties &properties) : WriterBase<ValueType>(path) {
+  /*! if \a weights_path is provided, per-streamline weights are written to that file; the path is
+   *  supplied by the invoking command (which exposes the corresponding option) rather than read
+   *  from the command-line here, so that this generic writer queries no option. */
+  WriterUnbuffered(const std::filesystem::path &path,
+                   const Properties &properties,
+                   const std::optional<std::filesystem::path> &weights_path = std::nullopt)
+      : WriterBase<ValueType>(path) {
 
     if (path.extension() != ".tck")
       throw Exception("output track files must use the .tck suffix");
@@ -212,9 +224,8 @@ public:
       throw Exception("error writing tracks file \"" + path.string() + "\": " + MR::C_strerror(errno));
     open_success = true;
 
-    auto opt = App::get_options("tck_weights_out");
-    if (!opt.empty())
-      set_weights_path(opt[0][0]);
+    if (weights_path.has_value())
+      set_weights_path(*weights_path);
   }
 
   //! append track to file
@@ -332,8 +343,11 @@ public:
   // CONF writing track files. MRtrix will store the output tracks in a
   // CONF relatively large buffer to limit the number of write() calls,
   // CONF avoid associated issues such as file fragmentation.
-  Writer(const std::filesystem::path &path, const Properties &properties, size_t default_buffer_capacity = 16777216)
-      : WriterUnbuffered<ValueType>(path, properties),
+  Writer(const std::filesystem::path &path,
+         const Properties &properties,
+         const std::optional<std::filesystem::path> &weights_path = std::nullopt,
+         size_t default_buffer_capacity = 16777216)
+      : WriterUnbuffered<ValueType>(path, properties, weights_path),
         buffer_capacity(File::Config::get_int("TrackWriterBufferSize", default_buffer_capacity) / sizeof(vector_type)),
         buffer(new vector_type[buffer_capacity]),
         buffer_size(0) {}

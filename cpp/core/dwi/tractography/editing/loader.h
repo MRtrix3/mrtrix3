@@ -17,6 +17,7 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 #include <vector>
 
 #include "memory.h"
@@ -31,8 +32,12 @@ namespace MR::DWI::Tractography::Editing {
 class Loader {
 
 public:
-  Loader(const std::vector<std::filesystem::path> &files)
-      : file_list(files), dummy_properties(), reader(new Reader<>(file_list[0], dummy_properties)), file_index(0) {}
+  Loader(const std::vector<std::filesystem::path> &files,
+         const std::optional<std::filesystem::path> &weights_path = std::nullopt)
+      : file_list(files),
+        dummy_properties(),
+        reader(new Reader<>(file_list[0], dummy_properties, weights_path)),
+        file_index(0) {}
 
   bool operator()(Streamline<> &);
 

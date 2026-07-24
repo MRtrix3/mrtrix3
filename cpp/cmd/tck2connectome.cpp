@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+#include <optional>
 #include <set>
 
 #include "app.h"
@@ -166,8 +168,9 @@ void execute(Image<node_t> &node_image, const node_t max_node_index, const std::
   const stat_edge statistic = get_option_choice<stat_edge>("stat_edge", stat_edge::SUM);
 
   // Prepare for reading the track data
+  const std::optional<std::filesystem::path> weights_path = get_optional<std::filesystem::path>("tck_weights_in");
   Tractography::Properties properties;
-  Tractography::Reader<float> reader(argument[0], properties);
+  Tractography::Reader<float> reader(argument[0], properties, weights_path);
 
   // Initialise classes in preparation for multi-threading
   Mapping::TrackLoader loader(

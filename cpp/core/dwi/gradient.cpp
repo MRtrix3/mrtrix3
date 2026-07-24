@@ -26,50 +26,37 @@ using namespace App;
 using namespace Eigen;
 
 // clang-format off
-// The import / export gradient options are shared-IO-framework probes: get_raw_DW_scheme() and
-//   export_grad_commandline() query them irrespective of whether the invoking command exposes
-//   the corresponding option group (e.g. a gradient table embedded in an input image is imported
-//   even by commands offering no gradient import). They are held as file-scope singletons — as
-//   bvalue_scaling_option already is — so that framework_probe() runs (registering their ids) at
-//   static initialisation rather than only when GradImportOptions() / GradExportOptions() is called.
-namespace {
-const Option grad_option =
-    Option("grad",
-           "Provide the diffusion-weighted gradient scheme used in the acquisition"
-           " in a text file."
-           " This should be supplied as a 4xN text file"
-           " with each line in the format [ X Y Z b ],"
-           " where [ X Y Z ] describe the direction of the applied gradient,"
-           " and b gives the b-value in units of s/mm^2."
-           " If a diffusion gradient scheme is present in the input image header,"
-           " the data provided with this option will be instead used.")
-      + Argument("file").type_file_in();
-
-const Option fslgrad_option =
-    Option("fslgrad",
-           "Provide the diffusion-weighted gradient scheme used in the acquisition"
-           " in FSL bvecs/bvals format files."
-           " If a diffusion gradient scheme is present in the input image header,"
-           " the data provided with this option will be instead used.")
-      + ArgumentTuple(Argument("bvecs").type_file_in(), Argument("bvals").type_file_in());
-
-const Option export_grad_mrtrix_option =
-    Option("export_grad_mrtrix",
-           "export the diffusion-weighted gradient table to file in MRtrix format")
-      + Argument("path").type_file_out();
-
-const Option export_grad_fsl_option =
-    Option("export_grad_fsl",
-           "export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format")
-      + ArgumentTuple(Argument("bvecs_path").type_file_out(), Argument("bvals_path").type_file_out());
-} // namespace
-
 OptionGroup GradImportOptions() {
-  return (OptionGroup("DW gradient table import options") + grad_option + fslgrad_option).mutually_exclusive();
+  return (OptionGroup("DW gradient table import options")
+      + Option("grad",
+               "Provide the diffusion-weighted gradient scheme used in the acquisition"
+               " in a text file."
+               " This should be supplied as a 4xN text file"
+               " with each line in the format [ X Y Z b ],"
+               " where [ X Y Z ] describe the direction of the applied gradient,"
+               " and b gives the b-value in units of s/mm^2."
+               " If a diffusion gradient scheme is present in the input image header,"
+               " the data provided with this option will be instead used.")
+        + Argument("file").type_file_in()
+
+      + Option("fslgrad",
+               "Provide the diffusion-weighted gradient scheme used in the acquisition"
+               " in FSL bvecs/bvals format files."
+               " If a diffusion gradient scheme is present in the input image header,"
+               " the data provided with this option will be instead used.")
+        + ArgumentTuple(Argument("bvecs").type_file_in(), Argument("bvals").type_file_in()))
+      .mutually_exclusive();
 }
 
 OptionGroup GradExportOptions() {
-  return OptionGroup("DW gradient table export options") + export_grad_mrtrix_option + export_grad_fsl_option;
+  return OptionGroup("DW gradient table export options")
+      + Option("export_grad_mrtrix",
+               "export the diffusion-weighted gradient table to file in MRtrix format")
+        + Argument("path").type_file_out()
+
+      + Option("export_grad_fsl",
+               "export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format")
+        + ArgumentTuple(Argument("bvecs_path").type_file_out(), Argument("bvals_path").type_file_out());
 }
 
 const Option bvalue_scaling_option = Option("bvalue_scaling",

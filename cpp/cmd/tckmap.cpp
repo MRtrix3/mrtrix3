@@ -42,6 +42,7 @@
 #include "dwi/tractography/mapping/gaussian/voxel.h"
 
 #include <filesystem>
+#include <optional>
 
 using namespace MR;
 using namespace App;
@@ -266,8 +267,9 @@ void run() {
   const std::filesystem::path input_tracks_path{argument[0]};
   const std::filesystem::path output_image_path{argument[1]};
 
+  const std::optional<std::filesystem::path> weights_path = get_optional<std::filesystem::path>("tck_weights_in");
   Tractography::Properties properties;
-  Tractography::Reader<float> file(input_tracks_path, properties);
+  Tractography::Reader<float> file(input_tracks_path, properties, weights_path);
 
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t>(properties["count"]);
 
@@ -483,7 +485,7 @@ void run() {
     }
   }
 
-  const bool have_weights = !get_options("tck_weights_in").empty();
+  const bool have_weights = weights_path.has_value();
   if (have_weights && header.datatype().is_integer()) {
     WARN("Can't use an integer type if streamline weights are provided;"
          " overriding to Float32");
