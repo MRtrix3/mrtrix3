@@ -28,7 +28,7 @@ const OptionGroup Options = OptionGroup("Stride options")
              " either as a comma-separated list of (signed) integers,"
              " or as a template image from which the strides shall be extracted and used."
              " The actual strides produced will depend on whether"
-             " the output image format can support it.")
+             " the output image format can support it.").framework_probe()
       + Argument("spec").type_sequence_int().type_image_in();
 // clang-format on
 

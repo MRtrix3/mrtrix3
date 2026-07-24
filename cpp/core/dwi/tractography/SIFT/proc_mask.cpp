@@ -28,10 +28,11 @@ const App::OptionGroup SIFTModelProcMaskOption =
     App::OptionGroup("Options for setting the processing mask for the SIFT fixel-streamlines comparison model")
     + App::Option("proc_mask",
                   "provide an image containing the processing mask weights for the model;"
-                  " image spatial dimensions must match the fixel image")
+                  " image spatial dimensions must match the fixel image").framework_probe()
       + App::Argument("image").type_image_in()
     + App::Option("act",
                   "use an ACT five-tissue-type segmented anatomical image to derive the processing mask")
+        .framework_probe()
       + App::Argument("image").type_image_in();
 // clang-format on
 

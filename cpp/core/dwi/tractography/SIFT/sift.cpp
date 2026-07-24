@@ -30,15 +30,15 @@ const OptionGroup SIFTModelOption =
              " to heuristically downsize the fibre density estimates"
              " based on the presence of GM in the voxel."
              " This can assist in reducing tissue interface effects"
-             " when using a single-tissue deconvolution algorithm")
+             " when using a single-tissue deconvolution algorithm").framework_probe()
     + Option("no_dilate_lut",
              "do NOT dilate FOD lobe lookup tables;"
              " only map streamlines to FOD lobes if the precise tangent"
-             " lies within the angular spread of that lobe")
+             " lies within the angular spread of that lobe").framework_probe()
     + Option("make_null_lobes",
              "add an additional FOD lobe to each voxel,"
              " with zero integral,"
-             " that covers all directions with zero / negative FOD amplitudes")
+             " that covers all directions with zero / negative FOD amplitudes").framework_probe()
     + Option("remove_untracked",
              "remove FOD lobes that do not have any streamline density attributed to them;"
              " this improves filtering slightly,"
