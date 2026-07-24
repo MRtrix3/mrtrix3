@@ -90,7 +90,7 @@ void run() {
   Math::SH::check(in_dwi);
   DWI::Directions::FastLookupSet dirs(1281);
 
-  SIFTer sifter(in_dwi, dirs);
+  SIFTer sifter(in_dwi, dirs, model_control_from_commandline());
 
   if (debug_path.has_value()) {
     sifter.initialise_debug_image_output(debug_path.value());

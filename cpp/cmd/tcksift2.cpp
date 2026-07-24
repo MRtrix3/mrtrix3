@@ -151,7 +151,7 @@ void run() {
 
   DWI::Directions::FastLookupSet dirs(1281);
 
-  TckFactor tckfactor(in_dwi, dirs);
+  TckFactor tckfactor(in_dwi, dirs, SIFT::model_control_from_commandline());
 
   tckfactor.perform_FOD_segmentation(in_dwi);
   tckfactor.scale_FDs_by_GM();

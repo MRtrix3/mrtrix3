@@ -28,29 +28,30 @@ const App::OptionGroup SIFTModelProcMaskOption =
     App::OptionGroup("Options for setting the processing mask for the SIFT fixel-streamlines comparison model")
     + App::Option("proc_mask",
                   "provide an image containing the processing mask weights for the model;"
-                  " image spatial dimensions must match the fixel image").framework_probe()
+                  " image spatial dimensions must match the fixel image")
       + App::Argument("image").type_image_in()
     + App::Option("act",
                   "use an ACT five-tissue-type segmented anatomical image to derive the processing mask")
-        .framework_probe()
       + App::Argument("image").type_image_in();
 // clang-format on
 
-void initialise_processing_mask(Image<float> &in_dwi, Image<float> &out_mask, Image<float> &out_5tt) {
+void initialise_processing_mask(Image<float> &in_dwi,
+                                Image<float> &out_mask,
+                                Image<float> &out_5tt,
+                                const std::optional<std::filesystem::path> &proc_mask_path,
+                                const std::optional<std::filesystem::path> &act_5tt_path) {
   // User-specified processing mask
-  auto opt = App::get_options("proc_mask");
-  if (!opt.empty()) {
-    auto image = Image<float>::open(opt[0][0]);
+  if (proc_mask_path.has_value()) {
+    auto image = Image<float>::open(*proc_mask_path);
     if (!dimensions_match(out_mask, image, 0, 3))
       throw Exception(
           "Dimensions of processing mask image provided using -proc_mask option must match relevant fixel image");
     copy_with_progress_message("Copying processing mask to memory", image, out_mask, 0, 3);
 
   } else {
-    auto opt = App::get_options("act");
-    if (!opt.empty()) {
+    if (act_5tt_path.has_value()) {
 
-      Header H_5ttin = Header::open(opt[0][0]);
+      Header H_5ttin = Header::open(*act_5tt_path);
       ACT::validate_5TT_header(H_5ttin);
       auto in_5tt = H_5ttin.get_image<float>();
       ACT::debug_validate_5TT_image(in_5tt);

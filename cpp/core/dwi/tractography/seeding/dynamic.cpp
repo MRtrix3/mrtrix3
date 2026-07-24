@@ -47,12 +47,25 @@ bool Dynamic_ACT_additions::check_seed(Eigen::Vector3f &p) {
 
 const default_type Dynamic::initial_td_sum = 1e-6;
 
+namespace {
+// The dynamic-seeding SIFT model derives its processing mask from the -act 5TT image when tckgen is
+//   invoked with ACT; the other SIFT-model options are not exposed by tckgen, so their defaults apply.
+//   -act is part of tckgen's interface (ACTOption), so querying it here is a registered read.
+SIFT::ModelBaseControl dynamic_model_control() {
+  SIFT::ModelBaseControl control;
+  auto opt = App::get_options("act");
+  if (!opt.empty())
+    control.act_5tt_path = std::filesystem::path(opt[0][0]);
+  return control;
+}
+} // namespace
+
 Dynamic::Dynamic(const std::filesystem::path &in,
                  Image<float> &fod_data,
                  const size_t num,
                  const DWI::Directions::FastLookupSet &dirs)
     : Base(in.filename().string(), "dynamic", attempts_per_seed.at(seed_attempt_t::DYNAMIC)),
-      SIFT::ModelBase<Fixel_TD_seed>(fod_data, dirs),
+      SIFT::ModelBase<Fixel_TD_seed>(fod_data, dirs, dynamic_model_control()),
       target_trackcount(num),
       track_count(0),
       attempts(0),

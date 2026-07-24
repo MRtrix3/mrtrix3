@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <filesystem>
+#include <optional>
+
 #include "cmdline_option.h"
 #include "image.h"
 
@@ -29,7 +32,18 @@ namespace MR::DWI::Tractography::SIFT {
 
 extern const App::OptionGroup SIFTModelProcMaskOption;
 
-void initialise_processing_mask(Image<float> &, Image<float> &, Image<float> &);
+//! build the SIFT model processing mask from the supplied inputs (no command-line access)
+/*! \param in_dwi         the input FOD / DWI image defining the target grid
+ *  \param out_mask       the processing mask to populate
+ *  \param out_5tt        scratch buffer populated with regridded 5TT data when \a act_5tt_path is provided
+ *  \param proc_mask_path optional path to a user-supplied processing mask image
+ *  \param act_5tt_path   optional path to an ACT 5TT image from which to derive the mask (used only if
+ *                        \a proc_mask_path is absent); when both are absent a homogeneous mask is created */
+void initialise_processing_mask(Image<float> &in_dwi,
+                                Image<float> &out_mask,
+                                Image<float> &out_5tt,
+                                const std::optional<std::filesystem::path> &proc_mask_path,
+                                const std::optional<std::filesystem::path> &act_5tt_path);
 
 // Private functor for performing ACT image regridding
 class ResampleFunctor {

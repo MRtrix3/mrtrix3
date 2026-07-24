@@ -34,7 +34,7 @@ const App::OptionGroup ShellsOption =
                   " they still have to be explicitly included in the list of b-values"
                   " as provided to the -shell option!"
                   " Several algorithms that include the b=0 volumes in their computations"
-                  " may otherwise return an undesired result.").framework_probe()
+                  " may otherwise return an undesired result.")
       + App::Argument("bvalues").type_sequence_float();
 // clang-format on
 

@@ -46,8 +46,10 @@ constexpr default_type default_minimum_cf_fractional_decrease = 2.5e-5;
 class TckFactor : public SIFT::Model<Fixel> {
 
 public:
-  TckFactor(Image<float> &fod_image, const DWI::Directions::FastLookupSet &dirs)
-      : SIFT::Model<Fixel>(fod_image, dirs),
+  TckFactor(Image<float> &fod_image,
+            const DWI::Directions::FastLookupSet &dirs,
+            const SIFT::ModelBaseControl &control = SIFT::ModelBaseControl())
+      : SIFT::Model<Fixel>(fod_image, dirs, control),
         reg_multiplier_tikhonov(default_regularisation_tikhonov),
         reg_multiplier_tv(default_regularisation_tv),
         min_iters(default_minimum_iterations),

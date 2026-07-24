@@ -76,6 +76,7 @@ void usage() {
   OPTIONS
     + Option ("nonnegative", "cap all negative amplitudes to zero")
     + DWI::GradImportOptions()
+    + DWI::ShellsOption
     + Stride::Options
     + DataType::options();
 }

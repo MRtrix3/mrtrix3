@@ -15,6 +15,7 @@
  */
 
 #include "dwi/tractography/SIFT/sift.h"
+#include "dwi/tractography/SIFT/model_base.h"
 #include "math/math.h"
 
 namespace MR::DWI::Tractography::SIFT {
@@ -30,15 +31,15 @@ const OptionGroup SIFTModelOption =
              " to heuristically downsize the fibre density estimates"
              " based on the presence of GM in the voxel."
              " This can assist in reducing tissue interface effects"
-             " when using a single-tissue deconvolution algorithm").framework_probe()
+             " when using a single-tissue deconvolution algorithm")
     + Option("no_dilate_lut",
              "do NOT dilate FOD lobe lookup tables;"
              " only map streamlines to FOD lobes if the precise tangent"
-             " lies within the angular spread of that lobe").framework_probe()
+             " lies within the angular spread of that lobe")
     + Option("make_null_lobes",
              "add an additional FOD lobe to each voxel,"
              " with zero integral,"
-             " that covers all directions with zero / negative FOD amplitudes").framework_probe()
+             " that covers all directions with zero / negative FOD amplitudes")
     + Option("remove_untracked",
              "remove FOD lobes that do not have any streamline density attributed to them;"
              " this improves filtering slightly,"
@@ -80,5 +81,19 @@ const OptionGroup SIFTTermOption =
              "terminate filtering once the SIFT proportionality coefficient reaches a given value")
       + Argument("value").type_float(0.0);
 // clang-format on
+
+ModelBaseControl model_control_from_commandline() {
+  ModelBaseControl control;
+  auto proc_mask = App::get_options("proc_mask");
+  if (!proc_mask.empty())
+    control.proc_mask_path = std::filesystem::path(proc_mask[0][0]);
+  auto act = App::get_options("act");
+  if (!act.empty())
+    control.act_5tt_path = std::filesystem::path(act[0][0]);
+  control.dilate_lookup_table = App::get_options("no_dilate_lut").empty();
+  control.create_null_lobes = !App::get_options("make_null_lobes").empty();
+  control.scale_fd_by_gm = !App::get_options("fd_scale_gm").empty();
+  return control;
+}
 
 } // namespace MR::DWI::Tractography::SIFT

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 
 #include "algo/copy.h"
 #include "app.h"
@@ -89,6 +90,32 @@ protected:
 // This class stores the necessary fixel information (including streamline densities), but does not retain the
 //   list of fixels traversed by each streamline. If this information is necessary, use the Model class (model.h)
 
+//! configuration of a SIFT ModelBase, supplied by the constructing command rather than read by the model
+/*! The SIFT fixel-streamlines model is reused by several commands, only some of which expose the
+ *  corresponding command-line options (tcksift / tcksift2 do; afdconnectivity and tckgen dynamic
+ *  seeding do not). Rather than have the shared model back-end query the command-line directly — which
+ *  would probe options absent from the interface of those latter commands — each command populates this
+ *  struct and passes it in. Commands that expose the options fill it via model_control_from_commandline();
+ *  the others accept the defaults. */
+struct ModelBaseControl {
+  //! path to a user-supplied processing mask image (-proc_mask); std::nullopt if not provided
+  std::optional<std::filesystem::path> proc_mask_path;
+  //! path to an ACT five-tissue-type image from which to derive the processing mask (-act); std::nullopt if absent
+  std::optional<std::filesystem::path> act_5tt_path;
+  //! whether to dilate the FOD-lobe lookup table during segmentation (default true; disabled by -no_dilate_lut)
+  bool dilate_lookup_table = true;
+  //! whether to add a null lobe covering non-positive FOD directions (default false; enabled by -make_null_lobes)
+  bool create_null_lobes = false;
+  //! whether to scale fibre densities by grey-matter fraction (default false; enabled by -fd_scale_gm)
+  bool scale_fd_by_gm = false;
+};
+
+//! populate a ModelBaseControl from the command-line options (for commands that expose them)
+/*! Reads -proc_mask / -act / -no_dilate_lut / -make_null_lobes / -fd_scale_gm. Must only be called by
+ *  commands whose interface declares these options (tcksift / tcksift2); other reusers of the model
+ *  construct a ModelBaseControl directly. */
+ModelBaseControl model_control_from_commandline();
+
 template <class Fixel> class ModelBase : public Mapping::Fixel_TD_map<Fixel> {
 
 protected:
@@ -96,13 +123,16 @@ protected:
   using VoxelAccessor = typename Fixel_map<Fixel>::VoxelAccessor;
 
 public:
-  ModelBase(Image<float> &dwi, const DWI::Directions::FastLookupSet &dirs)
+  ModelBase(Image<float> &dwi,
+            const DWI::Directions::FastLookupSet &dirs,
+            const ModelBaseControl &control = ModelBaseControl())
       : Mapping::Fixel_TD_map<Fixel>(dwi, dirs),
         proc_mask(Image<float>::scratch(Fixel_map<Fixel>::header(), "SIFT model processing mask")),
         FOD_sum(0.0),
         TD_sum(0.0),
-        have_null_lobes(false) {
-    SIFT::initialise_processing_mask(dwi, proc_mask, act_5tt);
+        have_null_lobes(false),
+        control(control) {
+    SIFT::initialise_processing_mask(dwi, proc_mask, act_5tt, this->control.proc_mask_path, this->control.act_5tt_path);
   }
   ModelBase(const ModelBase &) = delete;
 
@@ -136,6 +166,7 @@ protected:
   Image<float> act_5tt, proc_mask;
   default_type FOD_sum, TD_sum;
   bool have_null_lobes;
+  ModelBaseControl control;
 
   // The definitions of these functions are located in dwi/tractography/SIFT/output.h
   void output_target_voxel(const std::filesystem::path &) const;
@@ -160,15 +191,15 @@ template <class Fixel> void ModelBase<Fixel>::perform_FOD_segmentation(Image<flo
   Math::SH::check(data);
   DWI::FMLS::FODQueueWriter writer(data, proc_mask);
   DWI::FMLS::Segmenter fmls(dirs, Math::SH::LforN(data.size(3)));
-  fmls.set_dilate_lookup_table(App::get_options("no_dilate_lut").empty());
-  fmls.set_create_null_lobe(!App::get_options("make_null_lobes").empty());
+  fmls.set_dilate_lookup_table(control.dilate_lookup_table);
+  fmls.set_create_null_lobe(control.create_null_lobes);
   Thread::run_queue(
       writer, Thread::batch(FMLS::SH_coefs()), Thread::multi(fmls), Thread::batch(FMLS::FOD_lobes()), *this);
   have_null_lobes = fmls.get_create_null_lobe();
 }
 
 template <class Fixel> void ModelBase<Fixel>::scale_FDs_by_GM() {
-  if (App::get_options("fd_scale_gm").empty())
+  if (!control.scale_fd_by_gm)
     return;
   if (!act_5tt.valid()) {
     INFO("Cannot scale fibre densities according to GM fraction; no ACT image data provided");

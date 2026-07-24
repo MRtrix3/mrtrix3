@@ -44,6 +44,11 @@ Options providing information about the output image
 
 -  **-out_reference choice** specify the reference axes against which the output directions will be specified (see Description) (choices: xyz, ijk, fsl)
 
+Stride options
+^^^^^^^^^^^^^^
+
+-  **-strides spec** specify the strides of the output data in memory; either as a comma-separated list of (signed) integers, or as a template image from which the strides shall be extracted and used. The actual strides produced will depend on whether the output image format can support it.
+
 Standard options
 ^^^^^^^^^^^^^^^^
 

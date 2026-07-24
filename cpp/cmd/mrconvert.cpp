@@ -565,5 +565,9 @@ void run() {
 
   opt = get_options("json_export");
   if (!opt.empty())
-    File::JSON::save(header_out, opt[0][0], output_path);
+    File::JSON::save(header_out,
+                     opt[0][0],
+                     output_path,
+                     DWI::export_grad_commandline_requested() ? File::JSON::DWScheme::Strip
+                                                              : File::JSON::DWScheme::Retain);
 }

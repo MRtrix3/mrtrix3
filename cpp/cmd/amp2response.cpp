@@ -72,6 +72,8 @@ void usage() {
                             " containing the directions along which the amplitudes are sampled")
       + Argument("path").type_file_in()
 
+    + DWI::GradImportOptions()
+
     + DWI::ShellsOption
 
     + Option ("lmax", "specify the maximum harmonic degree of the response function to estimate"

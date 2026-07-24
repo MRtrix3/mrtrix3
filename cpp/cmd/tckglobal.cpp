@@ -24,6 +24,7 @@
 #include "mrtrix_version.h"
 #include "thread.h"
 
+#include "dwi/gradient.h"
 #include "dwi/tractography/GT/externalenergy.h"
 #include "dwi/tractography/GT/gt.h"
 #include "dwi/tractography/GT/internalenergy.h"
@@ -101,9 +102,7 @@ void usage() {
   OPTIONS
   + OptionGroup("Input options")
 
-  + Option ("grad", "specify the diffusion encoding scheme"
-                    " (required if not supplied in the header).")
-    + Argument ("scheme").type_file_in()
+  + DWI::GradImportOptions()
 
   + Option ("mask", "only reconstruct the tractogram within the specified brain mask image.")
     + Argument ("image").type_image_in()

@@ -839,14 +839,19 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
   scheme_manip_t dwscheme_manip = scheme_manip_t::MERGE;
   scheme_manip_t pescheme_manip = scheme_manip_t::MERGE;
   if (axis_to_concat == 3) {
+    // Concatenation merges the schemes carried in the input image headers; it must not consult the
+    //   command-line gradient / phase-encoding import options (concatenation is invoked by commands
+    //   that offer no such import, and via Header::open() for numbered multi-file series). The
+    //   header-only parsers are therefore used here, matching the per-input parse below and tolerating
+    //   inputs that carry no scheme at all.
     try {
-      dw_scheme = DWI::get_DW_scheme(result);
+      dw_scheme = DWI::parse_DW_scheme(result);
       dwscheme_manip = scheme_manip_t::CONCAT;
     } catch (Exception &) {
       dwscheme_manip = scheme_manip_t::ABSENT;
     }
     try {
-      pe_scheme = Metadata::PhaseEncoding::get_scheme(result);
+      pe_scheme = Metadata::PhaseEncoding::parse_scheme(result.keyval(), result);
       pescheme_manip = pe_scheme.rows() == 0 ? scheme_manip_t::ABSENT : scheme_manip_t::CONCAT;
     } catch (Exception &) {
       pescheme_manip = scheme_manip_t::ERASE;
@@ -883,7 +888,7 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
       } catch (Exception &) { // NOLINT(bugprone-empty-catch)
       }
       try {
-        extra_pe = Metadata::PhaseEncoding::get_scheme(H);
+        extra_pe = Metadata::PhaseEncoding::parse_scheme(H.keyval(), H);
       } catch (Exception &) { // NOLINT(bugprone-empty-catch)
       }
 

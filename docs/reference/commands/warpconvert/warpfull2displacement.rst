@@ -27,6 +27,11 @@ Options
 
 -  **-from image** define the direction of the desired output field. Use -from 1 to obtain the image1->image2 field and -from 2 for image2->image1. Can be combined with -midway_space to produce a field that only maps to midway space. (range: 1 to 2)
 
+Data type options
+^^^^^^^^^^^^^^^^^
+
+-  **-datatype spec** specify output image data type. (choices: float16, float16le, float16be, float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat16, cfloat16le, cfloat16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit)
+
 Standard options
 ^^^^^^^^^^^^^^^^
 

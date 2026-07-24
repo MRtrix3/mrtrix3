@@ -64,8 +64,7 @@ void usage() {
             " the set of input images and the average header axes"
             " (see Description).")
     + Argument("type").type_choice<avgspace_voxspacing_t>().set_default(SPACING_DEFAULT_STRING)
-  + Option ("fill", "set the intensity in the first volume of the average space to 1")
-  + DataType::options();
+  + Option ("fill", "set the intensity in the first volume of the average space to 1");
 
 }
 // clang-format on

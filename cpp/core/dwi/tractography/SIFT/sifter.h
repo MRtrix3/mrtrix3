@@ -43,8 +43,8 @@ protected:
   using VoxelAccessor = Fixel_map<Fixel>::VoxelAccessor;
 
 public:
-  SIFTer(Image<float> &i, const DWI::Directions::FastLookupSet &d)
-      : MapType(i, d), term_number(0), term_ratio(0.0), term_mu(0.0), enforce_quantisation(true) {}
+  SIFTer(Image<float> &i, const DWI::Directions::FastLookupSet &d, const ModelBaseControl &control = ModelBaseControl())
+      : MapType(i, d, control), term_number(0), term_ratio(0.0), term_mu(0.0), enforce_quantisation(true) {}
 
   SIFTer(const SIFTer &that) = delete;
 

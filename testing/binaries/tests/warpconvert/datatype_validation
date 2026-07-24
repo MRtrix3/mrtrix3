@@ -1,0 +1,18 @@
+#!/bin/bash
+# A warp stores real-valued spatial coordinates, so warpconvert restricts -datatype to real
+#   floating-point types: integer and complex requests must be rejected, while a real float
+#   type is honoured and produces output equivalent to the default conversion.
+
+# Integer datatype: rejected.
+OUT=$(warpconvert deformation2displacement warp.mif tmp-warp-reject.mif -datatype uint8 -force 2>&1) \
+  && { echo "ERROR: expected integer -datatype to be rejected"; exit 1; }
+echo "$OUT" | grep -q "must be real floating-point"
+
+# Complex datatype: rejected.
+OUT=$(warpconvert deformation2displacement warp.mif tmp-warp-reject.mif -datatype cfloat32 -force 2>&1) \
+  && { echo "ERROR: expected complex -datatype to be rejected"; exit 1; }
+echo "$OUT" | grep -q "must be real floating-point"
+
+# Real floating-point datatype: accepted, output matches the reference conversion.
+warpconvert deformation2displacement warp.mif -datatype float64 - | \
+testing_diff_image - warpconvert/displacement.mif -abs 1e-5

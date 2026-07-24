@@ -42,7 +42,7 @@ const Option grad_option =
            " where [ X Y Z ] describe the direction of the applied gradient,"
            " and b gives the b-value in units of s/mm^2."
            " If a diffusion gradient scheme is present in the input image header,"
-           " the data provided with this option will be instead used.").framework_probe()
+           " the data provided with this option will be instead used.")
       + Argument("file").type_file_in();
 
 const Option fslgrad_option =
@@ -50,17 +50,17 @@ const Option fslgrad_option =
            "Provide the diffusion-weighted gradient scheme used in the acquisition"
            " in FSL bvecs/bvals format files."
            " If a diffusion gradient scheme is present in the input image header,"
-           " the data provided with this option will be instead used.").framework_probe()
+           " the data provided with this option will be instead used.")
       + ArgumentTuple(Argument("bvecs").type_file_in(), Argument("bvals").type_file_in());
 
 const Option export_grad_mrtrix_option =
     Option("export_grad_mrtrix",
-           "export the diffusion-weighted gradient table to file in MRtrix format").framework_probe()
+           "export the diffusion-weighted gradient table to file in MRtrix format")
       + Argument("path").type_file_out();
 
 const Option export_grad_fsl_option =
     Option("export_grad_fsl",
-           "export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format").framework_probe()
+           "export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format")
       + ArgumentTuple(Argument("bvecs_path").type_file_out(), Argument("bvals_path").type_file_out());
 } // namespace
 
@@ -77,7 +77,7 @@ const Option bvalue_scaling_option = Option("bvalue_scaling",
                                             " by the square of the corresponding DW gradient norm"
                                             " (see Desciption)."
                                             " Valid choices are: yes/no, true/false, 0/1"
-                                            " (default: automatic).").framework_probe()
+                                            " (default: automatic).")
                                      + Argument("mode").type_bool();
 
 const std::string bvalue_scaling_description(
@@ -368,6 +368,10 @@ void export_grad_commandline(const Header &header) {
   opt = get_options("export_grad_fsl");
   if (!opt.empty())
     save_bvecs_bvals(check(header), opt[0]["bvecs_path"], opt[0]["bvals_path"]);
+}
+
+bool export_grad_commandline_requested() {
+  return !get_options("export_grad_mrtrix").empty() || !get_options("export_grad_fsl").empty();
 }
 
 } // namespace MR::DWI

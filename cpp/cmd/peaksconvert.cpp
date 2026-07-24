@@ -23,6 +23,7 @@
 #include "header.h"
 #include "image.h"
 #include "math/sphere.h"
+#include "stride.h"
 #include "transform.h"
 
 using namespace MR;
@@ -112,7 +113,9 @@ void usage() {
     + Argument("choice").type_choice<format_t>()
   + Option ("out_reference", "specify the reference axes against which the output directions will be specified"
                              " (see Description)")
-    + Argument("choice").type_choice<reference_t>();
+    + Argument("choice").type_choice<reference_t>()
+
+  + Stride::Options;
   // TODO Implement -fill
   //+ Option ("fill", "specify value to be inserted into output image in the absence of valid information")
   //  + Argument("value").type_float();

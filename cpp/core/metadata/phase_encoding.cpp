@@ -24,12 +24,12 @@ namespace MR::Metadata::PhaseEncoding {
 using namespace App;
 const OptionGroup ImportOptions =
     OptionGroup("Options for importing phase-encode tables")
-    + Option("import_pe_table", "import a phase-encoding table from file").framework_probe()
+    + Option("import_pe_table", "import a phase-encoding table from file")
       + Argument("file").type_file_in()
-    + Option("import_pe_topup", "import a phase-encoding table intended for FSL topup from file").framework_probe()
+    + Option("import_pe_topup", "import a phase-encoding table intended for FSL topup from file")
       + Argument("file").type_file_in()
     + Option("import_pe_eddy",
-             "import phase-encoding information from an EDDY-style config / index file pair").framework_probe()
+             "import phase-encoding information from an EDDY-style config / index file pair")
       + ArgumentTuple(Argument("config").type_file_in(), Argument("indices").type_file_in());
 
 const OptionGroup SelectOptions =
@@ -43,12 +43,12 @@ const OptionGroup SelectOptions =
 
 const OptionGroup ExportOptions =
     OptionGroup("Options for exporting phase-encode tables")
-    + Option("export_pe_table", "export phase-encoding table to file").framework_probe()
+    + Option("export_pe_table", "export phase-encoding table to file")
       + Argument("file").type_file_out()
-    + Option("export_pe_topup", "export phase-encoding table to file intended for FSL topup").framework_probe()
+    + Option("export_pe_topup", "export phase-encoding table to file intended for FSL topup")
       + Argument("file").type_file_out()
     + Option("export_pe_eddy",
-             "export phase-encoding information to an EDDY-style config / index file pair").framework_probe()
+             "export phase-encoding information to an EDDY-style config / index file pair")
       + ArgumentTuple(Argument("config").type_file_out(), Argument("indices").type_file_out());
 // clang-format on
 

@@ -267,6 +267,13 @@ Eigen::MatrixXd get_DW_scheme(const Header &header,
  * options, and exports the DW schemes if and as requested. */
 void export_grad_commandline(const Header &header);
 
+//! true if the user requested export of the DW gradient table to a separate file (-export_grad_*)
+/*! Companion to export_grad_commandline(): for commands offering GradExportOptions to decide whether
+ *  the gradient scheme is being written out separately (and so, e.g., need not be duplicated in a JSON
+ *  sidecar). Like export_grad_commandline(), this must only be called by commands that expose the
+ *  gradient-export option group. */
+bool export_grad_commandline_requested();
+
 //! \brief get the matrix mapping SH coefficients to amplitudes
 /*! Computes the matrix mapping SH coefficients to the directions specified
  * in \a directions (in spherical coordinates), up to a given lmax. By

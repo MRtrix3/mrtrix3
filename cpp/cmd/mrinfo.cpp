@@ -304,8 +304,13 @@ void header2json(const Header &header, nlohmann::json &json) {
     realignment["keyval_on_disk"] = keyval_on_disk;
     json["realignment"] = realignment;
   }
-  // Load key-value entries into a nested keyval.* member
-  File::JSON::write(header, json["keyval"], header.path());
+  // Load key-value entries into a nested keyval.* member; strip the DW scheme from the sidecar when
+  //   it is being exported separately (-export_grad_*), so it is not duplicated.
+  File::JSON::write(header,
+                    json["keyval"],
+                    header.path(),
+                    DWI::export_grad_commandline_requested() ? File::JSON::DWScheme::Strip
+                                                             : File::JSON::DWScheme::Retain);
 }
 
 void run() {
@@ -397,7 +402,7 @@ void run() {
     if (realignment_flag)
       print_realignment(header);
     if (petable)
-      std::cout << Metadata::PhaseEncoding::get_scheme(header) << "\n";
+      std::cout << Metadata::PhaseEncoding::parse_scheme(header.keyval(), header) << "\n";
 
     for (size_t n = 0; n < properties.size(); ++n)
       print_properties(header, properties[n][0]);
@@ -419,7 +424,11 @@ void run() {
     Metadata::PhaseEncoding::export_commandline(header);
 
     if (json_keyval)
-      File::JSON::write(header, *json_keyval, (argument.size() > 1 ? std::filesystem::path{""} : argument[i]));
+      File::JSON::write(header,
+                        *json_keyval,
+                        (argument.size() > 1 ? std::filesystem::path{""} : argument[i]),
+                        DWI::export_grad_commandline_requested() ? File::JSON::DWScheme::Strip
+                                                                 : File::JSON::DWScheme::Retain);
 
     if (json_all)
       header2json(header, *json_all);

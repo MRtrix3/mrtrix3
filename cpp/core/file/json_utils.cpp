@@ -49,9 +49,12 @@ void load(Header &H, const std::filesystem::path &path) {
   read(json, H);
 }
 
-void save(const Header &H, const std::filesystem::path &json_path, const std::filesystem::path &image_path) {
+void save(const Header &H,
+          const std::filesystem::path &json_path,
+          const std::filesystem::path &image_path,
+          DWScheme dw_scheme) {
   nlohmann::json json;
-  write(H, json, image_path);
+  write(H, json, image_path, dw_scheme);
   File::OFStream out(json_path);
   out << json.dump(4);
 }
@@ -252,10 +255,10 @@ void write(const KeyValues &keyval, nlohmann::json &json) {
   }
 }
 
-void write(const Header &header, nlohmann::json &json, const std::filesystem::path &image_path) {
+void write(const Header &header, nlohmann::json &json, const std::filesystem::path &image_path, DWScheme dw_scheme) {
   Header H_adj(header);
   H_adj.path() = image_path;
-  if (!App::get_options("export_grad_fsl").empty() || !App::get_options("export_grad_mrtrix").empty())
+  if (dw_scheme == DWScheme::Strip)
     DWI::clear_DW_scheme(H_adj);
   if (!Path::has_suffix(image_path, {".nii", ".nii.gz", ".img"})) {
     write(H_adj.keyval(), json);

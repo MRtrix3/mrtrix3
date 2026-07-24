@@ -250,7 +250,7 @@ namespace {
 //   framework_probe() registers its id at static initialisation rather than only when
 //   DataType::options() is called.
 const App::Option datatype_option =
-    App::Option("datatype", "specify output image data type.").framework_probe()
+    App::Option("datatype", "specify output image data type.")
       + App::Argument("spec").type_choice<DataType::Identifier>();
 } // namespace
 

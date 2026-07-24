@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify that amp2response honours an externally-supplied diffusion gradient table (-grad).
+# The gradient scheme embedded in the input DWI is first exported to a standalone file;
+#   supplying that file via -grad must reproduce the response estimated when the scheme is
+#   read from the image header (the amp2response default reference), confirming that the
+#   command reads the gradient-import options rather than silently ignoring them.
+mrinfo dwi.mif -export_grad_mrtrix tmp-grad.b -force
+amp2response dwi.mif sh2response/sf.mif sh2response/ev.mif tmp.txt -grad tmp-grad.b -force
+testing_diff_matrix tmp.txt amp2response/default.txt -frac 1e-5

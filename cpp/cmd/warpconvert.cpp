@@ -111,8 +111,24 @@ void usage() {
         + Argument ("out", "the output displacement field image.").type_image_out())
       .set_options (warpfull_options());
 
+  // A warp is intrinsically a real-valued spatial mapping; -datatype is common to every operation
+  //   (each writes an output image), but only real floating-point types are meaningful (enforced in run()).
+  OPTIONS
+  + DataType::options();
+
 }
 // clang-format on
+
+namespace {
+// Resolve the output image data type from -datatype (default Float32), rejecting any non-real /
+//   non-floating-point request: a deformation / displacement field must hold real spatial coordinates.
+DataType warp_output_datatype() {
+  const DataType datatype = DataType::from_command_line(DataType::Float32);
+  if (!datatype.is_floating_point() || datatype.is_complex())
+    throw Exception("Output warp data type must be real floating-point (e.g. Float32 or Float64)");
+  return datatype;
+}
+} // namespace
 
 void run() {
   const ConversionType type = MR::Enum::from_name<ConversionType>(App::get_subcommand());
@@ -131,7 +147,7 @@ void run() {
     Registration::Warp::debug_validate_image(deformation);
 
     Header H_out(H_in);
-    H_out.datatype() = DataType::from_command_line(DataType::Float32);
+    H_out.datatype() = warp_output_datatype();
     Image<default_type> displacement = Image<default_type>::create(argument[1], H_out, DirectIO{3});
 
     Registration::Warp::deformation2displacement(deformation, displacement);
@@ -146,7 +162,7 @@ void run() {
     Registration::Warp::debug_validate_image(displacement);
 
     Header H_out(displacement);
-    H_out.datatype() = DataType::from_command_line(DataType::Float32);
+    H_out.datatype() = warp_output_datatype();
     Image<default_type> deformation = Image<default_type>::create(argument[1], H_out, DirectIO{3});
     Registration::Warp::displacement2deformation(displacement, deformation);
     break;
@@ -185,7 +201,7 @@ void run() {
       Registration::Warp::deformation2displacement(warp_output, warp_output);
 
     Header H_out(warp_output);
-    H_out.datatype() = DataType::from_command_line(DataType::Float32);
+    H_out.datatype() = warp_output_datatype();
     Image<default_type> output = Image<default_type>::create(argument[1], H_out);
     threaded_copy_with_progress_message("converting warp", warp_output, output);
     break;

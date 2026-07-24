@@ -27,13 +27,26 @@ class Header;
 
 namespace MR::File::JSON {
 
+//! whether a JSON sidecar should retain or strip the DW gradient scheme carried in the header
+/*! The scheme is stripped when the invoking command is exporting it to a separate file
+ *  (-export_grad_*), so it is not duplicated in the sidecar; retained otherwise. The decision is
+ *  supplied by the command — which alone knows whether it offers gradient export — so the generic
+ *  JSON writer never queries the command-line (and thus never probes an option a command may not offer). */
+enum class DWScheme { Retain, Strip };
+
 void load(Header &H, const std::filesystem::path &path);
-void save(const Header &H, const std::filesystem::path &json_path, const std::filesystem::path &image_path);
+void save(const Header &H,
+          const std::filesystem::path &json_path,
+          const std::filesystem::path &image_path,
+          DWScheme dw_scheme = DWScheme::Retain);
 
 KeyValues read(const nlohmann::json &json);
 void read(const nlohmann::json &json, Header &header);
 
 void write(const KeyValues &keyval, nlohmann::json &json);
-void write(const Header &header, nlohmann::json &json, const std::filesystem::path &image_path);
+void write(const Header &header,
+           nlohmann::json &json,
+           const std::filesystem::path &image_path,
+           DWScheme dw_scheme = DWScheme::Retain);
 
 } // namespace MR::File::JSON

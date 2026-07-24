@@ -47,7 +47,9 @@ protected:
   using VoxelAccessor = typename Fixel_map<Fixel>::VoxelAccessor;
 
 public:
-  template <class Set> Model(Set &dwi, const DWI::Directions::FastLookupSet &dirs) : ModelBase<Fixel>(dwi, dirs) {
+  template <class Set>
+  Model(Set &dwi, const DWI::Directions::FastLookupSet &dirs, const ModelBaseControl &control = ModelBaseControl())
+      : ModelBase<Fixel>(dwi, dirs, control) {
     Track_fixel_contribution::set_scaling(dwi);
   }
   Model(const Model &that) = delete;
