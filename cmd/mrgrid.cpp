@@ -244,7 +244,7 @@ void run () {
     if (get_options ("crop_unbound").size() && !do_crop)
       throw Exception("-crop_unbound only applies only to the crop operation");
 
-    const size_t nd = get_options ("nd").size() ? input_header.ndim() : 3;
+    const size_t all_axes = get_options ("all_axes").size() ? input_header.ndim() : 3;
 
     vector<vector<ssize_t>> bounds (input_header.ndim(), vector<ssize_t> (2));
     for (size_t axis = 0; axis < input_header.ndim(); axis++) {
@@ -311,7 +311,7 @@ void run () {
 
       Header template_header = Header::open(opt[0][0]);
 
-      for (size_t axis = 0; axis != nd; ++axis) {
+      for (size_t axis = 0; axis != all_axes; ++axis) {
         if (axis >= template_header.ndim()) {
           if (do_crop)
             bounds[axis][1] = 0;
@@ -329,7 +329,7 @@ void run () {
       ++crop_pad_option_count;
       ssize_t val = opt[0][0];
       INFO ("uniformly " + str(do_crop ? "cropping" : "padding") + " by " + str(val) + " voxels");
-      for (size_t axis = 0; axis < nd; axis++) {
+      for (size_t axis = 0; axis < all_axes; axis++) {
         bounds[axis][0] += do_crop ? val : -val;
         bounds[axis][1] += do_crop ? -val : val;
       }
@@ -398,7 +398,7 @@ void run () {
     }
 
     size_t changed_axes = 0;
-    for (size_t axis = 0; axis < nd; axis++) {
+    for (size_t axis = 0; axis < all_axes; axis++) {
       if (bounds[axis][0] != 0 || input_header.size (axis) != size[axis]) {
         changed_axes++;
         CONSOLE("changing axis " + str(axis) + " extent from 0:" + str(input_header.size (axis) - 1) +

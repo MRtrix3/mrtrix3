@@ -23,6 +23,7 @@
 #include "thread.h"
 #include "algo/threaded_copy.h"
 
+#include "dwi/gradient.h"
 #include "dwi/tractography/GT/particlegrid.h"
 #include "dwi/tractography/GT/gt.h"
 #include "dwi/tractography/GT/externalenergy.h"
@@ -102,15 +103,11 @@ void usage ()
   OPTIONS
   + OptionGroup("Input options")
 
-  + Option ("grad", "specify the diffusion encoding scheme (required if not supplied in the header).")
-    + Argument ("scheme").type_file_in()
-
   + Option ("mask", "only reconstruct the tractogram within the specified brain mask image.")
     + Argument ("image").type_image_in()
 
   + Option ("riso", "set one or more isotropic response functions. (multiple allowed)").allow_multiple()
     + Argument ("response").type_file_in()
-
 
   + OptionGroup("Parameters")
 
@@ -138,6 +135,7 @@ void usage ()
   + Option ("niter", "set the number of iterations of the metropolis hastings optimizer. (default = " + str(DEFAULT_NITER/1000000) + "M)")
     + Argument ("n").type_integer(0)
 
+  + DWI::GradImportOptions()
 
   + OptionGroup("Output options")
 
