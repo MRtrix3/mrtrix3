@@ -26,7 +26,7 @@
 using namespace MR;
 using namespace App;
 
-constexpr float precision = Eigen::NumTraits<float>::dummy_precision();
+constexpr float default_precision = Eigen::NumTraits<float>::dummy_precision();
 
 // clang-format off
 void usage() {
@@ -52,8 +52,8 @@ void usage() {
                       " Default: (0,0,0).")
     + Argument ("coordinates").type_sequence_float()
   + Option ("tolerance", "numerical precision used for L2 matrix norm comparison."
-                         " Default: " + str(precision) + ".")
-    + Argument ("value").type_float(precision);
+                         " Default: " + str(default_precision) + ".")
+    + Argument ("value").type_float(default_precision);
 }
 // clang-format on
 
@@ -131,7 +131,7 @@ void run() {
     }
   }
 
-  const value_type precision = get_option_value("tolerance", precision);
+  const value_type precision = get_option_value("tolerance", default_precision);
 
   size_t count(0);
   auto func = BoundsCheck(precision, oob_vector, count);
