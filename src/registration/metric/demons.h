@@ -21,6 +21,7 @@
 
 #include "image_helpers.h"
 #include "adapter/gradient3D.h"
+#include "registration/metric/demons_diagnostics.h"
 
 namespace MR
 {
@@ -33,9 +34,11 @@ namespace MR
       class Demons { MEMALIGN(Demons<Im1ImageType,Im2ImageType,Im1MaskType,Im2MaskType>)
         public:
           Demons (default_type& global_energy, size_t& global_voxel_count,
-                     const Im1ImageType& im1_image, const Im2ImageType& im2_image, const Im1MaskType im1_mask, const Im2MaskType im2_mask) :
+                     const Im1ImageType& im1_image, const Im2ImageType& im2_image, const Im1MaskType im1_mask, const Im2MaskType im2_mask,
+                     DemonsDiagnostics* diagnostics = nullptr) :
                        global_cost (global_energy),
                        global_voxel_count (global_voxel_count),
+                       global_diagnostics (diagnostics),
                        thread_cost (0.0),
                        thread_voxel_count (0),
                        mutex (new std::mutex),
@@ -55,6 +58,8 @@ namespace MR
             std::lock_guard<std::mutex> lock (*mutex);
             global_cost += thread_cost;
             global_voxel_count += thread_voxel_count;
+            if (global_diagnostics != nullptr)
+              *global_diagnostics += thread_diagnostics;
           }
 
           void set_im1_mask (const Image<float>& mask) {
@@ -113,13 +118,31 @@ namespace MR
             assign_pos_of (im1_image, 0, 3).to (im1_gradient, im2_gradient);
 
             Eigen::Matrix<typename Im1ImageType::value_type, 3, 1> grad = (im2_gradient.value() + im1_gradient.value()).array() / 2.0;
-            default_type denominator = speed_squared / normaliser + grad.squaredNorm();
+            const default_type gradient_term = grad.squaredNorm();
+            const default_type difference_term = speed_squared / normaliser;
+            default_type denominator = difference_term + gradient_term;
+            if (global_diagnostics != nullptr) {
+              const default_type gradient_norm = std::sqrt (gradient_term);
+              ++thread_diagnostics.voxel_count;
+              thread_diagnostics.gradient_sum += gradient_norm;
+              thread_diagnostics.gradient_max = std::max (thread_diagnostics.gradient_max, gradient_norm);
+            }
             if (abs (speed) < intensity_difference_threshold || denominator < denominator_threshold) {
               im1_update.row(3) = 0.0;
               im2_update.row(3) = 0.0;
+              if (global_diagnostics != nullptr)
+                ++thread_diagnostics.zeroed_count;
             } else {
               im1_update.row(3) = Eigen::Vector3d (speed * grad.array() / denominator);
               im2_update.row(3) = -Eigen::Vector3d (im1_update.row(3));
+              if (global_diagnostics != nullptr) {
+                const default_type update_norm = Eigen::Vector3d (im1_update.row(3)).norm();
+                thread_diagnostics.active_gradient_sum += std::sqrt (gradient_term);
+                thread_diagnostics.update_sum += update_norm;
+                thread_diagnostics.update_max = std::max (thread_diagnostics.update_max, update_norm);
+                if (gradient_term > difference_term)
+                  ++thread_diagnostics.gradient_dominant_count;
+              }
             }
           }
 
@@ -127,8 +150,10 @@ namespace MR
           protected:
             default_type& global_cost;
             size_t& global_voxel_count;
+            DemonsDiagnostics* global_diagnostics;
             default_type thread_cost;
             size_t thread_voxel_count;
+            DemonsDiagnostics thread_diagnostics;
             std::shared_ptr<std::mutex> mutex;
             default_type normaliser;
             const default_type robustness_parameter;

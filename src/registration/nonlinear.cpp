@@ -69,7 +69,11 @@ namespace MR
       // + Argument ("radius").type_integer (1,100)
 
       + Option("diagnostics_image", "write intermediate images for diagnostics purposes")
-      + Argument("path");
+      + Argument("path")
+
+      + Option("diagnostics_stats", "write per-iteration statistics of the non-linear optimisation "
+                                    "to a tab-delimited text file")
+      + Argument("path").type_file_out();
 
 
   }
