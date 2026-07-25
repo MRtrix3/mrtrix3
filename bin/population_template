@@ -67,7 +67,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   nloptions.add_argument('-nl_niter', help='Specify the number of registration iterations used within each level before updating the template, in the form of a list of integers (default: %s). The list must be the same length as the nl_scale factor list' % ','.join([str(x) for x in DEFAULT_NL_NITER]))
   nloptions.add_argument('-nl_update_smooth', default='2.0', help='Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)')
   nloptions.add_argument('-nl_disp_smooth', default='1.0', help='Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)')
-  nloptions.add_argument('-nl_grad_step', default='0.5', help='The gradient step size for non-linear registration (Default: 0.5)')
+  nloptions.add_argument('-nl_grad_step', default='1.5', help='The gradient step size for non-linear registration (Default: 1.5)')
 
   options = cmdline.add_argument_group('Input, output and general options')
   options.add_argument('-type', help='Specify the types of registration stages to perform. Options are "rigid" (perform rigid registration only which might be useful for intra-subject registration in longitudinal analysis), "affine" (perform affine registration) and "nonlinear" as well as cominations of registration types: %s. Default: rigid_affine_nonlinear' % ', '.join('"' + x + '"' for x in REGISTRATION_MODES if "_" in x), default='rigid_affine_nonlinear')

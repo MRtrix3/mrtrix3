@@ -98,7 +98,7 @@ namespace MR
           scale_factor (3),
           update_smoothing (2.0),
           disp_smoothing (1.0),
-          gradient_step (0.5),
+          gradient_step (1.5),
           do_reorientation (false),
           fod_lmax (3),
           use_cc (false),
@@ -137,7 +137,7 @@ namespace MR
             std::unique_ptr<File::OFStream> diagnostics_stats;
             if (!diagnostics_stats_path.empty()) {
               diagnostics_stats.reset (new File::OFStream (diagnostics_stats_path));
-              *diagnostics_stats << "stage\tscale_factor\tvoxel_size_mm\tgrad_step_mm\tupdate_smooth_mm\tdisp_smooth_mm"
+              *diagnostics_stats << "stage\tscale_factor\tvoxel_size_mm\tgrad_step\tupdate_smooth_mm\tdisp_smooth_mm"
                                     "\titeration\tvoxel_count\tcost\taccepted"
                                     "\tgrad_mean\tgrad_max\tgrad_mean_active\tgrad_dominant_fraction"
                                     "\tupdate_mean\tupdate_max\tzeroed_fraction"
@@ -257,7 +257,6 @@ namespace MR
               }
 
               ssize_t iteration = 1;
-              default_type grad_step_altered = gradient_step * (field_header.spacing(0) + field_header.spacing(1) + field_header.spacing(2)) / 3.0;
               default_type cost = std::numeric_limits<default_type>::max();
               bool converged = false;
 
@@ -280,11 +279,19 @@ namespace MR
 
                 if (iteration > 1) {
                   if (diagnostics_stats)
-                    step_stats = field_magnitude_stats (*im1_update, grad_step_altered);
+                    step_stats = field_magnitude_stats (*im1_update, gradient_step);
 
+                  // The Demons update is itself an estimate of the required displacement in millimetres,
+                  //   bounded in magnitude by half the voxel size of the level at which it is evaluated;
+                  //   the gradient step is therefore a dimensionless multiplier and requires no further
+                  //   scaling by a length. Scaling it by the voxel size of the level, as was necessary
+                  //   when the image gradient was a derivative per voxel index rather than per millimetre,
+                  //   would make the displacement increment applied per iteration grow in proportion to
+                  //   the multi-resolution downsampling factor, and would make the result depend on the
+                  //   physical scale at which the problem is posed.
                   DEBUG ("updating displacement field");
-                  Warp::update_displacement_scaling_and_squaring (*im1_to_mid, *im1_update, *im1_to_mid_new, grad_step_altered);
-                  Warp::update_displacement_scaling_and_squaring (*im2_to_mid, *im2_update, *im2_to_mid_new, grad_step_altered);
+                  Warp::update_displacement_scaling_and_squaring (*im1_to_mid, *im1_update, *im1_to_mid_new, gradient_step);
+                  Warp::update_displacement_scaling_and_squaring (*im2_to_mid, *im2_update, *im2_to_mid_new, gradient_step);
 
                   DEBUG ("smoothing displacement field");
                   Filter::Smooth smooth_filter (*im1_to_mid_new);
@@ -395,7 +402,7 @@ namespace MR
                   const FieldMagnitudeStats disp1_stats = field_magnitude_stats (*im1_to_mid);
                   const FieldMagnitudeStats disp2_stats = field_magnitude_stats (*im2_to_mid);
                   *diagnostics_stats << (level + 1) << "\t" << scale_factor[level] << "\t" << voxel_size_mm << "\t"
-                                     << grad_step_altered << "\t" << update_smoothing_mm << "\t" << disp_smoothing_mm << "\t"
+                                     << gradient_step << "\t" << update_smoothing_mm << "\t" << disp_smoothing_mm << "\t"
                                      << iteration << "\t" << voxel_count << "\t" << cost_new << "\t" << (accepted ? 1 : 0) << "\t"
                                      << demons_diagnostics.gradient_mean() << "\t" << demons_diagnostics.gradient_max << "\t"
                                      << demons_diagnostics.active_gradient_mean() << "\t"
