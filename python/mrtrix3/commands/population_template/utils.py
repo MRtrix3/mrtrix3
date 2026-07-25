@@ -197,7 +197,7 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None, whites
     uid_path = {}
     uids = []
     for filepath in paths:
-      uid = re.sub(re.escape(postfix)+'$', '', re.sub('^'+re.escape(prefix), '', os.path.split(filepath)[1]))
+      uid = re.sub(f'{re.escape(postfix)}$', '', re.sub(f'^{re.escape(prefix)}', '', os.path.split(filepath)[1]))
       uid = re.sub(r'\s+', whitespace_repl, uid)
       if not uid:
         raise MRtrixError(f'No uniquely identifiable part of filename "{path}" '
@@ -228,7 +228,7 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None, whites
   # xcontrast_xsubject_pre_postfix: prefix and postfix of the common part across contrasts and subjects,
   # without image extensions and leading or trailing '_' or '-'
   xcontrast_xsubject_pre_postfix = [get_common_postfix(common_prefix).lstrip('_-'),
-                                    get_common_prefix([re.sub('.('+'|'.join(IMAGEEXT)+')(.gz)?$', '', pfix).rstrip('_-') for pfix in common_postfix])]
+                                    get_common_prefix([re.sub(f'.({"|".join(IMAGEEXT)})(.gz)?$', '', pfix).rstrip('_-') for pfix in common_postfix])]
   if app.VERBOSITY > 1:
     app.console(f'common_postfix: {common_postfix}')
     app.console(f'common_prefix: {common_prefix}')
@@ -278,8 +278,8 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None, whites
     except UnicodeDecodeError:
       with open(f_agg_weight, 'r', encoding='utf-8', errors='replace') as fweights:
         agg_weights = {row[0].strip(): row[1].strip() for row in csv.reader(fweights, delimiter=',', quotechar='#')}
-    pref = '^' + re.escape(get_common_prefix(list(agg_weights.keys())))
-    suff = re.escape(get_common_postfix(list(agg_weights.keys()))) + '$'
+    pref = f'^{re.escape(get_common_prefix(list(agg_weights.keys())))}'
+    suff = f'{re.escape(get_common_postfix(list(agg_weights.keys())))}$'
     agg_weights = {re.sub(suff, '', re.sub(pref, '', item[0])):item[1] for item in agg_weights.items()}
     for inp in inputs:
       if inp.uid not in agg_weights:

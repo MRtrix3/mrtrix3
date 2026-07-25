@@ -222,7 +222,7 @@ def execute(): #pylint: disable=unused-variable
   elif len(lmax) == 3 and not multishell:
     raise MRtrixError('User specified 3 lmax values for three-tissue decomposition, '
                       'but input DWI is not multi-shell')
-  lmax_option = ' -lmax ' + ','.join(map(str, lmax))
+  lmax_option = f' -lmax {",".join(map(str, lmax))}'
 
   # Create a mask of voxels where the input data contain positive values;
   #   we want to make sure that these never end up included in the output mask
@@ -241,10 +241,10 @@ def execute(): #pylint: disable=unused-variable
   class Tissue(object): #pylint: disable=useless-object-inheritance
     def __init__(self, name, index):
       self.name = name
-      iter_string = '_iter' + str(index)
-      self.tissue_rf = 'response_' + name + iter_string + '.txt'
-      self.fod_init = 'FODinit_' + name + iter_string + '.mif'
-      self.fod_norm = 'FODnorm_' + name + iter_string + '.mif'
+      iter_string = f'_iter{index}'
+      self.tissue_rf = f'response_{name}{iter_string}.txt'
+      self.fod_init = f'FODinit_{name}{iter_string}.mif'
+      self.fod_norm = f'FODnorm_{name}{iter_string}.mif'
 
   iteration_message = f'a maximum of {app.ARGS.max_iters}' \
                       if app.ARGS.max_iters \
@@ -272,15 +272,16 @@ def execute(): #pylint: disable=unused-variable
 
   iteration = 1
   while True:
-    iter_string = '_iter' + str(iteration)
+    iter_string = f'_iter{iteration}'
     tissues = [Tissue('WM', iteration),
                Tissue('GM', iteration),
                Tissue('CSF', iteration)]
 
     step = 'dwi2response'
     progress.increment()
+    response_args = ' '.join(tissue.tissue_rf for tissue in tissues)
     run.command(f'dwi2response dhollander {dwi_image} -mask {dwi_mask_image} '
-                + ' '.join(tissue.tissue_rf for tissue in tissues))
+                f'{response_args}')
 
 
     # Immediately remove GM if we can't deal with it
@@ -290,24 +291,25 @@ def execute(): #pylint: disable=unused-variable
 
     step = 'dwi2fod'
     progress.increment()
-    app.debug('Performing CSD with lmax values: ' + ','.join(map(str, lmax)))
+    app.debug(f'Performing CSD with lmax values: {",".join(map(str, lmax))}')
+    csd_args = ' '.join(f'{tissue.tissue_rf} {tissue.fod_init}' for tissue in tissues)
     run.command(f'dwi2fod msmt_csd {dwi_image} {lmax_option} '
-                + ' '.join(tissue.tissue_rf + ' ' + tissue.fod_init for tissue in tissues))
+                f'{csd_args}')
 
     step = 'maskfilter'
     progress.increment()
-    eroded_mask = os.path.splitext(dwi_mask_image)[0] + '_eroded.mif'
+    eroded_mask = f'{os.path.splitext(dwi_mask_image)[0]}_eroded.mif'
     run.command(f'maskfilter {dwi_mask_image} erode {eroded_mask}')
 
     step = 'mtnormalise'
     progress.increment()
     old_bias_field_image = bias_field_image
-    bias_field_image = 'field' + iter_string + '.mif'
-    factors_path = 'factors' + iter_string + '.txt'
+    bias_field_image = f'field{iter_string}.mif'
+    factors_path = f'factors{iter_string}.txt'
 
+    norm_args = ' '.join(f'{tissue.fod_init} {tissue.fod_norm}' for tissue in tissues)
     run.command(f'mtnormalise -balanced -mask {eroded_mask} -check_norm {bias_field_image} -check_factors {factors_path} '
-                + ' '.join(tissue.fod_init + ' ' + tissue.fod_norm
-                           for tissue in tissues))
+                f'{norm_args}')
     app.cleanup([tissue.fod_init for tissue in tissues])
     app.cleanup(eroded_mask)
 
@@ -350,7 +352,7 @@ def execute(): #pylint: disable=unused-variable
     elif mask_algo == 'fslbet':
       run.command(f'bet {tissue_sum_image_nii} {new_dwi_mask_image_nii} -R -m')
       app.cleanup(fsl.find_image(os.path.splitext(new_dwi_mask_image_nii)[0]))
-      new_dwi_mask_image_nii = fsl.find_image(os.path.splitext(new_dwi_mask_image_nii)[0] + '_mask')
+      new_dwi_mask_image_nii = fsl.find_image(f'{os.path.splitext(new_dwi_mask_image_nii)[0]}_mask')
       run.command(f'mrcalc {new_dwi_mask_image_nii} input_pos_mask.mif -mult {new_dwi_mask_image}')
     elif mask_algo == 'hdbet':
       try:
@@ -359,8 +361,8 @@ def execute(): #pylint: disable=unused-variable
         try:
           run.command(f'hd-bet -i {tissue_sum_image_nii} -device cpu -mode fast -tta 0')
         except run.MRtrixCmdError as e_cpu:
-          raise run.MRtrixCmdError('hd-bet', 1, e_gpu.stdout + e_cpu.stdout, e_gpu.stderr + e_cpu.stderr)
-      new_dwi_mask_image_nii = os.path.splitext(tissue_sum_image)[0] + '_bet_mask.nii.gz'
+          raise run.MRtrixCmdError('hd-bet', 1, f'{e_gpu.stdout}{e_cpu.stdout}', f'{e_gpu.stderr}{e_cpu.stderr}')
+      new_dwi_mask_image_nii = f'{os.path.splitext(tissue_sum_image)[0]}_bet_mask.nii.gz'
       run.command(f'mrcalc {new_dwi_mask_image_nii} input_pos_mask.mif -mult {new_dwi_mask_image}')
     elif mask_algo in ['mrthreshold', 'threshold']:
       mrthreshold_abs_option = ' -abs 0.5' if mask_algo == 'threshold' else ''

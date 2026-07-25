@@ -261,7 +261,7 @@ def _execute(usage_function, execute_function): #pylint: disable=unused-variable
         sys.exit(return_code)
     except ValueError:
       warn('Potentially corrupt environment variable "MRTRIX_CLI_PARSE_ONLY" '
-           '= "' + cli_parse_only + '"; ignoring')
+           f'= "{cli_parse_only}"; ignoring')
     sys.exit(return_code)
 
   try:
@@ -276,7 +276,7 @@ def _execute(usage_function, execute_function): #pylint: disable=unused-variable
     DO_CLEANUP = False
     if SCRATCH_DIR:
       with open(os.path.join(SCRATCH_DIR, 'error.txt'), 'w', encoding='utf-8') as outfile:
-        outfile.write((exception.command if is_cmd else exception.function) + '\n\n' + str(exception) + '\n')
+        outfile.write(f'{exception.command if is_cmd else exception.function}\n\n{exception}\n')
     exception_frame = inspect.getinnerframes(sys.exc_info()[2])[-2]
     try:
       filename = exception_frame.filename
@@ -370,7 +370,7 @@ def activate_scratch_dir(): #pylint: disable=unused-variable
   SCRATCH_DIR = dir_path
   while os.path.isdir(SCRATCH_DIR):
     random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
-    SCRATCH_DIR = os.path.join(dir_path, f'{prefix}{random_string}') + os.sep
+    SCRATCH_DIR = os.path.join(dir_path, f'{prefix}{random_string}{os.sep}')
   os.makedirs(SCRATCH_DIR)
   os.chdir(SCRATCH_DIR)
   if VERBOSITY:
@@ -1112,7 +1112,7 @@ class Parser: # pylint: disable=too-many-public-methods
       result = f'{value:.17g}'
       body = result[1:] if result[:1] in ('-', '+') else result
       if body.isdigit():
-        return result + '.0'
+        return f'{result}.0'
       return result
     # Parse a scalar integer with the same suffix-multiplier support as the C++ parser
     #   (MR::App::ParsedArgument::as_int(), cpp/core/app.cpp). Decimal multipliers only, no
@@ -1661,8 +1661,7 @@ class Parser: # pylint: disable=too-many-public-methods
     condition = kwargs.pop('condition', None)
     is_external = kwargs.pop('is_external', False)
     if kwargs:
-      raise TypeError('Unsupported keyword arguments passed to app.Parser.add_citation(): '
-                      + str(kwargs))
+      raise TypeError(f'Unsupported keyword arguments passed to app.Parser.add_citation(): {kwargs}')
     self._citation_list.append( (condition, citation) )
     if is_external:
       self._external_citations = True
@@ -1692,7 +1691,7 @@ class Parser: # pylint: disable=too-many-public-methods
   #   its wording matching the corresponding parse-time error message; rendered by each
   #   human-readable help surface after the command's option groups. Empty list when none declared.
   def _cross_group_mutex_annotations(self):
-    return [f'(the options {", ".join("-" + item for item in id_set)} '
+    return [f'(the options {", ".join(f"-{item}" for item in id_set)} '
             'are mutually exclusive; at most one may be specified)'
             for id_set in self._mutually_exclusive_option_groups]
 
@@ -1809,7 +1808,7 @@ class Parser: # pylint: disable=too-many-public-methods
       self.choices = { }  # ordered name -> Parser, in ALGORITHMS order
       self.help = ('Select the algorithm to be used; '
                    'additional details and options become available once an algorithm is nominated. '
-                   'Options are: ' + ', '.join(self.algorithms))
+                   f'Options are: {", ".join(self.algorithms)}')
     def add_parser(self, name, parents=None): # pylint: disable=unused-variable
       child = Parser(parents=parents if parents is not None else [self._base_parser])
       child.prog = f'{EXEC_NAME} {name}'
@@ -2302,16 +2301,16 @@ class Parser: # pylint: disable=too-many-public-methods
         parts.append('str')
       else:
         parts.append('string')
-    return ' ' + ' '.join(parts)
+    return f' {" ".join(parts)}'
 
   def print_help(self, file=None):
     def bold(text):
-      return ''.join( c + chr(0x08) + c for c in text)
+      return ''.join(f'{c}{chr(0x08)}{c}' for c in text)
 
     def underline(text, ignore_whitespace = True):
       if not ignore_whitespace:
-        return ''.join('_' + chr(0x08) + c for c in text)
-      return ''.join('_' + chr(0x08) + c if c != ' ' else c for c in text)
+        return ''.join(f'_{chr(0x08)}{c}' for c in text)
+      return ''.join(f'_{chr(0x08)}{c}' if c != ' ' else c for c in text)
 
     wrapper_args = textwrap.TextWrapper(width=80, initial_indent='', subsequent_indent='                     ')
     wrapper_other = textwrap.TextWrapper(width=80, initial_indent='     ', subsequent_indent='     ')
@@ -2320,19 +2319,19 @@ class Parser: # pylint: disable=too-many-public-methods
     else:
       text = f'MRtrix {version.VERSION}'
     text += ' ' * max(1, 40 - len(text) - int(len(self.prog)/2))
-    text += bold(self.prog) + '\n'
+    text += f'{bold(self.prog)}\n'
     if self._is_project:
       text += f'using MRtrix3 {version.VERSION}\n'
     text += '\n'
-    text += '     ' + bold(self.prog) + f': {"external MRtrix3 project" if self._is_project else "part of the MRtrix3 package"}\n'
+    text += f'     {bold(self.prog)}: {"external MRtrix3 project" if self._is_project else "part of the MRtrix3 package"}\n'
     text += '\n'
-    text += bold('SYNOPSIS') + '\n'
+    text += f'{bold("SYNOPSIS")}\n'
     text += '\n'
-    text += wrapper_other.fill(self._synopsis) + '\n'
+    text += f'{wrapper_other.fill(self._synopsis)}\n'
     text += '\n'
-    text += bold('USAGE') + '\n'
+    text += f'{bold("USAGE")}\n'
     text += '\n'
-    usage = self.prog + ' '
+    usage = f'{self.prog} '
     # A multi-algorithm command presents the compulsory algorithm selection in place of
     #   fixed positional arguments; the algorithm-specific arguments/options are then
     #   summarised by the trailing ellipsis.
@@ -2346,36 +2345,35 @@ class Parser: # pylint: disable=too-many-public-methods
     # Unfortunately this can line wrap early because textwrap is counting each
     #   underlined character as 3 characters when calculating when to wrap
     # Fix by underlining after the fact
-    text += wrapper_other.fill(usage).replace(self.prog, underline(self.prog), 1) + '\n'
+    text += f'{wrapper_other.fill(usage).replace(self.prog, underline(self.prog), 1)}\n'
     text += '\n'
     if self._subparsers is not None:
       dest = self._subparsers.dest
-      text += '        ' + wrapper_args.fill(
-        dest + ' '*(max(13-len(dest), 1)) + self._subparsers.help).replace(dest, underline(dest), 1) + '\n'
+      subparsers_line = wrapper_args.fill(
+        f'{dest}{" "*(max(13-len(dest), 1))}{self._subparsers.help}')
+      text += f'        {subparsers_line.replace(dest, underline(dest), 1)}\n'
       text += '\n'
     for argument in self._positional_args:
       line = '        '
       name = argument.metavar if argument.metavar else argument.name
       line += f'{name}{" "*(max(13-len(name), 1))}{argument.help}{argument.help_metadata()}'
-      text += wrapper_args.fill(line).replace(name, underline(name), 1) + '\n'
+      text += f'{wrapper_args.fill(line).replace(name, underline(name), 1)}\n'
       text += '\n'
     if self._description:
-      text += bold('DESCRIPTION') + '\n'
+      text += f'{bold("DESCRIPTION")}\n'
       text += '\n'
       for line in self._description:
-        text += wrapper_other.fill(line) + '\n'
+        text += f'{wrapper_other.fill(line)}\n'
         text += '\n'
     if self._examples:
-      text += bold('EXAMPLE USAGES') + '\n'
+      text += f'{bold("EXAMPLE USAGES")}\n'
       text += '\n'
       for example in self._examples:
-        for line in wrapper_other.fill(example[0] + ':').splitlines():
-          text += ' '*(len(line) - len(line.lstrip())) \
-               + underline(line.lstrip(), False) \
-               + '\n'
+        for line in wrapper_other.fill(f'{example[0]}:').splitlines():
+          text += f'{" "*(len(line) - len(line.lstrip()))}{underline(line.lstrip(), False)}\n'
         text += f'{" "*7}$ {example[1]}\n'
         if example[2]:
-          text += wrapper_other.fill(example[2]) + '\n'
+          text += f'{wrapper_other.fill(example[2])}\n'
         text += '\n'
 
     # Define a function for printing all text for a given option group.
@@ -2393,12 +2391,12 @@ class Parser: # pylint: disable=too-many-public-methods
     def print_group_options(group):
       group_text = ''
       for option in group.options:
-        group_text += '  ' + underline('-' + option.name)
+        group_text += f'  {underline(f"-{option.name}")}'
         group_text += Parser._option_metavar(option)
         if option.repeatable:
           group_text += '  (multiple uses permitted)'
         group_text += '\n'
-        group_text += wrapper_other.fill(option.help + option.help_metadata()) + '\n'
+        group_text += f'{wrapper_other.fill(f"{option.help}{option.help_metadata()}")}\n'
         # A described tuple field is listed beneath the option (indented past the option
         #   help); scalar options add nothing here. A field's own choice / range / default
         #   metadata is appended to its description (rendered even when it has no description).
@@ -2408,7 +2406,7 @@ class Parser: # pylint: disable=too-many-public-methods
           for leaf in arg.elements:
             if leaf.help:
               leaf_id = Parser._leaf_id(leaf)
-              group_text += wrapper_field.fill(f'{leaf_id}: {leaf.help}{leaf.help_metadata()}') + '\n'
+              group_text += f'{wrapper_field.fill(f"{leaf_id}: {leaf.help}{leaf.help_metadata()}")}\n'
         group_text += '\n'
       return group_text
 
@@ -2419,7 +2417,7 @@ class Parser: # pylint: disable=too-many-public-methods
     def print_subgroups(group, depth):
       subgroup_text = ''
       for subgroup in group.subgroups:
-        subgroup_text += '  ' * (depth + 1) + bold(subgroup.name) + '\n'
+        subgroup_text += f'{"  " * (depth + 1)}{bold(subgroup.name)}\n'
         subgroup_text += '\n'
         subgroup_text += print_group_options(subgroup)
         subgroup_text += print_subgroups(subgroup, depth + 1)
@@ -2433,7 +2431,7 @@ class Parser: # pylint: disable=too-many-public-methods
     # Before printing named option groups, print any command-line options that were not
     #   explicitly placed into a group (the ungrouped 'OPTIONS' group).
     if self._ungrouped.options or self._ungrouped.subgroups:
-      text += bold('OPTIONS') + '\n'
+      text += f'{bold("OPTIONS")}\n'
       text += '\n'
       text += print_group_options(self._ungrouped)
       text += print_subgroups(self._ungrouped, 0)
@@ -2452,27 +2450,27 @@ class Parser: # pylint: disable=too-many-public-methods
           text += constraint_line(note)
         cross_mutex_emitted = True
       if group.options or group.subgroups:
-        text += bold(group.name) + '\n'
+        text += f'{bold(group.name)}\n'
         text += '\n'
         text += print_group_options(group)
         text += print_subgroups(group, 0)
         annotation = group.constraint_annotation()
         if annotation:
           text += constraint_line(annotation)
-    text += bold('AUTHOR') + '\n'
-    text += wrapper_other.fill(self._author) + '\n'
+    text += f'{bold("AUTHOR")}\n'
+    text += f'{wrapper_other.fill(self._author)}\n'
     text += '\n'
-    text += bold('COPYRIGHT') + '\n'
-    text += wrapper_other.fill(self._copyright) + '\n'
+    text += f'{bold("COPYRIGHT")}\n'
+    text += f'{wrapper_other.fill(self._copyright)}\n'
     text += '\n'
-    text += bold('REFERENCES') + '\n'
+    text += f'{bold("REFERENCES")}\n'
     text += '\n'
     for entry in self._citation_list:
       if entry[0]:
-        text += wrapper_other.fill('* ' + entry[0] + ':') + '\n'
-      text += wrapper_other.fill(entry[1]) + '\n'
+        text += f'{wrapper_other.fill(f"* {entry[0]}:")}\n'
+      text += f'{wrapper_other.fill(entry[1])}\n'
       text += '\n'
-    text += wrapper_other.fill(_MRTRIX3_CORE_REFERENCE) + '\n\n'
+    text += f'{wrapper_other.fill(_MRTRIX3_CORE_REFERENCE)}\n\n'
     if file:
       file.write(text)
       file.flush()
@@ -2646,7 +2644,7 @@ class Parser: # pylint: disable=too-many-public-methods
     def print_group_options(group):
       group_text = ''
       for option in group.options:
-        option_text = '-' + option.name + Parser._option_metavar(option)
+        option_text = f'-{option.name}{Parser._option_metavar(option)}'
         option_text = option_text.replace('<', '\\<').replace('>', '\\>')
         group_text += f'+ **{option_text}**'
         if option.repeatable:
@@ -2658,7 +2656,8 @@ class Parser: # pylint: disable=too-many-public-methods
                        for arg in option.args if arg.is_tuple
                        for leaf in arg.elements if leaf.help]
         if field_lines:
-          group_text += '\n'.join(field_lines) + '\n'
+          joined_fields = '\n'.join(field_lines)
+          group_text += f'{joined_fields}\n'
       return group_text
 
     # A nested child group renders as a deeper Markdown heading (one extra '#' per level of
@@ -2749,7 +2748,7 @@ class Parser: # pylint: disable=too-many-public-methods
       text += f'-  *{self._subparsers.dest}*: {self._subparsers.help}\n'
     for argument in self._positional_args:
       name = argument.metavar if argument.metavar else argument.name
-      arg_help = (argument.help + argument.help_metadata()).replace('|', '\\|')
+      arg_help = f'{argument.help}{argument.help_metadata()}'.replace('|', '\\|')
       text += f'-  *{name}*: {arg_help}\n'
     text += '\n'
     if self._description:
@@ -2776,7 +2775,7 @@ class Parser: # pylint: disable=too-many-public-methods
     def print_group_options(group):
       group_text = ''
       for option in group.options:
-        option_text = '-' + option.name + Parser._option_metavar(option)
+        option_text = f'-{option.name}{Parser._option_metavar(option)}'
         group_text += '\n'
         # Two spaces after the bullet, matching both the C++ reStructuredText exporter and this
         #   renderer's own positional-argument bullets ("-  *name*:"), so option and argument list
@@ -2784,7 +2783,7 @@ class Parser: # pylint: disable=too-many-public-methods
         group_text += f'-  **{option_text}**'
         if option.repeatable:
           group_text += '  *(multiple uses permitted)*'
-        option_help = (option.help + option.help_metadata()).replace('|', '\\|')
+        option_help = f'{option.help}{option.help_metadata()}'.replace('|', '\\|')
         group_text += f' {option_help}'
         # Described tuple fields follow the summary on " |br|" continuation lines, matching
         #   the C++ RST rendering; a field's own choice / range / default metadata is appended
@@ -2795,10 +2794,11 @@ class Parser: # pylint: disable=too-many-public-methods
             continue
           for leaf in arg.elements:
             if leaf.help:
-              leaf_help = (leaf.help + leaf.help_metadata()).replace('|', '\\|')
+              leaf_help = f'{leaf.help}{leaf.help_metadata()}'.replace('|', '\\|')
               field_lines.append(f'   *{Parser._leaf_id(leaf)}*: {leaf_help}')
         if field_lines:
-          group_text += ' |br|\n' + ' |br|\n'.join(field_lines)
+          joined_fields = ' |br|\n'.join(field_lines)
+          group_text += f' |br|\n{joined_fields}'
         group_text += '\n'
       return group_text
 

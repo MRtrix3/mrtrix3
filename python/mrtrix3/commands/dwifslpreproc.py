@@ -447,7 +447,7 @@ def execute(): #pylint: disable=unused-variable
       elif any(str(topup_files_userpath).endswith(postfix) for postfix in ('_fieldcoef.nii', '_fieldcoef.nii.gz')):
         topup_input_fieldcoef = app.Parser.ImageIn()(topup_files_userpath)
         topup_input_movpar = topup_files_userpath[:-len('.gz')] if topup_files_userpath.endswith('.gz') else topup_files_userpath
-        topup_input_movpar = app.Parser.FileIn()(topup_input_movpar[:-len('_fieldcoef.nii')] + '_movpar.txt')
+        topup_input_movpar = app.Parser.FileIn()(f'{topup_input_movpar[:-len("_fieldcoef.nii")]}_movpar.txt')
       else:
         raise MRtrixError(f'Unrecognised file "{topup_files_userpath}" specified as pre-calculated topup susceptibility field')
     else:
@@ -479,7 +479,7 @@ def execute(): #pylint: disable=unused-variable
     #   applytopup requires that these be set, but mrconvert will wipe them
     run.function(shutil.copyfile,
                  topup_input_fieldcoef,
-                 'field_fieldcoef.nii' + ('.gz' if str(topup_input_fieldcoef).endswith('.nii.gz') else ''))
+                 f'field_fieldcoef.nii{".gz" if str(topup_input_fieldcoef).endswith(".nii.gz") else ""}')
   if topup_input_fieldimage:
     run.command(['mrconvert', topup_input_fieldimage, 'field_map.mif'])
   if app.ARGS.eddy_mask:
@@ -517,7 +517,7 @@ def execute(): #pylint: disable=unused-variable
   if eddy_mporder:
     if 'SliceEncodingDirection' in dwi_header.keyval():
       slice_encoding_direction = dwi_header.keyval()['SliceEncodingDirection']
-      app.debug('Slice encoding direction: ' + slice_encoding_direction)
+      app.debug(f'Slice encoding direction: {slice_encoding_direction}')
       if not slice_encoding_direction.startswith('k'):
         raise MRtrixError('DWI header indicates that 3rd spatial axis is not the slice axis; '
                           'this is not yet compatible with --mporder option in eddy, nor supported in dwifslpreproc')
@@ -581,7 +581,7 @@ def execute(): #pylint: disable=unused-variable
         except ValueError as exception:
           raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
                             'data are not numeric') from exception
-      app.debug('Re-formatted slice timing contents from header: ' + str(slice_timing))
+      app.debug(f'Re-formatted slice timing contents from header: {slice_timing}')
       if len(slice_timing) != dwi_num_slices:
         raise MRtrixError(f'Cannot use slice timing information in image header for slice-to-volume correction: '
                           f'number of entries ({len(slice_timing)}) does not match number of slices ({dwi_header.size()[2]})')
@@ -853,7 +853,7 @@ def execute(): #pylint: disable=unused-variable
         if app.ARGS.align_seepi:
           app.console('No phase-encoding contrast present in SE-EPI images; '
                       'will examine again after combining with DWI b=0 images')
-          new_se_epi_path = os.path.splitext(se_epi_path)[0] + '_dwibzeros.mif'
+          new_se_epi_path = f'{os.path.splitext(se_epi_path)[0]}_dwibzeros.mif'
           # Don't worry about trying to produce a balanced scheme here
           run.command(f'dwiextract dwi.mif - -bzero | '
                       f'mrcat - {se_epi_path} {new_se_epi_path} -axis 3')
@@ -916,7 +916,7 @@ def execute(): #pylint: disable=unused-variable
           se_epi_pe_sum = [ i + j for i, j in zip(se_epi_pe_sum, line[0:3]) ]
           if se_epi_volume_to_remove == len(se_epi_pe_scheme) and line[0:3] == dwi_first_bzero_pe[0:3]:
             se_epi_volume_to_remove = index
-        new_se_epi_path = os.path.splitext(se_epi_path)[0] + '_firstdwibzero.mif'
+        new_se_epi_path = f'{os.path.splitext(se_epi_path)[0]}_firstdwibzero.mif'
         if (se_epi_pe_sum == [ 0, 0, 0 ]) and (se_epi_volume_to_remove < len(se_epi_pe_scheme)):
           app.console(f'Balanced phase-encoding scheme detected in SE-EPI series; '
                       f'volume {se_epi_volume_to_remove} will be removed and replaced with first b=0 from DWIs')
@@ -999,22 +999,21 @@ def execute(): #pylint: disable=unused-variable
   if not topup_files_userpath:
     if dwi_first_bzero_index == len(grad):
       app.warn('No image volumes were classified as b=0 by MRtrix3; '
-               'no permutation of order of DWI volumes can occur ' + \
-              '(do you need to adjust config file entry BZeroThreshold?)')
+               'no permutation of order of DWI volumes can occur '
+               '(do you need to adjust config file entry BZeroThreshold?)')
     elif dwi_first_bzero_index:
       app.console(f'First b=0 volume in input DWIs is volume index {dwi_first_bzero_index}; '
                   f'this will be permuted to be the first volume (index 0) when eddy is run')
-      dwi_permvols_preeddy_option = ' -coord 3 ' + \
-                                            str(dwi_first_bzero_index) + \
-                                            ',0' + \
-                                            (':' + str(dwi_first_bzero_index-1) if dwi_first_bzero_index > 1 else '') + \
-                                            (',' + str(dwi_first_bzero_index+1) if dwi_first_bzero_index < dwi_num_volumes-1 else '') + \
-                                            (':' + str(dwi_num_volumes-1) if dwi_first_bzero_index < dwi_num_volumes-2 else '')
-      dwi_permvols_posteddy_option = ' -coord 3 1' + \
-                                            (':' + str(dwi_first_bzero_index) if dwi_first_bzero_index > 1 else '') + \
-                                            ',0' + \
-                                            (',' + str(dwi_first_bzero_index+1) if dwi_first_bzero_index < dwi_num_volumes-1 else '') + \
-                                            (':' + str(dwi_num_volumes-1) if dwi_first_bzero_index < dwi_num_volumes-2 else '')
+      dwi_permvols_preeddy_option = (f' -coord 3 {dwi_first_bzero_index}'
+                                     ',0'
+                                     f'{f":{dwi_first_bzero_index-1}" if dwi_first_bzero_index > 1 else ""}'
+                                     f'{f",{dwi_first_bzero_index+1}" if dwi_first_bzero_index < dwi_num_volumes-1 else ""}'
+                                     f'{f":{dwi_num_volumes-1}" if dwi_first_bzero_index < dwi_num_volumes-2 else ""}')
+      dwi_permvols_posteddy_option = (' -coord 3 1'
+                                      f'{f":{dwi_first_bzero_index}" if dwi_first_bzero_index > 1 else ""}'
+                                      ',0'
+                                      f'{f",{dwi_first_bzero_index+1}" if dwi_first_bzero_index < dwi_num_volumes-1 else ""}'
+                                      f'{f":{dwi_num_volumes-1}" if dwi_first_bzero_index < dwi_num_volumes-2 else ""}')
       app.debug('mrconvert options for axis permutation:')
       app.debug(f'Pre: {dwi_permvols_preeddy_option}')
       app.debug(f'Post: {dwi_permvols_posteddy_option}')
@@ -1100,10 +1099,10 @@ def execute(): #pylint: disable=unused-variable
     # Run topup
     topup_manual_options = ''
     if app.ARGS.topup_options:
-      topup_manual_options = ' ' + app.ARGS.topup_options.strip()
+      topup_manual_options = f' {app.ARGS.topup_options.strip()}'
     topup_output = run.command(f'{topup_cmd} --imain=topup_in.nii --datain=topup_datain.txt --out=field '
                                f'--fout=field_map{fsl_suffix} --config={topup_config_path} --verbose {topup_manual_options}')
-    topup_terminal_output = topup_output.stdout + '\n' + topup_output.stderr + '\n'
+    topup_terminal_output = f'{topup_output.stdout}\n{topup_output.stderr}\n'
     with open('topup_output.txt', 'wb') as topup_output_file:
       topup_output_file.write(topup_terminal_output.encode('utf-8', errors='replace'))
     if app.VERBOSITY > 1:
@@ -1252,7 +1251,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Revert eddy_manual_options from a list back to a single string
-  eddy_manual_options = (' ' + ' '.join(eddy_manual_options)) if eddy_manual_options else ''
+  eddy_manual_options = f' {" ".join(eddy_manual_options)}' if eddy_manual_options else ''
 
 
   # Prepare input data for eddy
@@ -1280,7 +1279,7 @@ def execute(): #pylint: disable=unused-variable
       app.console('CUDA version of "eddy" was not successful; '
                   'attempting OpenMP version')
       try:
-        eddy_output = run.command(eddy_openmp_cmd + ' ' + eddy_all_options)
+        eddy_output = run.command(f'{eddy_openmp_cmd} {eddy_all_options}')
       except run.MRtrixCmdError as exception_openmp:
         with open('eddy_openmp_failure_output.txt', 'wb') as eddy_output_file:
           eddy_output_file.write(str(exception_openmp).encode('utf-8', errors='replace'))
@@ -1293,7 +1292,7 @@ def execute(): #pylint: disable=unused-variable
 
   else:
     eddy_output = run.command(f'{eddy_openmp_cmd} {eddy_all_options}')
-  eddy_terminal_output = eddy_output.stdout + '\n' + eddy_output.stderr + '\n'
+  eddy_terminal_output = f'{eddy_output.stdout}\n{eddy_output.stderr}\n'
   with open('eddy_output.txt', 'wb') as eddy_output_file:
     eddy_output_file.write(eddy_terminal_output.encode('utf-8', errors='replace'))
   if app.VERBOSITY > 1:
@@ -1329,7 +1328,7 @@ def execute(): #pylint: disable=unused-variable
         progress = app.ProgressBar('Removing image padding prior to running EddyQC', len(eddyqc_files) + 3)
 
         for eddy_filename in eddyqc_files:
-          if os.path.isfile('dwi_post_eddy.' + eddy_filename):
+          if os.path.isfile(f'dwi_post_eddy.{eddy_filename}'):
             if slice_padded and eddy_filename in [ 'eddy_outlier_map', 'eddy_outlier_n_sqr_stdev_map', 'eddy_outlier_n_stdev_map' ]:
               with open(f'dwi_post_eddy.{eddy_filename}', 'r', encoding='utf-8') as f_eddyfile:
                 eddy_data = f_eddyfile.readlines()
@@ -1338,8 +1337,9 @@ def execute(): #pylint: disable=unused-variable
               for line in eddy_data:
                 line = ' '.join(line.strip().split(' ')[:-1])
               with open(f'dwi_post_eddy_unpad.{eddy_filename}', 'w', encoding='utf-8') as f_eddyfile:
-                f_eddyfile.write(eddy_data_header + '\n')
-                f_eddyfile.write('\n'.join(eddy_data) + '\n')
+                joined_eddy_data = '\n'.join(eddy_data)
+                f_eddyfile.write(f'{eddy_data_header}\n')
+                f_eddyfile.write(f'{joined_eddy_data}\n')
             elif eddy_filename.endswith('.nii.gz'):
               run.command(f'mrconvert dwi_post_eddy.{eddy_filename} dwi_post_eddy_unpad.{eddy_filename} {dwi_post_eddy_crop_option}')
             else:
@@ -1418,7 +1418,7 @@ def execute(): #pylint: disable=unused-variable
   app.cleanup(eddy_output_image_path)
 
   # Get the axis strides from the input series, so the output image can be modified to match
-  stride_restore_option = ' -strides ' + ','.join([str(i) for i in dwi_header.strides()])
+  stride_restore_option = f' -strides {",".join([str(i) for i in dwi_header.strides()])}'
 
   # Do we need to attempt dwirecon?
   done_dwirecon = False
@@ -1467,10 +1467,10 @@ def execute(): #pylint: disable=unused-variable
     if pe_design in (PEDesign.AllRPE, PEDesign.InferFromHeader):
       try:
         run.command('dwirecon dwi_post_eddy.mif combine_pairs'
-                    + (f' -field {field_map_image}' if field_map_image else '')
-                    + ' - | '
-                    + 'mrconvert - result.mif'
-                    + f'{dwi_post_eddy_crop_option}{stride_restore_option}')
+                    f'{f" -field {field_map_image}" if field_map_image else ""}'
+                    ' - | '
+                    'mrconvert - result.mif'
+                    f'{dwi_post_eddy_crop_option}{stride_restore_option}')
         if not field_map_image:
           app.warn('Explicit volume recombination done without access to field map image;'
                   ' aggregation will be a naive unweighted mean'
@@ -1487,10 +1487,10 @@ def execute(): #pylint: disable=unused-variable
         app.console('Attempting combination of empirical and predicted image data')
       try:
         run.command('dwirecon dwi_post_eddy.mif combine_predicted'
-                    + f' -field {field_map_image}'
-                    + ' - | '
-                    + 'mrconvert - result.mif'
-                    + f'{dwi_post_eddy_crop_option}{stride_restore_option}')
+                    f' -field {field_map_image}'
+                    ' - | '
+                    'mrconvert - result.mif'
+                    f'{dwi_post_eddy_crop_option}{stride_restore_option}')
         done_dwirecon = True
       except run.MRtrixCmdError:
         if pe_design is PEDesign.SplitRPE:
@@ -1515,7 +1515,7 @@ def execute(): #pylint: disable=unused-variable
     if not os.path.exists(eddyqc_path):
       run.function(os.makedirs, eddyqc_path)
     for filename in eddyqc_files:
-      if os.path.exists(eddyqc_prefix + '.' + filename):
+      if os.path.exists(f'{eddyqc_prefix}.{filename}'):
         # If this is an image, and axis padding was applied, want to undo the padding
         if filename.endswith('.nii.gz') and dwi_post_eddy_crop_option:
           run.command(f'mrconvert {eddyqc_prefix}.{filename} {shlex.quote(os.path.join(eddyqc_path, filename))} {dwi_post_eddy_crop_option}',
@@ -1523,7 +1523,7 @@ def execute(): #pylint: disable=unused-variable
         else:
           run.function(shutil.copy, f'{eddyqc_prefix}.{filename}', os.path.join(eddyqc_path, filename))
     # Also grab any files generated by the eddy qc tool QUAD
-    if os.path.isdir(eddyqc_prefix + '.qc'):
+    if os.path.isdir(f'{eddyqc_prefix}.qc'):
       if app.FORCE_OVERWRITE and os.path.exists(os.path.join(eddyqc_path, 'quad')):
         run.function(shutil.rmtree, os.path.join(eddyqc_path, 'quad'))
       run.function(shutil.copytree, f'{eddyqc_prefix}.qc', os.path.join(eddyqc_path, 'quad'))

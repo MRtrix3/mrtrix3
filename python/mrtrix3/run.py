@@ -204,7 +204,7 @@ class MRtrixCmdError(MRtrixBaseError):
     self.stdout = stdout
     self.stderr = stderr
   def __str__(self):
-    return self.stdout + self.stderr
+    return f'{self.stdout}{self.stderr}'
 
 class MRtrixFnError(MRtrixBaseError):
   def __init__(self, fn, text):
@@ -242,8 +242,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
     # Reference rather than copying
     env = shared.env
   if kwargs:
-    raise TypeError('Unsupported keyword arguments passed to run.command(): '
-                    + str(kwargs))
+    raise TypeError(f'Unsupported keyword arguments passed to run.command(): {kwargs}')
 
   if shell and mrconvert_keyval:
     raise TypeError('Cannot use "mrconvert_keyval=" parameter in shell mode')
@@ -381,7 +380,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
           line.insert(0, item)
 
     with shared.lock:
-      app.debug('To execute: ' + str(cmdstack))
+      app.debug(f'To execute: {cmdstack}')
       if (shared.verbosity and show) or shared.verbosity > 1:
         sys.stderr.write(f'{ANSI.execute}Command:{ANSI.clear}  {cmdstring}\n')
         sys.stderr.flush()
@@ -476,7 +475,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
       return_stderr += stderr_text
     if process.returncode:
       error = True
-      error_text += stdout_text + stderr_text
+      error_text += f'{stdout_text}{stderr_text}'
 
   # Get rid of any reference to the executed processes
   shared.close_command_index(this_command_index)
@@ -491,7 +490,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
   if shared.get_scratch_dir():
     with shared.lock:
       with open(os.path.join(shared.get_scratch_dir(), 'log.txt'), 'a', encoding='utf-8') as outfile:
-        outfile.write(' '.join(cmdsplit) + '\n')
+        outfile.write(f'{" ".join(cmdsplit)}\n')
 
   return CommandReturn(return_stdout, return_stderr)
 
@@ -542,7 +541,7 @@ def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
   if shared.get_scratch_dir():
     with shared.lock:
       with open(os.path.join(shared.get_scratch_dir(), 'log.txt'), 'a', encoding='utf-8') as outfile:
-        outfile.write(fnstring + '\n')
+        outfile.write(f'{fnstring}\n')
 
   return result
 
@@ -559,7 +558,7 @@ def exe_name(item):
   elif os.path.isfile(os.path.join(EXECUTABLES_PATH, item)):
     path = item
   elif os.path.isfile(os.path.join(EXECUTABLES_PATH, f'{item}.exe')):
-    path = item + '.exe'
+    path = f'{item}.exe'
   elif shutil.which(item) is not None:
     path = item
   elif shutil.which(f'{item}.exe') is not None:

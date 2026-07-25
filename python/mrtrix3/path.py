@@ -27,8 +27,7 @@ def all_in_dir(directory, **kwargs): #pylint: disable=unused-variable
   dir_path = kwargs.pop('dir_path', True)
   ignore_hidden_files = kwargs.pop('ignore_hidden_files', True)
   if kwargs:
-    raise TypeError('Unsupported keyword arguments passed to path.all_in_dir(): '
-                    + str(kwargs))
+    raise TypeError(f'Unsupported keyword arguments passed to path.all_in_dir(): {kwargs}')
   def is_hidden(directory, filename):
     if utils.is_windows():
       try:

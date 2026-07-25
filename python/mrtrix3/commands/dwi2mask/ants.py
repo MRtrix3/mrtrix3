@@ -69,14 +69,14 @@ def execute(): #pylint: disable=unused-variable
     raise MRtrixError('No template image information available from '
                       'either command-line or MRtrix configuration file(s)')
 
-  run.command(ANTS_BRAIN_EXTRACTION_CMD
-              + ' -d 3'
-              + ' -c 3x3x2x1'
-              + ' -a bzero.nii'
-              + ' -e template_image.nii'
-              + ' -m template_mask.nii'
-              + ' -o out'
-              + ('' if app.DO_CLEANUP else ' -k 1')
-              + (' -z' if app.VERBOSITY >= 3 else ''))
+  run.command(f'{ANTS_BRAIN_EXTRACTION_CMD}'
+              ' -d 3'
+              ' -c 3x3x2x1'
+              ' -a bzero.nii'
+              ' -e template_image.nii'
+              ' -m template_mask.nii'
+              ' -o out'
+              f'{"" if app.DO_CLEANUP else " -k 1"}'
+              f'{" -z" if app.VERBOSITY >= 3 else ""}')
 
   return 'outBrainExtractionMask.nii.gz'

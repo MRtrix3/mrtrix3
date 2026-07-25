@@ -32,8 +32,8 @@ COMMAND_HISTORY_STRING = None
 if sys.argv:
   COMMAND_HISTORY_STRING = sys.argv[0]
   for arg in sys.argv[1:]:
-    COMMAND_HISTORY_STRING += ' ' + shlex.quote(arg) # Use quotation marks only if required
-  COMMAND_HISTORY_STRING += '  (version=' + VERSION + ')'
+    COMMAND_HISTORY_STRING += f' {shlex.quote(arg)}' # Use quotation marks only if required
+  COMMAND_HISTORY_STRING += f'  (version={VERSION})'
 
 
 

@@ -150,7 +150,7 @@ def check_3d_nonunity(image_in): #pylint: disable=unused-variable
 #   form is not performed by this function.
 def mrinfo(image_path, field): #pylint: disable=unused-variable
   from mrtrix3 import app, run #pylint: disable=import-outside-toplevel
-  command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-' + field, '-nodelete' ]
+  command = [ run.exe_name(run.version_match('mrinfo')), image_path, f'-{field}', '-nodelete' ]
   if app.VERBOSITY > 1:
     app.console(f'Command: "{" ".join(command)}" '
                 '(piping data to local storage)')
@@ -172,8 +172,7 @@ def match(image_one, image_two, **kwargs): #pylint: disable=unused-variable, too
   up_to_dim = kwargs.pop('up_to_dim', 0)
   check_transform = kwargs.pop('check_transform', True)
   if kwargs:
-    raise TypeError('Unsupported keyword arguments passed to image.match(): '
-                    + str(kwargs))
+    raise TypeError(f'Unsupported keyword arguments passed to image.match(): {kwargs}')
   if not isinstance(image_one, Header):
     if not isinstance(image_one, str):
       raise MRtrixError(f'Error trying to test "{image_one}": '
@@ -238,8 +237,7 @@ def statistics(image_path, **kwargs): #pylint: disable=unused-variable
   allvolumes = kwargs.pop('allvolumes', False)
   ignorezero = kwargs.pop('ignorezero', False)
   if kwargs:
-    raise TypeError('Unsupported keyword arguments passed to image.statistics(): '
-                    + str(kwargs))
+    raise TypeError(f'Unsupported keyword arguments passed to image.statistics(): {kwargs}')
 
   command = [ run.exe_name(run.version_match('mrstats')), image_path ]
   for stat in IMAGE_STATISTICS:

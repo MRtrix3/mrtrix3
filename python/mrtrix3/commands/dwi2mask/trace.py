@@ -118,8 +118,9 @@ def execute(): #pylint: disable=unused-variable
       cohen_d = (stats_inside.mean - stats_outside.mean) / math.sqrt(variance)
       shell_weights.append(cohen_d)
     mask_path = f'mask-{iteration:02d}.mif'
-    run.command(f'mrcalc shell-00.mif {shell_weights[0]} -mult ' +
-                ' -add '.join(filepath + ' ' + str(weight) + ' -mult' for filepath, weight in zip(files[1:], shell_weights[1:])) +
+    shell_terms = ' -add '.join(f'{filepath} {weight} -mult'
+                                for filepath, weight in zip(files[1:], shell_weights[1:]))
+    run.command(f'mrcalc shell-00.mif {shell_weights[0]} -mult {shell_terms}'
                 ' -add - |'
                 ' mrthreshold - - |'
                 ' maskfilter - connect -largest - |'

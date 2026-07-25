@@ -66,7 +66,7 @@ def check_first(prefix, structures=None, first_stdout=None): #pylint: disable=un
         app.debug('Flag file identified indicating completion of all run_first_all tasks')
       try:
         flag_jobid = int(fslsub_stdout.rstrip().splitlines()[-1])
-        app.cleanup(['touch.' + stream + str(flag_jobid) for stream in ['o', 'e']])
+        app.cleanup([f'touch.{stream}{flag_jobid}' for stream in ['o', 'e']])
       except ValueError:
         app.debug('Unable to parse Job ID for fsl_sub "touch" job; could not erase stream files')
     except OSError:
@@ -80,7 +80,7 @@ def check_first(prefix, structures=None, first_stdout=None): #pylint: disable=un
              'but script may subsequently fail'
              ' if an expected structure was not segmented successfully')
     return
-  vtk_files = [ prefix + '-' + struct + '_first.vtk' for struct in structures ]
+  vtk_files = [ f'{prefix}-{struct}_first.vtk' for struct in structures ]
   existing_file_count = sum(os.path.exists(filename) for filename in vtk_files)
   if existing_file_count == len(vtk_files):
     app.debug(f'All {existing_file_count} expected FIRST .vtk files found')
@@ -173,7 +173,7 @@ def exe_name(name): #pylint: disable=unused-variable
 def find_image(name): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
   prefix = os.path.join(os.path.dirname(name), os.path.basename(name).split('.')[0])
-  if os.path.isfile(prefix + suffix()):
+  if os.path.isfile(f'{prefix}{suffix()}'):
     app.debug(f'Image at expected location: "{prefix}{suffix()}"')
     return f'{prefix}{suffix()}'
   for suf in ['.nii', '.nii.gz', '.img']:

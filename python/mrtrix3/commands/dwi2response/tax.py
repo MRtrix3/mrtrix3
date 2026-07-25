@@ -57,7 +57,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 def execute(): #pylint: disable=unused-variable
   lmax_option = ''
   if app.ARGS.lmax:
-    lmax_option = ' -lmax ' + ','.join(map(str, app.ARGS.lmax))
+    lmax_option = f' -lmax {",".join(map(str, app.ARGS.lmax))}'
 
   convergence_change = 0.01 * app.ARGS.convergence
 
@@ -110,7 +110,7 @@ def execute(): #pylint: disable=unused-variable
     run.command(f'mrcalc {prefix}peak_ratio.mif {app.ARGS.peak_ratio} -lt {mask_in_path} -mult {prefix}SF.mif -datatype bit')
     app.cleanup(f'{prefix}peak_ratio.mif')
     # Make sure image isn't empty
-    sf_voxel_count = image.statistics(prefix + 'SF.mif', mask=f'{prefix}SF.mif').count
+    sf_voxel_count = image.statistics(f'{prefix}SF.mif', mask=f'{prefix}SF.mif').count
     if not sf_voxel_count:
       raise MRtrixError('Aborting: All voxels have been excluded from single-fibre selection')
     # Generate a new response function

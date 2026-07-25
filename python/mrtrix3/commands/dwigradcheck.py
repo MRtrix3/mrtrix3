@@ -153,7 +153,7 @@ def execute(): #pylint: disable=unused-variable
           grad_path = f'grad{suffix}.b'
           with open(grad_path, 'w', encoding='utf-8') as grad_file:
             for line in grad:
-              grad_file.write (','.join([str(v) for v in line]) + '\n')
+              grad_file.write (f'{",".join([str(v) for v in line])}\n')
 
           grad_option = f' -grad {grad_path}'
 
@@ -166,10 +166,10 @@ def execute(): #pylint: disable=unused-variable
 
           grad = [ grad[permutation[0]], grad[permutation[1]], grad[permutation[2]] ]
 
-          grad_path = 'bvecs' + suffix
+          grad_path = f'bvecs{suffix}'
           with open(grad_path, 'w', encoding='utf-8') as bvecs_file:
             for line in grad:
-              bvecs_file.write (' '.join([str(v) for v in line]) + '\n')
+              bvecs_file.write (f'{" ".join([str(v) for v in line])}\n')
 
           grad_option = f' -fslgrad {grad_path} bvals'
 

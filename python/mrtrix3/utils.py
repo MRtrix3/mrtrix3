@@ -83,8 +83,7 @@ def load_keyval(filename, **kwargs): #pylint: disable=unused-variable
   encoding = kwargs.pop('encoding', 'latin1')
   errors = kwargs.pop('errors', 'ignore')
   if kwargs:
-    raise TypeError('Unsupported keyword arguments passed to utils.load_keyval(): '
-                    + str(kwargs))
+    raise TypeError(f'Unsupported keyword arguments passed to utils.load_keyval(): {kwargs}')
 
   def decode(line):
     if isinstance(line, bytes):

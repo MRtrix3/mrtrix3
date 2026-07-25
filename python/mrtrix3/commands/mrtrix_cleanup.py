@@ -59,18 +59,18 @@ def execute(): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
 
   file_regex = re.compile(r"^mrtrix-tmp-[a-zA-Z0-9]{6}\..*$")
-  file_config_regex = re.compile(r"^" + CONFIG['TmpFilePrefix'] + r"[a-zA-Z0-9]{6}\..*$") \
+  file_config_regex = re.compile(rf"^{CONFIG['TmpFilePrefix']}[a-zA-Z0-9]{{6}}\..*$") \
                       if 'TmpFilePrefix' in CONFIG and CONFIG['TmpFilePrefix'] != 'mrtrix-tmp-' \
                       else None
   dir_regex = re.compile(r"^\w+-tmp-[a-zA-Z0-9]{6}$")
-  dir_config_regex = re.compile(r"^" + CONFIG['ScriptScratchPrefix'] + r"[a-zA-Z0-9]{6}$") \
+  dir_config_regex = re.compile(rf"^{CONFIG['ScriptScratchPrefix']}[a-zA-Z0-9]{{6}}$") \
                       if 'ScriptScratchPrefix' in CONFIG \
                       else None
 
   files_to_delete = [ ]
   dirs_to_delete = [ ]
   root_dir = os.path.abspath(app.ARGS.path)
-  print_search_dir = ('' if os.path.abspath(os.getcwd()) == root_dir else ' from ' + root_dir)
+  print_search_dir = ('' if os.path.abspath(os.getcwd()) == root_dir else f' from {root_dir}')
   def file_search(regex):
     files_to_delete.extend([ os.path.join(dirname, filename) for filename in filter(regex.search, filelist) ])
   def dir_search(regex):
@@ -143,20 +143,18 @@ def execute(): #pylint: disable=unused-variable
     def print_freed():
       return f' ({size_deleted} {POSTFIXES[postfix_index]} freed)' if size_deleted else ''
     if except_list:
-      app.console('%d of %d items erased%s' # pylint: disable=consider-using-f-string
-                  % (len(files_to_delete) + len(dirs_to_delete) - len(except_list),
-                     len(files_to_delete) + len(dirs_to_delete),
-                     print_freed()))
+      total_count = len(files_to_delete) + len(dirs_to_delete)
+      app.console(f'{total_count - len(except_list)} of {total_count} items erased{print_freed()}')
       if app.ARGS.failed:
         with open(app.ARGS.failed, 'w', encoding='utf-8') as outfile:
           for item in except_list:
-            outfile.write(item + '\n')
+            outfile.write(f'{item}\n')
         app.console(f'List of items script failed to erase written to file "{app.ARGS.failed}"')
       else:
         app.console('Items that could not be erased:')
         for item in except_list:
           app.console(f'  {item}')
     else:
-      app.console('All items deleted successfully' + print_freed())
+      app.console(f'All items deleted successfully{print_freed()}')
   else:
     app.console('No files or directories found')

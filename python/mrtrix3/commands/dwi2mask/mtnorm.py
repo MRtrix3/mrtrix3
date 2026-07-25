@@ -119,9 +119,9 @@ def execute(): #pylint: disable=unused-variable
     app.cleanup(tissues[1].tissue_rf)
     tissues = tissues[::2]
 
+  tissue_args = ' '.join(f'{tissue.tissue_rf} {tissue.fod}' for tissue in tissues)
   run.command(f'dwi2fod msmt_csd {dwi_image} -lmax {",".join(map(str, lmax))} '
-              + ' '.join(tissue.tissue_rf + ' ' + tissue.fod
-                         for tissue in tissues))
+              f'{tissue_args}')
 
   tissue_sum_image = 'tissuesum.mif'
   run.command(f'mrconvert {tissues[0].fod} -coord 3 0 - | '

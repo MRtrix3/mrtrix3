@@ -89,8 +89,7 @@ def load_numeric(filename, **kwargs):
   encoding = kwargs.pop('encoding', 'latin1')
   errors = kwargs.pop('errors', 'ignore')
   if kwargs:
-    raise TypeError('Unsupported keyword arguments passed to matrix.load_numeric(): '
-                    + str(kwargs))
+    raise TypeError(f'Unsupported keyword arguments passed to matrix.load_numeric(): {kwargs}')
 
   def decode(line):
     if isinstance(line, bytes):
@@ -175,8 +174,7 @@ def save_numeric(filename, data, **kwargs):
   encoding = kwargs.pop('encoding', None)
   force = kwargs.pop('force', False)
   if kwargs:
-    raise TypeError('Unsupported keyword arguments passed to matrix.save_numeric(): '
-                    + str(kwargs))
+    raise TypeError(f'Unsupported keyword arguments passed to matrix.save_numeric(): {kwargs}')
 
   if not force and os.path.exists(filename):
     raise MRtrixError(f'output file "{filename}" already exists '
@@ -230,12 +228,12 @@ def save_numeric(filename, data, **kwargs):
         # input is 2D
         for row in data:
           row_fmt = delimiter.join([fmt, ] * len(row))
-          outfile.write(row_fmt % tuple(row) + newline)
+          outfile.write(f'{row_fmt % tuple(row)}{newline}')
 
       else:
         # input is 1D
         fmt = delimiter.join([fmt, ] * len(data))
-        outfile.write(fmt % tuple(data) + newline)
+        outfile.write(f'{fmt % tuple(data)}{newline}')
 
     for key, value in sorted(footer.items()):
       for line in value.splitlines():

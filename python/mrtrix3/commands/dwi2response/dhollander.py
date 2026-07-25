@@ -119,7 +119,7 @@ def execute(): #pylint: disable=unused-variable
     if len(sfwm_lmax) != len(bvalues):
       raise MRtrixError(f'Number of lmax\'s ({len(sfwm_lmax)}, as supplied to the -lmax option: '
                         f'{",".join(map(str,sfwm_lmax))}) does not match number of unique b-values.')
-    sfwm_lmax_option = ' -lmax ' + ','.join(map(str,sfwm_lmax))
+    sfwm_lmax_option = f' -lmax {",".join(map(str,sfwm_lmax))}'
 
 
   # PREPARATION
@@ -128,7 +128,7 @@ def execute(): #pylint: disable=unused-variable
 
   # Erode (brain) mask.
   if app.ARGS.erode > 0:
-    app.console('* Eroding brain mask by ' + str(app.ARGS.erode) + ' pass(es)...')
+    app.console(f'* Eroding brain mask by {app.ARGS.erode} pass(es)...')
     run.command(f'maskfilter mask.mif erode eroded_mask.mif -npass {app.ARGS.erode}', show=False)
   else:
     app.console('Not eroding brain mask.')
@@ -177,7 +177,7 @@ def execute(): #pylint: disable=unused-variable
   app.console('Crude segmentation:')
 
   # Compute FA and principal eigenvectors; crude WM versus GM-CSF separation based on FA.
-  app.console('* Crude WM versus GM-CSF separation (at FA=' + str(app.ARGS.fa) + ')...')
+  app.console(f'* Crude WM versus GM-CSF separation (at FA={app.ARGS.fa})...')
   run.command('dwi2tensor dwi.mif - -mask safe_mask.mif | '
               'tensor2metric - -fa safe_fa.mif -vector safe_vecs.mif -modulate none -mask safe_mask.mif',
               show=False)
@@ -291,10 +291,11 @@ def execute(): #pylint: disable=unused-variable
     app.console(f'   Selecting WM single-fibre voxels using "{app.ARGS.wm_algo}" algorithm')
     if app.ARGS.wm_algo == 'tax' and app.ARGS.sfwm != 0.5:
       app.warn('Single-fibre WM response function selection algorithm "tax" will not honour requested WM voxel percentage')
+    number_option = '' if app.ARGS.wm_algo == 'tax' else f' -number {voxsfwmcount}'
     run.command(f'dwi2response {app.ARGS.wm_algo} dwi.mif _respsfwmss.txt -mask refined_wm.mif -voxels voxels_sfwm.mif'
-                + ('' if app.ARGS.wm_algo == 'tax' else (' -number ' + str(voxsfwmcount)))
-                + ' -scratch ' + shlex.quote(app.SCRATCH_DIR)
-                + recursive_cleanup_option,
+                f'{number_option}'
+                f' -scratch {shlex.quote(app.SCRATCH_DIR)}'
+                f'{recursive_cleanup_option}',
                 show=False)
   else:
     app.console('   Selecting WM single-fibre voxels using built-in (Dhollander et al., 2019) algorithm')
@@ -310,11 +311,11 @@ def execute(): #pylint: disable=unused-variable
           ewr.write(f'{refwmcoef} 0 0 0\n')
         else:
           ewr.write(f'{refwmcoef} {-refwmcoef} {refwmcoef} {-refwmcoef}\n')
-    run.command('dwi2fod msmt_csd dwi.mif ewmrf.txt abs_ewm2.mif response_csf.txt abs_csf2.mif -mask refined_wm.mif -lmax 2,0' + bvalues_option, show=False)
+    run.command(f'dwi2fod msmt_csd dwi.mif ewmrf.txt abs_ewm2.mif response_csf.txt abs_csf2.mif -mask refined_wm.mif -lmax 2,0{bvalues_option}', show=False)
     run.command('mrconvert abs_ewm2.mif - -coord 3 0 | mrcalc - abs_csf2.mif -add abs_sum2.mif', show=False)
     run.command('sh2peaks abs_ewm2.mif - -num 1 -mask refined_wm.mif | peaks2amp - - | mrcalc - abs_sum2.mif -divide - | mrconvert - metric_sfwm2.mif -coord 3 0 -axes 0,1,2', show=False)
     run.command(f'mrcalc refined_wm.mif metric_sfwm2.mif 0 -if - | mrthreshold - - -top {2*voxsfwmcount} -ignorezero | mrcalc refined_wm.mif - 0 -if - -datatype bit | mrconvert - refined_sfwm.mif -axes 0,1,2', show=False)
-    run.command('dwi2fod msmt_csd dwi.mif ewmrf.txt abs_ewm6.mif response_csf.txt abs_csf6.mif -mask refined_sfwm.mif -lmax 6,0' + bvalues_option, show=False)
+    run.command(f'dwi2fod msmt_csd dwi.mif ewmrf.txt abs_ewm6.mif response_csf.txt abs_csf6.mif -mask refined_sfwm.mif -lmax 6,0{bvalues_option}', show=False)
     run.command('mrconvert abs_ewm6.mif - -coord 3 0 | mrcalc - abs_csf6.mif -add abs_sum6.mif', show=False)
     run.command('sh2peaks abs_ewm6.mif - -num 1 -mask refined_sfwm.mif | peaks2amp - - | mrcalc - abs_sum6.mif -divide - | mrconvert - metric_sfwm6.mif -coord 3 0 -axes 0,1,2', show=False)
     run.command(f'mrcalc refined_sfwm.mif metric_sfwm6.mif 0 -if - | mrthreshold - - -top {voxsfwmcount} -ignorezero | mrcalc refined_sfwm.mif - 0 -if - -datatype bit | mrconvert - voxels_sfwm.mif -axes 0,1,2', show=False)
@@ -323,7 +324,7 @@ def execute(): #pylint: disable=unused-variable
   app.console(f'   [ WM: {statrefwmcount} -> {statvoxsfwmcount} (single-fibre) ]')
   # Estimate SF WM response function
   app.console(' * Estimating response function...')
-  run.command('amp2response dwi.mif voxels_sfwm.mif safe_vecs.mif response_sfwm.txt' + bvalues_option + sfwm_lmax_option, show=False)
+  run.command(f'amp2response dwi.mif voxels_sfwm.mif safe_vecs.mif response_sfwm.txt{bvalues_option}{sfwm_lmax_option}', show=False)
 
 
   # OUTPUT AND SUMMARY

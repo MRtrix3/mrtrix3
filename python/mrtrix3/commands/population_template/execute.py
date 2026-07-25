@@ -96,7 +96,7 @@ def execute(): #pylint: disable=unused-variable
 
   agg_weights = app.ARGS.aggregation_weights
   if agg_weights is not None:
-    agg_measure = 'weighted_' + agg_measure
+    agg_measure = f'weighted_{agg_measure}'
     if agg_measure != 'weighted_mean':
       raise MRtrixError(f'aggregation weights require "-aggregate mean" option; provided: {app.ARGS.aggregate}')
     if not os.path.isfile(app.ARGS.aggregation_weights):
@@ -189,7 +189,7 @@ def execute(): #pylint: disable=unused-variable
   if do_fod_registration:
     fod_contrasts_dirs = [app.ARGS.input_dir[cid] for cid in range(n_contrasts) if cns.fod_reorientation[cid]]
     app.console(f'SH Series detected, performing FOD registration in contrast: {", ".join(map(str, fod_contrasts_dirs))}')
-  c_mrtransform_reorientation = [' -reorient_fod ' + ('yes' if cns.fod_reorientation[cid] else 'no') + ' '
+  c_mrtransform_reorientation = [f' -reorient_fod {"yes" if cns.fod_reorientation[cid] else "no"} '
                                  for cid in range(n_contrasts)]
 
   if nanmask_input:
@@ -414,7 +414,7 @@ def execute(): #pylint: disable=unused-variable
     avh3d = 'average_header3d.mif'
     avh4d = 'average_header4d.mif'
     if len(image.Header('average_header.mif').size()) == 3:
-      run.command('mrconvert average_header.mif ' + avh3d)
+      run.command(f'mrconvert average_header.mif {avh3d}')
     else:
       run.command(f'mrconvert average_header.mif -coord 3 0 -axes 0,1,2 {avh3d}')
     run.command(f'mrconvert {avh3d} -axes 0,1,2,-1 {avh4d}')
@@ -470,7 +470,7 @@ def execute(): #pylint: disable=unused-variable
     lmax_option = ' -rigid_lmax 0 ' if cns.fod_reorientation[cid] else ' -noreorientation '
     contrast_weight_option = cns.initial_alignment_weight_option
     for inp in ins:
-      output_option = ' -rigid ' + os.path.join('linear_transforms_initial', f'{inp.uid}.txt')
+      output_option = f' -rigid {os.path.join("linear_transforms_initial", f"{inp.uid}.txt")}'
       images = ' '.join([f'{p} {t}' for p, t in zip(inp.ims_path, cns.templates)])
       if use_masks:
         mask_option = f' -mask1 {inp.msk_path}'
@@ -486,7 +486,7 @@ def execute(): #pylint: disable=unused-variable
             for cid in range(1, n_contrasts):
               cmd += [inp.ims_path[cid], str(cns.mc_weight_initial_alignment[cid]), '-mult', '-add']
             contrast_weight_option = ''
-            run.command(' '.join(cmd) + ' - | ' \
+            run.command(f'{" ".join(cmd)} - | '
                         f'mrfilter - zclean -zlower 3 -zupper 3 robust/image_{inp.uid}.mif '
                         f'-maskin {inp.msk_path} -maskout robust/mask_{inp.uid}.mif')
           else:
@@ -496,16 +496,13 @@ def execute(): #pylint: disable=unused-variable
           mask_option = f' -mask1 robust/mask_{inp.uid}.mif'
           lmax_option = ''
 
-      run.command('mrregister ' + images +
-                  mask_option +
-                  ' -rigid_scale 1 ' +
-                  ' -rigid_niter 0 ' +
-                  ' -type rigid ' +
-                  lmax_option +
-                  contrast_weight_option +
-                  ' -rigid_init_translation ' + initial_alignment.replace('robust_', '') + ' ' +
-                  datatype_option +
-                  output_option)
+      run.command(f'mrregister {images}{mask_option}'
+                  ' -rigid_scale 1 '
+                  ' -rigid_niter 0 '
+                  ' -type rigid '
+                  f'{lmax_option}{contrast_weight_option}'
+                  f' -rigid_init_translation {initial_alignment.replace("robust_", "")} '
+                  f'{datatype_option}{output_option}')
       # translate input images to centre of mass without interpolation
       transform_path = os.path.join('linear_transforms_initial', f'{inp.uid}.txt')
       for cid in range(n_contrasts):
@@ -528,7 +525,7 @@ def execute(): #pylint: disable=unused-variable
       run.command('mrgrid average_header_tight.mif pad -uniform 10 average_header.mif', force=True)
     else:
       run.command('mrgrid average_header_tight.mif pad -uniform 10 - | '
-                  'mrgrid - regrid -voxel ' + ','.join(map(str, voxel_size)) + ' average_header.mif', force=True)
+                  f'mrgrid - regrid -voxel {",".join(map(str, voxel_size))} average_header.mif', force=True)
     run.function(os.remove, 'average_header_tight.mif')
     for cid in range(1, n_contrasts):
       run.function(os.remove, f'average_header{cns.suff[cid]}.mif')
@@ -601,17 +598,17 @@ def execute(): #pylint: disable=unused-variable
     if not app.ARGS.linear_no_drift_correction and initial_alignment != 'none':
       app.console('Calculating average initial transform for linear drift correction')
       run.command(['transformcalc',
-                   [os.path.join('linear_transforms_initial', inp.uid + '.txt') for inp in ins],
+                   [os.path.join('linear_transforms_initial', f'{inp.uid}.txt') for inp in ins],
                    'average',
                    'linear_transform_average_init.txt',
                    '-quiet'])
       transform_average_driftref = matrix.load_transform('linear_transform_average_init.txt')
 
     def linear_msg():
-      return 'Optimising template with linear registration' \
-             + (f' (stage {level+1} of {len(linear_scales)}; {regtype})' \
-                if sys.stderr.isatty() \
-                else f' ({len(linear_scales)} stages)')
+      stage_text = f' (stage {level+1} of {len(linear_scales)}; {regtype})' \
+                   if sys.stderr.isatty() \
+                   else f' ({len(linear_scales)} stages)'
+      return f'Optimising template with linear registration{stage_text}'
     progress = app.ProgressBar(linear_msg, len(linear_scales) * len(ins) * (1 + n_contrasts + int(use_masks)))
     for level, (regtype, scale, niter, lmax) in enumerate(zip(linear_type, linear_scales, linear_niter, linear_lmax)):
       for inp in ins:
@@ -666,21 +663,13 @@ def execute(): #pylint: disable=unused-variable
                         f'loo_{cns.templates[cid]}',
                         force=True)
             tmpl.append(f'loo_{cns.templates[cid]}')
-          images = ' '.join([p + ' ' + t for p, t in zip(inp.ims_path, tmpl)])
+          images = ' '.join([f'{p} {t}' for p, t in zip(inp.ims_path, tmpl)])
         else:
-          images = ' '.join([p + ' ' + t for p, t in zip(inp.ims_path, cns.templates)])
-        command = 'mrregister ' + images + \
-                  initialise_option + \
-                  mask_option + \
-                  scale_option + \
-                  niter_option + \
-                  lmax_option + \
-                  regtype_option + \
-                  metric_option + \
-                  datatype_option + \
-                  contrast_weight_option + \
-                  output_option + \
-                  mrregister_log_option
+          images = ' '.join([f'{p} {t}' for p, t in zip(inp.ims_path, cns.templates)])
+        command = (f'mrregister {images}{initialise_option}{mask_option}{scale_option}'
+                   f'{niter_option}{lmax_option}{regtype_option}{metric_option}'
+                   f'{datatype_option}{contrast_weight_option}{output_option}'
+                   f'{mrregister_log_option}')
         run.command(command, force=True)
         utils.check_linear_transformation(os.path.join(f'linear_transforms_{level:02d}', f'{inp.uid}.txt'),
                                           command,
@@ -811,10 +800,10 @@ def execute(): #pylint: disable=unused-variable
     os.mkdir('warps')
     level = 0
     def nonlinear_msg():
-      return 'Optimising template with non-linear registration' \
-             + (f' (stage {level+1} of {len(nl_scales)})' \
-                if sys.stderr.isatty() \
-                else f' ({len(nl_scales)} stages)')
+      stage_text = f' (stage {level+1} of {len(nl_scales)})' \
+                   if sys.stderr.isatty() \
+                   else f' ({len(nl_scales)} stages)'
+      return f'Optimising template with non-linear registration{stage_text}'
     progress = app.ProgressBar(nonlinear_msg, len(nl_scales) * len(ins))
     for level, (scale, niter, lmax) in enumerate(zip(nl_scales, nl_niter, nl_lmax)):
       for inp in ins:

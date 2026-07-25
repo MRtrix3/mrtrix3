@@ -437,10 +437,8 @@ def execute(): #pylint: disable=unused-variable
   for variant in variants:
     app.debug(f'{variant}')
 
-  progress = app.ProgressBar('Testing peaks orientation alterations'
-                             + (f' (0 of {len(variants)})'
-                                if sys.stderr.isatty()
-                                else f' ({len(variants)} variants)'),
+  variants_text = f' (0 of {len(variants)})' if sys.stderr.isatty() else f' ({len(variants)} variants)'
+  progress = app.ProgressBar(f'Testing peaks orientation alterations{variants_text}',
                              len(variants))
   meanlength_default = None
   for variant_index, variant in enumerate(variants):

@@ -111,7 +111,7 @@ def execute(): #pylint: disable=unused-variable
     if len(app.ARGS.lmax) != len(shells):
       raise MRtrixError(f'Number of manually-defined lmax\'s ({len(app.ARGS.lmax)}) '
                         f'does not match number of b-values ({len(shells)})')
-    sfwm_lmax_option = ' -lmax ' + ','.join(map(str,app.ARGS.lmax))
+    sfwm_lmax_option = f' -lmax {",".join(map(str,app.ARGS.lmax))}'
 
   run.command('dwi2tensor dwi.mif - -mask mask.mif | '
               'tensor2metric - -fa fa.mif -vector vector.mif')
@@ -134,13 +134,13 @@ def execute(): #pylint: disable=unused-variable
   if not app.ARGS.sfwm_fa_threshold:
     app.console(f'Selecting WM single-fibre voxels using "{app.ARGS.wm_algo}" algorithm')
     run.command(f'dwi2response {app.ARGS.wm_algo} dwi.mif wm_ss_response.txt -mask wm_mask.mif -voxels wm_sf_mask.mif'
-                ' -scratch %s' % shlex.quote(app.SCRATCH_DIR)
-                + recursive_cleanup_option)
+                f' -scratch {shlex.quote(app.SCRATCH_DIR)}'
+                f'{recursive_cleanup_option}')
   else:
     app.console(f'Selecting WM single-fibre voxels using "fa" algorithm with a hard FA threshold of {app.ARGS.sfwm_fa_threshold}')
     run.command(f'dwi2response fa dwi.mif wm_ss_response.txt -mask wm_mask.mif -threshold {app.ARGS.sfwm_fa_threshold} -voxels wm_sf_mask.mif'
-                ' -scratch %s' % shlex.quote(app.SCRATCH_DIR)
-                + recursive_cleanup_option)
+                f' -scratch {shlex.quote(app.SCRATCH_DIR)}'
+                f'{recursive_cleanup_option}')
 
   # Check for empty masks
   wm_voxels  = image.statistics('wm_sf_mask.mif', mask='wm_sf_mask.mif').count

@@ -99,7 +99,7 @@ class Input: # pylint: disable=unused-variable
     if self.aggregation_weight:
       message += [f'agg weight: {self.aggregation_weight}']
     for csuff, fname in zip(self.contrasts, self.ims_filenames):
-      message += [f'{(csuff + ": ") if csuff else ""}: "{fname}"']
+      message += [f'{f"{csuff}: " if csuff else ""}: "{fname}"']
     if self.msk_filename:
       message += [f'mask: {self.msk_filename}']
     return ', '.join(message)

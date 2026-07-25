@@ -45,9 +45,10 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
 
-  run.command(('dwiextract input.mif - -shells ' + ','.join(map(str, app.ARGS.shells)) + ' | mrmath -' \
-                if app.ARGS.shells \
-                else 'mrmath input.mif') +
+  input_command = f'dwiextract input.mif - -shells {",".join(map(str, app.ARGS.shells))} | mrmath -' \
+                  if app.ARGS.shells \
+                  else 'mrmath input.mif'
+  run.command(f'{input_command}'
               ' mean - -axis 3 |'
               ' mrthreshold - - |'
               ' maskfilter - connect -largest - |'

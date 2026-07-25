@@ -242,10 +242,10 @@ def execute(): #pylint: disable=unused-variable
           exclude_unmatched.append(exclude)
     if exclude_unmatched:
 
+      unmatched_text = f'"{exclude_unmatched[0]}"' if len(exclude_unmatched) == 1 else str(exclude_unmatched)
       app.warn(f'{"Items" if len(exclude_unmatched) > 1 else "Item"} '
                'specified via -exclude did not result in item exclusion, '
-               'whether by direct match or compilation as regex: '
-               + (f'"{exclude_unmatched[0]}"' if len(exclude_unmatched) == 1 else str(exclude_unmatched)))
+               f'whether by direct match or compilation as regex: {unmatched_text}')
     inputs = [ arg for arg in inputs if arg not in to_exclude ]
     if not inputs:
       raise MRtrixError(f'No inputs remaining after application of exclusion {"criterion" if len(app.ARGS.exclude) == 1 else "criteria"}')
@@ -290,7 +290,7 @@ def execute(): #pylint: disable=unused-variable
         for (key, value) in self.substitutions.items():
           entry = entry.replace(key, value)
         if ' ' in entry:
-          entry = '"' + entry + '"'
+          entry = f'"{entry}"'
         self.cmd.append(entry)
       app.debug(f'Resulting command: {self.cmd}')
 
@@ -304,8 +304,8 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.test:
     app.console(f'Command strings for {len(jobs)} jobs:')
     for job in jobs:
-      sys.stderr.write(ANSI.execute + 'Input:' + ANSI.clear + f'   "{job.input_text}"\n')
-      sys.stderr.write(ANSI.execute + 'Command:' + ANSI.clear + f' {" ".join(job.cmd)}\n')
+      sys.stderr.write(f'{ANSI.execute}Input:{ANSI.clear}   "{job.input_text}"\n')
+      sys.stderr.write(f'{ANSI.execute}Command:{ANSI.clear} {" ".join(job.cmd)}\n')
     return
 
   parallel = app.NUM_THREADS is not None and app.NUM_THREADS > 1
@@ -328,7 +328,7 @@ def execute(): #pylint: disable=unused-variable
         return
       try:
         result = run.command(' '.join(my_job.cmd), shell=True)
-        my_job.outputtext = result.stdout + result.stderr
+        my_job.outputtext = f'{result.stdout}{result.stderr}'
         my_job.returncode = 0
       except run.MRtrixCmdError as exception:
         my_job.outputtext = str(exception)
@@ -352,7 +352,7 @@ def execute(): #pylint: disable=unused-variable
     for job in jobs:
       try:
         result = run.command(' '.join(job.cmd), shell=True)
-        job.outputtext = result.stdout + result.stderr
+        job.outputtext = f'{result.stdout}{result.stderr}'
         job.returncode = 0
       except run.MRtrixCmdError as exception:
         job.outputtext = str(exception)

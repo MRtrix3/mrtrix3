@@ -111,7 +111,7 @@ def execute(): #pylint: disable=unused-variable
   #   this is the case if the user has explicitly requested a subset of shells,
   #   or if the nominated algorithm operates on only a single b-value shell.
   need_to_extract = bool(alg.NEEDS_SINGLE_SHELL or shells_option)
-  extract_option = shells_option + singleshell_option
+  extract_option = f'{shells_option}{singleshell_option}'
 
   # Import the user-provided mask, if one was given
   if app.ARGS.mask:
@@ -171,7 +171,7 @@ def execute(): #pylint: disable=unused-variable
         raise MRtrixError('Provided mask image needs to be a 3D image')
 
     if not image.statistics('mask.mif', mask='mask.mif').count:
-      raise MRtrixError(('Provided' if app.ARGS.mask else 'Generated') + ' mask image does not contain any voxels')
+      raise MRtrixError(f'{"Provided" if app.ARGS.mask else "Generated"} mask image does not contain any voxels')
 
   # From here, the script splits depending on what estimation algorithm is being used
   alg.execute()

@@ -120,10 +120,10 @@ def execute(): #pylint: disable=unused-variable
       run.command(cmd)
       mask_list.append(mask_path)
     except run.MRtrixCmdError as e_dwi2mask:
-      app.warn('"dwi2mask ' + alg_string + '" failed; will be omitted from consensus')
+      app.warn(f'"dwi2mask {alg_string}" failed; will be omitted from consensus')
       app.debug(str(e_dwi2mask))
       with open(f'error_{alg_string}.txt', 'w', encoding='utf-8') as f_error:
-        f_error.write(str(e_dwi2mask) + '\n')
+        f_error.write(f'{e_dwi2mask}\n')
 
   app.debug(str(mask_list))
   if not mask_list:

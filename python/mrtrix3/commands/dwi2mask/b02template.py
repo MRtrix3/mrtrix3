@@ -176,7 +176,7 @@ def execute_ants(mode):
   # Note: Don't use nearest-neighbour interpolation;
   #   allow "partial volume fractions" in output, and threshold later
   run.command(f'{ANTS_TRANSFORM_CMD} -d 3 -i template_mask.nii -o {transformed_path} -r bzero.nii -t [ANTS0GenericAffine.mat,1]'
-              + (' -t ANTS1InverseWarp.nii.gz' if nonlinear else ''))
+              f'{" -t ANTS1InverseWarp.nii.gz" if nonlinear else ""}')
   return transformed_path
 
 
@@ -207,7 +207,7 @@ def execute_fsl():
 
   # Initial affine registration to template
   run.command(f'{flirt_cmd} -ref template_image.nii -in bzero.nii -omat bzero_to_template.mat {flirt_options}'
-              + (' -v' if app.VERBOSITY >= 3 else ''))
+              f'{" -v" if app.VERBOSITY >= 3 else ""}')
 
   # Produce dilated template mask image, so that registration is not
   #   too influenced by effects at the edge of the processing mask
@@ -222,7 +222,7 @@ def execute_fsl():
     app.console('No config file provided for FSL fnirt; it will use its internal defaults')
   run.command(f'{fnirt_cmd} {fnirt_config_option} --ref=template_image.nii --refmask=template_mask_dilated.nii'
               f' --in=bzero.nii --aff=bzero_to_template.mat --cout=bzero_to_template.nii'
-              + (' --verbose' if app.VERBOSITY >= 3 else ''))
+              f'{" --verbose" if app.VERBOSITY >= 3 else ""}')
   fnirt_output_path = fsl.find_image('bzero_to_template')
 
   # Invert non-linear warp from subject->template to template->subject

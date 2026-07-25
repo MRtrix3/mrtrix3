@@ -56,8 +56,8 @@ def execute(): #pylint: disable=unused-variable
 
   fast_cmd = fsl.exe_name('fast')
 
-  app.warn('Use of fsl algorithm in dwibiascorrect script is discouraged due to its strong dependence ' + \
-           'on brain masking (specifically its inability to correct voxels outside of this mask).' + \
+  app.warn('Use of fsl algorithm in dwibiascorrect script is discouraged due to its strong dependence '
+           'on brain masking (specifically its inability to correct voxels outside of this mask). '
            'Use of the ants algorithm is recommended for quantitative DWI analyses.')
 
   # Generate a mean b=0 image

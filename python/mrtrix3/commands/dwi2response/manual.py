@@ -71,7 +71,7 @@ def execute(): #pylint: disable=unused-variable
                 'tensor2metric - -vector dirs.mif')
 
   # Get response function
-  run.command('amp2response dwi.mif in_voxels.mif dirs.mif response.txt' + bvalues_option + lmax_option)
+  run.command(f'amp2response dwi.mif in_voxels.mif dirs.mif response.txt{bvalues_option}{lmax_option}')
 
   run.function(shutil.copyfile, 'response.txt', app.ARGS.output)
   if app.ARGS.voxels:

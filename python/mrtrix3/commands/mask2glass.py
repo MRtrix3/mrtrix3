@@ -84,16 +84,16 @@ def execute(): #pylint: disable=unused-variable
                 'fixed threshold of 0.5 will be used')
 
   # run upscaling step
-  run.command('mrgrid in.mif regrid upsampled.mif' + scale_option)
+  run.command(f'mrgrid in.mif regrid upsampled.mif{scale_option}')
 
   # run smoothing step
-  run.command('mrfilter upsampled.mif smooth upsampled_smooth.mif' + smooth_option)
+  run.command(f'mrfilter upsampled.mif smooth upsampled_smooth.mif{smooth_option}')
 
   # threshold image
-  run.command('mrthreshold upsampled_smooth.mif upsampled_smooth_thresh.mif' + threshold_option)
+  run.command(f'mrthreshold upsampled_smooth.mif upsampled_smooth_thresh.mif{threshold_option}')
 
   # dilate image for subtraction
-  run.command('maskfilter upsampled_smooth_thresh.mif dilate upsampled_smooth_thresh_dilate.mif' + dilate_option)
+  run.command(f'maskfilter upsampled_smooth_thresh.mif dilate upsampled_smooth_thresh_dilate.mif{dilate_option}')
 
   # create border
   run.command('mrcalc upsampled_smooth_thresh_dilate.mif upsampled_smooth_thresh.mif -xor out.mif -datatype bit')

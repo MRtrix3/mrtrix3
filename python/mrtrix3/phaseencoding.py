@@ -88,7 +88,7 @@ def get_scheme(arg): #pylint: disable=unused-variable
     line = [ float(value) for value in line ]
     line.append(float(arg.keyval()['TotalReadoutTime']))
   num_volumes = 1 if len(arg.size()) < 4 else arg.size()[3]
-  app.debug(str(line) + ' x ' + str(num_volumes) + ' rows')
+  app.debug(f'{line} x {num_volumes} rows')
   return [ line ] * num_volumes
 
 
@@ -99,8 +99,7 @@ def save_table(filename, scheme, **kwargs): #pylint: disable=unused-variable
   add_to_command_history = bool(kwargs.pop('add_to_command_history', True))
   header = kwargs.pop('header', { })
   if kwargs:
-    raise TypeError('Unsupported keyword arguments passed to phaseencoding.save(): '
-                    + str(kwargs))
+    raise TypeError(f'Unsupported keyword arguments passed to phaseencoding.save(): {kwargs}')
 
   if not scheme:
     raise MRtrixError('phaseencoding.save() cannot be run on an empty scheme')
@@ -131,6 +130,6 @@ def save_table(filename, scheme, **kwargs): #pylint: disable=unused-variable
   with open(filename, 'w', encoding='utf-8') as outfile:
     for key, value in sorted(header.items()):
       for line in value.splitlines():
-        outfile.write('# ' + key + ': ' + line + '\n')
+        outfile.write(f'# {key}: {line}\n')
     for line in scheme:
       outfile.write(f'{line[0]:.0f} {line[1]:.0f} {line[2]:.0f} {line[3]:.15g}\n')

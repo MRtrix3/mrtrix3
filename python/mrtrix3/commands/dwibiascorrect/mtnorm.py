@@ -103,16 +103,15 @@ def execute(): #pylint: disable=unused-variable
     app.cleanup(tissues[1].rffile)
     tissues = tissues[::2]
 
+  tissue_args = ' '.join(f'{tissue.rffile} {tissue.fod}' for tissue in tissues)
   run.command('dwi2fod msmt_csd in.mif'
-              + ' -lmax ' + ','.join(map(str, lmax))
-              + ' '
-              + ' '.join(f'{tissue.rffile} {tissue.fod}'
-                         for tissue in tissues))
+              f' -lmax {",".join(map(str, lmax))}'
+              f' {tissue_args}')
 
+  norm_args = ' '.join(f'{tissue.fod} {tissue.fod_norm}' for tissue in tissues)
   run.command('maskfilter mask.mif erode - | '
               'mtnormalise -mask - -balanced -check_norm field.mif '
-              + ' '.join(f'{tissue.fod} {tissue.fod_norm}'
-                         for tissue in tissues))
+              f'{norm_args}')
   app.cleanup([tissue.fod for tissue in tissues])
   app.cleanup([tissue.fod_norm for tissue in tissues])
   app.cleanup([tissue.rffile for tissue in tissues])

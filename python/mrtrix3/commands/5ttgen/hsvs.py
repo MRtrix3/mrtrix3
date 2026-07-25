@@ -270,7 +270,7 @@ def execute(): #pylint: disable=unused-variable
   # Arrange the images into lr pairs
   hipp_subfield_paired_images = [ ]
   for lh_filename in [ item for item in hipp_subfield_all_images if item[0] == 'l' ]:
-    if 'r' + lh_filename[1:] in hipp_subfield_all_images:
+    if f'r{lh_filename[1:]}' in hipp_subfield_all_images:
       hipp_subfield_paired_images.append(lh_filename[1:])
   # Choose which of these image pairs we are going to use
   for code in [ '.CA.', '.FS60.' ]:
@@ -439,8 +439,10 @@ def execute(): #pylint: disable=unused-variable
     name = f'{hemi_name}_LatVent_ChorPlex'
     init_mesh_path = f'{name}_init.vtk'
     smoothed_mesh_path = f'{name}.vtk'
-    run.command('mrcalc ' + ' '.join(aparc_image + ' ' + str(index) + ' -eq' for index, tissue, name in VENTRICLE_CP_ASEG[hemi_index]) + ' -add - | '
-                + f'voxel2mesh - -threshold 0.5 {init_mesh_path}')
+    ventricle_terms = ' '.join(f'{aparc_image} {index} -eq'
+                               for index, tissue, name in VENTRICLE_CP_ASEG[hemi_index])
+    run.command(f'mrcalc {ventricle_terms} -add - | '
+                f'voxel2mesh - -threshold 0.5 {init_mesh_path}')
     run.command(['meshfilter', init_mesh_path, 'smooth', smoothed_mesh_path])
     app.cleanup(init_mesh_path)
     run.command(['mesh2voxel', smoothed_mesh_path, template_image, f'{name}.mif'])
@@ -498,10 +500,9 @@ def execute(): #pylint: disable=unused-variable
   fourthventricle_zmin = min(int(line.split()[2]) for line in run.command('maskdump 4th-Ventricle.mif')[0].splitlines())
   if fourthventricle_zmin:
     bs_cropmask_path = 'brain_stem_crop.mif'
-    run.command('mredit brain_stem.mif - '
-                + ' '.join([ '-plane 2 ' + str(index) + ' 0' for index in range(0, fourthventricle_zmin) ])
-                + ' | '
-                + f'mrcalc brain_stem.mif - -sub 1e-6 -gt {bs_cropmask_path} -datatype bit')
+    plane_terms = ' '.join([ f'-plane 2 {index} 0' for index in range(0, fourthventricle_zmin) ])
+    run.command(f'mredit brain_stem.mif - {plane_terms} | '
+                f'mrcalc brain_stem.mif - -sub 1e-6 -gt {bs_cropmask_path} -datatype bit')
   app.cleanup(bs_fullmask_path)
   progress.done()
 
@@ -516,7 +517,7 @@ def execute(): #pylint: disable=unused-variable
       subfields.append(( amyg_lut_file, 'amyg' ))
 
     for subfields_lut_file, structure_name in subfields:
-      for hemi, filename in zip([ 'Left', 'Right'], [ prefix + hipp_subfield_image_suffix for prefix in [ 'l', 'r' ] ]):
+      for hemi, filename in zip([ 'Left', 'Right'], [ f'{prefix}{hipp_subfield_image_suffix}' for prefix in [ 'l', 'r' ] ]):
         # Extract individual components from image and assign to different tissues
         subfields_all_tissues_image = f'{hemi}_{structure_name}_subfields.mif'
         run.command(['labelconvert', os.path.join(mri_dir, filename), freesurfer_lut_file, subfields_lut_file, subfields_all_tissues_image])
@@ -600,7 +601,7 @@ def execute(): #pylint: disable=unused-variable
   # Run ACPCdetect, use results to draw spherical ROIs on T1 that will be fed to FSL FAST,
   #   the WM components of which will then be added to the 5TT
   if have_acpcdetect:
-    progress = app.ProgressBar('Using ACPCdetect and FAST to segment ' + acpc_string, 5)
+    progress = app.ProgressBar(f'Using ACPCdetect and FAST to segment {acpc_string}', 5)
     # ACPCdetect requires input image to be 16-bit
     # We also want to realign to RAS beforehand so that we can interpret the output voxel locations properly
     acpcdetect_input_image = 'T1RAS_16b.nii'
@@ -695,7 +696,8 @@ def execute(): #pylint: disable=unused-variable
   # Construct images with the partial volume of each tissue
   progress = app.ProgressBar('Combining segmentations of all structures corresponding to each tissue type', 5)
   for tissue in range(0,5):
-    run.command('mrmath ' + ' '.join(tissue_images[tissue]) + (' brain_stem.mif' if tissue == 2 else '') + ' sum - | '
+    tissue_image_list = ' '.join(tissue_images[tissue])
+    run.command(f'mrmath {tissue_image_list}{" brain_stem.mif" if tissue == 2 else ""} sum - | '
                 f'mrcalc - 1.0 -min tissue{tissue}_init.mif')
     app.cleanup(tissue_images[tissue])
     progress.increment()
