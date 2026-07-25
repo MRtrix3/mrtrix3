@@ -758,9 +758,6 @@ namespace MR
 
       void Window::parse_arguments ()
       {
-        if (MR::App::get_options ("norealign").size())
-          Header::do_realign_transform = false;
-
         if (MR::App::argument.size()) {
           if (MR::App::option.size())  {
             // check that first non-standard option appears after last argument:
