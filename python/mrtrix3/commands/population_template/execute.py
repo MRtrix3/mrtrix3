@@ -157,7 +157,7 @@ def execute(): #pylint: disable=unused-variable
 
   if len(app.ARGS.template) != n_contrasts:
     raise MRtrixError(f'mismatch between number of output templates ({len(app.ARGS.template)}) '
-                      'and number of contrasts ({n_contrasts})')
+                      f'and number of contrasts ({n_contrasts})')
 
   if app.ARGS.transformed_dir:
     if len(app.ARGS.transformed_dir) != n_contrasts:

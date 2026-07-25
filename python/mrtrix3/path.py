@@ -170,7 +170,7 @@ def wait_for(paths): #pylint: disable=unused-variable
     return
 
   item_message = f'new file "{paths[0]}"' if len(paths) == 1 else f'{len(paths)} new files'
-  progress = app.ProgressBar('Waiting for finalization of {item_message}')
+  progress = app.ProgressBar(f'Waiting for finalization of {item_message}')
   for _ in range(len(paths) - current_num_in_use):
     progress.increment()
   delay = 1.0/1024.0

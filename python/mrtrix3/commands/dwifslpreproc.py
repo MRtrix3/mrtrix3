@@ -537,7 +537,7 @@ def execute(): #pylint: disable=unused-variable
       except ValueError:
         try:
           slice_timing = matrix.load_numeric(app.ARGS.eddy_slspec, dtype=float)
-          app.debug('Slice timing: {slice_timing}')
+          app.debug(f'Slice timing: {slice_timing}')
           app.warn(f'"slspec" file provided to FSL eddy is supposed to contain slice indices for slice groups; '
                    f'contents of file "{app.ARGS.eddy_slspec}" appears to instead be slice timings; '
                    f'these data have been imported and will be converted to the appropriate format')
@@ -1369,7 +1369,7 @@ def execute(): #pylint: disable=unused-variable
         eddyqc_mask = 'eddy_mask_unpad.nii'
         progress.increment()
         field_map_image = fsl.find_image('field_map')
-        run.command('mrconvert {field_map_image} field_map_unpad.nii {dwi_post_eddy_crop_option}')
+        run.command(f'mrconvert {field_map_image} field_map_unpad.nii {dwi_post_eddy_crop_option}')
         eddyqc_fieldmap = 'field_map_unpad.nii'
         progress.increment()
         run.command(f'mrconvert {eddy_output_image_path} dwi_post_eddy_unpad.nii.gz {dwi_post_eddy_crop_option}')

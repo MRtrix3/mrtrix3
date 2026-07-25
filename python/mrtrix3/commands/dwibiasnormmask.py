@@ -265,7 +265,7 @@ def execute(): #pylint: disable=unused-variable
     if sys.stderr.isatty():
       result = f'Iteration {iteration}; {step} step'
       if iteration:
-        result += '; previous Dice coefficient {prev_dice_coefficient}'
+        result += f'; previous Dice coefficient {prev_dice_coefficient}'
       return result
     return 'Running iterative optimisation'
   progress = app.ProgressBar(msg)

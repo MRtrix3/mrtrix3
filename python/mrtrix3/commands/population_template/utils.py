@@ -99,7 +99,7 @@ def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=
       run.command(newcmd, force=True)
       return check_linear_transformation(transformation, newcmd, max_scaling, max_shear, max_rot, pause_on_warn=pause_on_warn)
     if pause_on_warn:
-      app.warn('you might want to manually repeat mrregister with different parameters and overwrite the transformation file: \n{transformation}')
+      app.warn(f'you might want to manually repeat mrregister with different parameters and overwrite the transformation file: \n{transformation}')
       app.console(f'The command that failed the test was: \n{cmd}')
       app.console(f'Working directory: \n{os.getcwd()}')
       input('press enter to continue population_template')
@@ -202,7 +202,7 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None, whites
       if not uid:
         raise MRtrixError(f'No uniquely identifiable part of filename "{path}" '
                           'after prefix and postfix substitution '
-                          'with prefix "{prefix}" and postfix "{postfix}"')
+                          f'with prefix "{prefix}" and postfix "{postfix}"')
       app.debug(f'UID mapping: "{filepath}" --> "{uid}"')
       if uid in uid_path:
         raise MRtrixError(f'unique file identifier is not unique: '
@@ -235,7 +235,8 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None, whites
     app.console(f'xcontrast_xsubject_pre_postfix: {xcontrast_xsubject_pre_postfix}')
   for ipostfix, postfix in enumerate(common_postfix):
     if not postfix:
-      raise MRtrixError('image filenames do not have a common postfix:\n%s' % '\n'.join(in_files[ipostfix]))
+      postfix_list = '\n'.join(in_files[ipostfix])
+      raise MRtrixError(f'image filenames do not have a common postfix:\n{postfix_list}')
 
   c_uids = []
   for cid, files in enumerate(in_files):
