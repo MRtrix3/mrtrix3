@@ -19,9 +19,9 @@ from mrtrix3 import app
 cmdline = app.Parser()
 cmdline.set_author('MRtrix3 test harness')
 cmdline.set_synopsis('Exercise the scalar and vector lmax argument types')
-cmdline.add_argument('-lmax_scalar', type=app.Parser.Lmax(0, 30), help='a scalar lmax')
-cmdline.add_argument('-lmax_vector', type=app.Parser.SequenceLmax(), help='a vector lmax')
-cmdline.parse_args()
+cmdline.add_option('lmax_scalar', 'a scalar lmax', type=app.Parser.Lmax(0, 30))
+cmdline.add_option('lmax_vector', 'a vector lmax', type=app.Parser.SequenceLmax())
+cmdline.parse()
 sys.stderr.write('LMAX_ACCEPTED\n')
 PYEOF
 

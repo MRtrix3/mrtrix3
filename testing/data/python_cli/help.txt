@@ -13,8 +13,8 @@ BBuuiilltt--iinn  ttyyppeess
   _-_f_l_a_g
      A binary flag
 
-  _-_s_t_r_i_n_g___i_m_p_l_i_c_i_t string
-     A built-in string (implicit)
+  _-_s_t_r_i_n_g___i_m_p_l_i_c_i_t str
+     A built-in string, its type declared through the builtin str
 
   _-_s_t_r_i_n_g___e_x_p_l_i_c_i_t str
      A built-in string (explicit)
@@ -28,24 +28,24 @@ BBuuiilltt--iinn  ttyyppeess
   _-_f_l_o_a_t___b_u_i_l_t_i_n float
      A floating-point; built-in type
 
-CCoommpplleexx  iinntteerrffaacceess;;  nnaarrggss,,  mmeettaavvaarr,,  eettcc..
+MMuullttii--aarrgguummeenntt  aanndd  rreeppeeaattaabbllee  ooppttiioonnss
 
-  _-_n_a_r_g_s___t_w_o string string
-     A command-line option with nargs=2, no metavar
+  _-_t_u_p_l_e___n_a_m_e_s first second
+     A two-argument option; its fields are identified by their names
+
+  _-_t_u_p_l_e___m_e_t_a_v_a_r_s metavar_one metavar_two
+     A two-argument option; its fields override their display ids
+
+  _-_t_u_p_l_e___d_e_s_c_r_i_b_e_d index value
+     A two-argument option; its fields carry their own descriptions and types
+       index: the index of the item (minimum: 0)
+       value: the value to be assigned (range: 0.0 to 1.0)
 
   _-_m_e_t_a_v_a_r___o_n_e metavar
-     A command-line option with nargs=1 and metavar="metavar"
+     A single-argument option with metavar="metavar"
 
-  _-_m_e_t_a_v_a_r___t_w_o metavar metavar
-     A command-line option with nargs=2 and metavar="metavar"
-
-  _-_m_e_t_a_v_a_r___t_u_p_l_e metavar_one metavar_two
-     A command-line option with nargs=2 and metavar=("metavar_one",
-     "metavar_two")
-
-  _-_a_p_p_e_n_d string  (multiple uses permitted)
-     A command-line option with "append" action (can be specified multiple
-     times)
+  _-_m_u_l_t_i_p_l_e str  (multiple uses permitted)
+     A command-line option that may be specified multiple times
 
   _-_u_n_u_s_e_d
      An option deliberately left unread to exercise unused-option tracking

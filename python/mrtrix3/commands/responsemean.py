@@ -37,18 +37,16 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_example_usage('Usage where data for each participant reside in a participant-specific directory:',
                             'responsemean subject-*/response.txt output_average_response.txt')
   cmdline.add_argument('inputs',
+                       'The input response function files',
                        type=app.Parser.FileIn(),
-                       allow_multiple=True,
-                       help='The input response function files')
+                       allow_multiple=True)
   cmdline.add_argument('output',
-                       type=app.Parser.FileOut(),
-                       help='The output mean response function file')
-  cmdline.add_argument('-legacy',
-                       action='store_true',
-                       default=None,
-                       help='Use the legacy behaviour of former command "average_response":'
-                            ' average response function coefficients directly,'
-                            ' without compensating for global magnitude differences between input files')
+                       'The output mean response function file',
+                       type=app.Parser.FileOut())
+  cmdline.add_option('legacy',
+                     'Use the legacy behaviour of former command "average_response":'
+                     ' average response function coefficients directly,'
+                     ' without compensating for global magnitude differences between input files')
 
 
 

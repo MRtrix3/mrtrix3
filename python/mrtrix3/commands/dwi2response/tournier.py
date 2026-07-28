@@ -21,8 +21,8 @@ NEEDS_SINGLE_SHELL = True # pylint: disable=unused-variable
 SUPPORTS_MASK = True # pylint: disable=unused-variable
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('tournier', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('tournier', parent=base_parser)
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Use the Tournier et al. (2013) iterative algorithm'
                       ' for single-fibre voxel selection and response function estimation')
@@ -30,34 +30,34 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       'Determination of the appropriate b-value and number of gradient directions for high-angular-resolution diffusion-weighted imaging. '
                       'NMR Biomedicine, 2013, 26, 1775-1786')
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input DWI')
+                      'The input DWI',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.FileOut(),
-                      help='The output response function text file')
-  options = parser.add_argument_group('Options specific to the "tournier" algorithm')
-  options.add_argument('-number',
-                       type=app.Parser.Int(1),
-                       metavar='voxels',
-                       default=300,
-                       help='Number of single-fibre voxels to use when calculating response function')
-  options.add_argument('-iter_voxels',
-                       type=app.Parser.Int(0),
-                       metavar='voxels',
-                       default=0,
-                       help='Number of single-fibre voxels to select when preparing for the next iteration '
-                            '(default = 10 x value given in -number)')
-  options.add_argument('-dilate',
-                       type=app.Parser.Int(1),
-                       metavar='iterations',
-                       default=1,
-                       help='Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration')
-  options.add_argument('-max_iters',
-                       type=app.Parser.Int(0),
-                       metavar='iterations',
-                       default=10,
-                       help='Maximum number of iterations '
-                            '(set to 0 to force convergence)')
+                      'The output response function text file',
+                      type=app.Parser.FileOut())
+  options = parser.add_option_group('Options specific to the "tournier" algorithm')
+  options.add_option('number',
+                     'Number of single-fibre voxels to use when calculating response function',
+                     type=app.Parser.Int(1),
+                     metavar='voxels',
+                     default=300)
+  options.add_option('iter_voxels',
+                     'Number of single-fibre voxels to select when preparing for the next iteration; '
+                     'a value of 0 selects 10 x the value given to the -number option',
+                     type=app.Parser.Int(0),
+                     metavar='voxels',
+                     default=0)
+  options.add_option('dilate',
+                     'Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration',
+                     type=app.Parser.Int(1),
+                     metavar='iterations',
+                     default=1)
+  options.add_option('max_iters',
+                     'Maximum number of iterations '
+                     '(set to 0 to force convergence)',
+                     type=app.Parser.Int(0),
+                     metavar='iterations',
+                     default=10)
 
 
 

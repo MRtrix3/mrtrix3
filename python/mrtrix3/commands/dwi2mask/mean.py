@@ -18,28 +18,27 @@ from mrtrix3 import app, run
 NEEDS_MEAN_BZERO = False # pylint: disable=unused-variable
 DEFAULT_CLEAN_SCALE = 2
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('mean', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('mean', parent=base_parser)
   parser.set_author('Warda Syeda (wtsyeda@unimelb.edu.au)')
   parser.set_synopsis('Generate a mask based on simply averaging all volumes in the DWI series')
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input DWI series')
+                      'The input DWI series',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.ImageOut(),
-                      help='The output mask image')
-  options = parser.add_argument_group('Options specific to the "mean" algorithm')
-  options.add_argument('-shells',
-                       type=app.Parser.SequenceFloat(),
-                       metavar='bvalues',
-                       help='Comma separated list of shells to be included in the volume averaging')
-  options.add_argument('-clean_scale',
-                       type=app.Parser.Int(0),
-                       default=DEFAULT_CLEAN_SCALE,
-                       help='the maximum scale used to cut bridges. '
-                            'A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. '
-                            'Setting this to 0 disables the mask cleaning step. '
-                            f'(Default: {DEFAULT_CLEAN_SCALE})')
+                      'The output mask image',
+                      type=app.Parser.ImageOut())
+  options = parser.add_option_group('Options specific to the "mean" algorithm')
+  options.add_option('shells',
+                     'Comma separated list of shells to be included in the volume averaging',
+                     type=app.Parser.SequenceFloat(),
+                     metavar='bvalues')
+  options.add_option('clean_scale',
+                     'the maximum scale used to cut bridges. '
+                     'A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. '
+                     'Setting this to 0 disables the mask cleaning step.',
+                     type=app.Parser.Int(0),
+                     default=DEFAULT_CLEAN_SCALE)
 
 
 

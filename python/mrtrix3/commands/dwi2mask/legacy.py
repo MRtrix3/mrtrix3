@@ -19,23 +19,22 @@ NEEDS_MEAN_BZERO = False # pylint: disable=unused-variable
 DEFAULT_CLEAN_SCALE = 2
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('legacy', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('legacy', parent=base_parser)
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Use the legacy MRtrix3 dwi2mask heuristic (based on thresholded trace images)')
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input DWI series')
+                      'The input DWI series',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.ImageOut(),
-                      help='The output mask image')
-  parser.add_argument('-clean_scale',
-                      type=app.Parser.Int(0),
-                      default=DEFAULT_CLEAN_SCALE,
-                      help='the maximum scale used to cut bridges. '
-                           'A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. '
-                           'Setting this to 0 disables the mask cleaning step. '
-                           f'(Default: {DEFAULT_CLEAN_SCALE})')
+                      'The output mask image',
+                      type=app.Parser.ImageOut())
+  parser.add_option('clean_scale',
+                    'the maximum scale used to cut bridges. '
+                    'A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. '
+                    'Setting this to 0 disables the mask cleaning step.',
+                    type=app.Parser.Int(0),
+                    default=DEFAULT_CLEAN_SCALE)
 
 
 

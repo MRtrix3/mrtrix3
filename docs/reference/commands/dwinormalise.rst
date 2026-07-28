@@ -13,14 +13,14 @@ Usage
 
 ::
 
-    dwinormalise algorithm [ options ] ...
+    dwinormalise subcommand [ options ] ...
 
--  *algorithm*: Select the algorithm to be used; additional details and options become available once an algorithm is nominated. Options are: group, manual, mtnorm
+-  *subcommand*: Select the subcommand to be used; additional details and options become available once a subcommand is nominated. Options are: group, manual, mtnorm
 
 Description
 -----------
 
-This script provides access to different techniques for globally scaling the intensity of diffusion-weighted images. The different algorithms have different purposes, and different requirements with respect to the data with which they must be provided & will produce as output. Further information on the individual algorithms available can be accessed via their individual help pages; eg. "dwinormalise group -help".
+This script provides access to different techniques for globally scaling the intensity of diffusion-weighted images. The different algorithms have different purposes, and different requirements with respect to the data with which they must be provided & will produce as output. Further information on the individual sub-commands available can be accessed via their individual help pages; eg. "dwinormalise group -help".
 
 Options
 -------

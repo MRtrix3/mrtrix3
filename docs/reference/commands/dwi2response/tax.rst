@@ -45,11 +45,11 @@ Options for importing the diffusion gradient table
 Options specific to the "tax" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-peak_ratio value** Second-to-first-peak amplitude ratio threshold (range: 0.0 to 1.0)
+-  **-peak_ratio value** Second-to-first-peak amplitude ratio threshold (range: 0.0 to 1.0; default: 0.10000000000000001)
 
--  **-max_iters iterations** Maximum number of iterations (set to 0 to force convergence) (minimum: 0)
+-  **-max_iters iterations** Maximum number of iterations (set to 0 to force convergence) (minimum: 0; default: 20)
 
--  **-convergence percentage** Percentile change in any RF coefficient required to continue iterating (minimum: 0.0)
+-  **-convergence percentage** Percentile change in any RF coefficient required to continue iterating (minimum: 0.0; default: 0.5)
 
 Standard options
 ^^^^^^^^^^^^^^^^

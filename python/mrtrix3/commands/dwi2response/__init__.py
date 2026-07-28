@@ -14,4 +14,4 @@
 # For more details, see http://www.mrtrix.org/.
 
 # pylint: disable=unused-variable
-ALGORITHMS = [ 'dhollander', 'fa', 'manual', 'msmt_5tt', 'tax', 'tournier' ]
+SUBCOMMANDS = [ 'dhollander', 'fa', 'manual', 'msmt_5tt', 'tax', 'tournier' ]

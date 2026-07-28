@@ -28,11 +28,11 @@ While the name of this script indicates that a binary mask image is required as 
 Options
 -------
 
--  **-dilate iterations** Provide number of iterations for dilation step; default = 2 (minimum: 0)
+-  **-dilate iterations** Provide number of iterations for dilation step (minimum: 0; default: 2)
 
--  **-scale value** Provide resolution upscaling value; default = 2.0 (minimum: 0.0)
+-  **-scale value** Provide resolution upscaling value (minimum: 0.0; default: 2.0)
 
--  **-smooth value** Provide standard deviation of smoothing (in mm); default = 1.0 (minimum: 0.0)
+-  **-smooth value** Provide standard deviation of smoothing (in mm) (minimum: 0.0; default: 1.0)
 
 Standard options
 ^^^^^^^^^^^^^^^^

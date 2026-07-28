@@ -19,7 +19,7 @@ Usage
 Options
 -------
 
--  **-alpha_value string** An option specific to the alpha sub-interface
+-  **-alpha_value str** An option specific to the alpha sub-interface
 
 Grouped common options demonstrating hierarchy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

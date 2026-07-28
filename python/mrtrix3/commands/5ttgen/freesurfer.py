@@ -19,22 +19,22 @@ from mrtrix3 import app, path, run
 
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('freesurfer', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('freesurfer', parent=base_parser)
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Generate the 5TT image based on a FreeSurfer parcellation image')
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input FreeSurfer parcellation image '
-                           '(any image containing "aseg" in its name)')
+                      'The input FreeSurfer parcellation image '
+                      '(any image containing "aseg" in its name)',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.ImageOut(),
-                      help='The output 5TT image')
-  options = parser.add_argument_group('Options specific to the "freesurfer" algorithm')
-  options.add_argument('-lut',
-                       type=app.Parser.FileIn(),
-                       help='Manually provide path to the lookup table on which the input parcellation image is based '
-                            '(e.g. FreeSurferColorLUT.txt)')
+                      'The output 5TT image',
+                      type=app.Parser.ImageOut())
+  options = parser.add_option_group('Options specific to the "freesurfer" algorithm')
+  options.add_option('lut',
+                     'Manually provide path to the lookup table on which the input parcellation image is based '
+                     '(e.g. FreeSurferColorLUT.txt)',
+                     type=app.Parser.FileIn())
 
 
 

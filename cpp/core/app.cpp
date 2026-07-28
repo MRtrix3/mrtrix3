@@ -49,7 +49,7 @@ ArgumentList ARGUMENTS;
 OptionList OPTIONS;
 std::vector<MutuallyExclusiveOptions> MUTUALLY_EXCLUSIVE_OPTIONS;
 SubcommandList SUBCOMMANDS;
-std::string SUBCOMMANDS_SELECTOR = "algorithm";
+std::string SUBCOMMANDS_SELECTOR = "subcommand";
 std::string SUBCOMMAND_SELECTED_ID;
 Description REFERENCES;
 bool REQUIRES_AT_LEAST_ONE_ARGUMENT = true;
@@ -1637,7 +1637,7 @@ void select_subcommand() {
       print_help();
       throw 0;
     }
-    throw Exception("no algorithm selected (expected one of: " + join(ids, ", ") + ")");
+    throw Exception("no " + SUBCOMMANDS_SELECTOR + " selected (expected one of: " + join(ids, ", ") + ")");
   }
 
   // Locate the selection token: the first token that is not an option nor an option's
@@ -1690,8 +1690,9 @@ void select_subcommand() {
     throw 0;
   }
   if (!selection.has_value())
-    throw Exception("no algorithm selected (expected one of: " + join(ids, ", ") + ")");
-  throw Exception("unknown algorithm \"" + *selection + "\" (expected one of: " + join(ids, ", ") + ")");
+    throw Exception("no " + SUBCOMMANDS_SELECTOR + " selected (expected one of: " + join(ids, ", ") + ")");
+  throw Exception("unknown " + SUBCOMMANDS_SELECTOR + " \"" + *selection + "\" (expected one of: " + join(ids, ", ") +
+                  ")");
 }
 
 namespace {

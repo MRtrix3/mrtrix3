@@ -24,11 +24,11 @@ def usage(cmdline): #pylint: disable=unused-variable
                      ' and Thijs Dhollander (thijs.dhollander@gmail.com)')
   cmdline.set_synopsis('Estimate response function(s) for spherical deconvolution')
   cmdline.add_description('dwi2response offers different algorithms for performing various types of response function estimation. '
-                          'The name of the algorithm must appear as the first argument on the command-line after "dwi2response". '
-                          'The subsequent arguments and options depend on the particular algorithm being invoked.')
-  cmdline.add_description('Each algorithm available has its own help page,'
+                          'The name of the sub-command must appear as the first argument on the command-line after "dwi2response". '
+                          'The subsequent arguments and options depend on the particular sub-command being invoked.')
+  cmdline.add_description('Each sub-command has its own help page,'
                           ' including necessary references;'
-                          ' e.g. to see the help page of the "fa" algorithm,'
+                          ' e.g. to see the help page of the "fa" sub-command,'
                            ' type "dwi2response fa".')
   cmdline.add_description('More information on response function estimation for spherical deconvolution'
                           ' can be found at the following link: \n'
@@ -53,27 +53,27 @@ def usage(cmdline): #pylint: disable=unused-variable
                           ' and provide that mask via the -mask option.')
 
   # General options
-  common_options = cmdline.add_argument_group('General dwi2response options')
-  common_options.add_argument('-mask',
-                              type=app.Parser.ImageIn(),
-                              help='Provide an initial mask for response voxel selection')
-  common_options.add_argument('-voxels',
-                              type=app.Parser.ImageOut(),
-                              help='Output an image showing the final voxel selection(s)')
-  common_options.add_argument('-shells',
-                              type=app.Parser.SequenceFloat(),
-                              metavar='bvalues',
-                              help='The b-value(s) to use in response function estimation '
-                                   '(comma-separated list in case of multiple b-values; '
-                                   'b=0 must be included explicitly if desired)')
-  common_options.add_argument('-lmax',
-                              type=app.Parser.SequenceLmax(),
-                              help='The maximum harmonic degree(s) for response function estimation '
-                                   '(comma-separated list in case of multiple b-values)')
+  common_options = cmdline.add_option_group('General dwi2response options')
+  common_options.add_option('mask',
+                            'Provide an initial mask for response voxel selection',
+                            type=app.Parser.ImageIn())
+  common_options.add_option('voxels',
+                            'Output an image showing the final voxel selection(s)',
+                            type=app.Parser.ImageOut())
+  common_options.add_option('shells',
+                            'The b-value(s) to use in response function estimation '
+                            '(comma-separated list in case of multiple b-values; '
+                            'b=0 must be included explicitly if desired)',
+                            type=app.Parser.SequenceFloat(),
+                            metavar='bvalues')
+  common_options.add_option('lmax',
+                            'The maximum harmonic degree(s) for response function estimation '
+                            '(comma-separated list in case of multiple b-values)',
+                            type=app.Parser.SequenceLmax())
   app.add_dwgrad_import_options(cmdline)
 
   # Import the command-line settings for all algorithms found in the relevant directory
-  cmdline.add_subparsers()
+  cmdline.add_subcommands()
 
 
 
@@ -85,7 +85,7 @@ def execute(): #pylint: disable=unused-variable
   from mrtrix3 import app, image, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   # Load module for the user-requested algorithm
-  alg = importlib.import_module(f'.{app.ARGS.algorithm}', 'mrtrix3.commands.dwi2response')
+  alg = importlib.import_module(f'.{app.ARGS.subcommand}', 'mrtrix3.commands.dwi2response')
 
   # Sanitise some inputs, and get ready for data import
   if app.ARGS.lmax:
@@ -111,7 +111,9 @@ def execute(): #pylint: disable=unused-variable
   #   this is the case if the user has explicitly requested a subset of shells,
   #   or if the nominated algorithm operates on only a single b-value shell.
   need_to_extract = bool(alg.NEEDS_SINGLE_SHELL or shells_option)
-  extract_option = f'{shells_option}{singleshell_option}'
+  # Both operands are command-line token lists, so this is a list concatenation, not a
+  #   string formation: the result is spliced into the run.command() argument lists below.
+  extract_option = shells_option + singleshell_option
 
   # Import the user-provided mask, if one was given
   if app.ARGS.mask:

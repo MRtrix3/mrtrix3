@@ -25,8 +25,8 @@ THRESHOLD_DEFAULT = 0.5
 
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('mtnorm', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('mtnorm', parent=base_parser)
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au) '
                     'and Arshiya Sangchooli (asangchooli@student.unimelb.edu.au)')
   parser.set_synopsis('Derives a DWI brain mask by calculating and then thresholding a sum-of-tissue-densities image')
@@ -51,30 +51,29 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       'Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. '
                       'ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5')
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input DWI series')
+                      'The input DWI series',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.ImageOut(),
-                      help='The output mask image')
-  options = parser.add_argument_group('Options specific to the "mtnorm" algorithm')
-  options.add_argument('-init_mask',
-                       type=app.Parser.ImageIn(),
-                       help='Provide an initial brain mask, '
-                            'which will constrain the response function estimation '
-                            '(if omitted, the default dwi2mask algorithm will be used)')
-  options.add_argument('-lmax',
-                       type=app.Parser.SequenceLmax(),
-                       help='The maximum spherical harmonic degree for the estimated FODs (see Description); '
-                            f'defaults are "{",".join(map(str, LMAXES_MULTI))}" for multi-shell '
-                            f'and "{",".join(map(str, LMAXES_SINGLE))}" for single-shell data')
-  options.add_argument('-threshold',
-                       type=app.Parser.Float(0.0, 1.0),
-                       default=THRESHOLD_DEFAULT,
-                       help='the threshold on the total tissue density sum image used to derive the brain mask; '
-                            f'default is {THRESHOLD_DEFAULT}')
-  options.add_argument('-tissuesum',
-                       type=app.Parser.ImageOut(),
-                       help='Export the tissue sum image that was used to generate the mask')
+                      'The output mask image',
+                      type=app.Parser.ImageOut())
+  options = parser.add_option_group('Options specific to the "mtnorm" algorithm')
+  options.add_option('init_mask',
+                     'Provide an initial brain mask, '
+                     'which will constrain the response function estimation '
+                     '(if omitted, the default dwi2mask algorithm will be used)',
+                     type=app.Parser.ImageIn())
+  options.add_option('lmax',
+                     'The maximum spherical harmonic degree for the estimated FODs (see Description); '
+                     f'defaults are "{",".join(map(str, LMAXES_MULTI))}" for multi-shell '
+                     f'and "{",".join(map(str, LMAXES_SINGLE))}" for single-shell data',
+                     type=app.Parser.SequenceLmax())
+  options.add_option('threshold',
+                     'the threshold on the total tissue density sum image used to derive the brain mask',
+                     type=app.Parser.Float(0.0, 1.0),
+                     default=THRESHOLD_DEFAULT)
+  options.add_option('tissuesum',
+                     'Export the tissue sum image that was used to generate the mask',
+                     type=app.Parser.ImageOut())
 
 
 

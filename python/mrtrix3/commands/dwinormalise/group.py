@@ -21,8 +21,8 @@ from mrtrix3 import app, image, path, run, utils
 FA_THRESHOLD_DEFAULT = 0.4
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('group', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('group', parent=base_parser)
   parser.set_author('David Raffelt (david.raffelt@florey.edu.au)')
   parser.set_synopsis('Performs a global DWI intensity normalisation on a group of subjects '
                       'using the median b=0 white matter value as the reference')
@@ -33,30 +33,29 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                          'for this reason, '
                          'these images must all be in either .mif or .mif.gz format.')
   parser.add_argument('input_dir',
-                      type=app.Parser.DirectoryIn(),
-                      help='The input directory containing all DWI images')
+                      'The input directory containing all DWI images',
+                      type=app.Parser.DirectoryIn())
   parser.add_argument('mask_dir',
-                      type=app.Parser.DirectoryIn(),
-                      help='Input directory containing brain masks, '
-                           'corresponding to one per input image '
-                           '(with the same file name prefix)')
+                      'Input directory containing brain masks, '
+                      'corresponding to one per input image '
+                      '(with the same file name prefix)',
+                      type=app.Parser.DirectoryIn())
   parser.add_argument('output_dir',
-                      type=app.Parser.DirectoryOut(),
-                      help='The output directory containing all of the intensity normalised DWI images')
+                      'The output directory containing all of the intensity normalised DWI images',
+                      type=app.Parser.DirectoryOut())
   parser.add_argument('fa_template',
-                      type=app.Parser.ImageOut(),
-                      help='The output population-specific FA template, '
-                           'which is thresholded to estimate a white matter mask')
+                      'The output population-specific FA template, '
+                      'which is thresholded to estimate a white matter mask',
+                      type=app.Parser.ImageOut())
   parser.add_argument('wm_mask',
-                      type=app.Parser.ImageOut(),
-                      help='The output white matter mask (in template space), '
-                           'used to estimate the median b=0 white matter value for normalisation')
-  parser.add_argument('-fa_threshold',
-                      type=app.Parser.Float(0.0, 1.0),
-                      default=FA_THRESHOLD_DEFAULT,
-                      help='The threshold applied to the Fractional Anisotropy group template '
-                           'used to derive an approximate white matter mask '
-                           f'(default: {FA_THRESHOLD_DEFAULT})')
+                      'The output white matter mask (in template space), '
+                      'used to estimate the median b=0 white matter value for normalisation',
+                      type=app.Parser.ImageOut())
+  parser.add_option('fa_threshold',
+                    'The threshold applied to the Fractional Anisotropy group template '
+                    'used to derive an approximate white matter mask',
+                    type=app.Parser.Float(0.0, 1.0),
+                    default=FA_THRESHOLD_DEFAULT)
 
 
 

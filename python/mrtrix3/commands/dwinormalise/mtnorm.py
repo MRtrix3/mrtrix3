@@ -24,8 +24,8 @@ LMAXES_MULTI = [4, 0, 0]
 LMAXES_SINGLE = [4, 0]
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('mtnorm', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('mtnorm', parent=base_parser)
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)'
                     ' and Arshiya Sangchooli (asangchooli@student.unimelb.edu.au)')
   parser.set_synopsis('Normalise a DWI series to the estimated b=0 CSF intensity')
@@ -54,29 +54,28 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       'Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. '
                       'ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5')
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input DWI series')
+                      'The input DWI series',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.ImageOut(),
-                      help='The normalised DWI series')
-  options = parser.add_argument_group('Options specific to the "mtnorm" algorithm')
-  options.add_argument('-lmax',
-                       type=app.Parser.SequenceLmax(),
-                       help='The maximum spherical harmonic degree for the estimated FODs (see Description); '
-                            f'defaults are "{",".join(map(str, LMAXES_MULTI))}" for multi-shell '
-                            f'and "{",".join(map(str, LMAXES_SINGLE))}" for single-shell data)')
-  options.add_argument('-mask',
-                       type=app.Parser.ImageIn(),
-                       help='Provide a mask image for relevant calculations '
-                            '(if not provided, the default dwi2mask algorithm will be used)')
-  options.add_argument('-reference',
-                       type=app.Parser.Float(0.0),
-                       default=REFERENCE_INTENSITY,
-                       help='Set the target CSF b=0 intensity in the output DWI series'
-                            ).set_default(REFERENCE_INTENSITY)
-  options.add_argument('-scale',
-                       type=app.Parser.FileOut(),
-                       help='Write the scaling factor applied to the DWI series to a text file')
+                      'The normalised DWI series',
+                      type=app.Parser.ImageOut())
+  options = parser.add_option_group('Options specific to the "mtnorm" algorithm')
+  options.add_option('lmax',
+                     'The maximum spherical harmonic degree for the estimated FODs (see Description); '
+                     f'defaults are "{",".join(map(str, LMAXES_MULTI))}" for multi-shell '
+                     f'and "{",".join(map(str, LMAXES_SINGLE))}" for single-shell data)',
+                     type=app.Parser.SequenceLmax())
+  options.add_option('mask',
+                     'Provide a mask image for relevant calculations '
+                     '(if not provided, the default dwi2mask algorithm will be used)',
+                     type=app.Parser.ImageIn())
+  options.add_option('reference',
+                     'Set the target CSF b=0 intensity in the output DWI series',
+                     type=app.Parser.Float(0.0),
+                     default=REFERENCE_INTENSITY)
+  options.add_option('scale',
+                     'Write the scaling factor applied to the DWI series to a text file',
+                     type=app.Parser.FileOut())
   app.add_dwgrad_import_options(parser)
 
 

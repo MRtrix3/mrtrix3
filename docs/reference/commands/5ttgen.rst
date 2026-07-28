@@ -13,22 +13,22 @@ Usage
 
 ::
 
-    5ttgen algorithm [ options ] ...
+    5ttgen subcommand [ options ] ...
 
--  *algorithm*: Select the algorithm to be used; additional details and options become available once an algorithm is nominated. Options are: deep_atropos, freesurfer, fsl, gif, hsvs
+-  *subcommand*: Select the subcommand to be used; additional details and options become available once a subcommand is nominated. Options are: deep_atropos, freesurfer, fsl, gif, hsvs
 
 Description
 -----------
 
-5ttgen acts as a "master" script for generating a five-tissue-type (5TT) segmented tissue image suitable for use in Anatomically-Constrained Tractography (ACT). A range of different algorithms are available for completing this task. When using this script, the name of the algorithm to be used must appear as the first argument on the command-line after "5ttgen". The subsequent compulsory arguments and options available depend on the particular algorithm being invoked.
+5ttgen acts as a "master" script for generating a five-tissue-type (5TT) segmented tissue image suitable for use in Anatomically-Constrained Tractography (ACT). A range of different algorithms are available for completing this task. When using this script, the name of the sub-command to be used must appear as the first argument on the command-line after "5ttgen". The subsequent compulsory arguments and options available depend on the particular sub-command being invoked.
 
-Each algorithm available also has its own help page, including necessary references; e.g. to see the help page of the "fsl" algorithm, type "5ttgen fsl".
+Each sub-command also has its own help page, including necessary references; e.g. to see the help page of the "fsl" sub-command, type "5ttgen fsl".
 
 Options
 -------
 
-Options common to all 5ttgen algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options common to all 5ttgen sub-commands
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-nocrop** Do NOT crop the resulting 5TT image to reduce its size (keep the same dimensions as the input image)
 

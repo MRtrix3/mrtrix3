@@ -30,27 +30,23 @@ def usage(cmdline): #pylint: disable=unused-variable
                           ' suitable for use in Anatomically-Constrained Tractography (ACT).'
                           ' A range of different algorithms are available for completing this task.'
                           ' When using this script,'
-                          ' the name of the algorithm to be used must appear'
+                          ' the name of the sub-command to be used must appear'
                           ' as the first argument on the command-line after "5ttgen".'
                           ' The subsequent compulsory arguments and options available'
-                          ' depend on the particular algorithm being invoked.')
-  cmdline.add_description('Each algorithm available also has its own help page,'
+                          ' depend on the particular sub-command being invoked.')
+  cmdline.add_description('Each sub-command also has its own help page,'
                           ' including necessary references;'
-                          ' e.g. to see the help page of the "fsl" algorithm, type "5ttgen fsl".')
+                          ' e.g. to see the help page of the "fsl" sub-command, type "5ttgen fsl".')
 
-  common_options = cmdline.add_argument_group('Options common to all 5ttgen algorithms')
-  common_options.add_argument('-nocrop',
-                              action='store_true',
-                              default=None,
-                              help='Do NOT crop the resulting 5TT image to reduce its size '
-                                   '(keep the same dimensions as the input image)')
-  common_options.add_argument('-sgm_amyg_hipp',
-                              action='store_true',
-                              default=None,
-                              help='Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image')
+  common_options = cmdline.add_option_group('Options common to all 5ttgen sub-commands')
+  common_options.add_option('nocrop',
+                            'Do NOT crop the resulting 5TT image to reduce its size '
+                            '(keep the same dimensions as the input image)')
+  common_options.add_option('sgm_amyg_hipp',
+                            'Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image')
 
   # Import the command-line settings for all algorithms found in the relevant directory
-  cmdline.add_subparsers()
+  cmdline.add_subcommands()
 
 
 
@@ -58,7 +54,7 @@ def execute(): #pylint: disable=unused-variable
   from mrtrix3 import app, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   # Load module for the user-requested algorithm
-  alg = importlib.import_module(f'.{app.ARGS.algorithm}', 'mrtrix3.commands.5ttgen')
+  alg = importlib.import_module(f'.{app.ARGS.subcommand}', 'mrtrix3.commands.5ttgen')
 
   app.activate_scratch_dir()
 

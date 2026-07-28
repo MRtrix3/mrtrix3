@@ -41,7 +41,7 @@ Options for importing the diffusion gradient table
 Options specific to the "template" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-software choice** The software to use for template registration (choices: antsfull, antsquick, fsl; default: antsquick)
+-  **-software choice** The software to use for template registration (default: antsquick, unless overridden by the Dwi2maskTemplateSoftware config file entry) (choices: antsfull, antsquick, fsl)
 
 -  **-template TemplateImage MaskImage** Provide the template image to which the input data will be registered, and the mask to be projected to the input image. The template image should be T2-weighted.
 

@@ -15,39 +15,29 @@
 
 from mrtrix3 import app # pylint: disable=import-error
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('beta', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('beta', parent=base_parser)
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Second sub-interface; demonstrates the require_at_least_one and all_or_none constraints')
-  parser.add_argument('-beta_flag',
-                      action='store_true',
-                      default=None,
-                      help='A flag specific to the beta sub-interface')
-  at_least_one = parser.add_argument_group('At-least-one options')
-  at_least_one.add_argument('-atleast_a',
-                            action='store_true',
-                            default=None,
-                            help='The first at-least-one member')
-  at_least_one.add_argument('-atleast_b',
-                            action='store_true',
-                            default=None,
-                            help='The second at-least-one member')
+  parser.add_option('beta_flag',
+                    'A flag specific to the beta sub-interface')
+  at_least_one = parser.add_option_group('At-least-one options')
+  at_least_one.add_option('atleast_a',
+                          'The first at-least-one member')
+  at_least_one.add_option('atleast_b',
+                          'The second at-least-one member')
   at_least_one.require_at_least_one()
-  all_or_none = parser.add_argument_group('All-or-none options')
-  all_or_none.add_argument('-both_a',
-                           action='store_true',
-                           default=None,
-                           help='The first all-or-none member')
-  all_or_none.add_argument('-both_b',
-                           action='store_true',
-                           default=None,
-                           help='The second all-or-none member')
+  all_or_none = parser.add_option_group('All-or-none options')
+  all_or_none.add_option('both_a',
+                         'The first all-or-none member')
+  all_or_none.add_option('both_b',
+                         'The second all-or-none member')
   all_or_none.all_or_none()
 
 
 
 def execute(): #pylint: disable=unused-variable
-  app.console(f'operation: {app.ARGS.algorithm}')
+  app.console(f'subcommand: {app.ARGS.subcommand}')
   if app.ARGS.mode_common:
     app.console('-mode_common option present')
   if app.ARGS.mutex_a:

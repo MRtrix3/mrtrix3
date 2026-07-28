@@ -39,17 +39,15 @@ def usage(cmdline): #pylint: disable=unused-variable
                           ' it may delete temporary items during operation'
                           ' that may lead to unexpected behaviour.')
   cmdline.add_argument('path',
-                       type=app.Parser.DirectoryIn(),
-                       help='Directory from which to commence filesystem search')
-  cmdline.add_argument('-test',
-                       action='store_true',
-                       default=None,
-                       help='Run script in test mode:'
-                            ' will list identified files / directories,'
-                            ' but not attempt to delete them')
-  cmdline.add_argument('-failed',
-                       type=app.Parser.FileOut(),
-                       help='Write list of items that the script failed to delete to a text file')
+                       'Directory from which to commence filesystem search',
+                       type=app.Parser.DirectoryIn())
+  cmdline.add_option('test',
+                     'Run script in test mode:'
+                     ' will list identified files / directories,'
+                     ' but not attempt to delete them')
+  cmdline.add_option('failed',
+                     'Write list of items that the script failed to delete to a text file',
+                     type=app.Parser.FileOut())
   cmdline.flag_mutually_exclusive_options(['test', 'failed'])
 
 

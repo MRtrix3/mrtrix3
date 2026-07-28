@@ -17,8 +17,8 @@ from mrtrix3 import app
 def usage(cmdline):
   cmdline.set_author('MRtrix3 test harness')
   cmdline.set_synopsis('Exercise end-of-run unused-option tracking')
-  cmdline.add_argument('-used', action='store_true', default=None, help='an option the command reads')
-  cmdline.add_argument('-unused', action='store_true', default=None, help='an option the command ignores')
+  cmdline.add_option('used', 'an option the command reads')
+  cmdline.add_option('unused', 'an option the command ignores')
 def execute():
   # Consult -used only (a bare presence read counts); -unused is deliberately never read.
   _ = app.ARGS.used

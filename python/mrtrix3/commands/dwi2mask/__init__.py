@@ -14,7 +14,7 @@
 # For more details, see http://www.mrtrix.org/.
 
 # pylint: disable=unused-variable
-ALGORITHMS = ['3dautomask',
+SUBCOMMANDS = ['3dautomask',
               'ants',
               'b02template',
               'consensus',

@@ -21,8 +21,8 @@ Usage
 Options
 -------
 
-Options common to all dwibiascorrect algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options common to all dwibiascorrect sub-commands
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-mask image** Manually provide an input mask image for bias field estimation
 

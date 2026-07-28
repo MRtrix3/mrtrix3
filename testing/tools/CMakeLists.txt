@@ -24,8 +24,8 @@ set(PYTHON_TOOLS_MRTRIXAPI
     testing_python_cli.py
 )
 
-# Multi-sub-command (multi-algorithm) Python test tools: a package directory holding an
-#   __init__.py (ALGORITHMS), a same-named dispatcher module, and one module per algorithm.
+# Hierarchical (multi-sub-command) Python test tools: a package directory holding an
+#   __init__.py (SUBCOMMANDS), a same-named dispatcher module, and one module per sub-command.
 set(PYTHON_TOOLS_MRTRIXAPI_PACKAGE
     testing_python_subcommand
 )

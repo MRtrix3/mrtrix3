@@ -31,7 +31,7 @@ All input DWI files must contain an embedded diffusion gradient table; for this 
 Options
 -------
 
--  **-fa_threshold value** The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask (default: 0.4) (range: 0.0 to 1.0)
+-  **-fa_threshold value** The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask (range: 0.0 to 1.0; default: 0.40000000000000002)
 
 Standard options
 ^^^^^^^^^^^^^^^^

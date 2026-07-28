@@ -19,16 +19,16 @@ from mrtrix3 import app, image, run
 
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('gif', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('gif', parent=base_parser)
   parser.set_author('Matteo Mancini (m.mancini@ucl.ac.uk)')
   parser.set_synopsis('Generate the 5TT image based on a Geodesic Information Flow (GIF) segmentation image')
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input Geodesic Information Flow (GIF) segmentation image')
+                      'The input Geodesic Information Flow (GIF) segmentation image',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.ImageOut(),
-                      help='The output 5TT image')
+                      'The output 5TT image',
+                      type=app.Parser.ImageOut())
 
 
 

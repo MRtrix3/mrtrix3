@@ -45,8 +45,8 @@ Options
 
 -  **-white_stem** Classify the brainstem as white matter
 
-Options common to all 5ttgen algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options common to all 5ttgen sub-commands
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-nocrop** Do NOT crop the resulting 5TT image to reduce its size (keep the same dimensions as the input image)
 

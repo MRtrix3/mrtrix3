@@ -2,7 +2,7 @@ Test operation of the Python command-line interface
 OPTION flag 1 0
 A binary flag
 OPTION string_implicit 1 0
-A built-in string (implicit)
+A built-in string, its type declared through the builtin str
 ARGUMENT string_implicit 0 0 TEXT
 OPTION string_explicit 1 0
 A built-in string (explicit)
@@ -16,24 +16,26 @@ ARGUMENT int_builtin 0 0 INT -9223372036854775808 9223372036854775807
 OPTION float_builtin 1 0
 A floating-point; built-in type
 ARGUMENT float_builtin 0 0 FLOAT -inf inf
-OPTION nargs_two 1 0
-A command-line option with nargs=2, no metavar
-ARGUMENT nargs_two 0 0 TEXT
-ARGUMENT nargs_two 0 0 TEXT
-OPTION metavar_one 1 0
-A command-line option with nargs=1 and metavar="metavar"
-ARGUMENT metavar 0 0 TEXT
-OPTION metavar_two 1 0
-A command-line option with nargs=2 and metavar="metavar"
-ARGUMENT metavar 0 0 TEXT
-ARGUMENT metavar 0 0 TEXT
-OPTION metavar_tuple 1 0
-A command-line option with nargs=2 and metavar=("metavar_one", "metavar_two")
+OPTION tuple_names 1 0
+A two-argument option; its fields are identified by their names
+ARGUMENT first 0 0 TEXT
+ARGUMENT second 0 0 TEXT
+OPTION tuple_metavars 1 0
+A two-argument option; its fields override their display ids
 ARGUMENT metavar_one 0 0 TEXT
 ARGUMENT metavar_two 0 0 TEXT
-OPTION append 1 1
-A command-line option with "append" action (can be specified multiple times)
-ARGUMENT append 0 0 TEXT
+OPTION tuple_described 1 0
+A two-argument option; its fields carry their own descriptions and types
+ARGUMENT index 0 0 INT 0 9223372036854775807
+the index of the item
+ARGUMENT value 0 0 FLOAT 0.0 1.0
+the value to be assigned
+OPTION metavar_one 1 0
+A single-argument option with metavar="metavar"
+ARGUMENT metavar 0 0 TEXT
+OPTION multiple 1 1
+A command-line option that may be specified multiple times
+ARGUMENT multiple 0 0 TEXT
 OPTION unused 1 0
 An option deliberately left unread to exercise unused-option tracking
 OPTION bool 1 0

@@ -22,7 +22,7 @@ Usage
 Options
 -------
 
--  **-intensity value** Normalise the b=0 signal to a specified value (Default: 1000) (minimum: 0.0)
+-  **-intensity value** Normalise the b=0 signal to a specified value (minimum: 0.0; default: 1000)
 
 -  **-percentile value** Define the percentile of the b=0 image intensties within the mask used for normalisation; if this option is not supplied then the median value (50th percentile) will be normalised to the desired intensity value (range: 0.0 to 100.0)
 

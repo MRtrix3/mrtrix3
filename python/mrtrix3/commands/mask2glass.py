@@ -28,27 +28,24 @@ def usage(cmdline): #pylint: disable=unused-variable
                           ' in which case this script will produce a smoother result'
                           ' than if a binary template mask were to be used as input.')
   cmdline.add_argument('input',
-                       type=app.Parser.ImageIn(),
-                       help='The input mask image')
+                       'The input mask image',
+                       type=app.Parser.ImageIn())
   cmdline.add_argument('output',
-                       type=app.Parser.ImageOut(),
-                       help='The output glass brain image')
-  cmdline.add_argument('-dilate',
-                       type=app.Parser.Int(0),
-                       metavar='iterations',
-                       default=2,
-                       help='Provide number of iterations for dilation step;'
-                            ' default = 2')
-  cmdline.add_argument('-scale',
-                       type=app.Parser.Float(0.0),
-                       default=2.0,
-                       help='Provide resolution upscaling value;'
-                            ' default = 2.0')
-  cmdline.add_argument('-smooth',
-                       type=app.Parser.Float(0.0),
-                       default=1.0,
-                       help='Provide standard deviation of smoothing (in mm);'
-                            ' default = 1.0')
+                       'The output glass brain image',
+                       type=app.Parser.ImageOut())
+  cmdline.add_option('dilate',
+                     'Provide number of iterations for dilation step',
+                     type=app.Parser.Int(0),
+                     metavar='iterations',
+                     default=2)
+  cmdline.add_option('scale',
+                     'Provide resolution upscaling value',
+                     type=app.Parser.Float(0.0),
+                     default=2.0)
+  cmdline.add_option('smooth',
+                     'Provide standard deviation of smoothing (in mm)',
+                     type=app.Parser.Float(0.0),
+                     default=1.0)
 
 
 def execute(): #pylint: disable=unused-variable

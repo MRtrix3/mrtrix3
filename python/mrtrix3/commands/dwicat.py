@@ -45,19 +45,17 @@ def usage(cmdline): #pylint: disable=unused-variable
                           ' In this scenario the script will determine the appropriate way to combine the input series,'
                           ' ideally only manipulating header transformations and avoiding image interpolation if possible.')
   cmdline.add_argument('inputs',
-                       allow_multiple=True,
+                       'Multiple input diffusion MRI series',
                        type=app.Parser.ImageIn(),
-                       help='Multiple input diffusion MRI series')
+                       allow_multiple=True)
   cmdline.add_argument('output',
-                       type=app.Parser.ImageOut(),
-                       help='The output image series (all DWIs concatenated)')
-  cmdline.add_argument('-mask',
-                       type=app.Parser.ImageIn(),
-                       help='Provide a binary mask within which image intensities will be matched')
-  cmdline.add_argument('-nointensity',
-                       action='store_true',
-                       default=None,
-                       help='Do not perform intensity matching based on b=0 volumes')
+                       'The output image series (all DWIs concatenated)',
+                       type=app.Parser.ImageOut())
+  cmdline.add_option('mask',
+                     'Provide a binary mask within which image intensities will be matched',
+                     type=app.Parser.ImageIn())
+  cmdline.add_option('nointensity',
+                     'Do not perform intensity matching based on b=0 volumes')
 
 
 

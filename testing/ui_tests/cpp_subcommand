@@ -19,11 +19,11 @@ testing_cpp_subcommand alpha -exone_a -mode_common 2>&1 | grep -q "\-mode_common
 
 # A non-empty command-line with no sub-interface selected is an error naming the valid operations.
 OUT=$(testing_cpp_subcommand -mode_common 2>&1) && { echo "ERROR: expected no-selection failure"; exit 1; }
-echo "$OUT" | grep -q "no algorithm selected (expected one of: alpha, beta)"
+echo "$OUT" | grep -q "no operation selected (expected one of: alpha, beta)"
 
 # An unknown sub-interface is an error naming the valid operations.
 OUT=$(testing_cpp_subcommand bogus 2>&1) && { echo "ERROR: expected unknown-operation failure"; exit 1; }
-echo "$OUT" | grep -q "unknown algorithm \"bogus\" (expected one of: alpha, beta)"
+echo "$OUT" | grep -q "unknown operation \"bogus\" (expected one of: alpha, beta)"
 
 ##############################
 # Interface export forms

@@ -30,7 +30,7 @@ Options
 
 -  **-mask image** Provide a mask image within which to seed & constrain tracking
 
--  **-number count** Set the number of tracks to generate for each test (minimum: 1)
+-  **-number count** Set the number of tracks to generate for each test (minimum: 1; default: 10000)
 
 Options for exporting the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

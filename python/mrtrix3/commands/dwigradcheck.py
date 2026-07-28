@@ -32,16 +32,16 @@ def usage(cmdline): #pylint: disable=unused-variable
                        'Automated correction of improperly rotated diffusion gradient orientations in diffusion weighted MRI. '
                        'Medical Image Analysis, 2014, 18(7), 953-962')
   cmdline.add_argument('input',
-                       type=app.Parser.ImageIn(),
-                       help='The input DWI series to be checked')
-  cmdline.add_argument('-mask',
-                       type=app.Parser.ImageIn(),
-                       help='Provide a mask image within which to seed & constrain tracking')
-  cmdline.add_argument('-number',
-                       type=app.Parser.Int(1),
-                       metavar='count',
-                       default=10000,
-                       help='Set the number of tracks to generate for each test')
+                       'The input DWI series to be checked',
+                       type=app.Parser.ImageIn())
+  cmdline.add_option('mask',
+                     'Provide a mask image within which to seed & constrain tracking',
+                     type=app.Parser.ImageIn())
+  cmdline.add_option('number',
+                     'Set the number of tracks to generate for each test',
+                     type=app.Parser.Int(1),
+                     metavar='count',
+                     default=10000)
 
   app.add_dwgrad_export_options(cmdline)
   app.add_dwgrad_import_options(cmdline)

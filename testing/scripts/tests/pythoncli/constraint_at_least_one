@@ -17,11 +17,11 @@ from mrtrix3 import app
 cmdline = app.Parser()
 cmdline.set_author('MRtrix3 test harness')
 cmdline.set_synopsis('Exercise the require_at_least_one() group constraint')
-group = cmdline.add_argument_group('Output options')
-group.add_argument('-out_a', action='store_true', default=None, help='first output')
-group.add_argument('-out_b', action='store_true', default=None, help='second output')
+group = cmdline.add_option_group('Output options')
+group.add_option('out_a', 'first output')
+group.add_option('out_b', 'second output')
 group.require_at_least_one()
-cmdline.parse_args()
+cmdline.parse()
 sys.stderr.write('CONSTRAINT_DID_NOT_FIRE\n')
 PYEOF
 

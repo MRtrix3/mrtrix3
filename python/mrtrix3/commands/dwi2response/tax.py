@@ -21,8 +21,8 @@ NEEDS_SINGLE_SHELL = True # pylint: disable=unused-variable
 SUPPORTS_MASK = True # pylint: disable=unused-variable
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('tax', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('tax', parent=base_parser)
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Use the Tax et al. (2014) recursive calibration algorithm'
                       ' for single-fibre voxel selection and response function estimation')
@@ -30,27 +30,27 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       'Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data. '
                       'NeuroImage, 2014, 86, 67-80')
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input DWI')
+                      'The input DWI',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.FileOut(),
-                      help='The output response function text file')
-  options = parser.add_argument_group('Options specific to the "tax" algorithm')
-  options.add_argument('-peak_ratio',
-                       type=app.Parser.Float(0.0, 1.0),
-                       default=0.1,
-                       help='Second-to-first-peak amplitude ratio threshold')
-  options.add_argument('-max_iters',
-                       type=app.Parser.Int(0),
-                       metavar='iterations',
-                       default=20,
-                       help='Maximum number of iterations '
-                            '(set to 0 to force convergence)')
-  options.add_argument('-convergence',
-                       type=app.Parser.Float(0.0),
-                       metavar='percentage',
-                       default=0.5,
-                       help='Percentile change in any RF coefficient required to continue iterating')
+                      'The output response function text file',
+                      type=app.Parser.FileOut())
+  options = parser.add_option_group('Options specific to the "tax" algorithm')
+  options.add_option('peak_ratio',
+                     'Second-to-first-peak amplitude ratio threshold',
+                     type=app.Parser.Float(0.0, 1.0),
+                     default=0.1)
+  options.add_option('max_iters',
+                     'Maximum number of iterations '
+                     '(set to 0 to force convergence)',
+                     type=app.Parser.Int(0),
+                     metavar='iterations',
+                     default=20)
+  options.add_option('convergence',
+                     'Percentile change in any RF coefficient required to continue iterating',
+                     type=app.Parser.Float(0.0),
+                     metavar='percentage',
+                     default=0.5)
 
 
 

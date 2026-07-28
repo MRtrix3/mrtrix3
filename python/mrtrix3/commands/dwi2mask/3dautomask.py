@@ -21,8 +21,8 @@ NEEDS_MEAN_BZERO = True # pylint: disable=unused-variable
 AFNI3DAUTOMASK_CMD = '3dAutomask'
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('3dautomask', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('3dautomask', parent=base_parser)
   parser.set_author('Ricardo Rios (ricardo.rios@cimat.mx)')
   parser.set_synopsis('Use AFNI 3dAutomask to derive a brain mask from the DWI mean b=0 image')
   parser.add_citation('RW Cox. '
@@ -30,65 +30,55 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       'Computers and Biomedical Research, 29:162-173, 1996.',
                       is_external=True)
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input DWI series')
+                      'The input DWI series',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.ImageOut(),
-                      help='The output mask image')
-  options = parser.add_argument_group('Options specific to the "3dautomask" algorithm')
-  options.add_argument('-clfrac',
-                       type=app.Parser.Float(0.1, 0.9),
-                       help='Set the "clip level fraction"; '
-                            'must be a number between 0.1 and 0.9. '
-                            'A small value means to make the initial threshold for clipping smaller, '
-                            'which will tend to make the mask larger.')
-  options.add_argument('-nograd',
-                       action='store_true',
-                       default=None,
-                       help='The program uses a "gradual" clip level by default. '
-                       'Add this option to use a fixed clip level.')
-  options.add_argument('-peels',
-                       type=app.Parser.Int(0),
-                       metavar='iterations',
-                       help='Peel (erode) the mask n times, '
-                            'then unpeel (dilate).')
-  options.add_argument('-nbhrs',
-                       type=app.Parser.Int(6, 26),
-                       metavar='count',
-                       help='Define the number of neighbors needed for a voxel NOT to be eroded. '
-                            'It should be between 6 and 26.')
-  options.add_argument('-eclip',
-                       action='store_true',
-                       default=None,
-                       help='After creating the mask, '
-                            'remove exterior voxels below the clip threshold.')
-  options.add_argument('-SI',
-                       type=app.Parser.Float(0.0),
-                       help='After creating the mask, '
-                            'find the most superior voxel, '
-                            'then zero out everything more than SI millimeters inferior to that. '
-                            '130 seems to be decent (i.e., for Homo Sapiens brains).')
-  options.add_argument('-dilate',
-                       type=app.Parser.Int(0),
-                       metavar='iterations',
-                       help='Dilate the mask outwards n times')
-  options.add_argument('-erode',
-                       type=app.Parser.Int(0),
-                       metavar='iterations',
-                       help='Erode the mask outwards n times')
+                      'The output mask image',
+                      type=app.Parser.ImageOut())
+  options = parser.add_option_group('Options specific to the "3dautomask" algorithm')
+  options.add_option('clfrac',
+                     'Set the "clip level fraction"; '
+                     'must be a number between 0.1 and 0.9. '
+                     'A small value means to make the initial threshold for clipping smaller, '
+                     'which will tend to make the mask larger.',
+                     type=app.Parser.Float(0.1, 0.9))
+  options.add_option('nograd',
+                     'The program uses a "gradual" clip level by default. '
+                'Add this option to use a fixed clip level.')
+  options.add_option('peels',
+                     'Peel (erode) the mask n times, '
+                     'then unpeel (dilate).',
+                     type=app.Parser.Int(0),
+                     metavar='iterations')
+  options.add_option('nbhrs',
+                     'Define the number of neighbors needed for a voxel NOT to be eroded. '
+                     'It should be between 6 and 26.',
+                     type=app.Parser.Int(6, 26),
+                     metavar='count')
+  options.add_option('eclip',
+                     'After creating the mask, '
+                     'remove exterior voxels below the clip threshold.')
+  options.add_option('SI',
+                     'After creating the mask, '
+                     'find the most superior voxel, '
+                     'then zero out everything more than SI millimeters inferior to that. '
+                     '130 seems to be decent (i.e., for Homo Sapiens brains).',
+                     type=app.Parser.Float(0.0))
+  options.add_option('dilate',
+                     'Dilate the mask outwards n times',
+                     type=app.Parser.Int(0),
+                     metavar='iterations')
+  options.add_option('erode',
+                     'Erode the mask outwards n times',
+                     type=app.Parser.Int(0),
+                     metavar='iterations')
 
-  options.add_argument('-NN1',
-                       action='store_true',
-                       default=None,
-                       help='Erode and dilate based on mask faces')
-  options.add_argument('-NN2',
-                       action='store_true',
-                       default=None,
-                       help='Erode and dilate based on mask edges')
-  options.add_argument('-NN3',
-                       action='store_true',
-                       default=None,
-                       help='Erode and dilate based on mask corners')
+  options.add_option('NN1',
+                     'Erode and dilate based on mask faces')
+  options.add_option('NN2',
+                     'Erode and dilate based on mask edges')
+  options.add_option('NN3',
+                     'Erode and dilate based on mask corners')
 
 
 

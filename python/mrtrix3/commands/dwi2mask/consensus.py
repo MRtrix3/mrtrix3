@@ -15,46 +15,44 @@
 
 from mrtrix3 import CONFIG, MRtrixError
 from mrtrix3 import app, run
-from . import ALGORITHMS
+from . import SUBCOMMANDS
 
 NEEDS_MEAN_BZERO = False # pylint: disable=unused-variable
 DEFAULT_THRESHOLD = 0.501
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('consensus', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('consensus', parent=base_parser)
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Generate a brain mask based on the consensus of all dwi2mask algorithms')
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input DWI series')
+                      'The input DWI series',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.ImageOut(),
-                      help='The output mask image')
-  options = parser.add_argument_group('Options specific to the "consensus" algorithm')
-  options.add_argument('-algorithms',
-                       type=str,
-                       help='Provide a comma-separated list '
-                            'of dwi2mask algorithms that are to be utilised')
-  options.add_argument('-masks',
-                       type=app.Parser.ImageOut(),
-                       help='Export a 4D image containing the individual algorithm masks')
-  options.add_argument('-template',
-                       type=app.Parser.ImageIn(),
-                       metavar=('TemplateImage', 'MaskImage'),
-                       nargs=2,
-                       help='Provide a template image and corresponding mask for those algorithms requiring such')
-  options.add_argument('-threshold',
-                       type=app.Parser.Float(0.0, 1.0),
-                       default=DEFAULT_THRESHOLD,
-                       help='The fraction of algorithms that must include a voxel '
-                            'for that voxel to be present in the final mask '
-                            f'(default: {DEFAULT_THRESHOLD})')
+                      'The output mask image',
+                      type=app.Parser.ImageOut())
+  options = parser.add_option_group('Options specific to the "consensus" algorithm')
+  options.add_option('algorithms',
+                     'Provide a comma-separated list '
+                     'of dwi2mask algorithms that are to be utilised',
+                     type=str)
+  options.add_option('masks',
+                     'Export a 4D image containing the individual algorithm masks',
+                     type=app.Parser.ImageOut())
+  options.add_option('template',
+                     'Provide a template image and corresponding mask for those algorithms requiring such',
+                     type=app.Parser.ArgumentTuple(app.Parser.Argument('TemplateImage', type=app.Parser.ImageIn()),
+                                                   app.Parser.Argument('MaskImage', type=app.Parser.ImageIn())))
+  options.add_option('threshold',
+                     'The fraction of algorithms that must include a voxel '
+                     'for that voxel to be present in the final mask',
+                     type=app.Parser.Float(0.0, 1.0),
+                     default=DEFAULT_THRESHOLD)
 
 
 
 def execute(): #pylint: disable=unused-variable
 
-  algorithm_list = [item for item in ALGORITHMS if item != 'consensus']
+  algorithm_list = [item for item in SUBCOMMANDS if item != 'consensus']
   app.debug(str(algorithm_list))
 
   if app.ARGS.algorithms:

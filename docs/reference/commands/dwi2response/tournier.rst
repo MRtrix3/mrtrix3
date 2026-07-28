@@ -45,13 +45,13 @@ Options for importing the diffusion gradient table
 Options specific to the "tournier" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-number voxels** Number of single-fibre voxels to use when calculating response function (minimum: 1)
+-  **-number voxels** Number of single-fibre voxels to use when calculating response function (minimum: 1; default: 300)
 
--  **-iter_voxels voxels** Number of single-fibre voxels to select when preparing for the next iteration (default = 10 x value given in -number) (minimum: 0)
+-  **-iter_voxels voxels** Number of single-fibre voxels to select when preparing for the next iteration; a value of 0 selects 10 x the value given to the -number option (minimum: 0; default: 0)
 
--  **-dilate iterations** Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration (minimum: 1)
+-  **-dilate iterations** Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration (minimum: 1; default: 1)
 
--  **-max_iters iterations** Maximum number of iterations (set to 0 to force convergence) (minimum: 0)
+-  **-max_iters iterations** Maximum number of iterations (set to 0 to force convergence) (minimum: 0; default: 10)
 
 Standard options
 ^^^^^^^^^^^^^^^^

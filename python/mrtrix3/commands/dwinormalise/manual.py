@@ -21,30 +21,29 @@ DEFAULT_TARGET_INTENSITY=1000
 
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('manual', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('manual', parent=base_parser)
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au) '
                     'and David Raffelt (david.raffelt@florey.edu.au)')
   parser.set_synopsis('Intensity normalise a DWI series based on the b=0 signal within a supplied mask')
   parser.add_argument('input_dwi',
-                      type=app.Parser.ImageIn(),
-                      help='The input DWI series')
+                      'The input DWI series',
+                      type=app.Parser.ImageIn())
   parser.add_argument('input_mask',
-                      type=app.Parser.ImageIn(),
-                      help='The mask within which a reference b=0 intensity will be sampled')
+                      'The mask within which a reference b=0 intensity will be sampled',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output_dwi',
-                      type=app.Parser.ImageOut(),
-                      help='The output intensity-normalised DWI series')
-  parser.add_argument('-intensity',
-                      type=app.Parser.Float(0.0),
-                      default=DEFAULT_TARGET_INTENSITY,
-                      help='Normalise the b=0 signal to a specified value '
-                           f'(Default: {DEFAULT_TARGET_INTENSITY})')
-  parser.add_argument('-percentile',
-                      type=app.Parser.Float(0.0, 100.0),
-                      help='Define the percentile of the b=0 image intensties within the mask used for normalisation; '
-                           'if this option is not supplied then the median value (50th percentile) '
-                           'will be normalised to the desired intensity value')
+                      'The output intensity-normalised DWI series',
+                      type=app.Parser.ImageOut())
+  parser.add_option('intensity',
+                    'Normalise the b=0 signal to a specified value',
+                    type=app.Parser.Float(0.0),
+                    default=DEFAULT_TARGET_INTENSITY)
+  parser.add_option('percentile',
+                    'Define the percentile of the b=0 image intensties within the mask used for normalisation; '
+                    'if this option is not supplied then the median value (50th percentile) '
+                    'will be normalised to the desired intensity value',
+                    type=app.Parser.Float(0.0, 100.0))
   app.add_dwgrad_import_options(parser)
 
 

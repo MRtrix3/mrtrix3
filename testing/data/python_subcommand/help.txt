@@ -7,16 +7,17 @@ SSYYNNOOPPSSIISS
 
 UUSSAAGGEE
 
-     _t_e_s_t_i_n_g___p_y_t_h_o_n___s_u_b_c_o_m_m_a_n_d algorithm [ options ] ...
+     _t_e_s_t_i_n_g___p_y_t_h_o_n___s_u_b_c_o_m_m_a_n_d subcommand [ options ] ...
 
-        _a_l_g_o_r_i_t_h_m    Select the algorithm to be used; additional details and options
-                     become available once an algorithm is nominated. Options
+        _s_u_b_c_o_m_m_a_n_d   Select the subcommand to be used; additional details and options
+                     become available once a subcommand is nominated. Options
                      are: alpha, beta
 
 DDEESSCCRRIIPPTTIIOONN
 
-     The algorithm to be used is nominated as the first argument; the subsequent
-     arguments and options available depend on the nominated algorithm.
+     The sub-command to be used is nominated as the first argument; the
+     subsequent arguments and options available depend on the nominated sub-
+     command.
 
 GGrroouuppeedd  ccoommmmoonn  ooppttiioonnss  ddeemmoonnssttrraattiinngg  hhiieerraarrcchhyy
 

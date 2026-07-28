@@ -13,14 +13,14 @@ Usage
 
 ::
 
-    testing_python_subcommand algorithm [ options ] ...
+    testing_python_subcommand subcommand [ options ] ...
 
--  *algorithm*: Select the algorithm to be used; additional details and options become available once an algorithm is nominated. Options are: alpha, beta
+-  *subcommand*: Select the subcommand to be used; additional details and options become available once a subcommand is nominated. Options are: alpha, beta
 
 Description
 -----------
 
-The algorithm to be used is nominated as the first argument; the subsequent arguments and options available depend on the nominated algorithm.
+The sub-command to be used is nominated as the first argument; the subsequent arguments and options available depend on the nominated sub-command.
 
 Options
 -------

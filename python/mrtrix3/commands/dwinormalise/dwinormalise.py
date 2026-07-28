@@ -25,12 +25,12 @@ def usage(cmdline): #pylint: disable=unused-variable
                           ' The different algorithms have different purposes,'
                           ' and different requirements with respect to the data'
                           ' with which they must be provided & will produce as output.'
-                          ' Further information on the individual algorithms available'
+                          ' Further information on the individual sub-commands available'
                           ' can be accessed via their individual help pages;'
                           ' eg. "dwinormalise group -help".')
 
   # Import the command-line settings for all algorithms found in the relevant directory
-  cmdline.add_subparsers()
+  cmdline.add_subcommands()
 
 
 
@@ -38,7 +38,7 @@ def execute(): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
 
   # Load module for the user-requested algorithm
-  alg = importlib.import_module(f'.{app.ARGS.algorithm}', 'mrtrix3.commands.dwinormalise')
+  alg = importlib.import_module(f'.{app.ARGS.subcommand}', 'mrtrix3.commands.dwinormalise')
 
   # From here, the script splits depending on what algorithm is being used
   alg.execute()

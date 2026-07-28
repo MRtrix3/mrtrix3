@@ -73,44 +73,41 @@ def usage(cmdline): #pylint: disable=unused-variable
       ' 2b. There may be requisite axis permutations / flips'
       ' to be applied to the image data *after* transforming them to real / scanner space.')
   cmdline.add_argument('input',
-                       type=app.Parser.ImageIn(),
-                       help='The input fibre orientations image to be checked')
-  cmdline.add_argument('-mask',
-                       type=app.Parser.ImageIn(),
-                       help='Provide a mask image within which to seed & constrain tracking')
-  cmdline.add_argument('-number',
-                       type=app.Parser.Int(1),
-                       default=DEFAULT_NUMBER,
-                       help='Set the number of tracks to generate for each test')
-  cmdline.add_argument('-threshold',
-                       type=app.Parser.Float(0.0, 1.0),
-                       default=DEFAULT_THRESHOLD,
-                       help='Modulate thresold on the ratio of empirical to maximal mean length'
-                            ' to issue an error')
-  cmdline.add_argument('-format',
-                       choices=FORMATS,
-                       default=DEFAULT_FORMAT,
-                       help='The format in which peak orientations are specified')
-  cmdline.add_argument('-reference',
-                       choices=REFERENCES,
-                       default=DEFAULT_REFERENCE,
-                       help='The a priori expected references axes against which the input orientations are defined')
-  cmdline.add_argument('-noshuffle',
-                       action='store_true',
-                       help='Do not evaluate possibility of requiring shuffles of axes or angles;'
-                            ' only consider prospective transforms'
-                            ' from alternative reference frames to real / scanner space')
-  cmdline.add_argument('-notransform',
-                       action='store_true',
-                       help='Do not evaluate possibility of requiring transform of peak orientations'
-                            ' from image to real / scanner space;'
-                            ' only consider prospective shuffles of axes or angles')
-  cmdline.add_argument('-all',
-                       action='store_true',
-                       help='Print table containing all results to standard output')
-  cmdline.add_argument('-out_table',
-                       type=app.Parser.FileOut(),
-                       help='Write text file with table containing all results')
+                       'The input fibre orientations image to be checked',
+                       type=app.Parser.ImageIn())
+  cmdline.add_option('mask',
+                     'Provide a mask image within which to seed & constrain tracking',
+                     type=app.Parser.ImageIn())
+  cmdline.add_option('number',
+                     'Set the number of tracks to generate for each test',
+                     type=app.Parser.Int(1),
+                     default=DEFAULT_NUMBER)
+  cmdline.add_option('threshold',
+                     'Modulate thresold on the ratio of empirical to maximal mean length'
+                     ' to issue an error',
+                     type=app.Parser.Float(0.0, 1.0),
+                     default=DEFAULT_THRESHOLD)
+  cmdline.add_option('format',
+                     'The format in which peak orientations are specified',
+                     choices=FORMATS,
+                     default=DEFAULT_FORMAT)
+  cmdline.add_option('reference',
+                     'The a priori expected references axes against which the input orientations are defined',
+                     choices=REFERENCES,
+                     default=DEFAULT_REFERENCE)
+  cmdline.add_option('noshuffle',
+                     'Do not evaluate possibility of requiring shuffles of axes or angles;'
+                     ' only consider prospective transforms'
+                     ' from alternative reference frames to real / scanner space')
+  cmdline.add_option('notransform',
+                     'Do not evaluate possibility of requiring transform of peak orientations'
+                     ' from image to real / scanner space;'
+                     ' only consider prospective shuffles of axes or angles')
+  cmdline.add_option('all',
+                     'Print table containing all results to standard output')
+  cmdline.add_option('out_table',
+                     'Write text file with table containing all results',
+                     type=app.Parser.FileOut())
   cmdline.flag_mutually_exclusive_options(['noshuffle', 'notransform'])
 
 

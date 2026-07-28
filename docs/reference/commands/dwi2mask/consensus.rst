@@ -40,7 +40,7 @@ Options specific to the "consensus" algorithm
 
 -  **-template TemplateImage MaskImage** Provide a template image and corresponding mask for those algorithms requiring such
 
--  **-threshold value** The fraction of algorithms that must include a voxel for that voxel to be present in the final mask (default: 0.501) (range: 0.0 to 1.0)
+-  **-threshold value** The fraction of algorithms that must include a voxel for that voxel to be present in the final mask (range: 0.0 to 1.0; default: 0.501)
 
 Standard options
 ^^^^^^^^^^^^^^^^

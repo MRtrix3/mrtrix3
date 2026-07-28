@@ -178,7 +178,7 @@ def _execute(usage_function, execute_function): #pylint: disable=unused-variable
     sys.exit(0)
 
   # Do the main command-line input parsing
-  ARGS = CMDLINE.parse_args()
+  ARGS = CMDLINE.parse()
 
   # Check for usage of standard options;
   #   need to check for the presence of these keys first, since there's a chance that
@@ -186,7 +186,7 @@ def _execute(usage_function, execute_function): #pylint: disable=unused-variable
   if hasattr(ARGS, 'help') and ARGS.help:
     CMDLINE.print_help()
     sys.exit(0)
-  # Note that -help and -version are both handled directly within Parser.parse_args()
+  # Note that -help and -version are both handled directly within Parser.parse()
   #   (short-circuiting before this point), so that they operate even in the presence of
   #   otherwise-invalid command-line content; the -help check above is a redundant guard.
   if hasattr(ARGS, 'force') and ARGS.force:
@@ -234,14 +234,17 @@ def _execute(usage_function, execute_function): #pylint: disable=unused-variable
     sys.stderr.flush()
     sys.exit(1)
 
-  if hasattr(ARGS, 'cont') and ARGS.cont:
+  # An option's name is its accessor; "-continue" is nevertheless a Python keyword, so the
+  #   framework's own read of it is necessarily indirect (a command module would do likewise).
+  continue_option = getattr(ARGS, 'continue', None)
+  if continue_option:
     CONTINUE_OPTION = True
-    SCRATCH_DIR = os.path.abspath(ARGS.cont[0])
+    SCRATCH_DIR = os.path.abspath(continue_option[0])
     try:
       os.remove(os.path.join(SCRATCH_DIR, 'error.txt'))
     except OSError:
       pass
-    run.shared.set_continue(ARGS.cont[1])
+    run.shared.set_continue(continue_option[1])
 
   run.shared.set_verbosity(VERBOSITY)
   run.shared.set_num_threads(NUM_THREADS)
@@ -632,21 +635,26 @@ class Parser: # pylint: disable=too-many-public-methods
   # -------------------------------------------------------------------------------------
 
   class Argument:
-    # "argtype" is the raw type as supplied by the command author:
+    # "type" is the raw type as supplied by the command author:
     #   None or the builtin "str" -> free text; the builtins "int"/"float"; or an
-    #   instance of a Parser.CustomTypeBase subclass. Preserved verbatim so that the
-    #   machine-readable exporters (stages 2-5) can reproduce the legacy type strings.
+    #   instance of a Parser.CustomTypeBase subclass. Preserved verbatim (as self.argtype) so
+    #   that the machine-readable exporters can reproduce the legacy type strings.
     #
     #   An Argument is always a single scalar command-line token (arity 1). A multi-token
     #   argument is instead an ArgumentTuple (below), a distinct first-class type, mirroring the
     #   C++ split between Argument and ArgumentTuple (cpp/core/cmdline_option.h): a multi-argument
     #   option holds one ArgumentTuple whose elements are the former separate argument slots.
-    def __init__(self, name, help_text, *, argtype=None, choices=None, metavar=None,
+    #
+    #   The description is optional here (unlike the compulsory description of add_argument() /
+    #   add_option()), mirroring the C++ Argument, whose description defaults to empty: an
+    #   ArgumentTuple field need not be individually described, in which case its choice / range /
+    #   default annotation is instead appended to the owning option's description line.
+    def __init__(self, name, help_text='', *, type=None, choices=None, metavar=None, # pylint: disable=redefined-builtin
                  default=None, optional=False, allow_multiple=False):
       self.name = name
       self.help = help_text
-      self.argtype = argtype
-      self.choices = choices
+      self.argtype = type
+      self.choices = list(choices) if choices is not None else None
       self.metavar = metavar
       self.default = default
       self.optional = optional
@@ -657,25 +665,25 @@ class Parser: # pylint: disable=too-many-public-methods
       #   A supplied alias is canonicalised to the declared choice at parse time (see
       #   resolve_choice_alias), so every downstream consumer observes the canonical value.
       self.choice_aliases = []
-      # Free-text description of the value applied when this argument / option is absent, held
-      #   separately from the parse-time "default" so it may describe non-scalar defaults (e.g.
-      #   "0.5 per cent", "mean"). When set it is auto-rendered as "(default: <value>)" in the
-      #   help and every export, mirroring the C++ Argument::default_value (autohelp-design.md).
-      self.default_value = None
+      # Rendering of the value applied when this argument / option is absent, derived from the
+      #   sole "default" declaration: it is both the value the command reads when the user does
+      #   not specify the argument, and the "(default: <value>)" annotation auto-rendered in the
+      #   help page and every export (mirroring the C++ Argument::default_value,
+      #   autohelp-design.md). A behaviour that cannot be expressed as a parse-time value is
+      #   instead described within the description itself.
+      self.default_value = None if default is None else Parser.Argument._format_default(default)
 
-    # Declare the default value applied when this argument / option is absent, so that it is
-    #   auto-rendered rather than repeated by hand in the help text. An integer uses the Python
-    #   str(); a floating-point value uses _format_float() so a whole-valued float default renders
-    #   with a trailing ".0" (byte-identical to the C++ Argument::set_default() float convenience).
-    #   Pass a pre-formatted string to control precision or add units.
-    def set_default(self, value): #pylint: disable=unused-variable
+    # Rendering of a declared default value: an integer (or any other object) uses the Python
+    #   str(); a floating-point value uses _format_float() so that a whole-valued float renders
+    #   with a trailing ".0" (byte-identical to the C++ float convenience); a string is used
+    #   verbatim, so a choice value or a pre-formatted numeric renders exactly as supplied.
+    @staticmethod
+    def _format_default(value):
       if isinstance(value, str):
-        self.default_value = value
-      elif isinstance(value, float):
-        self.default_value = Parser.CustomTypeBase._format_float(value) # pylint: disable=protected-access
-      else:
-        self.default_value = str(value)
-      return self
+        return value
+      if isinstance(value, float):
+        return Parser.CustomTypeBase._format_float(value) # pylint: disable=protected-access
+      return str(value)
 
     # The auto-rendered "(choices: ...; range: ...; default: ...)" annotation of this argument,
     #   its clauses in that fixed order (empty when no such metadata); appended to the description
@@ -739,14 +747,25 @@ class Parser: # pylint: disable=too-many-public-methods
   #   leaves() / help_metadata()) matches Argument's so both can be held interchangeably wherever a
   #   positional slot or an option's single argument item is expected.
   class ArgumentTuple:
-    def __init__(self, name, help_text, elements, *, optional=False, allow_multiple=False):
-      self.name = name
+    # Constructed variadically from two or more Arguments, mirroring the C++
+    #   ArgumentTuple(Argument, Argument, ...): it is the sole means by which an option or a
+    #   positional slot declares that it consumes more than one command-line token. It is
+    #   supplied to add_option() / add_argument() through the same "type" keyword that carries a
+    #   scalar type, because an option holds exactly one argument item (the C++
+    #   Option::item, a scalar Argument or an ArgumentTuple).
+    #   The name and group-level description are those of the owning option / positional, and are
+    #   assigned when the tuple is attached (see _make_argument_item).
+    def __init__(self, *elements):
+      self.name = None
       # Group-level description; unused for option tuples (the option carries the help), retained
       #   for parity with the C++ ArgumentTuple::desc used on a positional tuple's summary line.
-      self.help = help_text
+      self.help = ''
       self.elements = list(elements)
-      self.optional = optional
-      self.allow_multiple = allow_multiple
+      self.optional = False
+      self.allow_multiple = False
+      assert len(self.elements) > 1, \
+          ('An ArgumentTuple requires at least two Arguments '
+           '(a single-field tuple is an ordinary argument, declared by its type alone)')
       # Attributes present on a scalar Argument that consumers may read uniformly; a tuple has no
       #   scalar type / choices / default of its own (each element carries its own).
       self.argtype = None
@@ -755,8 +774,14 @@ class Parser: # pylint: disable=too-many-public-methods
       self.choice_aliases = []
       self.default = None
       self.default_value = None
-      assert self.elements and not any(element.is_tuple for element in self.elements), \
+      assert not any(element.is_tuple for element in self.elements), \
           'An ArgumentTuple requires scalar Argument elements and must not nest'
+
+    # Declare the group-level description of a positional tuple, mirroring the C++
+    #   ArgumentTuple::set_description(); an option tuple's description is that of the option.
+    def set_description(self, description): #pylint: disable=unused-variable
+      self.help = description
+      return self
 
     @property
     def is_tuple(self):
@@ -779,13 +804,19 @@ class Parser: # pylint: disable=too-many-public-methods
       return ''.join(element.help_metadata() for element in self.elements if not element.help)
 
   class Option:
-    def __init__(self, name, help_text, *, required=False, repeatable=False, dest=None,
-                 default=None):
+    # "allow_multiple" mirrors the C++ Option::allow_multiple(): the option may be provided
+    #   repeatedly, each occurrence contributing one entry to the parsed list. The same keyword
+    #   applied to a positional argument instead permits a variable NUMBER of tokens for that one
+    #   argument; the two effects differ exactly as they do in C++ (cpp/core/cmdline_option.h).
+    def __init__(self, name, help_text, *, required=False, allow_multiple=False, default=None):
       self.name = name             # canonical spelling, WITHOUT the leading dash
       self.help = help_text
       self.required = required
-      self.repeatable = repeatable  # former action='append': may be provided repeatedly
-      self.dest = dest if dest is not None else name.replace('-', '_')
+      self.allow_multiple = allow_multiple
+      # Destination attribute of the parsed value on the ARGS container. An option's name IS its
+      #   accessor (as in C++, which has no "dest" concept); only the dash-to-underscore
+      #   substitution required for attribute-name legality is applied.
+      self.dest = name.replace('-', '_')
       self.default = default
       self.args = []               # list[Parser.Argument]; a multi-argument option holds a
                                    #   single tuple argument (its fields); [] == flag
@@ -826,13 +857,6 @@ class Parser: # pylint: disable=too-many-public-methods
       for arg in self.args:
         result.extend(arg.leaves())
       return result
-    # Declare the default value applied when this option is absent, recorded on the option's sole
-    #   scalar argument so that it auto-renders as "(default: <value>)" (see Argument.set_default).
-    def set_default(self, value): #pylint: disable=unused-variable
-      assert self.args and not self.args[0].is_tuple, \
-          'set_default() is only applicable to a single-argument option'
-      self.args[0].set_default(value)
-      return self
     # Declare a choice-value alias on this option's sole choice argument (delegates to
     #   Argument.choice_alias), so that a single-argument type_choice option can accept an
     #   additional spelling of a choice value while presenting the canonical spelling only.
@@ -859,7 +883,7 @@ class Parser: # pylint: disable=too-many-public-methods
     #   (mirrors the C++ OptionGroup::Constraint, cpp/core/cmdline_option.h). A constraint is
     #   evaluated over every option in the group and, recursively, its sub-groups (i.e. over
     #   all_options()); "specified" means the option appears at least once on the command-line.
-    #   The default is NONE (no constraint). Enforcement occurs during parse_args(), before any
+    #   The default is NONE (no constraint). Enforcement occurs during parse(), before any
     #   input file is accessed.
     class Constraint(enum.Enum):
       NONE = 0                 # no collective constraint (default)
@@ -879,8 +903,11 @@ class Parser: # pylint: disable=too-many-public-methods
       #   only to order constraint enforcement so that a command's own groups are checked
       #   before the standard-options groups (mirroring the C++ enforcement order).
       self.is_standard = False
-    def add_argument(self, *name_or_flags, **kwargs):
-      return self._parser._add_argument(self, *name_or_flags, **kwargs) # pylint: disable=protected-access
+    # Declare a command-line option within this group. An option group holds options only;
+    #   positional arguments belong to the command as a whole and are declared through
+    #   Parser.add_argument().
+    def add_option(self, name, help_text, **kwargs): #pylint: disable=unused-variable
+      return self._parser._add_option(self, name, help_text, **kwargs) # pylint: disable=protected-access
     # Nest a child group within this group, returning the new sub-group so that its own
     #   options (and any deeper sub-groups) can be registered against it.
     def add_subgroup(self, name):
@@ -944,16 +971,16 @@ class Parser: # pylint: disable=too-many-public-methods
           constraint_cls.ALL_OR_NONE: '(these options must be specified together or not at all)',
       }.get(self.constraint, '')
 
-  # Simple attribute container returned by parse_args(); replaces argparse.Namespace.
+  # Simple attribute container returned by parse().
   #   Supports vars()/getattr()/hasattr() and in-place attribute reassignment,
   #   matching how command modules consume app.ARGS.
   #   Defining __getattr__ (a) preserves AttributeError semantics for genuinely-absent
-  #   attributes so hasattr() behaves as it did with argparse.Namespace, and (b) marks
+  #   attributes so that hasattr() behaves as expected, and (b) marks
   #   the container as dynamically-populated, which suppresses spurious static-analysis
   #   no-member warnings on the many app.ARGS.<option> accesses across command modules.
-  class Namespace:
+  class ParsedArgs:
     def __getattr__(self, name):
-      raise AttributeError(f"'Namespace' object has no attribute '{name}'")
+      raise AttributeError(f"'ParsedArgs' object has no attribute '{name}'")
     # Every read of a user-facing parsed value (app.ARGS.<option>) funnels through here; this
     #   is the single choke point at which an option is marked "accessed" for the end-of-run
     #   unused-option check (mirrors the C++ ParsedOption::mark_accessed() accessor
@@ -973,8 +1000,8 @@ class Parser: # pylint: disable=too-many-public-methods
 
   # Records, for the end-of-run unused-option check, which command-line-specified options the
   #   executing command actually consulted (mirrors the C++ App::check_unused_options() state).
-  #   Attached to the parsed Namespace by _parse_tokens(). An option is "specified" if it appears
-  #   on the command-line, and becomes "accessed" once any app.ARGS read of its destination occurs
+  #   Attached to the parsed ParsedArgs container by _parse_tokens(). An option is "specified"
+  #   if it appears on the command-line, and becomes "accessed" once any app.ARGS read of its destination occurs
   #   (a bare presence test counts). Standard options are exempt: the framework consumes them
   #   uniformly and, for e.g. -nthreads, lazily, so a command that does not exercise that machinery
   #   must not be flagged for them.
@@ -1372,7 +1399,7 @@ class Parser: # pylint: disable=too-many-public-methods
   #   Mirrors the C++ vector lmax type (Argument::type_sequence_lmax()): a refinement of the
   #   integer-sequence type that validates each parsed element. The per-element error names the
   #   owning option/argument, so the parser records that source on the instance when the option
-  #   is declared (see _add_argument). Negative entries are unified onto the same lmax message
+  #   is declared (see _make_argument_item). Negative entries are unified onto the same lmax message
   #   (lmax-design.md section 2.4). The machine-export token is unchanged (ISEQ).
   class SequenceLmax(CustomTypeBase):
     def __init__(self):
@@ -1510,7 +1537,7 @@ class Parser: # pylint: disable=too-many-public-methods
 
 
 
-  def __init__(self, parents=None):
+  def __init__(self, parent=None):
     self._author = None
     self._citation_list = [ ]
     self._copyright = _DEFAULT_COPYRIGHT
@@ -1518,12 +1545,11 @@ class Parser: # pylint: disable=too-many-public-methods
     self._examples = [ ]
     self._external_citations = False
     self._synopsis = None
-    self.prog = EXEC_NAME
+    self.exec_name = EXEC_NAME
     self._positional_args = [ ]
     # Ordered option groups. Index 0 is the "ungrouped" group, whose options are rendered
-    #   first and without a group heading (matching the former argparse default options
-    #   group). Standard-option groups follow; command-specific groups are appended by
-    #   add_argument_group().
+    #   first and without a group heading. Standard-option groups follow; command-specific
+    #   groups are appended by add_option_group().
     self._ungrouped = Parser.OptionGroup(self, 'OPTIONS')
     self._option_groups = [ self._ungrouped ]
     # Command-declared cross-group mutual-exclusion sets (the analogue of the C++
@@ -1533,60 +1559,51 @@ class Parser: # pylint: disable=too-many-public-methods
     self._mutually_exclusive_option_groups = [ ]
     self._help_option = None
     self._version_option = None
-    # Populated by add_subparsers() on a multi-algorithm command's top-level parser;
-    #   remains None both for single-level commands and for the base / per-algorithm
-    #   parsers constructed underneath a subparser command.
-    self._subparsers = None
-    # A parser constructed with parents (the per-algorithm sub-parsers and the shared base
+    # Populated by add_subcommands() on a hierarchical command's top-level parser;
+    #   remains None both for single-level commands and for the base / per-sub-command
+    #   parsers constructed underneath a hierarchical command.
+    self._subcommands = None
+    # A parser constructed with a parent (the per-sub-command parsers and the shared base
     #   parser) inherits the standard-option groups, ungrouped options, help/version option
-    #   handles and citation list of its parent(s) rather than creating its own; this
-    #   reinstates the citation- and option-inheritance that the argparse "parents="
-    #   mechanism formerly provided (see stage 6 of the CLI overhaul).
-    if parents is not None:
-      for parent in parents:
-        self._citation_list.extend(parent._citation_list)
-        self._external_citations = self._external_citations or parent._external_citations
-        self._ungrouped.options.extend(parent._ungrouped.options)
-        for group in parent._option_groups[1:]:
-          self._option_groups.append(group)
-        # Inherit any cross-group mutual-exclusion sets declared on the parent (e.g. those a
-        #   multi-algorithm command registers on its top-level parser before add_subparsers()),
-        #   so that each per-algorithm sub-parser enforces them too.
-        self._mutually_exclusive_option_groups.extend(parent._mutually_exclusive_option_groups)
-        if parent._help_option is not None:
-          self._help_option = parent._help_option
-        if parent._version_option is not None:
-          self._version_option = parent._version_option
-      # The project / version metadata is identical to that of the parent(s); copy it
-      #   rather than re-invoking "git describe" once per sub-parser.
-      self._is_project = parents[0]._is_project
-      self._git_version = parents[0]._git_version
+    #   handles and citation list of that parent rather than creating its own. Inheritance is
+    #   singular: a sub-command interface extends exactly one base interface.
+    if parent is not None:
+      self._citation_list.extend(parent._citation_list)
+      self._external_citations = parent._external_citations
+      self._ungrouped.options.extend(parent._ungrouped.options)
+      for group in parent._option_groups[1:]:
+        self._option_groups.append(group)
+      # Inherit any cross-group mutual-exclusion sets declared on the parent (e.g. those a
+      #   hierarchical command registers on its top-level parser before add_subcommands()),
+      #   so that each sub-command parser enforces them too.
+      self._mutually_exclusive_option_groups.extend(parent._mutually_exclusive_option_groups)
+      if parent._help_option is not None:
+        self._help_option = parent._help_option
+      if parent._version_option is not None:
+        self._version_option = parent._version_option
+      # The project / version metadata is identical to that of the parent; copy it
+      #   rather than re-invoking "git describe" once per sub-command.
+      self._is_project = parent._is_project
+      self._git_version = parent._git_version
       return
-    standard_options = self.add_argument_group('Standard options')
+    standard_options = self.add_option_group('Standard options')
     standard_options.is_standard = True
-    standard_options.add_argument('-force',
-                                  action='store_true',
-                                  default=None,
-                                  help='force overwrite of output files.')
-    standard_options.add_argument('-nthreads',
-                                  metavar='number',
-                                  type=Parser.Int(0),
-                                  help='use this number of threads in multi-threaded applications '
-                                       '(set to 0 to disable multi-threading).')
-    standard_options.add_argument('-config',
-                                  action='append',
-                                  type=str,
-                                  metavar=('key', 'value'),
-                                  nargs=2,
-                                  help='temporarily set the value of an MRtrix config file entry.')
-    self._help_option = standard_options.add_argument('-help',
-                                  action='store_true',
-                                  default=None,
-                                  help='display this information page and exit.')
-    self._version_option = standard_options.add_argument('-version',
-                                  action='store_true',
-                                  default=None,
-                                  help='display version information and exit.')
+    standard_options.add_option('force',
+                                'force overwrite of output files.')
+    standard_options.add_option('nthreads',
+                                'use this number of threads in multi-threaded applications '
+                                '(set to 0 to disable multi-threading).',
+                                type=Parser.Int(0),
+                                metavar='number')
+    standard_options.add_option('config',
+                                'temporarily set the value of an MRtrix config file entry.',
+                                type=Parser.ArgumentTuple(Parser.Argument('key', type=str),
+                                                          Parser.Argument('value', type=str)),
+                                allow_multiple=True)
+    self._help_option = standard_options.add_option('help',
+                                'display this information page and exit.')
+    self._version_option = standard_options.add_option('version',
+                                'display version information and exit.')
     # The verbosity trio ( -info / -quiet / -debug ) is nested as a "Verbosity options"
     #   sub-group of Standard options (mirroring the C++ parser); per the ordering invariant
     #   it therefore renders after the remaining standard options above. The former ad-hoc
@@ -1595,19 +1612,13 @@ class Parser: # pylint: disable=too-many-public-methods
     #   the default (no flag) is normal verbosity and remains valid, so no command requires a
     #   verbosity flag.
     verbosity_options = standard_options.add_subgroup('Verbosity options')
-    verbosity_options.add_argument('-info',
-                                  action='store_true',
-                                  default=None,
-                                  help='display information messages.')
-    verbosity_options.add_argument('-quiet',
-                                  action='store_true',
-                                  default=None,
-                                  help='do not display information messages or progress status. '
-                                       'Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.')
-    verbosity_options.add_argument('-debug',
-                                  action='store_true',
-                                  default=None,
-                                  help='display debugging messages & debug input data.')
+    verbosity_options.add_option('info',
+                                'display information messages.')
+    verbosity_options.add_option('quiet',
+                                'do not display information messages or progress status. '
+                                'Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.')
+    verbosity_options.add_option('debug',
+                                'display debugging messages & debug input data.')
     verbosity_options.mutually_exclusive()
     # The Python-script-only options ( -nocleanup / -scratch / -continue ) are nested as an
     #   "Additional standard options for Python scripts" sub-group of Standard options, a sibling
@@ -1620,22 +1631,19 @@ class Parser: # pylint: disable=too-many-public-methods
     #   constraints) via the recursive all_options() of the is_standard Standard options parent,
     #   exactly as the verbosity sub-group is.
     script_options = standard_options.add_subgroup('Additional standard options for Python scripts')
-    script_options.add_argument('-nocleanup',
-                                action='store_true',
-                                default=None,
-                                help='do not delete intermediate files during script execution, '
-                                     'and do not delete scratch directory at script completion.')
-    script_options.add_argument('-scratch',
-                                type=Parser.DirectoryIn(),
-                                metavar='/path/to/scratch/',
-                                help='manually specify an existing directory in which to generate the scratch directory.')
-    script_options.add_argument('-continue',
-                                nargs=2,
-                                dest='cont',
-                                metavar=('ScratchDir', 'LastFile'),
-                                help='continue the script from a previous execution; '
-                                     'must provide the scratch directory path, '
-                                     'and the name of the last successfully-generated file.')
+    script_options.add_option('nocleanup',
+                              'do not delete intermediate files during script execution, '
+                              'and do not delete scratch directory at script completion.')
+    script_options.add_option('scratch',
+                              'manually specify an existing directory in which to generate the scratch directory.',
+                              type=Parser.DirectoryIn(),
+                              metavar='/path/to/scratch/')
+    script_options.add_option('continue',
+                              'continue the script from a previous execution; '
+                              'must provide the scratch directory path, '
+                              'and the name of the last successfully-generated file.',
+                              type=Parser.ArgumentTuple(Parser.Argument('ScratchDir', type=str),
+                                                        Parser.Argument('LastFile', type=str)))
     module_file = os.path.realpath (inspect.getsourcefile(inspect.stack()[-1][0]))
     self._is_project = os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir, 'lib', 'mrtrix3', 'app.py')) != os.path.abspath(__file__)
     try:
@@ -1695,150 +1703,176 @@ class Parser: # pylint: disable=too-many-public-methods
             'are mutually exclusive; at most one may be specified)'
             for id_set in self._mutually_exclusive_option_groups]
 
-  def add_argument_group(self, name): #pylint: disable=unused-variable
+  def add_option_group(self, name): #pylint: disable=unused-variable
     group = Parser.OptionGroup(self, name)
     self._option_groups.append(group)
     return group
 
-  def add_argument(self, *name_or_flags, **kwargs): #pylint: disable=unused-variable
-    # Options added directly on the parser (rather than on a group returned by
-    #   add_argument_group()) land in the ungrouped 'OPTIONS' group; positional
-    #   arguments are always collected on the parser regardless of the group used.
-    return self._add_argument(self._ungrouped, *name_or_flags, **kwargs)
+  # The command-author keyword protocol shared by add_argument() and add_option(), mirroring the
+  #   inputs of the C++ Argument / Option builders (cpp/core/cmdline_option.h):
+  #     type            the argument type: a Parser type instance (Parser.ImageIn() etc.), one of
+  #                     the builtins str / int / float, or a Parser.ArgumentTuple declaring that
+  #                     several individually-typed tokens are consumed as one logical argument.
+  #                     An option with no type declaration consumes no token: it is a flag.
+  #     choices         permissible values, itself a type declaration (C++ .type_choice()).
+  #     metavar         display id of the argument, in place of its name.
+  #     default         the value applied when the argument / option is absent, which is also
+  #                     auto-rendered as "(default: ...)" in the help page and every export.
+  #     allow_multiple  for a positional argument, a variable number of tokens may be supplied;
+  #                     for an option, the option may be specified repeatedly (C++ uses
+  #                     .allow_multiple() for both, with exactly this difference in effect).
+  #     optional        (positional arguments only) the argument may be omitted.
+  #     required        (options only) the option must be specified.
+  _ARGUMENT_KEYWORDS = ('type', 'choices', 'metavar', 'default', 'allow_multiple', 'optional')
+  _OPTION_KEYWORDS = ('type', 'choices', 'metavar', 'default', 'allow_multiple', 'required')
 
-  # Unified constructor for both positional Arguments and Options, preserving the
-  #   command-author keyword protocol that argparse previously supplied. Recognised
-  #   keywords: help, type, nargs, metavar, action, default, choices, dest, allow_multiple.
-  def _add_argument(self, group, *name_or_flags, **kwargs):
-    assert len(name_or_flags) == 1, \
-        'MRtrix3 add_argument() accepts exactly one argument/option name'
-    name = name_or_flags[0]
-    assert 'help' in kwargs, \
-        (f'add_argument({name}) requires a compulsory "help" string, mirroring the mandatory '
-         'MR::Argument/MR::Option description in cpp/core/cmdline_option.h')
-    help_text = kwargs.pop('help')
-    argtype = kwargs.pop('type', None)
-    nargs = kwargs.pop('nargs', None)
-    metavar = kwargs.pop('metavar', None)
-    action = kwargs.pop('action', None)
-    default = kwargs.pop('default', None)
-    choices = kwargs.pop('choices', None)
-    dest = kwargs.pop('dest', None)
-    allow_multiple = kwargs.pop('allow_multiple', False)
-    assert not kwargs, f'Unsupported keyword arguments to add_argument({name}): {kwargs}'
-    assert action in (None, 'store_true', 'append'), \
-        f'Unsupported action "{action}" for add_argument({name})'
-    if choices is not None:
-      choices = list(choices)
+  # Reject any keyword outside the recognised set for the declaration in question, naming the
+  #   modern replacement for each keyword retired with the argparse-derived interface.
+  @staticmethod
+  def _check_keywords(context, kwargs, permitted):
+    retired = {
+        'nargs': 'declare a Parser.ArgumentTuple via "type" (multiple tokens), '
+                 'or "allow_multiple" / "optional" (variable positional count)',
+        'action': '"store_true" is a declaration of no type at all (an option with no argument); '
+                  '"append" is now "allow_multiple"',
+        'dest': 'an option\'s name is its accessor; rename the option itself',
+        'help': 'the description is the compulsory second positional parameter',
+    }
+    for key in kwargs:
+      assert key not in retired, f'{context}: the "{key}" keyword has been retired; {retired[key]}'
+      assert key in permitted, \
+          f'{context}: unsupported keyword "{key}" (expected one of: {", ".join(permitted)})'
 
-    if name.startswith('-'):
-      # ---- Command-line option ----
-      opt_name = name.lstrip('-')
-      # The vector lmax type embeds the owning option in its per-element error; record it here,
-      #   mirroring the C++ parse-time source (option id) passed to check_lmax_sequence().
-      if isinstance(argtype, Parser.SequenceLmax):
-        argtype._source = f'option "-{opt_name}"' # pylint: disable=protected-access
-      option = Parser.Option(opt_name,
-                             help_text,
-                             repeatable=action == 'append',
-                             dest=dest,
-                             default=default)
-      if action == 'store_true':
-        assert nargs in (None, 0), f'store_true option {name} cannot take arguments'
-      else:
-        assert nargs not in ('+', '*', '?'), \
-            (f'Arbitrary-arity options are not supported (option {name}, nargs={nargs!r}); '
-             'declare a fixed number of arguments, each with its own type and help')
-        arity = nargs if isinstance(nargs, int) else 1
-        metavar_tuple = metavar if isinstance(metavar, tuple) else None
-        def make_slot(slot_index):
-          if metavar_tuple is not None:
-            slot_metavar = metavar_tuple[slot_index]
-          elif isinstance(metavar, str):
-            slot_metavar = metavar
-          else:
-            slot_metavar = None
-          # A tuple element carries no per-field help (the Python author API supplies a
-          #   single option-level help string); the field-description rendering therefore
-          #   emits nothing for these options, keeping their exports byte-identical.
-          return Parser.Argument(opt_name,
-                                 '' if arity > 1 else help_text,
-                                 argtype=argtype,
-                                 choices=choices,
-                                 metavar=slot_metavar)
-        if arity > 1:
-          # Multi-argument option: a single ArgumentTuple whose elements are the fields.
-          option.args.append(Parser.ArgumentTuple(opt_name,
-                                                  help_text,
-                                                  [make_slot(i) for i in range(arity)]))
-        else:
-          option.args.append(make_slot(0))
-      group.options.append(option)
-      return option
-
-    # ---- Positional argument ----
-    # Variable-count positionals ( former nargs='+'/'*' ) are expressed natively via
-    #   allow_multiple, mirroring the C++ Argument::allow_multiple(); at most one
-    #   positional per command may be variable-count.
-    if nargs in ('+', '*'):
-      allow_multiple = True
+  # Construct the single argument item of an option, or the sole positional argument: either an
+  #   author-supplied ArgumentTuple (its fields individually typed, each consuming one token) or
+  #   one scalar Argument. Mirrors the C++ Option::item / ArgumentElement variant.
+  def _make_argument_item(self, name, help_text, context, **kwargs):
+    argtype = kwargs.get('type')
+    if isinstance(argtype, Parser.ArgumentTuple):
+      for key in ('choices', 'metavar', 'default'):
+        assert kwargs.get(key) is None, \
+            (f'{context}: "{key}" is not applicable to a multi-argument declaration; '
+             'each field of the ArgumentTuple carries its own')
+      # A tuple takes on the identity of the argument / option to which it is attached, so one
+      #   instance cannot serve two declarations; construct one per declaration.
+      assert argtype.name is None, \
+          (f'{context}: this ArgumentTuple instance is already attached to "{argtype.name}"; '
+           'construct a separate ArgumentTuple for each argument / option')
+      argtype.name = name
+      argtype.help = argtype.help if argtype.help else help_text
+      for element in argtype.elements:
+        if isinstance(element.argtype, Parser.SequenceLmax):
+          element.argtype._source = f'{context} field "{element.name}"' # pylint: disable=protected-access
+      return argtype
+    # The vector lmax type embeds the owning argument / option in its per-element error; record it
+    #   here, mirroring the C++ parse-time source passed to check_lmax_sequence().
     if isinstance(argtype, Parser.SequenceLmax):
-      argtype._source = f'argument "{dest if dest is not None else name}"' # pylint: disable=protected-access
-    argument = Parser.Argument(dest if dest is not None else name,
-                               help_text,
-                               argtype=argtype,
-                               choices=choices,
-                               metavar=metavar if isinstance(metavar, str) else None,
-                               default=default,
-                               optional=nargs in ('?', '*'),
-                               allow_multiple=allow_multiple)
+      argtype._source = context # pylint: disable=protected-access
+    return Parser.Argument(name,
+                           help_text,
+                           type=argtype,
+                           choices=kwargs.get('choices'),
+                           metavar=kwargs.get('metavar'),
+                           default=kwargs.get('default'))
+
+  # Declare a positional command-line argument. The description is compulsory, mirroring the
+  #   mandatory MR::Argument description in cpp/core/cmdline_option.h.
+  def add_argument(self, name, help_text, **kwargs): #pylint: disable=unused-variable
+    context = f'add_argument("{name}")'
+    assert not name.startswith('-'), \
+        (f'{context}: a positional argument name must not commence with a dash; '
+         'a command-line option is instead declared using add_option()')
+    Parser._check_keywords(context, kwargs, Parser._ARGUMENT_KEYWORDS)
+    argument = self._make_argument_item(name, help_text, f'argument "{name}"', **kwargs)
+    # A variable-count positional (at most one per command) and an omissible trailing positional
+    #   are declared structurally, mirroring the C++ Argument::allow_multiple() / optional().
+    argument.optional = bool(kwargs.get('optional', False))
+    argument.allow_multiple = bool(kwargs.get('allow_multiple', False))
     self._positional_args.append(argument)
     return argument
 
-  # Registry of a multi-algorithm command's per-algorithm sub-parsers.
-  #   Replaces the former argparse "_SubParsersAction". Each algorithm module's
-  #   usage(base_parser, subparsers) function calls add_parser() to register its
+  # Declare a command-line option, in the ungrouped 'OPTIONS' group; an option belonging to a
+  #   named group is declared through OptionGroup.add_option() instead. The option name is
+  #   declared WITHOUT the leading dash, exactly as in C++ (MR::Option); the dash is a property
+  #   of the command-line spelling, applied wherever the option is rendered or matched.
+  def add_option(self, name, help_text, **kwargs): #pylint: disable=unused-variable
+    return self._add_option(self._ungrouped, name, help_text, **kwargs)
+
+  def _add_option(self, group, name, help_text, **kwargs):
+    context = f'add_option("{name}")'
+    assert not name.startswith('-'), \
+        (f'{context}: an option name is declared without its leading dash '
+         f'(use "{name.lstrip("-")}"); '
+         'the dash is a property of the command-line spelling, applied wherever the option is '
+         'rendered or matched')
+    Parser._check_keywords(context, kwargs, Parser._OPTION_KEYWORDS)
+    option = Parser.Option(name,
+                           help_text,
+                           required=bool(kwargs.get('required', False)),
+                           allow_multiple=bool(kwargs.get('allow_multiple', False)),
+                           default=kwargs.get('default'))
+    # An option that declares no type consumes no command-line token: it is a boolean flag,
+    #   as in C++, where an Option carries an Argument only if it takes one.
+    if kwargs.get('type') is not None or kwargs.get('choices') is not None:
+      option.args.append(self._make_argument_item(name, help_text, f'option "-{name}"', **kwargs))
+    else:
+      for key in ('metavar', 'default'):
+        assert kwargs.get(key) is None, \
+            (f'{context}: "{key}" is not applicable to an option that takes no argument; '
+             'declare the type of the argument that the option is to consume')
+    group.options.append(option)
+    return option
+
+  # Registry of a hierarchical command's sub-command interfaces, mirroring the C++
+  #   SubcommandList (cpp/core/app.h). Each sub-command module's
+  #   usage(base_parser, subcommands) function calls add_subcommand() to register its
   #   sub-interface; the resulting Parser inherits the base parser's options and
-  #   citations via the "parents=" mechanism (see Parser.__init__).
-  class _SubParsers:
-    def __init__(self, base_parser, algorithms):
+  #   citations via the "parent=" mechanism (see Parser.__init__).
+  class _Subcommands:
+    def __init__(self, base_parser, subcommands, selector):
       self._base_parser = base_parser
-      self.dest = 'algorithm'
-      self.algorithms = list(algorithms)
-      self.choices = { }  # ordered name -> Parser, in ALGORITHMS order
-      self.help = ('Select the algorithm to be used; '
-                   'additional details and options become available once an algorithm is nominated. '
-                   f'Options are: {", ".join(self.algorithms)}')
-    def add_parser(self, name, parents=None): # pylint: disable=unused-variable
-      child = Parser(parents=parents if parents is not None else [self._base_parser])
-      child.prog = f'{EXEC_NAME} {name}'
+      # Displayed name of the selection positional, and hence the destination under which the
+      #   selected sub-command is read (mirrors the C++ SUBCOMMANDS_SELECTOR).
+      self.dest = selector
+      self.subcommands = list(subcommands)
+      self.choices = { }  # ordered name -> Parser, in SUBCOMMANDS order
+      article = 'an' if selector[:1].lower() in ('a', 'e', 'i', 'o', 'u') else 'a'
+      self.help = (f'Select the {selector} to be used; '
+                   f'additional details and options become available once {article} {selector} is nominated. '
+                   f'Options are: {", ".join(self.subcommands)}')
+    def add_subcommand(self, name, parent=None): # pylint: disable=unused-variable
+      child = Parser(parent=parent if parent is not None else self._base_parser)
+      child.exec_name = f'{EXEC_NAME} {name}'
       self.choices[name] = child
       return child
 
-  # Reintroduce algorithm-dispatch sub-parsers (stage 6 of the CLI overhaul). Invoked from
-  #   the "usage" function of a multi-algorithm command, after that command has registered
-  #   any options common to all its algorithms. Builds a base parser carrying the standard
-  #   options plus those common options, then lets each algorithm register its own
-  #   sub-interface against that base via its usage(base_parser, subparsers) function.
-  def add_subparsers(self): # pylint: disable=unused-variable
+  # Declare this command to be hierarchical: its sub-interface is selected by the first
+  #   positional command-line token (mirroring the C++ SUBCOMMANDS). Invoked from the "usage"
+  #   function of such a command, after it has registered any options common to all of its
+  #   sub-commands. Builds a base parser carrying the standard options plus those common
+  #   options, then lets each sub-command register its own sub-interface against that base via
+  #   its usage(base_parser, subcommands) function. The selector names the selection positional
+  #   in help and every export (mirroring SUBCOMMANDS_SELECTOR), and is the destination under
+  #   which the command reads the user's selection.
+  def add_subcommands(self, selector='subcommand'): # pylint: disable=unused-variable
     module_name = os.path.dirname(inspect.getouterframes(inspect.currentframe())[1].filename).split(os.sep)[-1]
     module = sys.modules[f'mrtrix3.commands.{module_name}']
-    # The base parser inherits, via the parents= mechanism, the standard options, this
-    #   command's common options (registered on "self" before add_subparsers() was called)
-    #   and the top-level citations; each per-algorithm parser in turn inherits from it.
-    base_parser = Parser(parents=[self])
-    self._subparsers = Parser._SubParsers(base_parser, module.ALGORITHMS)
-    for algorithm in module.ALGORITHMS:
-      algorithm_module = importlib.import_module(f'.{algorithm}', f'mrtrix3.commands.{module_name}')
-      algorithm_module.usage(base_parser, self._subparsers)
+    # The base parser inherits, via the parent= mechanism, the standard options, this
+    #   command's common options (registered on "self" before add_subcommands() was called)
+    #   and the top-level citations; each sub-command parser in turn inherits from it.
+    base_parser = Parser(parent=self)
+    self._subcommands = Parser._Subcommands(base_parser, module.SUBCOMMANDS, selector)
+    for subcommand in module.SUBCOMMANDS:
+      subcommand_module = importlib.import_module(f'.{subcommand}', f'mrtrix3.commands.{module_name}')
+      subcommand_module.usage(base_parser, self._subcommands)
 
   def print_citation_warning(self):
-    # If a subparser was invoked, defer to the chosen algorithm's parser, since it may
+    # If a sub-command was invoked, defer to the chosen sub-command's parser, since it may
     #   carry additional (possibly external) citations beyond those of the top-level command.
-    if self._subparsers is not None:
-      chosen = getattr(ARGS, self._subparsers.dest, None)
-      if chosen is not None and chosen in self._subparsers.choices:
-        self._subparsers.choices[chosen].print_citation_warning()
+    if self._subcommands is not None:
+      chosen = getattr(ARGS, self._subcommands.dest, None)
+      if chosen is not None and chosen in self._subcommands.choices:
+        self._subcommands.choices[chosen].print_citation_warning()
         return
     if not self._external_citations:
       return
@@ -1891,11 +1925,11 @@ class Parser: # pylint: disable=too-many-public-methods
   def _check_options_nesting_depth(self):
     depth = self._options_nesting_depth()
     if depth > _MAX_AUGMENTED_GROUP_DEPTH:
-      raise MRtrixError(f'command "{self.prog}" nests option groups {depth} levels deep, '
+      raise MRtrixError(f'command "{self.exec_name}" nests option groups {depth} levels deep, '
                         f'exceeding the maximum supported documentation depth of {_MAX_AUGMENTED_GROUP_DEPTH}; '
                         f'reduce the option-group nesting')
     if depth > _MAX_HEADING_GROUP_DEPTH:
-      warn(f'command "{self.prog}" nests option groups {depth} levels deep, '
+      warn(f'command "{self.exec_name}" nests option groups {depth} levels deep, '
            f'beyond the maximum heading depth ({_MAX_HEADING_GROUP_DEPTH}) common to all documentation formats; '
            f'groups deeper than that are rendered with emphasised text instead of headings')
 
@@ -1957,18 +1991,18 @@ class Parser: # pylint: disable=too-many-public-methods
 
   def _error(self, message):
     sys.stderr.write('\n')
-    sys.stderr.write(f'{self.prog}: {ANSI.error}[ERROR] {message}{ANSI.clear}\n')
-    sys.stderr.write(f'{self.prog}: {ANSI.console}Usage: {self.format_usage()}{ANSI.clear}\n')
-    sys.stderr.write(f'{self.prog}: {ANSI.console}       '
-                     f'(Run {self.prog} -help for more information){ANSI.clear}\n')
+    sys.stderr.write(f'{self.exec_name}: {ANSI.error}[ERROR] {message}{ANSI.clear}\n')
+    sys.stderr.write(f'{self.exec_name}: {ANSI.console}Usage: {self.format_usage()}{ANSI.clear}\n')
+    sys.stderr.write(f'{self.exec_name}: {ANSI.console}       '
+                     f'(Run {self.exec_name} -help for more information){ANSI.clear}\n')
     sys.stderr.flush()
     sys.exit(1)
 
   # -help / -version take precedence and short-circuit, so that they operate even in the
   #   presence of otherwise-invalid command-line content (matching the C++ parser). The
   #   options are matched against, and the resulting page rendered from, "target" — which
-  #   is the top-level parser for a single-level command, or the selected algorithm's
-  #   sub-parser once an algorithm has been identified (giving per-algorithm -help).
+  #   is the top-level parser for a single-level command, or the selected sub-command's
+  #   parser once a sub-command has been identified (giving per-sub-command -help).
   @staticmethod
   def _prescan_help_version(tokens, target):
     for token in tokens:
@@ -1985,7 +2019,7 @@ class Parser: # pylint: disable=too-many-public-methods
 
   # Reject any option whose argument slot is marked optional (mirrors the C++
   #   verify_no_optional_option_arguments in cpp/core/app.cpp). The "optional" property
-  #   (former nargs='?') is meaningful only for a positional argument: a command may be
+  #   is meaningful only for a positional argument: a command may be
   #   invoked with the trailing positional omitted. Command-line options have fixed arity -
   #   an option is either absent, or supplied with exactly its declared number of arguments -
   #   so marking an option's argument optional is always a command-interface definition error.
@@ -1997,26 +2031,26 @@ class Parser: # pylint: disable=too-many-public-methods
              'the optional property is permitted only for positional arguments '
              '(command-line options have fixed arity)')
 
-  def parse_args(self):
+  def parse(self):
     assert self._author, 'Script author MUST be set in script\'s usage() function'
     assert self._synopsis, 'Script synopsis MUST be set in script\'s usage() function'
     self._verify_option_arguments()
-    if self._subparsers is not None:
-      for child in self._subparsers.choices.values():
+    if self._subcommands is not None:
+      for child in self._subcommands.choices.values():
         child._verify_option_arguments() # pylint: disable=protected-access
     tokens = sys.argv[1:]
-    if self._subparsers is not None:
-      return self._parse_subparser_args(tokens)
+    if self._subcommands is not None:
+      return self._parse_subcommand_args(tokens)
     Parser._prescan_help_version(tokens, self)
     return self._parse_tokens(tokens)
 
-  # Locate the algorithm token: the first token that is not an option nor an argument to a
-  #   preceding option. Options preceding the algorithm are recognised (and their arguments
+  # Locate the selection token: the first token that is not an option nor an argument to a
+  #   preceding option. Options preceding the selection are recognised (and their arguments
   #   skipped) via the top-level parser's option set (the standard + common options), which
-  #   is exactly the set permitted before the algorithm; this is what makes those options
-  #   permutable with, and reachable by, the selected algorithm. Returns (name, index), or
-  #   (None, None) if no algorithm token is present.
-  def _find_algorithm(self, tokens):
+  #   is exactly the set permitted before the selection; this is what makes those options
+  #   permutable with, and reachable by, the selected sub-command. Returns (name, index), or
+  #   (None, None) if no selection token is present.
+  def _find_subcommand(self, tokens):
     index = 0
     while index < len(tokens):
       option = self._match_option(tokens[index])
@@ -2025,32 +2059,33 @@ class Parser: # pylint: disable=too-many-public-methods
       index += 1 if option.is_flag else 1 + option.arity
     return None, None
 
-  def _parse_subparser_args(self, tokens):
-    algorithm, algorithm_index = None, None
+  def _parse_subcommand_args(self, tokens):
+    selector = self._subcommands.dest
+    subcommand, subcommand_index = None, None
     try:
-      algorithm, algorithm_index = self._find_algorithm(tokens)
+      subcommand, subcommand_index = self._find_subcommand(tokens)
     except Parser.ArgumentError as exception:
       self._error(str(exception))
-    # Route -help / -version to the selected algorithm's sub-parser when one has been
+    # Route -help / -version to the selected sub-command's parser when one has been
     #   identified, else to the top-level command.
-    if algorithm is not None and algorithm in self._subparsers.choices:
-      Parser._prescan_help_version(tokens, self._subparsers.choices[algorithm])
+    if subcommand is not None and subcommand in self._subcommands.choices:
+      Parser._prescan_help_version(tokens, self._subcommands.choices[subcommand])
     else:
       Parser._prescan_help_version(tokens, self)
-    if algorithm is None:
-      self._error(f'no algorithm selected (expected one of: {", ".join(self._subparsers.algorithms)})')
-    if algorithm not in self._subparsers.choices:
-      self._error(f'unknown algorithm "{algorithm}" (expected one of: {", ".join(self._subparsers.algorithms)})')
-    child = self._subparsers.choices[algorithm]
-    # All tokens except the algorithm name itself are parsed by the algorithm's sub-parser,
-    #   so options given either side of the algorithm name reach the algorithm's execute().
-    algorithm_tokens = tokens[:algorithm_index] + tokens[algorithm_index + 1:]
-    namespace = child._parse_tokens(algorithm_tokens) # pylint: disable=protected-access
-    setattr(namespace, self._subparsers.dest, algorithm)
+    if subcommand is None:
+      self._error(f'no {selector} selected (expected one of: {", ".join(self._subcommands.subcommands)})')
+    if subcommand not in self._subcommands.choices:
+      self._error(f'unknown {selector} "{subcommand}" (expected one of: {", ".join(self._subcommands.subcommands)})')
+    child = self._subcommands.choices[subcommand]
+    # All tokens except the selection itself are parsed by the sub-command's parser, so options
+    #   given either side of the selection reach the sub-command's execute().
+    subcommand_tokens = tokens[:subcommand_index] + tokens[subcommand_index + 1:]
+    namespace = child._parse_tokens(subcommand_tokens) # pylint: disable=protected-access
+    setattr(namespace, selector, subcommand)
     return namespace
 
   def _parse_tokens(self, tokens):
-    namespace = Parser.Namespace()
+    namespace = Parser.ParsedArgs()
     for option in self._iter_options():
       setattr(namespace, option.dest, option.default)
     for argument in self._positional_args:
@@ -2083,14 +2118,13 @@ class Parser: # pylint: disable=too-many-public-methods
         converted = [self._convert_value(leaf, value, context)
                      for leaf, value in zip(option.leaves(), raw)]
         # A tuple option's parsed value is an _OptionTuple (index- and name-addressable);
-        #   a scalar single-argument option yields its lone converted value. Repeatable
-        #   options accumulate one entry per use (the historical list form is preserved
-        #   for scalar repeatable options such as for_each's -exclude).
+        #   a scalar single-argument option yields its lone converted value. An option
+        #   permitting multiple uses accumulates exactly one such entry per occurrence.
         if option.is_tuple:
           value = Parser._OptionTuple(converted, [Parser._leaf_id(leaf) for leaf in option.leaves()])
         else:
-          value = converted if option.repeatable else converted[0]
-        if option.repeatable:
+          value = converted[0]
+        if option.allow_multiple:
           existing = getattr(namespace, option.dest)
           if existing is None:
             existing = [ ]
@@ -2268,27 +2302,34 @@ class Parser: # pylint: disable=too-many-public-methods
   def format_usage(self):
     argument_list = [ ]
     trailing_ellipsis = ''
-    # A multi-algorithm command presents the algorithm as its (only) leading positional,
-    #   with a trailing ellipsis standing in for the algorithm-specific arguments/options.
-    if self._subparsers is not None:
-      argument_list.append(self._subparsers.dest)
+    # A hierarchical command presents the selection as its (only) leading positional,
+    #   with a trailing ellipsis standing in for the sub-command-specific arguments/options.
+    if self._subcommands is not None:
+      argument_list.append(self._subcommands.dest)
       trailing_ellipsis = ' ...'
     for argument in self._positional_args:
       if argument.metavar:
         argument_list.append(argument.metavar)
       else:
         argument_list.append(argument.name)
-    return f'{self.prog} {" ".join(argument_list)} [ options ]{trailing_ellipsis}'
+    return f'{self.exec_name} {" ".join(argument_list)} [ options ]{trailing_ellipsis}'
 
   # Metavar string for an option, rendered for the terminal help page.
   #   Returns '' for a boolean flag, otherwise a leading-space-prefixed, space-separated
-  #   list of per-argument metavars.
+  #   list of per-argument display ids. A multi-argument option manifests its syntax from the
+  #   member field ids of its ArgumentTuple, exactly as the C++ ArgumentTuple::syntax_id() does,
+  #   so the usage line reads naturally without any separate opaque metavar; a scalar argument
+  #   with no explicit metavar falls back to the display id of its type.
   @staticmethod
   def _option_metavar(option):
     if option.is_flag:
       return ''
     parts = [ ]
-    for slot in option.leaves():
+    for arg in option.args:
+      if arg.is_tuple:
+        parts.extend(Parser._leaf_id(element) for element in arg.elements)
+        continue
+      slot = arg
       if slot.metavar is not None:
         parts.append(slot.metavar)
       elif slot.choices is not None:
@@ -2318,12 +2359,12 @@ class Parser: # pylint: disable=too-many-public-methods
       text = f'Version {self._git_version}'
     else:
       text = f'MRtrix {version.VERSION}'
-    text += ' ' * max(1, 40 - len(text) - int(len(self.prog)/2))
-    text += f'{bold(self.prog)}\n'
+    text += ' ' * max(1, 40 - len(text) - int(len(self.exec_name)/2))
+    text += f'{bold(self.exec_name)}\n'
     if self._is_project:
       text += f'using MRtrix3 {version.VERSION}\n'
     text += '\n'
-    text += f'     {bold(self.prog)}: {"external MRtrix3 project" if self._is_project else "part of the MRtrix3 package"}\n'
+    text += f'     {bold(self.exec_name)}: {"external MRtrix3 project" if self._is_project else "part of the MRtrix3 package"}\n'
     text += '\n'
     text += f'{bold("SYNOPSIS")}\n'
     text += '\n'
@@ -2331,12 +2372,12 @@ class Parser: # pylint: disable=too-many-public-methods
     text += '\n'
     text += f'{bold("USAGE")}\n'
     text += '\n'
-    usage = f'{self.prog} '
-    # A multi-algorithm command presents the compulsory algorithm selection in place of
-    #   fixed positional arguments; the algorithm-specific arguments/options are then
+    usage = f'{self.exec_name} '
+    # A hierarchical command presents the compulsory sub-command selection in place of
+    #   fixed positional arguments; the sub-command-specific arguments/options are then
     #   summarised by the trailing ellipsis.
-    if self._subparsers is not None:
-      usage += f'{self._subparsers.dest} [ options ] ...'
+    if self._subcommands is not None:
+      usage += f'{self._subcommands.dest} [ options ] ...'
     else:
       usage += '[ options ]'
       # Find compulsory input arguments
@@ -2345,12 +2386,12 @@ class Parser: # pylint: disable=too-many-public-methods
     # Unfortunately this can line wrap early because textwrap is counting each
     #   underlined character as 3 characters when calculating when to wrap
     # Fix by underlining after the fact
-    text += f'{wrapper_other.fill(usage).replace(self.prog, underline(self.prog), 1)}\n'
+    text += f'{wrapper_other.fill(usage).replace(self.exec_name, underline(self.exec_name), 1)}\n'
     text += '\n'
-    if self._subparsers is not None:
-      dest = self._subparsers.dest
+    if self._subcommands is not None:
+      dest = self._subcommands.dest
       subparsers_line = wrapper_args.fill(
-        f'{dest}{" "*(max(13-len(dest), 1))}{self._subparsers.help}')
+        f'{dest}{" "*(max(13-len(dest), 1))}{self._subcommands.help}')
       text += f'        {subparsers_line.replace(dest, underline(dest), 1)}\n'
       text += '\n'
     for argument in self._positional_args:
@@ -2393,7 +2434,7 @@ class Parser: # pylint: disable=too-many-public-methods
       for option in group.options:
         group_text += f'  {underline(f"-{option.name}")}'
         group_text += Parser._option_metavar(option)
-        if option.repeatable:
+        if option.allow_multiple:
           group_text += '  (multiple uses permitted)'
         group_text += '\n'
         group_text += f'{wrapper_other.fill(f"{option.help}{option.help_metadata()}")}\n'
@@ -2501,17 +2542,17 @@ class Parser: # pylint: disable=too-many-public-methods
   # -------------------------------------------------------------------------------------
 
   def _export_placeholder(self, keyword, stage):
-    sys.stderr.write(f'{self.prog}: {ANSI.error}[ERROR] machine-readable export '
+    sys.stderr.write(f'{self.exec_name}: {ANSI.error}[ERROR] machine-readable export '
                      f'"{keyword}" is not implemented in this build; its reimplementation '
                      f'is scheduled for stage {stage} of the MRtrix3 CLI overhaul '
                      f'(retire-argparse effort){ANSI.clear}\n')
     sys.stderr.flush()
 
   def print_full_usage(self):
-    # A per-algorithm interface is requested as "<command> <algorithm> __print_full_usage__";
-    #   dispatch to that algorithm's sub-parser and emit its interface alone.
-    if self._subparsers is not None and len(sys.argv) >= 3 and sys.argv[-2] in self._subparsers.choices:
-      self._subparsers.choices[sys.argv[-2]].print_full_usage()
+    # A per-sub-command interface is requested as "<command> <subcommand> __print_full_usage__";
+    #   dispatch to that sub-command's parser and emit its interface alone.
+    if self._subcommands is not None and len(sys.argv) >= 3 and sys.argv[-2] in self._subcommands.choices:
+      self._subcommands.choices[sys.argv[-2]].print_full_usage()
       return
     sys.stdout.write(f'{self._synopsis}\n')
     for line in self._description:
@@ -2542,12 +2583,12 @@ class Parser: # pylint: disable=too-many-public-methods
         return type(argtype)._legacytypestring() # pylint: disable=protected-access
       return argtype._legacytypestring() # pylint: disable=protected-access
 
-    # For a multi-algorithm command, the sole positional is the algorithm selection,
-    #   emitted as a CHOICE argument enumerating the available algorithm names; otherwise
+    # For a hierarchical command, the sole positional is the sub-command selection,
+    #   emitted as a CHOICE argument enumerating the available sub-command names; otherwise
     #   the command's own positional arguments are emitted. The allow_multiple field is 1
-    #   only for variable-count positionals (former nargs='+'/'*'); "optional" is always 0.
-    if self._subparsers is not None:
-      sys.stdout.write(f'ARGUMENT {self._subparsers.dest} 0 0 CHOICE {" ".join(self._subparsers.choices)}\n')
+    #   only for variable-count positionals; "optional" is always 0.
+    if self._subcommands is not None:
+      sys.stdout.write(f'ARGUMENT {self._subcommands.dest} 0 0 CHOICE {" ".join(self._subcommands.choices)}\n')
     else:
       for argument in self._positional_args:
         allow_multiple = '1' if argument.allow_multiple else '0'
@@ -2558,7 +2599,7 @@ class Parser: # pylint: disable=too-many-public-methods
     #   the bash-completion consumer (generate_bash_completion.py), which prepends the dash(es)
     #   itself; emitting "-name" here would yield a malformed "--name" completion. The required
     #   field is inverted (0 if required, else 1); the allow_multiple field reflects whether the
-    #   option is repeatable (matching the C++ exporter). One ARGUMENT line per argument slot,
+    #   option permits multiple uses (matching the C++ exporter). One ARGUMENT line per argument slot,
     #   using each slot's metavar (falling back to the option name) and its own type token.
     # full_usage is deliberately flat: it carries no group headings (it never encoded even
     #   flat groups), so nesting adds nothing structurally; every option across the whole
@@ -2567,18 +2608,21 @@ class Parser: # pylint: disable=too-many-public-methods
     def print_group_options(group):
       for option in group.all_options():
         required = '0' if option.required else '1'
-        allow_multiple = '1' if option.repeatable else '0'
+        allow_multiple = '1' if option.allow_multiple else '0'
         sys.stdout.write(f'OPTION {option.name} {required} {allow_multiple}\n')
-        # A scalar option's default value is preserved on the OPTION description line, exactly where
-        #   the prose used to carry it before it was declared via set_default() (no dedicated machine
-        #   token: the choice / range tokens remain on the ARGUMENT lines, so bash completion is
-        #   unaffected). A tuple field's own description / default stays on its own argument line.
+        # A scalar option's declared default is rendered on the OPTION description line, exactly
+        #   where hand-written prose used to carry it (no dedicated machine token: the choice /
+        #   range tokens remain on the ARGUMENT lines, so bash completion is unaffected).
+        #   A tuple field's own description / default stays on its own argument line.
         scalar_arg = option.args[0] if len(option.args) == 1 and not option.args[0].is_tuple else None
         option_default = scalar_arg.default_value if scalar_arg is not None else None
         sys.stdout.write(f'{Parser._fullusage_desc(option.help, option_default)}\n')
         for arg in option.args:
           for leaf in arg.leaves():
-            metavar_string = leaf.metavar if leaf.metavar else option.name
+            # A tuple field is identified by its own display id (its metavar, else its field
+            #   name); a scalar argument with no metavar takes the option's own name.
+            metavar_string = Parser._leaf_id(leaf) if arg.is_tuple \
+                             else (leaf.metavar if leaf.metavar else option.name)
             sys.stdout.write(f'ARGUMENT {metavar_string} 0 0 {arg2str(leaf)}\n')
             field_desc = Parser._fullusage_desc(leaf.help, leaf.default_value) if arg.is_tuple else ''
             if field_desc:
@@ -2594,11 +2638,11 @@ class Parser: # pylint: disable=too-many-public-methods
     sys.stdout.flush()
 
   def print_synopsis(self):
-    # A per-algorithm synopsis is requested as "<command> <algorithm> __print_synopsis__";
-    #   emit that algorithm's synopsis alone (used by the documentation generator for the
+    # A per-sub-command synopsis is requested as "<command> <subcommand> __print_synopsis__";
+    #   emit that sub-command's synopsis alone (used by the documentation generator for the
     #   nested command-list row).
-    if self._subparsers is not None and len(sys.argv) >= 3 and sys.argv[-2] in self._subparsers.choices:
-      self._subparsers.choices[sys.argv[-2]].print_synopsis()
+    if self._subcommands is not None and len(sys.argv) >= 3 and sys.argv[-2] in self._subcommands.choices:
+      self._subcommands.choices[sys.argv[-2]].print_synopsis()
       return
     # Emit the stored synopsis string verbatim, with no trailing newline (matching the
     #   pre-overhaul baseline that inline-wrote CMDLINE._synopsis).
@@ -2606,20 +2650,20 @@ class Parser: # pylint: disable=too-many-public-methods
     sys.stdout.flush()
 
   def print_usage_markdown(self):
-    # A per-algorithm interface is requested as "<command> <algorithm> __print_usage_markdown__";
-    #   dispatch to that algorithm's sub-parser and emit its interface alone.
-    if self._subparsers is not None and len(sys.argv) >= 3 and sys.argv[-2] in self._subparsers.choices:
-      self._subparsers.choices[sys.argv[-2]].print_usage_markdown()
+    # A per-sub-command interface is requested as "<command> <subcommand> __print_usage_markdown__";
+    #   dispatch to that sub-command's parser and emit its interface alone.
+    if self._subcommands is not None and len(sys.argv) >= 3 and sys.argv[-2] in self._subcommands.choices:
+      self._subcommands.choices[sys.argv[-2]].print_usage_markdown()
       return
     self._check_options_nesting_depth()
     text = '## Synopsis\n\n'
     text += f'{self._synopsis}\n\n'
     text += '## Usage\n\n'
     text += f'    {self.format_usage()}\n\n'
-    # For a multi-algorithm command the algorithm selection is described in place of any
+    # For a hierarchical command the sub-command selection is described in place of any
     #   positional arguments (of which the top-level command has none).
-    if self._subparsers is not None:
-      text += f'-  *{self._subparsers.dest}*: {self._subparsers.help}\n'
+    if self._subcommands is not None:
+      text += f'-  *{self._subcommands.dest}*: {self._subcommands.help}\n'
     for argument in self._positional_args:
       name = argument.metavar if argument.metavar else argument.name
       text += f'-  *{name}*: {argument.help}{argument.help_metadata()}\n\n'
@@ -2647,7 +2691,7 @@ class Parser: # pylint: disable=too-many-public-methods
         option_text = f'-{option.name}{Parser._option_metavar(option)}'
         option_text = option_text.replace('<', '\\<').replace('>', '\\>')
         group_text += f'+ **{option_text}**'
-        if option.repeatable:
+        if option.allow_multiple:
           group_text += '  *(multiple uses permitted)*'
         group_text += f'<br>{option.help}{option.help_metadata()}\n\n'
         # Described tuple fields render as an indented markdown sub-list beneath the option; a
@@ -2720,21 +2764,21 @@ class Parser: # pylint: disable=too-many-public-methods
     text += f'**Copyright:** {self._copyright}\n\n'
     sys.stdout.write(text)
     sys.stdout.flush()
-    # A multi-algorithm command's top-level page presents its own interface only (the
-    #   algorithm selection in place of positional arguments). Each algorithm's page is
-    #   obtained separately via "<command> <algorithm> __print_usage_markdown__"; the
+    # A hierarchical command's top-level page presents its own interface only (the
+    #   sub-command selection in place of positional arguments). Each sub-command's page is
+    #   obtained separately via "<command> <subcommand> __print_usage_markdown__"; the
     #   documentation generator writes those into a nested per-command sub-directory.
 
   def print_usage_rst(self):
-    # A per-algorithm interface is requested as "<command> <algorithm> __print_usage_rst__";
-    #   dispatch to that algorithm's sub-parser and emit its interface alone.
-    if self._subparsers is not None and len(sys.argv) >= 3 and sys.argv[-2] in self._subparsers.choices:
-      self._subparsers.choices[sys.argv[-2]].print_usage_rst()
+    # A per-sub-command interface is requested as "<command> <subcommand> __print_usage_rst__";
+    #   dispatch to that sub-command's parser and emit its interface alone.
+    if self._subcommands is not None and len(sys.argv) >= 3 and sys.argv[-2] in self._subcommands.choices:
+      self._subcommands.choices[sys.argv[-2]].print_usage_rst()
       return
     self._check_options_nesting_depth()
-    text = f'.. _{self.prog.replace(" ", "_")}:\n\n'
-    text += f'{self.prog}\n'
-    text += f'{"="*len(self.prog)}\n\n'
+    text = f'.. _{self.exec_name.replace(" ", "_")}:\n\n'
+    text += f'{self.exec_name}\n'
+    text += f'{"="*len(self.exec_name)}\n\n'
     text += 'Synopsis\n'
     text += '--------\n\n'
     text += f'{self._synopsis}\n\n'
@@ -2742,10 +2786,10 @@ class Parser: # pylint: disable=too-many-public-methods
     text += '-----\n\n'
     text += '::\n\n'
     text += f'    {self.format_usage()}\n\n'
-    # For a multi-algorithm command the algorithm selection is described in place of any
+    # For a hierarchical command the sub-command selection is described in place of any
     #   positional arguments (of which the top-level command has none).
-    if self._subparsers is not None:
-      text += f'-  *{self._subparsers.dest}*: {self._subparsers.help}\n'
+    if self._subcommands is not None:
+      text += f'-  *{self._subcommands.dest}*: {self._subcommands.help}\n'
     for argument in self._positional_args:
       name = argument.metavar if argument.metavar else argument.name
       arg_help = f'{argument.help}{argument.help_metadata()}'.replace('|', '\\|')
@@ -2769,7 +2813,7 @@ class Parser: # pylint: disable=too-many-public-methods
 
     # Render one option group as RST.
     #   Each option is preceded by a blank line; a single-spelling option renders as
-    #   "-name", its per-slot metavars follow, and repeatable (append) options are
+    #   "-name", its per-slot metavars follow, and options permitting multiple uses are
     #   annotated with "*(multiple uses permitted)*". Pipe characters in help text are
     #   escaped for RST inline-markup safety, matching the pre-overhaul baseline.
     def print_group_options(group):
@@ -2781,7 +2825,7 @@ class Parser: # pylint: disable=too-many-public-methods
         #   renderer's own positional-argument bullets ("-  *name*:"), so option and argument list
         #   items render identically across the two language front-ends.
         group_text += f'-  **{option_text}**'
-        if option.repeatable:
+        if option.allow_multiple:
           group_text += '  *(multiple uses permitted)*'
         option_help = f'{option.help}{option.help_metadata()}'.replace('|', '\\|')
         group_text += f' {option_help}'
@@ -2876,23 +2920,23 @@ class Parser: # pylint: disable=too-many-public-methods
     text += f'**Copyright:** {self._copyright}\n\n'
     sys.stdout.write(text)
     sys.stdout.flush()
-    # A multi-algorithm command's top-level page presents its own interface only (the
-    #   algorithm selection in place of positional arguments). Each algorithm's page is
-    #   obtained separately via "<command> <algorithm> __print_usage_rst__" (a complete,
+    # A hierarchical command's top-level page presents its own interface only (the
+    #   sub-command selection in place of positional arguments). Each sub-command's page is
+    #   obtained separately via "<command> <subcommand> __print_usage_rst__" (a complete,
     #   self-labelled RST section); the documentation generator writes those into a nested
     #   per-command sub-directory and wires them into the command list and toctree.
 
   def print_subcommands(self):
-    # Enumerate a multi-algorithm command's algorithms, one per line (in ALGORITHMS order),
-    #   for the documentation generator to produce one nested page per algorithm; a
+    # Enumerate a hierarchical command's sub-commands, one per line (in SUBCOMMANDS order),
+    #   for the documentation generator to produce one nested page per sub-command; a
     #   single-level command emits nothing.
-    if self._subparsers is not None:
-      for name in self._subparsers.algorithms:
+    if self._subcommands is not None:
+      for name in self._subcommands.subcommands:
         sys.stdout.write(f'{name}\n')
     sys.stdout.flush()
 
   def print_version(self):
-    text = f'== {self.prog} {self._git_version if self._is_project else version.VERSION} ==\n'
+    text = f'== {self.exec_name} {self._git_version if self._is_project else version.VERSION} ==\n'
     if self._is_project:
       text += f'executing against MRtrix {version.VERSION}\n'
     text += f'Author(s): {self._author}\n'
@@ -2904,16 +2948,15 @@ class Parser: # pylint: disable=too-many-public-methods
 
 # Define functions for incorporating commonly-used command-line options / option groups
 def add_dwgrad_import_options(cmdline): #pylint: disable=unused-variable
-  options = cmdline.add_argument_group('Options for importing the diffusion gradient table')
-  options.add_argument('-grad',
-                       type=Parser.FileIn(),
-                       metavar='file',
-                       help='Provide the diffusion gradient table in MRtrix format')
-  options.add_argument('-fslgrad',
-                       type=Parser.FileIn(),
-                       nargs=2,
-                       metavar=('bvecs', 'bvals'),
-                       help='Provide the diffusion gradient table in FSL bvecs/bvals format')
+  options = cmdline.add_option_group('Options for importing the diffusion gradient table')
+  options.add_option('grad',
+                     'Provide the diffusion gradient table in MRtrix format',
+                     type=Parser.FileIn(),
+                     metavar='file')
+  options.add_option('fslgrad',
+                     'Provide the diffusion gradient table in FSL bvecs/bvals format',
+                     type=Parser.ArgumentTuple(Parser.Argument('bvecs', type=Parser.FileIn()),
+                                               Parser.Argument('bvals', type=Parser.FileIn())))
   # The two import formats are alternatives: at most one may be specified (reinstates the
   #   ad-hoc mutex removed in stage 1, now as a group constraint).
   options.mutually_exclusive()
@@ -2930,16 +2973,15 @@ def dwgrad_import_options(): #pylint: disable=unused-variable
 
 
 def add_dwgrad_export_options(cmdline): #pylint: disable=unused-variable
-  options = cmdline.add_argument_group('Options for exporting the diffusion gradient table')
-  options.add_argument('-export_grad_mrtrix',
-                       type=Parser.FileOut(),
-                       metavar='grad',
-                       help='Export the final gradient table in MRtrix format')
-  options.add_argument('-export_grad_fsl',
-                       type=Parser.FileOut(),
-                       nargs=2,
-                       metavar=('bvecs_path', 'bvals_path'),
-                       help='Export the final gradient table in FSL bvecs/bvals format')
+  options = cmdline.add_option_group('Options for exporting the diffusion gradient table')
+  options.add_option('export_grad_mrtrix',
+                     'Export the final gradient table in MRtrix format',
+                     type=Parser.FileOut(),
+                     metavar='grad')
+  options.add_option('export_grad_fsl',
+                     'Export the final gradient table in FSL bvecs/bvals format',
+                     type=Parser.ArgumentTuple(Parser.Argument('bvecs_path', type=Parser.FileOut()),
+                                               Parser.Argument('bvals_path', type=Parser.FileOut())))
   # The two export formats are alternatives: at most one may be specified (reinstates the
   #   ad-hoc mutex removed in stage 1, now as a group constraint).
   options.mutually_exclusive()

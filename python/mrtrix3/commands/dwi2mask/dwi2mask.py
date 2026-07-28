@@ -25,19 +25,19 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_synopsis('Generate a binary mask from DWI data')
   cmdline.add_description('This script serves as an interface for many different algorithms'
                           ' that generate a binary mask from DWI data in different ways.'
-                          ' Each algorithm available has its own help page,'
+                          ' Each sub-command has its own help page,'
                           ' including necessary references;'
-                          ' e.g. to see the help page of the "fslbet" algorithm,'
+                          ' e.g. to see the help page of the "fslbet" sub-command,'
                           ' type "dwi2mask fslbet".')
   cmdline.add_description('More information on mask derivation from DWI data can be found at the following link: \n'
                           f'https://mrtrix.readthedocs.io/en/{version.TAG}/dwi_preprocessing/masking.html')
 
   # General options
-  #common_options = cmdline.add_argument_group('General dwi2mask options')
+  #common_options = cmdline.add_option_group('General dwi2mask options')
   app.add_dwgrad_import_options(cmdline)
 
   # Import the command-line settings for all algorithms found in the relevant directory
-  cmdline.add_subparsers()
+  cmdline.add_subcommands()
 
 
 
@@ -46,7 +46,7 @@ def execute(): #pylint: disable=unused-variable
   from mrtrix3 import app, image, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   # Load module for the user-requested algorithm
-  alg = importlib.import_module(f'.{app.ARGS.algorithm}', 'mrtrix3.commands.dwi2mask')
+  alg = importlib.import_module(f'.{app.ARGS.subcommand}', 'mrtrix3.commands.dwi2mask')
 
   input_header = image.Header(app.ARGS.input)
   image.check_3d_nonunity(input_header)

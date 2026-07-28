@@ -22,8 +22,8 @@ OUTPUT_IMAGE_PATH = 'bzero_bet_mask.nii.gz'
 
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('hdbet', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('hdbet', parent=base_parser)
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Use HD-BET to derive a brain mask from the DWI mean b=0 image')
   parser.add_citation('Isensee F, Schell M, Tursunova I, Brugnara G, Bonekamp D, Neuberger U, Wick A, Schlemmer HP, Heiland S, Wick W, Bendszus M, Maier-Hein KH, Kickingereder P. '
@@ -31,16 +31,14 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       'Hum Brain Mapp. 2019; 1-13. https://doi.org/10.1002/hbm.24750',
                       is_external=True)
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input DWI series')
+                      'The input DWI series',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.ImageOut(),
-                      help='The output mask image')
-  options = parser.add_argument_group('Options specific to the "hdbet" algorithm')
-  options.add_argument('-nogpu',
-                       action='store_true',
-                       default=None,
-                       help='Do not attempt to run on the GPU')
+                      'The output mask image',
+                      type=app.Parser.ImageOut())
+  options = parser.add_option_group('Options specific to the "hdbet" algorithm')
+  options.add_option('nogpu',
+                     'Do not attempt to run on the GPU')
 
 
 

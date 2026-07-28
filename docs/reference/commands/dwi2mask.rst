@@ -13,14 +13,14 @@ Usage
 
 ::
 
-    dwi2mask algorithm [ options ] ...
+    dwi2mask subcommand [ options ] ...
 
--  *algorithm*: Select the algorithm to be used; additional details and options become available once an algorithm is nominated. Options are: 3dautomask, ants, b02template, consensus, fslbet, hdbet, legacy, mean, mtnorm, synthstrip, trace
+-  *subcommand*: Select the subcommand to be used; additional details and options become available once a subcommand is nominated. Options are: 3dautomask, ants, b02template, consensus, fslbet, hdbet, legacy, mean, mtnorm, synthstrip, trace
 
 Description
 -----------
 
-This script serves as an interface for many different algorithms that generate a binary mask from DWI data in different ways. Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the "fslbet" algorithm, type "dwi2mask fslbet".
+This script serves as an interface for many different algorithms that generate a binary mask from DWI data in different ways. Each sub-command has its own help page, including necessary references; e.g. to see the help page of the "fslbet" sub-command, type "dwi2mask fslbet".
 
 More information on mask derivation from DWI data can be found at the following link: 
 https://mrtrix.readthedocs.io/en/3.0.8/dwi_preprocessing/masking.html

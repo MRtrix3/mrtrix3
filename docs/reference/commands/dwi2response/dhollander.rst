@@ -56,13 +56,13 @@ Options for the "dhollander" algorithm
 
 -  **-fa threshold** FA threshold for crude WM versus GM-CSF separation. (range: 0.0 to 1.0; default: 0.20000000000000001)
 
--  **-sfwm percentage** Final number of single-fibre WM voxels to select, as a percentage of refined WM. (range: 0.0 to 100.0; default: 0.5 per cent)
+-  **-sfwm percentage** Final number of single-fibre WM voxels to select, as a percentage of refined WM. (range: 0.0 to 100.0; default: 0.5)
 
--  **-gm percentage** Final number of GM voxels to select, as a percentage of refined GM. (range: 0.0 to 100.0; default: 2 per cent)
+-  **-gm percentage** Final number of GM voxels to select, as a percentage of refined GM. (range: 0.0 to 100.0; default: 2.0)
 
--  **-csf percentage** Final number of CSF voxels to select, as a percentage of refined CSF. (range: 0.0 to 100.0; default: 10 per cent)
+-  **-csf percentage** Final number of CSF voxels to select, as a percentage of refined CSF. (range: 0.0 to 100.0; default: 10.0)
 
--  **-wm_algo algorithm** Use external dwi2response algorithm for WM single-fibre voxel selection (choices: fa, tax, tournier; default: built-in Dhollander 2019)
+-  **-wm_algo algorithm** Use external dwi2response algorithm for WM single-fibre voxel selection (default: the built-in Dhollander 2019 selection) (choices: fa, tax, tournier)
 
 Standard options
 ^^^^^^^^^^^^^^^^

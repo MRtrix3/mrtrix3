@@ -1,36 +1,36 @@
 #!/bin/bash
-# Tests for the Python hierarchical (multi-sub-command / multi-algorithm) command-line interface,
+# Tests for the Python hierarchical (multi-sub-command) command-line interface,
 #   and the central coverage of every collective option-group constraint class (mirrors the C++
-#   cpp_subcommand test). testing_python_subcommand declares two algorithm sub-interfaces
+#   cpp_subcommand test). testing_python_subcommand declares two sub-command interfaces
 #   ("alpha", "beta") selected by the first positional token, common options shared across them
 #   (including a nested mutually-exclusive sub-group and a cross-group mutual-exclusion set), and
-#   per-algorithm constraint groups.
+#   per-sub-command constraint groups.
 
 ##############################
 # Hierarchical dispatch
 ##############################
 
-# The first positional token selects the algorithm; its execute() reports the selected operation.
-testing_python_subcommand alpha -exone_a 2>&1 | grep -q "operation: alpha"
-testing_python_subcommand beta -atleast_a 2>&1 | grep -q "operation: beta"
+# The first positional token selects the sub-command; its execute() reports the selection.
+testing_python_subcommand alpha -exone_a 2>&1 | grep -q "subcommand: alpha"
+testing_python_subcommand beta -atleast_a 2>&1 | grep -q "subcommand: beta"
 
-# Options preceding the algorithm token are permutable with, and reachable across, the selection.
-testing_python_subcommand -mode_common alpha -exone_a 2>&1 | grep -q "operation: alpha"
+# Options preceding the selection token are permutable with, and reachable across, the selection.
+testing_python_subcommand -mode_common alpha -exone_a 2>&1 | grep -q "subcommand: alpha"
 testing_python_subcommand alpha -exone_a -mode_common 2>&1 | grep -q "\-mode_common option present"
 
-# A command-line with no algorithm selected is an error naming the valid algorithms.
+# A command-line with no sub-command selected is an error naming the valid sub-commands.
 OUT=$(testing_python_subcommand -mode_common 2>&1) && { echo "ERROR: expected no-selection failure"; exit 1; }
-echo "$OUT" | grep -q "no algorithm selected (expected one of: alpha, beta)"
+echo "$OUT" | grep -q "no subcommand selected (expected one of: alpha, beta)"
 
-# An unknown algorithm is an error naming the valid algorithms.
-OUT=$(testing_python_subcommand bogus 2>&1) && { echo "ERROR: expected unknown-algorithm failure"; exit 1; }
-echo "$OUT" | grep -q "unknown algorithm \"bogus\" (expected one of: alpha, beta)"
+# An unknown sub-command is an error naming the valid sub-commands.
+OUT=$(testing_python_subcommand bogus 2>&1) && { echo "ERROR: expected unknown-subcommand failure"; exit 1; }
+echo "$OUT" | grep -q "unknown subcommand \"bogus\" (expected one of: alpha, beta)"
 
 ##############################
 # Interface export forms
 ##############################
 
-# Top-level (main-only) exports: the hierarchical landing page listing the algorithms.
+# Top-level (main-only) exports: the hierarchical landing page listing the sub-commands.
 testing_python_subcommand -help | \
     tail -n +3 | \
     diff -a --strip-trailing-cr - python_subcommand/help.txt
@@ -41,7 +41,7 @@ testing_python_subcommand __print_usage_markdown__ | \
 testing_python_subcommand __print_usage_rst__ | \
     diff -a --strip-trailing-cr - python_subcommand/restructured_text.rst
 
-# Per-algorithm -help: the selected algorithm's own page (its specific options and constraints).
+# Per-sub-command -help: the selection's own page (its specific options and constraints).
 testing_python_subcommand alpha -help | \
     tail -n +3 | \
     diff -a --strip-trailing-cr - python_subcommand/alpha_help.txt
@@ -49,16 +49,16 @@ testing_python_subcommand beta -help | \
     tail -n +3 | \
     diff -a --strip-trailing-cr - python_subcommand/beta_help.txt
 
-# Nested RST subdirectory generation: a per-algorithm export in RST form carries the algorithm's
-#   own label and title (a complete section), as embedded into the nested page the documentation
-#   generator writes for each algorithm.
+# Nested RST subdirectory generation: a per-sub-command export in RST form carries that
+#   sub-command's own label and title (a complete section), as embedded into the nested page the
+#   documentation generator writes for each sub-command.
 testing_python_subcommand alpha __print_usage_rst__ | \
     diff -a --strip-trailing-cr - python_subcommand/alpha_restructured_text.rst
 testing_python_subcommand beta __print_usage_rst__ | \
     diff -a --strip-trailing-cr - python_subcommand/beta_restructured_text.rst
 
 ##############################
-# Constraint class: require_exactly_one (alpha algorithm)
+# Constraint class: require_exactly_one (alpha sub-command)
 ##############################
 
 # Neither member specified: rejected, naming all members.
@@ -76,7 +76,7 @@ testing_python_subcommand alpha -exone_a 2>&1 | grep -q "\-exone_a option presen
 testing_python_subcommand alpha -help 2>&1 | grep -q "(exactly one of these options must be specified)"
 
 ##############################
-# Constraint class: require_at_least_one (beta algorithm)
+# Constraint class: require_at_least_one (beta sub-command)
 ##############################
 
 # No member specified: rejected, naming all members.
@@ -90,7 +90,7 @@ testing_python_subcommand beta -atleast_a 2>&1 | grep -q "\-atleast_a option pre
 testing_python_subcommand beta -help 2>&1 | grep -q "(at least one of these options must be specified)"
 
 ##############################
-# Constraint class: all_or_none (beta algorithm)
+# Constraint class: all_or_none (beta sub-command)
 ##############################
 
 # Only one member of the all-or-none group: rejected, naming the incomplete subset.
@@ -101,7 +101,7 @@ echo "$OUT" | grep -q "the options -both_a, -both_b must be specified together o
 testing_python_subcommand beta -atleast_a -both_a -both_b 2>&1 | grep -q "\-both_b option present"
 
 # No member (the constraint is satisfied by the empty set): accepted.
-testing_python_subcommand beta -atleast_a 2>&1 | grep -q "operation: beta"
+testing_python_subcommand beta -atleast_a 2>&1 | grep -q "subcommand: beta"
 
 # Help annotation.
 testing_python_subcommand beta -help 2>&1 | grep -q "(these options must be specified together or not at all)"

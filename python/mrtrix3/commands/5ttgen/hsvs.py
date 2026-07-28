@@ -30,34 +30,32 @@ THALAMI_CHOICES = [ 'nuclei', 'first', 'aseg' ]
 ATTEMPT_PC = False
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('hsvs', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('hsvs', parent=base_parser)
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Generate a 5TT image based on Hybrid Surface and Volume Segmentation (HSVS), '
                       'using FreeSurfer and FSL tools')
   parser.add_argument('input',
-                      type=app.Parser.DirectoryIn(),
-                      help='The input FreeSurfer subject directory')
+                      'The input FreeSurfer subject directory',
+                      type=app.Parser.DirectoryIn())
   parser.add_argument('output',
-                      type=app.Parser.ImageOut(),
-                      help='The output 5TT image')
-  parser.add_argument('-freesurfer_lut',
-                      type=app.Parser.FileIn(),
-                      help='Manually provide the path to the FreeSurfer lookup table file')
-  parser.add_argument('-template',
-                      type=app.Parser.ImageIn(),
-                      help='Provide an image that will form the template for the generated 5TT image')
-  parser.add_argument('-hippocampi',
-                      choices=HIPPOCAMPI_CHOICES,
-                      help='Select method to be used for hippocampi (& amygdalae) segmentation')
-  parser.add_argument('-thalami',
-                      choices=THALAMI_CHOICES,
-                      help='Select method to be used for thalamic segmentation')
-  parser.add_argument('-white_stem',
-                      action='store_true',
-                      default=None,
-                      help='Classify the brainstem as white matter; '
-                           'streamlines will not be permitted to terminate within this region')
+                      'The output 5TT image',
+                      type=app.Parser.ImageOut())
+  parser.add_option('freesurfer_lut',
+                    'Manually provide the path to the FreeSurfer lookup table file',
+                    type=app.Parser.FileIn())
+  parser.add_option('template',
+                    'Provide an image that will form the template for the generated 5TT image',
+                    type=app.Parser.ImageIn())
+  parser.add_option('hippocampi',
+                    'Select method to be used for hippocampi (& amygdalae) segmentation',
+                    choices=HIPPOCAMPI_CHOICES)
+  parser.add_option('thalami',
+                    'Select method to be used for thalamic segmentation',
+                    choices=THALAMI_CHOICES)
+  parser.add_option('white_stem',
+                    'Classify the brainstem as white matter; '
+                    'streamlines will not be permitted to terminate within this region')
   parser.add_citation('Smith, R.; Skoch, A.; Bajada, C.; Caspers, S.; Connelly, A. '
                       'Hybrid Surface-Volume Segmentation for improved Anatomically-Constrained Tractography. '
                       'In Proc OHBM 2020')

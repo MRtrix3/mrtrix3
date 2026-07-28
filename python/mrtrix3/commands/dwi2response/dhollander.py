@@ -26,8 +26,8 @@ WM_ALGOS = [ 'fa', 'tax', 'tournier' ]
 
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('dhollander', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('dhollander', parent=base_parser)
   parser.set_author('Thijs Dhollander (thijs.dhollander@gmail.com)')
   parser.set_synopsis('Unsupervised estimation of WM, GM and CSF response functions '
                       'that does not require a T1 image (or segmentation thereof)')
@@ -46,52 +46,52 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       'Proc Intl Soc Mag Reson Med, 2019, 555',
                       condition='If -wm_algo option is not used')
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='Input DWI dataset')
+                      'Input DWI dataset',
+                      type=app.Parser.ImageIn())
   parser.add_argument('out_sfwm',
-                      type=app.Parser.FileOut(),
-                      help='Output single-fibre WM response function text file')
+                      'Output single-fibre WM response function text file',
+                      type=app.Parser.FileOut())
   parser.add_argument('out_gm',
-                      type=app.Parser.FileOut(),
-                      help='Output GM response function text file')
+                      'Output GM response function text file',
+                      type=app.Parser.FileOut())
   parser.add_argument('out_csf',
-                      type=app.Parser.FileOut(),
-                      help='Output CSF response function text file')
-  options = parser.add_argument_group('Options for the "dhollander" algorithm')
-  options.add_argument('-erode',
-                       type=app.Parser.Int(0),
-                       metavar='iterations',
-                       default=3,
-                       help='Number of erosion passes to apply to initial (whole brain) mask. '
-                            'Set to 0 to not erode the brain mask.').set_default(3)
-  options.add_argument('-fa',
-                       type=app.Parser.Float(0.0, 1.0),
-                       metavar='threshold',
-                       default=0.2,
-                       help='FA threshold for crude WM versus GM-CSF separation.').set_default(0.2)
-  options.add_argument('-sfwm',
-                       type=app.Parser.Float(0.0, 100.0),
-                       metavar='percentage',
-                       default=0.5,
-                       help='Final number of single-fibre WM voxels to select, '
-                            'as a percentage of refined WM.').set_default('0.5 per cent')
-  options.add_argument('-gm',
-                       type=app.Parser.Float(0.0, 100.0),
-                       metavar='percentage',
-                       default=2.0,
-                       help='Final number of GM voxels to select, '
-                            'as a percentage of refined GM.').set_default('2 per cent')
-  options.add_argument('-csf',
-                       type=app.Parser.Float(0.0, 100.0),
-                       metavar='percentage',
-                       default=10.0,
-                       help='Final number of CSF voxels to select, '
-                            'as a percentage of refined CSF.').set_default('10 per cent')
-  options.add_argument('-wm_algo',
-                       metavar='algorithm',
-                       choices=WM_ALGOS,
-                       help='Use external dwi2response algorithm for WM single-fibre voxel selection'
-                            ).set_default('built-in Dhollander 2019')
+                      'Output CSF response function text file',
+                      type=app.Parser.FileOut())
+  options = parser.add_option_group('Options for the "dhollander" algorithm')
+  options.add_option('erode',
+                     'Number of erosion passes to apply to initial (whole brain) mask. '
+                     'Set to 0 to not erode the brain mask.',
+                     type=app.Parser.Int(0),
+                     metavar='iterations',
+                     default=3)
+  options.add_option('fa',
+                     'FA threshold for crude WM versus GM-CSF separation.',
+                     type=app.Parser.Float(0.0, 1.0),
+                     metavar='threshold',
+                     default=0.2)
+  options.add_option('sfwm',
+                     'Final number of single-fibre WM voxels to select, '
+                     'as a percentage of refined WM.',
+                     type=app.Parser.Float(0.0, 100.0),
+                     metavar='percentage',
+                     default=0.5)
+  options.add_option('gm',
+                     'Final number of GM voxels to select, '
+                     'as a percentage of refined GM.',
+                     type=app.Parser.Float(0.0, 100.0),
+                     metavar='percentage',
+                     default=2.0)
+  options.add_option('csf',
+                     'Final number of CSF voxels to select, '
+                     'as a percentage of refined CSF.',
+                     type=app.Parser.Float(0.0, 100.0),
+                     metavar='percentage',
+                     default=10.0)
+  options.add_option('wm_algo',
+                     'Use external dwi2response algorithm for WM single-fibre voxel selection '
+                     '(default: the built-in Dhollander 2019 selection)',
+                     choices=WM_ALGOS,
+                     metavar='algorithm')
 
 
 

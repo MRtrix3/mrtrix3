@@ -22,8 +22,8 @@ NEEDS_MEAN_BZERO = True # pylint: disable=unused-variable
 ANTS_BRAIN_EXTRACTION_CMD = 'antsBrainExtraction.sh'
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('ants', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('ants', parent=base_parser)
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Use ANTs Brain Extraction to derive a DWI brain mask')
   parser.add_citation('B. Avants, N.J. Tustison, G. Song, P.A. Cook, A. Klein, J.C. Jee. '
@@ -31,18 +31,17 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       'NeuroImage, 2011, 54, 2033-2044',
                       is_external=True)
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input DWI series')
+                      'The input DWI series',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.ImageOut(),
-                      help='The output mask image')
-  options = parser.add_argument_group('Options specific to the "ants" algorithm')
-  options.add_argument('-template',
-                       type=app.Parser.ImageIn(),
-                       metavar=('TemplateImage', 'MaskImage'),
-                       nargs=2,
-                       help='Provide the template image and corresponding mask for antsBrainExtraction.sh to use; '
-                            'the template image should be T2-weighted.')
+                      'The output mask image',
+                      type=app.Parser.ImageOut())
+  options = parser.add_option_group('Options specific to the "ants" algorithm')
+  options.add_option('template',
+                     'Provide the template image and corresponding mask for antsBrainExtraction.sh to use; '
+                     'the template image should be T2-weighted.',
+                     type=app.Parser.ArgumentTuple(app.Parser.Argument('TemplateImage', type=app.Parser.ImageIn()),
+                                                   app.Parser.Argument('MaskImage', type=app.Parser.ImageIn())))
 
 
 

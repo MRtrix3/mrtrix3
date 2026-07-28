@@ -483,8 +483,10 @@ extern std::vector<MutuallyExclusiveOptions> MUTUALLY_EXCLUSIVE_OPTIONS;
 extern SubcommandList SUBCOMMANDS;
 
 //! the displayed name of a hierarchical command's selection positional
-/*! Defaults to "algorithm"; a command may set this (e.g. "operation", "filter") to
- * describe the nature of its sub-interface selection in help and export output. */
+/*! Defaults to "subcommand"; a command may set this (e.g. "operation", "algorithm",
+ * "filter") to describe the nature of its sub-interface selection in help and export
+ * output. It additionally names the selection in the no-selection / unknown-selection
+ * parse errors. */
 extern std::string SUBCOMMANDS_SELECTOR;
 
 //! the id of the sub-interface selected on the command-line, for a hierarchical command

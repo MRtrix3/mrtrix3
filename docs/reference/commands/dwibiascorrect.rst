@@ -13,9 +13,9 @@ Usage
 
 ::
 
-    dwibiascorrect algorithm [ options ] ...
+    dwibiascorrect subcommand [ options ] ...
 
--  *algorithm*: Select the algorithm to be used; additional details and options become available once an algorithm is nominated. Options are: ants, fsl, mtnorm
+-  *subcommand*: Select the subcommand to be used; additional details and options become available once a subcommand is nominated. Options are: ants, fsl, mtnorm
 
 Description
 -----------
@@ -26,8 +26,8 @@ https://mrtrix.readthedocs.io/en/3.0.8/dwi_preprocessing/masking.html
 Options
 -------
 
-Options common to all dwibiascorrect algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options common to all dwibiascorrect sub-commands
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-mask image** Manually provide an input mask image for bias field estimation
 

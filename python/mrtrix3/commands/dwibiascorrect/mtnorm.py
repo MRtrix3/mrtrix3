@@ -20,8 +20,8 @@ from mrtrix3 import app, image, run
 LMAXES_MULTI = [4, 0, 0]
 LMAXES_SINGLE = [4, 0]
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('mtnorm', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('mtnorm', parent=base_parser)
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)'
                     ' and Arshiya Sangchooli (asangchooli@student.unimelb.edu.au)')
   parser.set_synopsis('Perform DWI bias field correction using the "mtnormalise" command')
@@ -49,17 +49,17 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       'Multi-tissue log-domain intensity and inhomogeneity normalisation for quantitative apparent fibre density. '
                       'In Proc. ISMRM, 2021, 29, 2472')
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input image series to be corrected')
+                      'The input image series to be corrected',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.ImageOut(),
-                      help='The output corrected image series')
-  options = parser.add_argument_group('Options specific to the "mtnorm" algorithm')
-  options.add_argument('-lmax',
-                       type=app.Parser.SequenceLmax(),
-                       help='The maximum spherical harmonic degree for the estimated FODs (see Description); '
-                            f'defaults are "{",".join(map(str, LMAXES_MULTI))}" for multi-shell '
-                            f'and "{",".join(map(str, LMAXES_SINGLE))}" for single-shell data)')
+                      'The output corrected image series',
+                      type=app.Parser.ImageOut())
+  options = parser.add_option_group('Options specific to the "mtnorm" algorithm')
+  options.add_option('lmax',
+                     'The maximum spherical harmonic degree for the estimated FODs (see Description); '
+                     f'defaults are "{",".join(map(str, LMAXES_MULTI))}" for multi-shell '
+                     f'and "{",".join(map(str, LMAXES_SINGLE))}" for single-shell data)',
+                     type=app.Parser.SequenceLmax())
 
 
 

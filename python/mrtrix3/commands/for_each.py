@@ -128,27 +128,25 @@ def usage(cmdline): #pylint: disable=unused-variable
                             ' a part of the command string that is executed multiple times by the for_each script,'
                             ' it must be escaped using double-quotes.')
   cmdline.add_argument('inputs',
-                       allow_multiple=True,
-                       help='Each of the inputs for which processing should be run')
+                       'Each of the inputs for which processing should be run',
+                       allow_multiple=True)
   cmdline.add_argument('colon',
+                       'Colon symbol (":") delimiting the for_each inputs & command-line options from the actual command to be executed',
                        type=str,
-                       choices=[':'],
-                       help='Colon symbol (":") delimiting the for_each inputs & command-line options from the actual command to be executed')
+                       choices=[':'])
   cmdline.add_argument('command',
-                       type=str,
-                       help='The command string to run for each input, '
-                            'containing any number of substitutions listed in the Description section')
-  cmdline.add_argument('-exclude',
-                       action='append',
-                       metavar='"regex"',
-                       nargs=1,
-                       help='Exclude one specific input string / all strings matching a regular expression from being processed '
-                            '(see Example Usage)')
-  cmdline.add_argument('-test',
-                       action='store_true',
-                       default=None,
-                       help='Test the operation of the for_each script,'
-                            ' by printing the command strings following string substitution but not actually executing them')
+                       'The command string to run for each input, '
+                       'containing any number of substitutions listed in the Description section',
+                       type=str)
+  cmdline.add_option('exclude',
+                     'Exclude one specific input string / all strings matching a regular expression from being processed '
+                     '(see Example Usage)',
+                     type=str,
+                     metavar='"regex"',
+                     allow_multiple=True)
+  cmdline.add_option('test',
+                     'Test the operation of the for_each script,'
+                     ' by printing the command strings following string substitution but not actually executing them')
 
   # Usage of for_each needs to be handled slightly differently here:
   # We want the parser to interpret only the contents of the command-line before the colon symbol,
@@ -216,7 +214,6 @@ def execute(): #pylint: disable=unused-variable
   app.debug(f'CMDSPLIT: {CMDSPLIT}')
 
   if app.ARGS.exclude:
-    app.ARGS.exclude = [ exclude[0] for exclude in app.ARGS.exclude ] # action='append' yields a list per occurrence; each has exactly one argument (arity 1)
     app.debug(f'To exclude: {app.ARGS.exclude}')
     exclude_unmatched = [ ]
     to_exclude = [ ]

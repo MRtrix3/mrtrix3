@@ -22,35 +22,35 @@ NEEDS_SINGLE_SHELL = False # pylint: disable=unused-variable
 SUPPORTS_MASK = True # pylint: disable=unused-variable
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('fa', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('fa', parent=base_parser)
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Use the old FA-threshold heuristic for single-fibre voxel selection and response function estimation')
   parser.add_citation('Tournier, J.-D.; Calamante, F.; Gadian, D. G. & Connelly, A. '
                       'Direct estimation of the fiber orientation density function from diffusion-weighted MRI data using spherical deconvolution. '
                       'NeuroImage, 2004, 23, 1176-1185')
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input DWI')
+                      'The input DWI',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.FileOut(),
-                      help='The output response function text file')
-  options = parser.add_argument_group('Options specific to the "fa" algorithm')
-  options.add_argument('-erode',
-                       type=app.Parser.Int(0),
-                       metavar='iterations',
-                       default=3,
-                       help='Number of brain mask erosion steps to apply prior to threshold '
-                            '(not used if mask is provided manually)')
-  options.add_argument('-number',
-                       type=app.Parser.Int(1),
-                       metavar='voxels',
-                       default=300,
-                       help='The number of highest-FA voxels to use')
-  options.add_argument('-threshold',
-                       type=app.Parser.Float(0.0, 1.0),
-                       help='Apply a hard FA threshold, '
-                            'rather than selecting the top voxels')
+                      'The output response function text file',
+                      type=app.Parser.FileOut())
+  options = parser.add_option_group('Options specific to the "fa" algorithm')
+  options.add_option('erode',
+                     'Number of brain mask erosion steps to apply prior to threshold '
+                     '(not used if mask is provided manually)',
+                     type=app.Parser.Int(0),
+                     metavar='iterations',
+                     default=3)
+  options.add_option('number',
+                     'The number of highest-FA voxels to use',
+                     type=app.Parser.Int(1),
+                     metavar='voxels',
+                     default=300)
+  options.add_option('threshold',
+                     'Apply a hard FA threshold, '
+                     'rather than selecting the top voxels',
+                     type=app.Parser.Float(0.0, 1.0))
   parser.flag_mutually_exclusive_options(['number', 'threshold'])
 
 

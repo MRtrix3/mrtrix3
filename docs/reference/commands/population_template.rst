@@ -56,9 +56,9 @@ Input, output and general options
 
 -  **-noreorientation** Turn off FOD reorientation in mrregister. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)
 
--  **-leave_one_out choice** Register each input image to a template that does not contain that image. (Default: auto (true if n_subjects larger than 2 and smaller than 15)) (choices: 0, 1, auto)
+-  **-leave_one_out choice** Register each input image to a template that does not contain that image. Selection "auto" leaves one out if the number of subjects is larger than 2 and smaller than 15. (choices: 0, 1, auto; default: auto)
 
--  **-aggregate choice** Measure used to aggregate information from transformed images to the template image. (choices: mean, median; default: mean)
+-  **-aggregate choice** Measure used to aggregate information from transformed images to the template image (default: mean) (choices: mean, median)
 
 -  **-aggregation_weights file** Comma-separated file containing weights used for weighted image aggregation. Each row must contain the identifiers of the input image and its weight. Note that this weighs intensity values not transformations (shape).
 
@@ -86,7 +86,7 @@ Options for the linear registration
 
 -  **-linear_no_drift_correction** Deactivate correction of template appearance (scale and shear) over iterations
 
--  **-linear_estimator choice** Specify estimator for intensity difference metric. Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), none (no robust estimator). (choices: l1, l2, lp, none; default: none)
+-  **-linear_estimator choice** Specify estimator for intensity difference metric. Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), none (no robust estimator). (default: none) (choices: l1, l2, lp, none)
 
 -  **-rigid_scale values** Specify the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: 0.3,0.4,0.6,0.8,1.0,1.0). This and affine_scale implicitly define the number of template levels
 
@@ -109,9 +109,9 @@ Options for the non-linear registration
 
 -  **-nl_niter values** Specify the number of registration iterations used within each level before updating the template, in the form of a list of integers (default: 5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5). The list must be the same length as the nl_scale factor list
 
--  **-nl_update_smooth value** Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size) (minimum: 0.0)
+-  **-nl_update_smooth value** Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units) (minimum: 0.0; default: 2.0)
 
--  **-nl_disp_smooth value** Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size) (minimum: 0.0)
+-  **-nl_disp_smooth value** Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units) (minimum: 0.0; default: 1.0)
 
 -  **-nl_grad_step value** The gradient step size for non-linear registration (minimum: 0.0; default: 0.5)
 

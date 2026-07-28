@@ -57,7 +57,7 @@ Options relevant to the internal optimisation procedure
 
 -  **-max_iters count** The maximum number of iterations (see Description); set to 0 to proceed until convergence (minimum: 0; default: 2)
 
--  **-mask_algo algorithm** The algorithm to use for mask estimation, potentially based on the ODF sum image (see Description) (choices: dwi2mask, fslbet, hdbet, mrthreshold, synthstrip, threshold; default: threshold)
+-  **-mask_algo algorithm** The algorithm to use for mask estimation, potentially based on the ODF sum image (see Description) (default: threshold, unless overridden by the DwibiasnormmaskMaskAlgorithm config file entry) (choices: dwi2mask, fslbet, hdbet, mrthreshold, synthstrip, threshold)
 
 -  **-lmax values** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell  and "4,0" for single-shell data) (values must be non-negative and even)
 

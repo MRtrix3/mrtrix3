@@ -15,27 +15,24 @@
 
 from mrtrix3 import app # pylint: disable=import-error
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('alpha', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('alpha', parent=base_parser)
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('First sub-interface; demonstrates the require_exactly_one constraint')
-  parser.add_argument('-alpha_value',
-                      help='An option specific to the alpha sub-interface')
-  exactly_one = parser.add_argument_group('Exactly-one options')
-  exactly_one.add_argument('-exone_a',
-                           action='store_true',
-                           default=None,
-                           help='The first exactly-one member')
-  exactly_one.add_argument('-exone_b',
-                           action='store_true',
-                           default=None,
-                           help='The second exactly-one member')
+  parser.add_option('alpha_value',
+                    'An option specific to the alpha sub-interface',
+                    type=str)
+  exactly_one = parser.add_option_group('Exactly-one options')
+  exactly_one.add_option('exone_a',
+                         'The first exactly-one member')
+  exactly_one.add_option('exone_b',
+                         'The second exactly-one member')
   exactly_one.require_exactly_one()
 
 
 
 def execute(): #pylint: disable=unused-variable
-  app.console(f'operation: {app.ARGS.algorithm}')
+  app.console(f'subcommand: {app.ARGS.subcommand}')
   if app.ARGS.mode_common:
     app.console('-mode_common option present')
   if app.ARGS.mutex_a:

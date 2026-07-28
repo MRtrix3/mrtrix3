@@ -103,57 +103,56 @@ def usage(cmdline): #pylint: disable=unused-variable
                        'Multi-tissue log-domain intensity and inhomogeneity normalisation for quantitative apparent fibre density. '
                        'In Proc. ISMRM, 2021, 29, 2472')
   cmdline.add_argument('input',
-                       type=app.Parser.ImageIn(),
-                       help='The input DWI series to be corrected')
+                       'The input DWI series to be corrected',
+                       type=app.Parser.ImageIn())
   cmdline.add_argument('output_dwi',
-                       type=app.Parser.ImageOut(),
-                       help='The output corrected DWI series')
+                       'The output corrected DWI series',
+                       type=app.Parser.ImageOut())
   cmdline.add_argument('output_mask',
-                       type=app.Parser.ImageOut(),
-                       help='The output DWI mask')
-  output_options = cmdline.add_argument_group('Options that modulate the outputs of the script')
-  output_options.add_argument('-output_bias',
-                              type=app.Parser.ImageOut(),
-                              help='Export the final estimated bias field to an image')
-  output_options.add_argument('-output_scale',
-                              type=app.Parser.FileOut(),
-                              help='Write the scaling factor applied to the DWI series to a text file')
-  output_options.add_argument('-output_tissuesum',
-                              type=app.Parser.ImageOut(),
-                              help='Export the tissue sum image that was used to generate the final mask')
-  output_options.add_argument('-reference',
-                              type=app.Parser.Float(0.0),
-                              default=REFERENCE_INTENSITY,
-                              help='Set the target CSF b=0 intensity in the output DWI series'
-                                   ).set_default(REFERENCE_INTENSITY)
-  internal_options = cmdline.add_argument_group('Options relevant to the internal optimisation procedure')
-  internal_options.add_argument('-dice',
-                                type=app.Parser.Float(0.0, 1.0),
-                                default=DICE_COEFF_DEFAULT,
-                                help='Set the Dice coefficient threshold for similarity of masks between sequential iterations'
-                                     ' that will result in termination due to convergence'
-                                     ).set_default(DICE_COEFF_DEFAULT)
-  internal_options.add_argument('-init_mask',
-                                type=app.Parser.ImageIn(),
-                                help='Provide an initial mask for the first iteration of the algorithm'
-                                     ' (if not provided, the default dwi2mask algorithm will be used)')
-  internal_options.add_argument('-max_iters',
-                                type=app.Parser.Int(0),
-                                default=DWIBIASCORRECT_MAX_ITERS,
-                                metavar='count',
-                                help='The maximum number of iterations (see Description);'
-                                     ' set to 0 to proceed until convergence').set_default(DWIBIASCORRECT_MAX_ITERS)
-  internal_options.add_argument('-mask_algo',
-                                choices=MASK_ALGOS,
-                                metavar='algorithm',
-                                help='The algorithm to use for mask estimation,'
-                                     ' potentially based on the ODF sum image (see Description)'
-                                     ).set_default(MASK_ALGO_DEFAULT)
-  internal_options.add_argument('-lmax',
-                                type=app.Parser.SequenceLmax(),
-                                help='The maximum spherical harmonic degree for the estimated FODs (see Description);'
-                                     f' defaults are "{",".join(map(str, LMAXES_MULTI))}" for multi-shell '
-                                     f' and "{",".join(map(str, LMAXES_SINGLE))}" for single-shell data)')
+                       'The output DWI mask',
+                       type=app.Parser.ImageOut())
+  output_options = cmdline.add_option_group('Options that modulate the outputs of the script')
+  output_options.add_option('output_bias',
+                            'Export the final estimated bias field to an image',
+                            type=app.Parser.ImageOut())
+  output_options.add_option('output_scale',
+                            'Write the scaling factor applied to the DWI series to a text file',
+                            type=app.Parser.FileOut())
+  output_options.add_option('output_tissuesum',
+                            'Export the tissue sum image that was used to generate the final mask',
+                            type=app.Parser.ImageOut())
+  output_options.add_option('reference',
+                            'Set the target CSF b=0 intensity in the output DWI series',
+                            type=app.Parser.Float(0.0),
+                            default=REFERENCE_INTENSITY)
+  internal_options = cmdline.add_option_group('Options relevant to the internal optimisation procedure')
+  internal_options.add_option('dice',
+                              'Set the Dice coefficient threshold for similarity of masks between sequential iterations'
+                              ' that will result in termination due to convergence',
+                              type=app.Parser.Float(0.0, 1.0),
+                              default=DICE_COEFF_DEFAULT)
+  internal_options.add_option('init_mask',
+                              'Provide an initial mask for the first iteration of the algorithm'
+                              ' (if not provided, the default dwi2mask algorithm will be used)',
+                              type=app.Parser.ImageIn())
+  internal_options.add_option('max_iters',
+                              'The maximum number of iterations (see Description);'
+                              ' set to 0 to proceed until convergence',
+                              type=app.Parser.Int(0),
+                              metavar='count',
+                              default=DWIBIASCORRECT_MAX_ITERS)
+  internal_options.add_option('mask_algo',
+                              'The algorithm to use for mask estimation,'
+                              ' potentially based on the ODF sum image (see Description)'
+                              f' (default: {MASK_ALGO_DEFAULT}, unless overridden by the'
+                              ' DwibiasnormmaskMaskAlgorithm config file entry)',
+                              choices=MASK_ALGOS,
+                              metavar='algorithm')
+  internal_options.add_option('lmax',
+                              'The maximum spherical harmonic degree for the estimated FODs (see Description);'
+                              f' defaults are "{",".join(map(str, LMAXES_MULTI))}" for multi-shell '
+                              f' and "{",".join(map(str, LMAXES_SINGLE))}" for single-shell data)',
+                              type=app.Parser.SequenceLmax())
   app.add_dwgrad_import_options(cmdline)
 
 

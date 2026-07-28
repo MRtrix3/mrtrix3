@@ -27,13 +27,13 @@ Options
 
 -  **-mask image** Provide a mask image within which to seed & constrain tracking
 
--  **-number value** Set the number of tracks to generate for each test (minimum: 1)
+-  **-number value** Set the number of tracks to generate for each test (minimum: 1; default: 10000)
 
--  **-threshold value** Modulate thresold on the ratio of empirical to maximal mean length to issue an error (range: 0.0 to 1.0)
+-  **-threshold value** Modulate thresold on the ratio of empirical to maximal mean length to issue an error (range: 0.0 to 1.0; default: 0.94999999999999996)
 
--  **-format choice** The format in which peak orientations are specified (choices: spherical, unitspherical, cartesian, unitcartesian)
+-  **-format choice** The format in which peak orientations are specified (choices: spherical, unitspherical, cartesian, unitcartesian; default: cartesian)
 
--  **-reference choice** The a priori expected references axes against which the input orientations are defined (choices: xyz, ijk, fsl)
+-  **-reference choice** The a priori expected references axes against which the input orientations are defined (choices: xyz, ijk, fsl; default: xyz)
 
 -  **-noshuffle** Do not evaluate possibility of requiring shuffles of axes or angles; only consider prospective transforms from alternative reference frames to real / scanner space
 

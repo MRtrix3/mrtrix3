@@ -17,8 +17,8 @@ import os
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, image, run
 
-def usage(base_parser, subparsers):  #pylint: disable=unused-variable
-  parser = subparsers.add_parser('deep_atropos', parents=[base_parser])
+def usage(base_parser, subcommands):  #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('deep_atropos', parent=base_parser)
   parser.set_author('Lucius S. Fekonja (lucius.fekonja[at]charite.de) and Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Generate the 5TT image based on a Deep Atropos segmentation or probabilities image')
   parser.add_citation('N.J. Tustison, P.A. Cook, A.J. Holbrook, H.J. Johnson, J. Muschelli, G.A. Devenyi, J.T. Duda, S.R. Das, '
@@ -60,15 +60,13 @@ def usage(base_parser, subparsers):  #pylint: disable=unused-variable
                            'In this use case, the posterior probabilities of these tissue classes are interpreted as partial volume fractions '
                            'and imported into the derivative 5TT image appropriately.')
   parser.add_argument('input',
-    type=app.Parser.ImageIn(),
-    help='The input Deep Atropos segmentation image')
+                      'The input Deep Atropos segmentation image',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-    type=app.Parser.ImageOut(),
-    help='The output 5TT image')
-  parser.add_argument('-white_stem',
-    action='store_true',
-    default=None,
-    help='Classify the brainstem as white matter')
+                      'The output 5TT image',
+                      type=app.Parser.ImageOut())
+  parser.add_option('white_stem',
+                    'Classify the brainstem as white matter')
 
 def execute():  #pylint: disable=unused-variable
   # -sgm_amyg_hipp is inapplicable to this algorithm and is intentionally not read here, so the

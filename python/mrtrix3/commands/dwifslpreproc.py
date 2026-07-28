@@ -201,105 +201,97 @@ def usage(cmdline): #pylint: disable=unused-variable
                        condition='If using -eddyqc_text or -eddyqc_all option and eddy_quad is installed',
                        is_external=True)
   cmdline.add_argument('input',
-                       type=app.Parser.ImageIn(),
-                       help='The input DWI series to be corrected')
+                       'The input DWI series to be corrected',
+                       type=app.Parser.ImageIn())
   cmdline.add_argument('output',
-                       type=app.Parser.ImageOut(),
-                       help='The output corrected image series')
-  cmdline.add_argument('-json_import',
-                       type=app.Parser.FileIn(),
-                       help='Import image header information from an associated JSON file'
-                            ' (may be necessary to determine phase encoding information)')
-  rpe_options = cmdline.add_argument_group('Options for specifying the acquisition phase-encoding design')
-  rpe_options.add_argument('-rpe_none',
-                           action='store_true',
-                           default=None,
-                           help='Specify that no reversed phase-encoding image data is being provided;'
-                                ' eddy will perform eddy current and motion correction only')
-  rpe_options.add_argument('-rpe_pair',
-                           action='store_true',
-                           default=None,
-                           help='Specify that a set of images'
-                                ' (typically b=0 volumes)'
-                                ' will be provided for use in inhomogeneity field estimation only'
-                                ' (using the -se_epi option)')
-  rpe_options.add_argument('-rpe_split',
-                           action='store_true',
-                           default=None,
-                           help='Specify that input DWIs were split sequentially between two phase encoding directions')
-  rpe_options.add_argument('-rpe_all',
-                           action='store_true',
-                           default=None,
-                           help='Specify that ALL DWIs have been acquired with opposing phase-encoding')
-  rpe_options.add_argument('-rpe_header',
-                           action='store_true',
-                           default=None,
-                           help='Specify that the phase-encoding information can be found in the image header(s),'
-                                ' and that this is the information that the script should use')
+                       'The output corrected image series',
+                       type=app.Parser.ImageOut())
+  cmdline.add_option('json_import',
+                     'Import image header information from an associated JSON file'
+                     ' (may be necessary to determine phase encoding information)',
+                     type=app.Parser.FileIn())
+  rpe_options = cmdline.add_option_group('Options for specifying the acquisition phase-encoding design')
+  rpe_options.add_option('rpe_none',
+                         'Specify that no reversed phase-encoding image data is being provided;'
+                         ' eddy will perform eddy current and motion correction only')
+  rpe_options.add_option('rpe_pair',
+                         'Specify that a set of images'
+                         ' (typically b=0 volumes)'
+                         ' will be provided for use in inhomogeneity field estimation only'
+                         ' (using the -se_epi option)')
+  rpe_options.add_option('rpe_split',
+                         'Specify that input DWIs were split sequentially between two phase encoding directions')
+  rpe_options.add_option('rpe_all',
+                         'Specify that ALL DWIs have been acquired with opposing phase-encoding')
+  rpe_options.add_option('rpe_header',
+                         'Specify that the phase-encoding information can be found in the image header(s),'
+                         ' and that this is the information that the script should use')
   # One (and only one) of the -rpe_* options must be provided (reinstates the ad-hoc mutex
   #   removed in stage 1 as a principled group constraint; the whole rpe_options group is the
   #   constrained set).
   rpe_options.require_exactly_one()
-  pe_options = cmdline.add_argument_group('Options for manually specifying the phase encoding of the input DWIs')
-  pe_options.add_argument('-pe_dir',
-                          metavar='PE',
-                          help='Manually specify the phase encoding direction of the input series;'
-                               ' can be a signed axis number (e.g. -0, 1, +2),'
-                               ' an axis designator (e.g. RL, PA, IS),'
-                               ' or NIfTI axis codes (e.g. i-, j, k)')
-  pe_options.add_argument('-readout_time',
-                          type=app.Parser.Float(0.0),
-                          metavar='time',
-                          help='Manually specify the total readout time of the input series (in seconds)')
-  distcorr_options = cmdline.add_argument_group('Options for achieving correction of susceptibility distortions')
-  distcorr_options.add_argument('-se_epi',
-                                type=app.Parser.ImageIn(),
-                                help='Provide an additional image series consisting of spin-echo EPI images,'
-                                     ' which is to be used exclusively by topup for estimating the inhomogeneity field'
-                                     ' (i.e. it will not form part of the output image series)')
-  distcorr_options.add_argument('-align_seepi',
-                                action='store_true',
-                                default=None,
-                                help='Achieve alignment between the SE-EPI images used for inhomogeneity field estimation and the DWIs'
-                                     ' (more information in Description section)')
-  distcorr_options.add_argument('-topup_options',
-                                metavar='"TopupOptions"',
-                                help='Manually provide additional command-line options to the topup command'
-                                     ' (provide a string within quotation marks;'
-                                     ' its contents are passed to topup verbatim)')
-  distcorr_options.add_argument('-topup_files',
-                                metavar='prefix',
-                                help='Provide the primary output files generated by prior execution of the FSL "topup" command'
-                                     ' to be utilised by eddy')
-  distcorr_options.add_argument('-topup_field',
-                                type=app.Parser.ImageIn(),
-                                metavar='prefix',
-                                help='Provide the field offset image generated by prior execution of the FSL "topup" command'
-                                     ' to be utilised subsequent to eddy for volume reconstruction')
-  eddy_options = cmdline.add_argument_group('Options for affecting the operation of the FSL "eddy" command')
-  eddy_options.add_argument('-eddy_mask',
-                            type=app.Parser.ImageIn(),
-                            help='Provide a processing mask to use for eddy,'
-                                 ' instead of having dwifslpreproc generate one internally using dwi2mask')
-  eddy_options.add_argument('-eddy_slspec',
-                            type=app.Parser.FileIn(),
-                            help='Provide a file containing slice groupings for eddy\'s slice-to-volume registration')
-  eddy_options.add_argument('-eddy_options',
-                            metavar='"EddyOptions"',
-                            help='Manually provide additional command-line options to the eddy command'
-                                 ' (provide a string within quotation marks;'
-                                 ' its contents are passed to eddy verbatim)')
-  eddyqc_options = cmdline.add_argument_group('Options for utilising EddyQC')
-  eddyqc_options.add_argument('-eddyqc_text',
-                              type=app.Parser.DirectoryOut(),
-                              help='Copy the various text-based statistical outputs generated by eddy,'
-                                   ' and the output of eddy_qc (if installed),'
-                                   ' into an output directory')
-  eddyqc_options.add_argument('-eddyqc_all',
-                              type=app.Parser.DirectoryOut(),
-                              help='Copy ALL outputs generated by eddy (including images),'
-                                   ' and the output of eddy_qc (if installed),'
-                                   ' into an output directory')
+  pe_options = cmdline.add_option_group('Options for manually specifying the phase encoding of the input DWIs')
+  pe_options.add_option('pe_dir',
+                        'Manually specify the phase encoding direction of the input series;'
+                        ' can be a signed axis number (e.g. -0, 1, +2),'
+                        ' an axis designator (e.g. RL, PA, IS),'
+                        ' or NIfTI axis codes (e.g. i-, j, k)',
+                        type=str,
+                        metavar='PE')
+  pe_options.add_option('readout_time',
+                        'Manually specify the total readout time of the input series (in seconds)',
+                        type=app.Parser.Float(0.0),
+                        metavar='time')
+  distcorr_options = cmdline.add_option_group('Options for achieving correction of susceptibility distortions')
+  distcorr_options.add_option('se_epi',
+                              'Provide an additional image series consisting of spin-echo EPI images,'
+                              ' which is to be used exclusively by topup for estimating the inhomogeneity field'
+                              ' (i.e. it will not form part of the output image series)',
+                              type=app.Parser.ImageIn())
+  distcorr_options.add_option('align_seepi',
+                              'Achieve alignment between the SE-EPI images used for inhomogeneity field estimation and the DWIs'
+                              ' (more information in Description section)')
+  distcorr_options.add_option('topup_options',
+                              'Manually provide additional command-line options to the topup command'
+                              ' (provide a string within quotation marks;'
+                              ' its contents are passed to topup verbatim)',
+                              type=str,
+                              metavar='"TopupOptions"')
+  distcorr_options.add_option('topup_files',
+                              'Provide the primary output files generated by prior execution of the FSL "topup" command'
+                              ' to be utilised by eddy',
+                              type=str,
+                              metavar='prefix')
+  distcorr_options.add_option('topup_field',
+                              'Provide the field offset image generated by prior execution of the FSL "topup" command'
+                              ' to be utilised subsequent to eddy for volume reconstruction',
+                              type=app.Parser.ImageIn(),
+                              metavar='prefix')
+  eddy_options = cmdline.add_option_group('Options for affecting the operation of the FSL "eddy" command')
+  eddy_options.add_option('eddy_mask',
+                          'Provide a processing mask to use for eddy,'
+                          ' instead of having dwifslpreproc generate one internally using dwi2mask',
+                          type=app.Parser.ImageIn())
+  eddy_options.add_option('eddy_slspec',
+                          'Provide a file containing slice groupings for eddy\'s slice-to-volume registration',
+                          type=app.Parser.FileIn())
+  eddy_options.add_option('eddy_options',
+                          'Manually provide additional command-line options to the eddy command'
+                          ' (provide a string within quotation marks;'
+                          ' its contents are passed to eddy verbatim)',
+                          type=str,
+                          metavar='"EddyOptions"')
+  eddyqc_options = cmdline.add_option_group('Options for utilising EddyQC')
+  eddyqc_options.add_option('eddyqc_text',
+                            'Copy the various text-based statistical outputs generated by eddy,'
+                            ' and the output of eddy_qc (if installed),'
+                            ' into an output directory',
+                            type=app.Parser.DirectoryOut())
+  eddyqc_options.add_option('eddyqc_all',
+                            'Copy ALL outputs generated by eddy (including images),'
+                            ' and the output of eddy_qc (if installed),'
+                            ' into an output directory',
+                            type=app.Parser.DirectoryOut())
   app.add_dwgrad_export_options(cmdline)
   app.add_dwgrad_import_options(cmdline)
   # Cross-group mutual-exclusion sets: pairs of options (spread across the distortion-

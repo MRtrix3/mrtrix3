@@ -14,4 +14,4 @@
 # For more details, see http://www.mrtrix.org/.
 
 # pylint: disable=unused-variable
-ALGORITHMS = ['group', 'manual', 'mtnorm']
+SUBCOMMANDS = ['group', 'manual', 'mtnorm']

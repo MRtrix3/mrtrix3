@@ -1,6 +1,6 @@
 Verify operation of the Python hierarchical (multi-sub-command) command-line interface
-The algorithm to be used is nominated as the first argument; the subsequent arguments and options available depend on the nominated algorithm.
-ARGUMENT algorithm 0 0 CHOICE alpha beta
+The sub-command to be used is nominated as the first argument; the subsequent arguments and options available depend on the nominated sub-command.
+ARGUMENT subcommand 0 0 CHOICE alpha beta
 OPTION mode_common 1 0
 An option located directly within the common parent group
 OPTION mutex_a 1 0

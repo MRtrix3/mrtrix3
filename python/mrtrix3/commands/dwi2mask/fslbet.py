@@ -20,8 +20,8 @@ from mrtrix3 import app, fsl, image, run
 NEEDS_MEAN_BZERO = True # pylint: disable=unused-variable
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('fslbet', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('fslbet', parent=base_parser)
   parser.set_author('Warda Syeda (wtsyeda@unimelb.edu.au) '
                     'and Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Use the FSL Brain Extraction Tool (bet) to generate a brain mask')
@@ -30,33 +30,31 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       'Human Brain Mapping, 2002, 17, 143-155',
                       is_external=True)
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input DWI series')
+                      'The input DWI series',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.ImageOut(),
-                      help='The output mask image')
-  options = parser.add_argument_group('Options specific to the "fslbet" algorithm')
-  options.add_argument('-bet_f',
-                       type=app.Parser.Float(0.0, 1.0),
-                       help='Fractional intensity threshold (0->1); '
-                            'smaller values give larger brain outline estimates')
-  options.add_argument('-bet_g',
-                       type=app.Parser.Float(-1.0, 1.0),
-                       help='Vertical gradient in fractional intensity threshold (-1->1); '
-                            'positive values give larger brain outline at bottom, smaller at top')
-  options.add_argument('-bet_c',
-                       type=app.Parser.SequenceFloat(),
-                       metavar='i,j,k',
-                       help='Centre-of-gravity (voxels not mm) of initial mesh surface')
-  options.add_argument('-bet_r',
-                       type=app.Parser.Float(0.0),
-                       help='Head radius (mm not voxels); '
-                            'initial surface sphere is set to half of this')
-  options.add_argument('-rescale',
-                       action='store_true',
-                       default=None,
-                       help='Rescale voxel size provided to BET to 1mm isotropic; '
-                            'can improve results for rodent data')
+                      'The output mask image',
+                      type=app.Parser.ImageOut())
+  options = parser.add_option_group('Options specific to the "fslbet" algorithm')
+  options.add_option('bet_f',
+                     'Fractional intensity threshold (0->1); '
+                     'smaller values give larger brain outline estimates',
+                     type=app.Parser.Float(0.0, 1.0))
+  options.add_option('bet_g',
+                     'Vertical gradient in fractional intensity threshold (-1->1); '
+                     'positive values give larger brain outline at bottom, smaller at top',
+                     type=app.Parser.Float(-1.0, 1.0))
+  options.add_option('bet_c',
+                     'Centre-of-gravity (voxels not mm) of initial mesh surface',
+                     type=app.Parser.SequenceFloat(),
+                     metavar='i,j,k')
+  options.add_option('bet_r',
+                     'Head radius (mm not voxels); '
+                     'initial surface sphere is set to half of this',
+                     type=app.Parser.Float(0.0))
+  options.add_option('rescale',
+                     'Rescale voxel size provided to BET to 1mm isotropic; '
+                     'can improve results for rodent data')
 
 
 

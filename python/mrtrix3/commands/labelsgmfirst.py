@@ -34,26 +34,22 @@ def usage(cmdline): #pylint: disable=unused-variable
                        'The effects of SIFT on the reproducibility and biological accuracy of the structural connectome. '
                        'NeuroImage, 2015, 104, 253-265')
   cmdline.add_argument('parc',
-                       type=app.Parser.ImageIn(),
-                       help='The input FreeSurfer parcellation image')
+                       'The input FreeSurfer parcellation image',
+                       type=app.Parser.ImageIn())
   cmdline.add_argument('t1',
-                       type=app.Parser.ImageIn(),
-                       help='The T1 image to be provided to FIRST')
+                       'The T1 image to be provided to FIRST',
+                       type=app.Parser.ImageIn())
   cmdline.add_argument('lut',
-                       type=app.Parser.FileIn(),
-                       help='The lookup table file that the parcellated image is based on')
+                       'The lookup table file that the parcellated image is based on',
+                       type=app.Parser.FileIn())
   cmdline.add_argument('output',
-                       type=app.Parser.ImageOut(),
-                       help='The output parcellation image')
-  cmdline.add_argument('-premasked',
-                       action='store_true',
-                       default=None,
-                       help='Indicate that brain masking has been applied to the T1 input image')
-  cmdline.add_argument('-sgm_amyg_hipp',
-                       action='store_true',
-                       default=None,
-                       help='Consider the amygdalae and hippocampi as sub-cortical grey matter structures,'
-                            ' and also replace their estimates with those from FIRST')
+                       'The output parcellation image',
+                       type=app.Parser.ImageOut())
+  cmdline.add_option('premasked',
+                     'Indicate that brain masking has been applied to the T1 input image')
+  cmdline.add_option('sgm_amyg_hipp',
+                     'Consider the amygdalae and hippocampi as sub-cortical grey matter structures,'
+                     ' and also replace their estimates with those from FIRST')
 
 
 

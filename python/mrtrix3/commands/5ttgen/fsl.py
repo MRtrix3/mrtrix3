@@ -19,8 +19,8 @@ from mrtrix3 import app, fsl, image, run, utils
 
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('fsl', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('fsl', parent=base_parser)
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Use FSL commands to generate the 5TT image based on a T1-weighted image')
   parser.add_citation('Smith, S. M. '
@@ -40,24 +40,22 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       'NeuroImage, 2004, 23, S208-S219',
                       is_external=True)
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input T1-weighted image')
+                      'The input T1-weighted image',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.ImageOut(),
-                      help='The output 5TT image')
-  options = parser.add_argument_group('Options specific to the "fsl" algorithm')
-  options.add_argument('-t2',
-                       type=app.Parser.ImageIn(),
-                       help='Provide a T2-weighted image in addition to the default T1-weighted image; '
-                            'this will be used as a second input to FSL FAST')
-  options.add_argument('-mask',
-                       type=app.Parser.ImageIn(),
-                       help='Manually provide a brain mask, '
-                            'rather than deriving one in the script')
-  options.add_argument('-premasked',
-                       action='store_true',
-                       default=None,
-                       help='Indicate that brain masking has already been applied to the input image')
+                      'The output 5TT image',
+                      type=app.Parser.ImageOut())
+  options = parser.add_option_group('Options specific to the "fsl" algorithm')
+  options.add_option('t2',
+                     'Provide a T2-weighted image in addition to the default T1-weighted image; '
+                     'this will be used as a second input to FSL FAST',
+                     type=app.Parser.ImageIn())
+  options.add_option('mask',
+                     'Manually provide a brain mask, '
+                     'rather than deriving one in the script',
+                     type=app.Parser.ImageIn())
+  options.add_option('premasked',
+                     'Indicate that brain masking has already been applied to the input image')
   parser.flag_mutually_exclusive_options(['mask', 'premasked'])
 
 

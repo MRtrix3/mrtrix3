@@ -20,42 +20,38 @@ NEEDS_MEAN_BZERO = False # pylint: disable=unused-variable
 DEFAULT_CLEAN_SCALE = 2
 DEFAULT_MAX_ITERS = 10
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('trace', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('trace', parent=base_parser)
   parser.set_author('Warda Syeda (wtsyeda@unimelb.edu.au) '
                     'and Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('A method to generate a brain mask from trace images of b-value shells')
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input DWI series')
+                      'The input DWI series',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.ImageOut(),
-                      help='The output mask image')
-  options = parser.add_argument_group('Options specific to the "trace" algorithm')
-  options.add_argument('-shells',
-                       type=app.Parser.SequenceFloat(),
-                       metavar='bvalues',
-                       help='Comma-separated list of shells used to generate trace-weighted images for masking')
-  options.add_argument('-clean_scale',
-                       type=app.Parser.Int(0),
-                       default=DEFAULT_CLEAN_SCALE,
-                       help='the maximum scale used to cut bridges. '
-                            'A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. '
-                            'Setting this to 0 disables the mask cleaning step. '
-                            f'(Default: {DEFAULT_CLEAN_SCALE})')
-  iter_options = parser.add_argument_group('Options for turning "dwi2mask trace" into an iterative algorithm')
-  iter_options.add_argument('-iterative',
-                            action='store_true',
-                            default=None,
-                            help='(EXPERIMENTAL) '
-                                 'Iteratively refine the weights for combination of per-shell trace-weighted images '
-                                 'prior to thresholding')
-  iter_options.add_argument('-max_iters',
-                            type=app.Parser.Int(1),
-                            metavar='iterations',
-                            default=DEFAULT_MAX_ITERS,
-                            help='Set the maximum number of iterations for the algorithm '
-                                 f'(default: {DEFAULT_MAX_ITERS})')
+                      'The output mask image',
+                      type=app.Parser.ImageOut())
+  options = parser.add_option_group('Options specific to the "trace" algorithm')
+  options.add_option('shells',
+                     'Comma-separated list of shells used to generate trace-weighted images for masking',
+                     type=app.Parser.SequenceFloat(),
+                     metavar='bvalues')
+  options.add_option('clean_scale',
+                     'the maximum scale used to cut bridges. '
+                     'A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. '
+                     'Setting this to 0 disables the mask cleaning step.',
+                     type=app.Parser.Int(0),
+                     default=DEFAULT_CLEAN_SCALE)
+  iter_options = parser.add_option_group('Options for turning "dwi2mask trace" into an iterative algorithm')
+  iter_options.add_option('iterative',
+                          '(EXPERIMENTAL) '
+                          'Iteratively refine the weights for combination of per-shell trace-weighted images '
+                          'prior to thresholding')
+  iter_options.add_option('max_iters',
+                          'Set the maximum number of iterations for the algorithm',
+                          type=app.Parser.Int(1),
+                          metavar='iterations',
+                          default=DEFAULT_MAX_ITERS)
 
 
 

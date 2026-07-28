@@ -21,25 +21,25 @@ NEEDS_SINGLE_SHELL = False # pylint: disable=unused-variable
 SUPPORTS_MASK = False # pylint: disable=unused-variable
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('manual', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('manual', parent=base_parser)
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Derive a response function using an input mask image alone '
                       '(i.e. pre-selected voxels)')
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input DWI')
+                      'The input DWI',
+                      type=app.Parser.ImageIn())
   parser.add_argument('in_voxels',
-                      type=app.Parser.ImageIn(),
-                      help='Input voxel selection mask')
+                      'Input voxel selection mask',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.FileOut(),
-                      help='Output response function text file')
-  options = parser.add_argument_group('Options specific to the "manual" algorithm')
-  options.add_argument('-dirs',
-                       type=app.Parser.ImageIn(),
-                       help='Provide an input image that contains a pre-estimated fibre direction in each voxel '
-                            '(a tensor fit will be used otherwise)')
+                      'Output response function text file',
+                      type=app.Parser.FileOut())
+  options = parser.add_option_group('Options specific to the "manual" algorithm')
+  options.add_option('dirs',
+                     'Provide an input image that contains a pre-estimated fibre direction in each voxel '
+                     '(a tensor fit will be used otherwise)',
+                     type=app.Parser.ImageIn())
 
 
 

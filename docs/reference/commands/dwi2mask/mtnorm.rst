@@ -47,7 +47,7 @@ Options specific to the "mtnorm" algorithm
 
 -  **-lmax values** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell and "4,0" for single-shell data (values must be non-negative and even)
 
--  **-threshold value** the threshold on the total tissue density sum image used to derive the brain mask; default is 0.5 (range: 0.0 to 1.0)
+-  **-threshold value** the threshold on the total tissue density sum image used to derive the brain mask (range: 0.0 to 1.0; default: 0.5)
 
 -  **-tissuesum image** Export the tissue sum image that was used to generate the mask
 

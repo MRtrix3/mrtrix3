@@ -23,8 +23,8 @@ SYNTHSTRIP_CMD='mri_synthstrip'
 SYNTHSTRIP_SINGULARITY='sythstrip-singularity'
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('synthstrip', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('synthstrip', parent=base_parser)
   parser.set_author('Ruobing Chen (chrc@student.unimelb.edu.au)')
   parser.set_synopsis('Use the FreeSurfer Synthstrip method on the mean b=0 image')
   parser.add_description('This algorithm requires that the SynthStrip method be installed and available via PATH; '
@@ -35,29 +35,25 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       'NeuroImage, 2022, 260, 119474',
                       is_external=True)
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input DWI series')
+                      'The input DWI series',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.ImageOut(),
-                      help='The output mask image')
-  options=parser.add_argument_group('Options specific to the \'Synthstrip\' algorithm')
-  options.add_argument('-stripped',
-                       type=app.Parser.ImageOut(),
-                       help='The output stripped image')
-  options.add_argument('-gpu',
-                       action='store_true',
-                       default=None,
-                       help='Use the GPU')
-  options.add_argument('-model',
-                       type=app.Parser.FileIn(),
-                       help='Alternative model weights')
-  options.add_argument('-nocsf',
-                       action='store_true',
-                       default=None,
-                       help='Compute the immediate boundary of brain matter excluding surrounding CSF')
-  options.add_argument('-border',
-                       type=app.Parser.Int(),
-                       help='Control the boundary distance from the brain')
+                      'The output mask image',
+                      type=app.Parser.ImageOut())
+  options=parser.add_option_group('Options specific to the \'Synthstrip\' algorithm')
+  options.add_option('stripped',
+                     'The output stripped image',
+                     type=app.Parser.ImageOut())
+  options.add_option('gpu',
+                     'Use the GPU')
+  options.add_option('model',
+                     'Alternative model weights',
+                     type=app.Parser.FileIn())
+  options.add_option('nocsf',
+                     'Compute the immediate boundary of brain matter excluding surrounding CSF')
+  options.add_option('border',
+                     'Control the boundary distance from the brain',
+                     type=app.Parser.Int())
 
 
 

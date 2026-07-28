@@ -50,8 +50,8 @@ ANTS_REGISTERFULL_OPTIONS = \
 ANTS_REGISTERQUICK_OPTIONS = '-j 1'
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('b02template', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('b02template', parent=base_parser)
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Register the mean b=0 image to a T2-weighted template to back-propagate a brain mask')
   parser.add_description('This script currently assumes that the template image '
@@ -79,38 +79,40 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       condition='If ANTs software is used for registration',
                       is_external=True)
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input DWI series')
+                      'The input DWI series',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.ImageOut(),
-                      help='The output mask image')
-  options = parser.add_argument_group('Options specific to the "template" algorithm')
-  options.add_argument('-software',
-                       choices=SOFTWARES,
-                       help='The software to use for template registration'
-                            ).set_default(DEFAULT_SOFTWARE)
-  options.add_argument('-template',
-                       type=app.Parser.ImageIn(),
-                       metavar=('TemplateImage', 'MaskImage'),
-                       nargs=2,
-                       help='Provide the template image to which the input data will be registered, '
-                            'and the mask to be projected to the input image. '
-                            'The template image should be T2-weighted.')
-  ants_options = parser.add_argument_group('Options applicable when using the ANTs software for registration')
-  ants_options.add_argument('-ants_options',
-                            metavar='" ANTsOptions"',
-                            help='Provide options to be passed to the ANTs registration command '
-                                 '(see Description)')
-  fsl_options = parser.add_argument_group('Options applicable when using the FSL software for registration')
-  fsl_options.add_argument('-flirt_options',
-                           metavar='" FlirtOptions"',
-                           help='Command-line options to pass to the FSL flirt command '
-                                '(provide a string within quotation marks that contains at least one space, '
-                                'even if only passing a single command-line option to flirt)')
-  fsl_options.add_argument('-fnirt_config',
-                           type=app.Parser.FileIn(),
-                           metavar='file',
-                           help='Specify a FNIRT configuration file for registration')
+                      'The output mask image',
+                      type=app.Parser.ImageOut())
+  options = parser.add_option_group('Options specific to the "template" algorithm')
+  options.add_option('software',
+                     'The software to use for template registration '
+                     f'(default: {DEFAULT_SOFTWARE}, unless overridden by the '
+                     'Dwi2maskTemplateSoftware config file entry)',
+                     choices=SOFTWARES)
+  options.add_option('template',
+                     'Provide the template image to which the input data will be registered, '
+                     'and the mask to be projected to the input image. '
+                     'The template image should be T2-weighted.',
+                     type=app.Parser.ArgumentTuple(app.Parser.Argument('TemplateImage', type=app.Parser.ImageIn()),
+                                                   app.Parser.Argument('MaskImage', type=app.Parser.ImageIn())))
+  ants_options = parser.add_option_group('Options applicable when using the ANTs software for registration')
+  ants_options.add_option('ants_options',
+                          'Provide options to be passed to the ANTs registration command '
+                          '(see Description)',
+                          type=str,
+                          metavar='" ANTsOptions"')
+  fsl_options = parser.add_option_group('Options applicable when using the FSL software for registration')
+  fsl_options.add_option('flirt_options',
+                         'Command-line options to pass to the FSL flirt command '
+                         '(provide a string within quotation marks that contains at least one space, '
+                         'even if only passing a single command-line option to flirt)',
+                         type=str,
+                         metavar='" FlirtOptions"')
+  fsl_options.add_option('fnirt_config',
+                         'Specify a FNIRT configuration file for registration',
+                         type=app.Parser.FileIn(),
+                         metavar='file')
 
 
 

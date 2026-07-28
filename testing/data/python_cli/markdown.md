@@ -12,7 +12,7 @@ Test operation of the Python command-line interface
 
 + **-flag**<br>A binary flag
 
-+ **-string_implicit string**<br>A built-in string (implicit)
++ **-string_implicit str**<br>A built-in string, its type declared through the builtin str
 
 + **-string_explicit str**<br>A built-in string (explicit)
 
@@ -22,17 +22,19 @@ Test operation of the Python command-line interface
 
 + **-float_builtin float**<br>A floating-point; built-in type
 
-#### Complex interfaces; nargs, metavar, etc.
+#### Multi-argument and repeatable options
 
-+ **-nargs_two string string**<br>A command-line option with nargs=2, no metavar
++ **-tuple_names first second**<br>A two-argument option; its fields are identified by their names
 
-+ **-metavar_one metavar**<br>A command-line option with nargs=1 and metavar="metavar"
++ **-tuple_metavars metavar_one metavar_two**<br>A two-argument option; its fields override their display ids
 
-+ **-metavar_two metavar metavar**<br>A command-line option with nargs=2 and metavar="metavar"
++ **-tuple_described index value**<br>A two-argument option; its fields carry their own descriptions and types
 
-+ **-metavar_tuple metavar_one metavar_two**<br>A command-line option with nargs=2 and metavar=("metavar_one", "metavar_two")
+    - *index*: the index of the item (minimum: 0)
+    - *value*: the value to be assigned (range: 0.0 to 1.0)
++ **-metavar_one metavar**<br>A single-argument option with metavar="metavar"
 
-+ **-append string**  *(multiple uses permitted)*<br>A command-line option with "append" action (can be specified multiple times)
++ **-multiple str**  *(multiple uses permitted)*<br>A command-line option that may be specified multiple times
 
 + **-unused**<br>An option deliberately left unread to exercise unused-option tracking
 

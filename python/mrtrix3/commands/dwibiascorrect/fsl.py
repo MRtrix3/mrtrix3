@@ -19,8 +19,8 @@ from mrtrix3 import app, fsl, run, utils
 
 
 
-def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('fsl', parents=[base_parser])
+def usage(base_parser, subcommands): #pylint: disable=unused-variable
+  parser = subcommands.add_subcommand('fsl', parent=base_parser)
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Perform DWI bias field correction using the "fast" command as provided in FSL')
   parser.add_citation('Zhang, Y.; Brady, M. & Smith, S. '
@@ -38,11 +38,11 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                          '(e.g. correction of a bias field is commonly used to improve brain mask estimation), '
                          'use of this particular algorithm is generally not recommended.')
   parser.add_argument('input',
-                      type=app.Parser.ImageIn(),
-                      help='The input image series to be corrected')
+                      'The input image series to be corrected',
+                      type=app.Parser.ImageIn())
   parser.add_argument('output',
-                      type=app.Parser.ImageOut(),
-                      help='The output corrected image series')
+                      'The output corrected image series',
+                      type=app.Parser.ImageOut())
 
 
 

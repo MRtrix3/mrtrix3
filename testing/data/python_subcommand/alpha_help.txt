@@ -10,7 +10,7 @@ UUSSAAGGEE
 
 OOPPTTIIOONNSS
 
-  _-_a_l_p_h_a___v_a_l_u_e string
+  _-_a_l_p_h_a___v_a_l_u_e str
      An option specific to the alpha sub-interface
 
 GGrroouuppeedd  ccoommmmoonn  ooppttiioonnss  ddeemmoonnssttrraattiinngg  hhiieerraarrcchhyy

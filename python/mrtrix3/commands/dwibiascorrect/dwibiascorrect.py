@@ -26,17 +26,17 @@ def usage(cmdline): #pylint: disable=unused-variable
                           'derive a mask that will be passed to the relevant bias field estimation command. '
                           'More information on mask derivation from DWI data can be found at the following link: \n'
                           f'https://mrtrix.readthedocs.io/en/{version.TAG}/dwi_preprocessing/masking.html')
-  common_options = cmdline.add_argument_group('Options common to all dwibiascorrect algorithms')
-  common_options.add_argument('-mask',
-                              type=app.Parser.ImageIn(),
-                              help='Manually provide an input mask image for bias field estimation')
-  common_options.add_argument('-bias',
-                              type=app.Parser.ImageOut(),
-                              help='Output an image containing the estimated bias field')
+  common_options = cmdline.add_option_group('Options common to all dwibiascorrect sub-commands')
+  common_options.add_option('mask',
+                            'Manually provide an input mask image for bias field estimation',
+                            type=app.Parser.ImageIn())
+  common_options.add_option('bias',
+                            'Output an image containing the estimated bias field',
+                            type=app.Parser.ImageOut())
   app.add_dwgrad_import_options(cmdline)
 
   # Import the command-line settings for all algorithms found in the relevant directory
-  cmdline.add_subparsers()
+  cmdline.add_subcommands()
 
 
 
@@ -45,7 +45,7 @@ def execute(): #pylint: disable=unused-variable
   from mrtrix3 import app, image, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   # Load module for the user-requested algorithm
-  alg = importlib.import_module(f'.{app.ARGS.algorithm}', 'mrtrix3.commands.dwibiascorrect')
+  alg = importlib.import_module(f'.{app.ARGS.subcommand}', 'mrtrix3.commands.dwibiascorrect')
 
   app.activate_scratch_dir()
   run.command(['mrconvert', app.ARGS.input, 'in.mif']

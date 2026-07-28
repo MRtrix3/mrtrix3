@@ -24,7 +24,7 @@ Built-in types
 
 -  **-flag** A binary flag
 
--  **-string_implicit string** A built-in string (implicit)
+-  **-string_implicit str** A built-in string, its type declared through the builtin str
 
 -  **-string_explicit str** A built-in string (explicit)
 
@@ -34,18 +34,20 @@ Built-in types
 
 -  **-float_builtin float** A floating-point; built-in type
 
-Complex interfaces; nargs, metavar, etc.
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Multi-argument and repeatable options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-nargs_two string string** A command-line option with nargs=2, no metavar
+-  **-tuple_names first second** A two-argument option; its fields are identified by their names
 
--  **-metavar_one metavar** A command-line option with nargs=1 and metavar="metavar"
+-  **-tuple_metavars metavar_one metavar_two** A two-argument option; its fields override their display ids
 
--  **-metavar_two metavar metavar** A command-line option with nargs=2 and metavar="metavar"
+-  **-tuple_described index value** A two-argument option; its fields carry their own descriptions and types |br|
+   *index*: the index of the item (minimum: 0) |br|
+   *value*: the value to be assigned (range: 0.0 to 1.0)
 
--  **-metavar_tuple metavar_one metavar_two** A command-line option with nargs=2 and metavar=("metavar_one", "metavar_two")
+-  **-metavar_one metavar** A single-argument option with metavar="metavar"
 
--  **-append string**  *(multiple uses permitted)* A command-line option with "append" action (can be specified multiple times)
+-  **-multiple str**  *(multiple uses permitted)* A command-line option that may be specified multiple times
 
 -  **-unused** An option deliberately left unread to exercise unused-option tracking
 

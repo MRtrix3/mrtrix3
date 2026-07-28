@@ -45,9 +45,9 @@ Options for importing the diffusion gradient table
 Options specific to the "fa" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-erode iterations** Number of brain mask erosion steps to apply prior to threshold (not used if mask is provided manually) (minimum: 0)
+-  **-erode iterations** Number of brain mask erosion steps to apply prior to threshold (not used if mask is provided manually) (minimum: 0; default: 3)
 
--  **-number voxels** The number of highest-FA voxels to use (minimum: 1)
+-  **-number voxels** The number of highest-FA voxels to use (minimum: 1; default: 300)
 
 -  **-threshold value** Apply a hard FA threshold, rather than selecting the top voxels (range: 0.0 to 1.0)
 

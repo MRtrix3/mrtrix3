@@ -13,16 +13,16 @@ Usage
 
 ::
 
-    dwi2response algorithm [ options ] ...
+    dwi2response subcommand [ options ] ...
 
--  *algorithm*: Select the algorithm to be used; additional details and options become available once an algorithm is nominated. Options are: dhollander, fa, manual, msmt_5tt, tax, tournier
+-  *subcommand*: Select the subcommand to be used; additional details and options become available once a subcommand is nominated. Options are: dhollander, fa, manual, msmt_5tt, tax, tournier
 
 Description
 -----------
 
-dwi2response offers different algorithms for performing various types of response function estimation. The name of the algorithm must appear as the first argument on the command-line after "dwi2response". The subsequent arguments and options depend on the particular algorithm being invoked.
+dwi2response offers different algorithms for performing various types of response function estimation. The name of the sub-command must appear as the first argument on the command-line after "dwi2response". The subsequent arguments and options depend on the particular sub-command being invoked.
 
-Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the "fa" algorithm, type "dwi2response fa".
+Each sub-command has its own help page, including necessary references; e.g. to see the help page of the "fa" sub-command, type "dwi2response fa".
 
 More information on response function estimation for spherical deconvolution can be found at the following link: 
 https://mrtrix.readthedocs.io/en/3.0.8/constrained_spherical_deconvolution/response_function_estimation.html
