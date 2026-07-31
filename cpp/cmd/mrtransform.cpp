@@ -246,7 +246,7 @@ void usage() {
     + Option ("nan", "Use NaN as the out of bounds value"
                      " (0.0 will be used otherwise)")
 
-    + Option ("no_reorientation", "deprecated; use -reorient_fod instead");
+    + Option ("no_reorientation", "use -reorient_fod instead").deprecated();
 }
 // clang-format on
 

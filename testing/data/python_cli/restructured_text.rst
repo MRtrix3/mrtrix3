@@ -51,6 +51,8 @@ Multi-argument and repeatable options
 
 -  **-unused** An option deliberately left unread to exercise unused-option tracking
 
+-  **-deprecated** *(deprecated)* An option flagged as deprecated to exercise the deprecation notice
+
 Custom types
 ^^^^^^^^^^^^
 

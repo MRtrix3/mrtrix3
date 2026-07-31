@@ -88,6 +88,12 @@ def usage(cmdline): #pylint: disable=unused-variable
                            allow_multiple=True)
   complex_types.add_option('unused',
                            'An option deliberately left unread to exercise unused-option tracking')
+  # An option flagged as deprecated: the fact of its deprecation is auto-annotated in every
+  #   human-readable rendering of the interface (but not in __print_full_usage__), and specifying
+  #   it yields a warning; the option itself remains fully functional.
+  complex_types.add_option('deprecated',
+                           'An option flagged as deprecated to exercise the deprecation notice',
+                           deprecated=True)
 
   custom = cmdline.add_option_group('Custom types')
   custom.add_option('bool',

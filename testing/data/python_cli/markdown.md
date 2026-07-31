@@ -38,6 +38,8 @@ Test operation of the Python command-line interface
 
 + **-unused**<br>An option deliberately left unread to exercise unused-option tracking
 
++ **-deprecated**<br>*(deprecated)* An option flagged as deprecated to exercise the deprecation notice
+
 #### Custom types
 
 + **-bool value**<br>A boolean input

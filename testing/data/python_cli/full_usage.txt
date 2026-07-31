@@ -38,6 +38,8 @@ A command-line option that may be specified multiple times
 ARGUMENT multiple 0 0 TEXT
 OPTION unused 1 0
 An option deliberately left unread to exercise unused-option tracking
+OPTION deprecated 1 0
+An option flagged as deprecated to exercise the deprecation notice
 OPTION bool 1 0
 A boolean input
 ARGUMENT bool 0 0 BOOL

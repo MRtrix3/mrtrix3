@@ -136,6 +136,21 @@ def _check_unused_options():
 
 
 
+# Warn once for every user-specified option that the command interface flags as deprecated
+#   (mirrors the C++ warning issued at the end of App::parse()). Invoked once the standard
+#   options and any command-line configuration entries have been processed, so that the
+#   requested verbosity and terminal colouring apply.
+def _warn_deprecated_options():
+  if ARGS is None:
+    return
+  tracker = vars(ARGS).get('_option_access_tracker')
+  if tracker is None:
+    return
+  for option in tracker.deprecated_options():
+    warn(f'use of deprecated option "-{option.name}"')
+
+
+
 # This function gets executed by the corresponding cmake-generated Python executable
 def _execute(usage_function, execute_function): #pylint: disable=unused-variable
   from mrtrix3 import run #pylint: disable=import-outside-toplevel
@@ -223,6 +238,8 @@ def _execute(usage_function, execute_function): #pylint: disable=unused-variable
 
   # ANSI settings may have been altered at the command-line
   setup_ansi()
+
+  _warn_deprecated_options()
 
   # Check compatibility with command-line piping
   # if _STDIN_IMAGES and sys.stdin.isatty():
@@ -808,11 +825,16 @@ class Parser: # pylint: disable=too-many-public-methods
     #   repeatedly, each occurrence contributing one entry to the parsed list. The same keyword
     #   applied to a positional argument instead permits a variable NUMBER of tokens for that one
     #   argument; the two effects differ exactly as they do in C++ (cpp/core/cmdline_option.h).
-    def __init__(self, name, help_text, *, required=False, allow_multiple=False, default=None):
+    # "deprecated" mirrors the C++ Option::deprecated(): the option remains fully functional, but
+    #   its deprecation is auto-annotated in every human-readable rendering of the interface, and
+    #   specifying it yields a warning (see _warn_deprecated_options()).
+    def __init__(self, name, help_text, *, required=False, allow_multiple=False, default=None,
+                 deprecated=False):
       self.name = name             # canonical spelling, WITHOUT the leading dash
       self.help = help_text
       self.required = required
       self.allow_multiple = allow_multiple
+      self.deprecated = deprecated
       # Destination attribute of the parsed value on the ARGS container. An option's name IS its
       #   accessor (as in C++, which has no "dest" concept); only the dash-to-underscore
       #   substitution required for attribute-name legality is applied.
@@ -871,6 +893,13 @@ class Parser: # pylint: disable=too-many-public-methods
     #   its metadata on its own listing line instead).
     def help_metadata(self):
       return ''.join(arg.help_metadata() for arg in self.args)
+    # The auto-generated notice prefixed to this option's description when it is deprecated,
+    #   mirroring the C++ Option::deprecation_notice(): empty for an option that is not
+    #   deprecated, else the parenthesised notice followed by a single space. "emphasis" is the
+    #   inline-emphasis marker with which the notice is wrapped ('*' for the Markdown /
+    #   reStructuredText exports; empty for the plain-text terminal help).
+    def deprecation_notice(self, emphasis=''):
+      return f'{emphasis}(deprecated){emphasis} ' if self.deprecated else ''
 
   # A named, ordered collection of Options that additionally owns an ordered list of nested
   #   child groups (sub-groups), mirroring the C++ OptionGroup (cpp/core/cmdline_option.h).
@@ -1020,6 +1049,11 @@ class Parser: # pylint: disable=too-many-public-methods
       #   once (the specified list is already de-duplicated per distinct Option).
       return [option for option in self._specified
               if option.dest not in self._standard_dests and option.dest not in self._accessed]
+    def deprecated_options(self):
+      # The specified options that the command interface flags as deprecated, each at most once.
+      #   Held here because this is the record of which options the user actually specified;
+      #   deprecation itself is independent of whether the command went on to read the option.
+      return [option for option in self._specified if option.deprecated]
 
   # Parsed value of a tuple (multi-argument) option or positional: an ordered list of the
   #   converted field values that additionally supports look-up by field id. Mirrors the
@@ -1723,8 +1757,11 @@ class Parser: # pylint: disable=too-many-public-methods
   #                     .allow_multiple() for both, with exactly this difference in effect).
   #     optional        (positional arguments only) the argument may be omitted.
   #     required        (options only) the option must be specified.
+  #     deprecated      (options only) the option is deprecated: its deprecation is auto-annotated
+  #                     in every human-readable rendering of the interface, and its use warned of
+  #                     (C++ .deprecated()).
   _ARGUMENT_KEYWORDS = ('type', 'choices', 'metavar', 'default', 'allow_multiple', 'optional')
-  _OPTION_KEYWORDS = ('type', 'choices', 'metavar', 'default', 'allow_multiple', 'required')
+  _OPTION_KEYWORDS = ('type', 'choices', 'metavar', 'default', 'allow_multiple', 'required', 'deprecated')
 
   # Reject any keyword outside the recognised set for the declaration in question, naming the
   #   modern replacement for each keyword retired with the argparse-derived interface.
@@ -1810,7 +1847,8 @@ class Parser: # pylint: disable=too-many-public-methods
                            help_text,
                            required=bool(kwargs.get('required', False)),
                            allow_multiple=bool(kwargs.get('allow_multiple', False)),
-                           default=kwargs.get('default'))
+                           default=kwargs.get('default'),
+                           deprecated=bool(kwargs.get('deprecated', False)))
     # An option that declares no type consumes no command-line token: it is a boolean flag,
     #   as in C++, where an Option carries an Argument only if it takes one.
     if kwargs.get('type') is not None or kwargs.get('choices') is not None:
@@ -2437,7 +2475,7 @@ class Parser: # pylint: disable=too-many-public-methods
         if option.allow_multiple:
           group_text += '  (multiple uses permitted)'
         group_text += '\n'
-        group_text += f'{wrapper_other.fill(f"{option.help}{option.help_metadata()}")}\n'
+        group_text += f'{wrapper_other.fill(f"{option.deprecation_notice()}{option.help}{option.help_metadata()}")}\n'
         # A described tuple field is listed beneath the option (indented past the option
         #   help); scalar options add nothing here. A field's own choice / range / default
         #   metadata is appended to its description (rendered even when it has no description).
@@ -2693,7 +2731,7 @@ class Parser: # pylint: disable=too-many-public-methods
         group_text += f'+ **{option_text}**'
         if option.allow_multiple:
           group_text += '  *(multiple uses permitted)*'
-        group_text += f'<br>{option.help}{option.help_metadata()}\n\n'
+        group_text += f'<br>{option.deprecation_notice("*")}{option.help}{option.help_metadata()}\n\n'
         # Described tuple fields render as an indented markdown sub-list beneath the option; a
         #   field's own choice / range / default metadata is appended to its description.
         field_lines = [f'    - *{Parser._leaf_id(leaf)}*: {leaf.help}{leaf.help_metadata()}'
@@ -2828,7 +2866,7 @@ class Parser: # pylint: disable=too-many-public-methods
         if option.allow_multiple:
           group_text += '  *(multiple uses permitted)*'
         option_help = f'{option.help}{option.help_metadata()}'.replace('|', '\\|')
-        group_text += f' {option_help}'
+        group_text += f' {option.deprecation_notice("*")}{option_help}'
         # Described tuple fields follow the summary on " |br|" continuation lines, matching
         #   the C++ RST rendering; a field's own choice / range / default metadata is appended
         #   to its description (scalar options add nothing here).

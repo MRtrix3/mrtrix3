@@ -700,6 +700,37 @@ public:
    * An alias must not introduce prefix-matching ambiguity with a *different* option. */
   std::vector<std::string> aliases;
 
+  //! true if this option has been flagged as deprecated (see deprecated())
+  /*! A deprecated option remains fully functional; the flag causes the fact of its deprecation
+   * to be advertised in every human-readable rendering of the command interface, and a warning
+   * to be issued at parse time if the user specifies it. */
+  bool is_deprecated = false;
+
+  //! specifies that the option is deprecated
+  /*! Specifying the option on the command-line yields a warning (see App::parse()), and the
+   * deprecation is auto-annotated in the terminal help and in the Markdown / reStructuredText
+   * exports, so it must not additionally be stated by hand in the option description. Any
+   * guidance as to what should be used in its place belongs in the description.
+   * \code
+   * OPTIONS
+   *   + Option ("no_reorientation", "use -reorient_fod instead").deprecated()
+   * \endcode */
+  Option &deprecated() {
+    is_deprecated = true;
+    return *this;
+  }
+
+  //! the auto-generated notice prefixed to this option's description when it is deprecated
+  /*! Returns an empty string for an option that is not deprecated; otherwise the parenthesised
+   * notice followed by a single space, so that it can be prefixed directly to the description.
+   * \param emphasis inline-emphasis marker with which the notice is wrapped ("*" for the
+   * Markdown / reStructuredText exports; empty for the plain-text terminal help). */
+  std::string deprecation_notice(const std::string_view emphasis = std::string_view()) const {
+    if (!is_deprecated)
+      return {};
+    return std::string(emphasis) + "(deprecated)" + std::string(emphasis) + " ";
+  }
+
   //! specifies that the option is required
   /*! An option specified as required must be supplied on the command line.
    * For example:

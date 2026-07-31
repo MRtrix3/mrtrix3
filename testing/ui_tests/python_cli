@@ -151,6 +151,12 @@ testing_python_cli -unused 2>&1 | grep "was specified but had no effect"
 # An option that IS read by the command does not trigger the advisory.
 ! ( testing_python_cli -flag 2>&1 | grep "had no effect" )
 
+# Deprecated options: specifying one warns but does not fail, and the option remains functional.
+testing_python_cli -deprecated 2>&1 | grep 'use of deprecated option "-deprecated"'
+testing_python_cli -deprecated 2>&1 | grep "deprecated: True"
+# An option not flagged as deprecated yields no such warning.
+! ( testing_python_cli -flag 2>&1 | grep "use of deprecated option" )
+
 # Verify correct parsing of option arguments that begin with a dash.
 testing_python_cli -int_unbound -123 2>&1 | grep "int_unbound: -123"
 ! testing_python_cli -int_unbound --1

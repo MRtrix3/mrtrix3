@@ -623,8 +623,9 @@ std::string Option::syntax(const bool format) const {
   if (format && flags.allow_multiple())
     opt += "  (multiple uses permitted)";
 
-  // The choices / range / default of the option's scalar arguments are appended to its description.
-  const std::string augmented_desc = desc + help_metadata();
+  // The deprecation notice (if any) is prefixed to the description, and the choices / range /
+  //   default of the option's scalar arguments appended to it.
+  const std::string augmented_desc = deprecation_notice() + desc + help_metadata();
 
   if (format)
     opt = "  " + opt + "\n" + paragraph("", augmented_desc, help_formatting.purpose_indents) + "\n";
@@ -1046,7 +1047,7 @@ std::string markdown_usage() {
     f += "**";
     if (opt.flags.allow_multiple())
       f += "  *(multiple uses permitted)*";
-    f += std::string("<br>") + opt.desc + opt.help_metadata() + "\n\n";
+    f += std::string("<br>") + opt.deprecation_notice("*") + opt.desc + opt.help_metadata() + "\n\n";
     // Tuple member fields listed as an indented sub-list beneath the option.
     if (opt.item.has_value())
       for (const auto &element : tuple_fields(*opt.item)) {
@@ -1247,7 +1248,7 @@ std::string restructured_text_usage() {
       f += "  *(multiple uses permitted)*";
     f += " ";
     auto desc = split_lines(opt.desc + opt.help_metadata(), false);
-    f += escape_special(desc[0]);
+    f += opt.deprecation_notice("*") + escape_special(desc[0]);
     for (size_t n = 1; n < desc.size(); ++n)
       f += " |br|\n   " + escape_special(desc[n]);
     // A tuple's member fields follow on |br| continuation lines.
@@ -1940,6 +1941,22 @@ void parse() {
   // CONF default: 1 (true)
   // CONF A boolean value to indicate whether colours should be used in the terminal.
   terminal_use_colour = File::Config::get_bool("TerminalColor", terminal_use_colour);
+
+  // Advise on the use of any option that the command interface flags as deprecated. This follows
+  //   the standard-option and configuration handling above, so that the requested verbosity,
+  //   terminal colouring and FailOnWarn behaviour all apply. An option specified more than once
+  //   yields a single warning.
+  {
+    std::vector<std::string> warned;
+    for (const ParsedOption &parsed : option) {
+      if (!parsed.opt->is_deprecated)
+        continue;
+      if (std::find(warned.begin(), warned.end(), parsed.opt->id) != warned.end())
+        continue;
+      warned.push_back(parsed.opt->id);
+      WARN(std::string("use of deprecated option \"-") + parsed.opt->id + "\"");
+    }
+  }
 
   // check for the existence of all specified input files (including optional ones that have been provided)
   // if necessary, also check for pre-existence of any output files or directories with known paths

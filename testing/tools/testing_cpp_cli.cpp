@@ -134,6 +134,11 @@ void usage() {
   //   "had no effect" advisory of the unused-option tracker.
   + Option("unused", "An option deliberately left unread to exercise unused-option tracking")
 
+  // An option flagged as deprecated: the fact of its deprecation is auto-annotated in every
+  //   human-readable rendering of the interface (but not in __print_full_usage__), and
+  //   specifying it yields a warning; the option itself remains fully functional.
+  + Option("deprecated", "An option flagged as deprecated to exercise the deprecation notice").deprecated()
+
   // A hierarchy of option groups: a named parent group holding a direct option and a nested
   //   child sub-group whose two member flags are mutually exclusive (a group constraint).
   + (OptionGroup("Grouped options demonstrating hierarchy")
@@ -229,6 +234,9 @@ void run() {
       specs.push_back(std::string("\"") + str(opt[i][0]) + "\"");
     CONSOLE("-multiple: [" + join(specs, " ") + "]");
   }
+
+  if (!get_options("deprecated").empty())
+    CONSOLE("-deprecated option present");
 
   if (!get_options("group_direct").empty())
     CONSOLE("-group_direct option present");

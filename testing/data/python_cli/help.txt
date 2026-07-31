@@ -50,6 +50,10 @@ MMuullttii--aarrgguummeenntt  aanndd  rreeppeeaattaab
   _-_u_n_u_s_e_d
      An option deliberately left unread to exercise unused-option tracking
 
+  _-_d_e_p_r_e_c_a_t_e_d
+     (deprecated) An option flagged as deprecated to exercise the deprecation
+     notice
+
 CCuussttoomm  ttyyppeess
 
   _-_b_o_o_l value

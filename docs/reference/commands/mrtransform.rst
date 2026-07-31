@@ -109,7 +109,7 @@ Additional generic options for mrtransform
 
 -  **-nan** Use NaN as the out of bounds value (0.0 will be used otherwise)
 
--  **-no_reorientation** deprecated; use -reorient_fod instead
+-  **-no_reorientation** *(deprecated)* use -reorient_fod instead
 
 Standard options
 ^^^^^^^^^^^^^^^^

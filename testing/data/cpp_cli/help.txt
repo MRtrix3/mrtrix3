@@ -95,6 +95,10 @@ OOPPTTIIOONNSS
   _-_u_n_u_s_e_d
      An option deliberately left unread to exercise unused-option tracking
 
+  _-_d_e_p_r_e_c_a_t_e_d
+     (deprecated) An option flagged as deprecated to exercise the deprecation
+     notice
+
 GGrroouuppeedd  ooppttiioonnss  ddeemmoonnssttrraattiinngg  hhiieerraarrcchhyy
 
   _-_g_r_o_u_p___d_i_r_e_c_t

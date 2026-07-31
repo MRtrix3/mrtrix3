@@ -82,6 +82,8 @@ A command-line option that can be specified multiple times
 ARGUMENT spec 0 0 TEXT
 OPTION unused 1 0
 An option deliberately left unread to exercise unused-option tracking
+OPTION deprecated 1 0
+An option flagged as deprecated to exercise the deprecation notice
 OPTION group_direct 1 0
 An option located directly within the parent group
 OPTION mode_a 1 0

@@ -62,6 +62,8 @@ Verify operation of the C++ command-line interface & parser
 
 + **-unused**<br>An option deliberately left unread to exercise unused-option tracking
 
++ **-deprecated**<br>*(deprecated)* An option flagged as deprecated to exercise the deprecation notice
+
 #### Grouped options demonstrating hierarchy
 
 + **-group_direct**<br>An option located directly within the parent group
