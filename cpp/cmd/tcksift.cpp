@@ -89,7 +89,7 @@ void run() {
 
   auto in_dwi = Image<float>::open(input_fod_path);
   Math::SH::check(in_dwi);
-  DWI::Directions::FastLookupSet dirs(DWI::FMLS::get_directions());
+  const DWI::Directions::FastLookupSet dirs(DWI::FMLS::get_directions());
 
   SIFTer sifter(in_dwi, dirs);
 

@@ -20,7 +20,9 @@
 #include <cmath>
 #include <cstddef>
 #include <filesystem>
+#include <optional>
 
+#include "dwi/directions/set.h"
 #include "file/config.h"
 #include "math/SH.h"
 #include "math/math.h"
