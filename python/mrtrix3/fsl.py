@@ -37,7 +37,7 @@ _SUFFIX = ''
 # This function attempts to provide a unified interface for querying whether or not
 #   FIRST was successful, taking all of these into account
 def check_first(prefix, structures=None, first_stdout=None): #pylint: disable=unused-variable
-  from mrtrix3 import app, path, utils #pylint: disable=import-outside-toplevel
+  from mrtrix3 import app, path #pylint: disable=import-outside-toplevel
   job_id = None
   if first_stdout:
     try:
@@ -48,7 +48,11 @@ def check_first(prefix, structures=None, first_stdout=None): #pylint: disable=un
   if job_id:
     # Eventually modify on dev to reflect Python3 prerequisite
     # Create dummy fsl_sub job, use to monitor for completion
-    flag_file = utils.name_temporary('txt')
+    # The flag file is written by whichever compute node executes that job,
+    #   and so must reside on storage visible to all such nodes;
+    #   the scratch directory is therefore used in preference to
+    #   the system temporary directory used for temporary files generally
+    flag_file = os.path.join(app.SCRATCH_DIR, f'first_{job_id}_complete.txt')
     try:
       with subprocess.Popen(['fsl_sub',
                              '-j', str(job_id),

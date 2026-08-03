@@ -9,7 +9,8 @@ mkdir tmp/not_a_scratchdir/
 mkdir tmp/command-tmp-ABCDEF/
 
 mrtrix_cleanup tmp/ -test
-ITEMCOUNT=$(ls tmp/ | wc)
-if [ "$ITEMCOUNT" -neq "4" ]; then
-   exit 1
-fi
+# In test mode nothing should be erased,
+#   including those items that the command identifies as temporaries
+[ "$(ls tmp/ | wc -l)" -eq 4 ]
+ls tmp/ | grep -q "^mrtrix-tmp-ABCDEF\.mif$"
+ls tmp/ | grep -q "^command-tmp-ABCDEF$"
