@@ -19,10 +19,13 @@
 #include <Eigen/src/Core/Matrix.h>
 #include <cmath>
 #include <cstddef>
+#include <filesystem>
 
+#include "file/config.h"
 #include "math/SH.h"
 #include "math/math.h"
 #include "math/sphere.h"
+#include "mrtrix.h"
 
 namespace MR::DWI::FMLS {
 
@@ -55,7 +58,63 @@ const App::OptionGroup FMLSSegmentOption =
                   " a value of 0.0 will always merge lobes unless they are bisected by a zero-valued crossing."
                   " Default: " + str(default_mergeratio_bridgetopeak, 2) + ".")
       + App::Argument("value").type_float(0.0, 1.0);
+
+const App::Option FMLSDirectionsOption =
+    App::Option("fmls_directions",
+                "specify the direction set on which the FOD is sampled during segmentation;"
+                " either an input file containing a set of directions,"
+                " or an integer corresponding to a built-in direction set."
+                " If this option is not specified,"
+                " the value of configuration file entry \"FMLSDirectionSet\" will be used;"
+                " if that entry is also absent,"
+                " a built-in set of " + str(default_direction_set) + " directions will be used.")
+      + App::Argument("spec").type_file_in().type_integer(1);
 // clang-format on
+
+DWI::Directions::FastLookupSet get_directions() {
+  auto opt = App::get_options("fmls_directions");
+  if (!opt.empty()) {
+    try {
+      return DWI::Directions::FastLookupSet(static_cast<std::filesystem::path>(opt[0][0]));
+    } catch (Exception &) {
+      DEBUG("Unable to import direction set interpreting \"" + opt[0][0].as_text() +
+            "\" as filesystem path; will attempt interpretation as built-in direction set");
+    }
+    try {
+      return DWI::Directions::FastLookupSet(static_cast<size_t>(opt[0][0]));
+    } catch (Exception &e) {
+      throw Exception(e, "Unable to interpret \"" + opt[0][0].as_text() + "\" as a direction set");
+    }
+  }
+  // CONF option: FMLSDirectionSet
+  // CONF default: 1281
+  // CONF Specifies the direction set on which the FOD is sampled by the
+  // CONF Fibre Multi-Lobe Segmenter, which decomposes each FOD into discrete
+  // CONF lobes. This may be either the path to a file containing a set of
+  // CONF directions, or an integer corresponding to one of the built-in
+  // CONF direction sets. A smaller number of directions reduces both the
+  // CONF computational cost of segmentation and the angular precision with
+  // CONF which lobes are delineated. Any command-line option by which the
+  // CONF direction set is specified explicitly takes precedence over this entry.
+  const std::optional<std::string> from_config = File::Config::get("FMLSDirectionSet");
+  if (!from_config.has_value())
+    return DWI::Directions::FastLookupSet(default_direction_set);
+  try {
+    return DWI::Directions::FastLookupSet(std::filesystem::path(*from_config));
+  } catch (Exception &) {
+    DEBUG("Unable to import direction set interpreting configuration file entry \"FMLSDirectionSet\""
+          " value \"" +
+          *from_config + "\" as filesystem path; will attempt interpretation as built-in direction set");
+  }
+  try {
+    return DWI::Directions::FastLookupSet(to<size_t>(*from_config));
+  } catch (Exception &e) {
+    throw Exception(e,
+                    "Unable to interpret configuration file entry \"FMLSDirectionSet\""
+                    " value \"" +
+                        *from_config + "\" as a direction set");
+  }
+}
 
 void load_fmls_thresholds(Segmenter &segmenter) {
   using namespace App;

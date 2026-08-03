@@ -2,13 +2,25 @@
 # Verify operation of "msmt_csd" algorithm when a user-specified mask is provided
 # Use conventional three macroscopic tissue types
 # Ensure that outputs match those generated using a prior software version
-dwi2fod msmt_csd dwi2fod/msmt_csd/dwi.mif \
-    -mask dwi2fod/msmt_csd/mask.mif \
+# "dwi2fod/msmt_csd/dwi.mif" is consumed by tests of several other commands,
+#   so rather than reducing that image the test selects a sub-volume of it here;
+#   because spherical deconvolution operates on each voxel independently,
+#   the outputs across that sub-volume are identical to the corresponding
+#   sub-volume of the full-extent reference images,
+#   which are therefore cropped identically for the comparison
+CROP="-coord 0 2:12 -coord 1 2:12 -coord 2 2:9"
+
+mrconvert dwi2fod/msmt_csd/dwi.mif ${CROP} tmp_dwi.mif -force
+mrconvert dwi2fod/msmt_csd/mask.mif ${CROP} tmp_mask.mif -force
+
+dwi2fod msmt_csd tmp_dwi.mif \
+    -mask tmp_mask.mif \
     dwi2fod/msmt_csd/wm.txt tmp_wm.mif \
     dwi2fod/msmt_csd/gm.txt tmp_gm.mif \
     dwi2fod/msmt_csd/csf.txt tmp_csf.mif \
     -force
 
-testing_diff_image tmp_wm.mif dwi2fod/msmt_csd/wm_masked.mif -abs 1e-5
-testing_diff_image tmp_gm.mif dwi2fod/msmt_csd/gm_masked.mif -abs 1e-5
-testing_diff_image tmp_csf.mif dwi2fod/msmt_csd/csf_masked.mif -abs 1e-5
+for tissue in wm gm csf; do
+    mrconvert dwi2fod/msmt_csd/${tissue}_masked.mif ${CROP} tmp_${tissue}_ref.mif -force
+    testing_diff_image tmp_${tissue}.mif tmp_${tissue}_ref.mif -abs 1e-5 || exit 1
+done
