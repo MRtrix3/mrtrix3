@@ -13,6 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+import multiprocessing
 import os
 import subprocess
 try:
@@ -142,6 +143,57 @@ def eddy_binary(cuda): #pylint: disable=unused-variable
       return candidate
   app.debug('No CPU version of eddy found')
   return ''
+
+
+
+# Construct the "--nthr" command-line option to be appended to an invocation of an FSL command
+#   (specifically "topup", or the CPU version of "eddy") so that its multi-threaded execution is
+#   consistent with the number of threads requested for the MRtrix3 script.
+# The option is only generated if both of the following hold:
+#   - The user has not already provided "--nthr" within the options manually specified for the relevant
+#     FSL command, in which case that explicit request takes precedence and an empty string is returned;
+#   - The installed version of the relevant FSL command advertises the "--nthr" option (see supports_nthr()).
+# The value provided to the option is derived from run.shared.get_num_threads():
+#   - If None, no explicit multi-threading instruction has been provided to the script; the default MRtrix3
+#     behaviour of utilising all threads available on the system is therefore requested;
+#   - If zero or one, multi-threading is disabled by requesting a single thread;
+#   - Otherwise, the explicitly requested number of threads is provided.
+# @param exe: Name of the FSL executable that is to be invoked
+# @param manual_options: Options manually specified by the user for the relevant FSL command,
+#   as the raw string provided at the command-line (or None if not provided)
+# @return: String to be appended to the FSL command invocation; empty if the "--nthr" option
+#   is unavailable or should not be applied
+def nthr_option(exe, manual_options=None): #pylint: disable=unused-variable
+  from mrtrix3 import app, run #pylint: disable=import-outside-toplevel
+  if manual_options and any(entry == '--nthr' or entry.startswith('--nthr=') for entry in manual_options.split()):
+    app.debug('\"--nthr\" manually specified by user for FSL command \"' + exe + '\";'
+              ' automated multi-threading control disabled')
+    return ''
+  try:
+    with subprocess.Popen([exe, '--help'],
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE) as proc:
+      (stdout, stderr) = proc.communicate()
+  except OSError:
+    app.debug('Unable to execute FSL command \"' + exe + '\" to query support for \"--nthr\" option')
+    return ''
+  if not any(line.lstrip().startswith('--nthr') \
+             for line in \
+             (stdout.decode('utf-8', errors='replace') + stderr.decode('utf-8', errors='replace')).splitlines()):
+    app.debug('FSL command \"' + exe + '\" does not provide \"--nthr\" option')
+    return ''
+  # Default MRtrix3 behaviour is to utilise all threads available on the system if no explicit user instruction
+  if run.shared.get_num_threads() is None:
+    num_threads = multiprocessing.cpu_count()
+    app.debug('FSL command \"' + exe + '\":'
+              ' requesting max hardware ' + str(num_threads) + ' thread(s) via \"--nthr\" option')
+  else:
+    # A request for either zero or one thread(s) disables multi-threading
+    num_threads = max(1, run.shared.get_num_threads())
+    app.debug('FSL command \"' + exe + '\":'
+              ' requesting ' + str(num_threads) + ' thread(s) via \"--nthr\" option'
+              ' as per user request')
+  return ' --nthr=' + str(num_threads)
 
 
 

@@ -815,7 +815,10 @@ def execute(): #pylint: disable=unused-variable
     topup_manual_options = ''
     if app.ARGS.topup_options:
       topup_manual_options = ' ' + app.ARGS.topup_options.strip()
-    topup_output = run.command(topup_cmd + ' --imain=topup_in.nii --datain=topup_datain.txt --out=field --fout=field_map' + fsl_suffix + ' --config=' + topup_config_path + ' --verbose' + topup_manual_options)
+    # Where supported by the installed FSL version, request multi-threaded execution from topup
+    #   consistent with the number of threads requested for this script
+    topup_nthr_option = fsl.nthr_option(topup_cmd, app.ARGS.topup_options)
+    topup_output = run.command(topup_cmd + ' --imain=topup_in.nii --datain=topup_datain.txt --out=field --fout=field_map' + fsl_suffix + ' --config=' + topup_config_path + ' --verbose' + topup_manual_options + topup_nthr_option)
     with open('topup_output.txt', 'wb') as topup_output_file:
       topup_output_file.write((topup_output.stdout + '\n' + topup_output.stderr + '\n').encode('utf-8', errors='replace'))
     if app.VERBOSITY > 1:
@@ -955,6 +958,10 @@ def execute(): #pylint: disable=unused-variable
   eddy_all_options = '--imain=eddy_in.nii --mask=eddy_mask.nii --acqp=eddy_config.txt --index=eddy_indices.txt --bvecs=bvecs --bvals=bvals' + eddy_in_topup_option + eddy_manual_options + ' --out=dwi_post_eddy --verbose'
   eddy_cuda_cmd = fsl.eddy_binary(True)
   eddy_openmp_cmd = fsl.eddy_binary(False)
+  # Where supported by the installed FSL version, request multi-threaded execution from the CPU version
+  #   of eddy consistent with the number of threads requested for this script; the CUDA version of eddy
+  #   does not provide this option, hence this multi-threading control is applied to the CPU invocation only
+  eddy_openmp_nthr_option = fsl.nthr_option(eddy_openmp_cmd, app.ARGS.eddy_options) if eddy_openmp_cmd else ''
   if eddy_cuda_cmd:
     # If running CUDA version, but OpenMP version is also available, don't stop the script if the CUDA version fails
     try:
@@ -966,7 +973,7 @@ def execute(): #pylint: disable=unused-variable
         eddy_output_file.write(str(exception_cuda).encode('utf-8', errors='replace'))
       app.console('CUDA version of \'eddy\' was not successful; attempting OpenMP version')
       try:
-        eddy_output = run.command(eddy_openmp_cmd + ' ' + eddy_all_options)
+        eddy_output = run.command(eddy_openmp_cmd + ' ' + eddy_all_options + eddy_openmp_nthr_option)
       except run.MRtrixCmdError as exception_openmp:
         with open('eddy_openmp_failure_output.txt', 'wb') as eddy_output_file:
           eddy_output_file.write(str(exception_openmp).encode('utf-8', errors='replace'))
@@ -1001,7 +1008,7 @@ def execute(): #pylint: disable=unused-variable
                                  exception_stderr)
 
   else:
-    eddy_output = run.command(eddy_openmp_cmd + ' ' + eddy_all_options)
+    eddy_output = run.command(eddy_openmp_cmd + ' ' + eddy_all_options + eddy_openmp_nthr_option)
   with open('eddy_output.txt', 'wb') as eddy_output_file:
     eddy_output_file.write((eddy_output.stdout + '\n' + eddy_output.stderr + '\n').encode('utf-8', errors='replace'))
   if app.VERBOSITY > 1:
