@@ -26,7 +26,8 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_description('dwi2response offers different algorithms for performing various types of response function estimation. '
                           'The name of the algorithm must appear before any other argument on the command-line after "dwi2response", '
                           'since the arguments expected depend on the particular algorithm being invoked; '
-                          'command-line options may however be provided either before or after the algorithm name.')
+                          'command-line options should also be provided after the algorithm name '
+                          'for maximally reliable command-line parsing.')
   cmdline.add_description('Each algorithm available has its own help page,'
                           ' including necessary references;'
                           ' e.g. to see the help page of the "fa" algorithm,'

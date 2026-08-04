@@ -76,8 +76,8 @@ with *MRtrix3* that require the selection of an *algorithm*, which defines the
 approach that the script will use to arrive at its end result based on the data
 provided. Because the arguments expected by the script depend on the algorithm
 nominated, the name of that algorithm *must* appear before any other argument of
-the script. Command-line *options* may however be provided either before or
-after the algorithm name; the two are equivalent.
+the script. Command-line *options* *should* also be provided after the
+algorithm name as this mitigates parsing errors.
 
 
 .. _number_sequences:
