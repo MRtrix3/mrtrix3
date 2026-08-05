@@ -43,6 +43,8 @@ FOD FMLS segmenter options
 
 -  **-fmls_lobe_merge_ratio value** Specify the ratio between a given FOD amplitude sample between two lobes, and the smallest peak amplitude of the adjacent lobes, above which those lobes will be merged. This is the amplitude of the FOD at the 'bridge' point between the two lobes, divided by the peak amplitude of the smaller of the two adjoining lobes. A value of 1.0 will never merge two lobes into one; a value of 0.0 will always merge lobes unless they are bisected by a zero-valued crossing. Default: 1.
 
+-  **-fmls_directions spec** specify the direction set on which the FOD is sampled during segmentation; either an input file containing a set of directions, or an integer corresponding to a built-in direction set. If this option is not specified, the value of configuration file entry "FMLSDirectionSet" will be used; if that entry is also absent, a built-in set of 1281 directions will be used.
+
 Other options for fod2fixel
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

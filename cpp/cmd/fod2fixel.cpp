@@ -85,6 +85,7 @@ void usage() {
   + OutputOptions
 
   + FMLSSegmentOption
+  + FMLSDirectionsOption
 
   + OptionGroup ("Other options for fod2fixel")
 
@@ -322,7 +323,7 @@ void run() {
 
   FMLS::FODQueueWriter writer(fod_data, mask);
 
-  const DWI::Directions::FastLookupSet dirs(1281);
+  const DWI::Directions::FastLookupSet dirs(DWI::FMLS::get_directions());
   Segmenter fmls(dirs, Math::SH::LforN(H.size(3)));
   load_fmls_thresholds(fmls);
 

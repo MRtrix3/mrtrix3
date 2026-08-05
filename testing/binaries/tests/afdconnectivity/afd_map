@@ -5,6 +5,6 @@
 #   (which, based on scaling of the integration of FOD lobes,
 #   should be close to 1.0 in each intersected voxel)
 tckedit SIFT_phantom/tracks.tck -include SIFT_phantom/upper.mif tmp.tck -force
-afdconnectivity SIFT_phantom/fods.mif tmp.tck \
+afdconnectivity -config FMLSDirectionSet 321 SIFT_phantom/fods.mif tmp.tck \
     -afd_map tmp.mif -force
 testing_diff_image tmp.mif SIFT_phantom/upper.mif -frac 1.5e-3
