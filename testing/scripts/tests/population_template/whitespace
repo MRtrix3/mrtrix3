@@ -28,5 +28,5 @@ population_template "tmp fa/" "tmp template.mif" -force \
 testing_diff_image "tmp template.mif" population_template/fa_masked_template.mif.gz -abs 0.01
 testing_diff_image $(mrfilter "tmp mask.mif" smooth -) $(mrfilter population_template/fa_masked_mask.mif.gz smooth -) -abs 0.3
 
-ls | grep "^tmp warps\/$"
-ls | grep "^tmp linear_transformations\/$"
+ls | grep "^tmp warps$"
+ls | grep "^tmp linear_transformations$"

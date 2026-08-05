@@ -25,6 +25,7 @@
 #include "algo/threaded_loop.h"
 #include "debug.h"
 #include "registration/multi_contrast.h"
+#include "registration/reduction.h"
 #include "registration/transform/initialiser_helpers.h"
 #include "registration/transform/search.h"
 // #define DEBUG_INIT
@@ -62,10 +63,17 @@ public:
   WeightedMomentsFunctor(const ImageType &image,
                          const MaskType &mask,
                          const Eigen::Matrix<default_type, 3, 1> &centre,
-                         Eigen::VectorXd &weighted_m,
-                         Eigen::VectorXd &weighted_mu,
+                         const std::vector<size_t> &outer_axes,
+                         const std::vector<size_t> &inner_axes,
+                         PartialSums &partials,
                          const std::vector<MultiContrastSetting> &contrast_settings)
-      : transform(image), mask(mask), centre(centre), global_m(weighted_m), global_mu(weighted_mu) {
+      : transform(image),
+        input(image),
+        mask(mask),
+        centre(centre),
+        outer_axes(outer_axes),
+        inner_loop(Loop(inner_axes)),
+        partials(partials) {
     local_m.resize(4);
     local_m.setZero();
     local_mu.resize(6);
@@ -78,12 +86,18 @@ public:
     }
   }
 
-  ~WeightedMomentsFunctor() {
-    global_m += local_m;
-    global_mu += local_mu;
+  void operator()(const Iterator &pos) {
+    const size_t index = partials.chunk(pos);
+    local_m.setZero();
+    local_mu.setZero();
+    assign_pos_of(pos, outer_axes).to(input);
+    for (auto i = inner_loop(input); i; ++i)
+      accumulate(input);
+    partials[index] << local_m, local_mu;
   }
 
-  template <class ImType> void operator()(ImType &image) {
+protected:
+  template <class ImType> void accumulate(ImType &image) {
     if (mask.valid()) {
       assign_pos_of(image, 0, 3).to(mask);
       if (!mask.value())
@@ -126,12 +140,13 @@ public:
       image.index(3) = 0;
   }
 
-protected:
   MR::Transform transform;
+  ImageType input;
   MaskType mask;
   const Eigen::Matrix<default_type, 3, 1> centre;
-  Eigen::VectorXd &global_m;
-  Eigen::VectorXd &global_mu;
+  const std::vector<size_t> outer_axes;
+  const decltype(Loop(std::vector<size_t>())) inner_loop;
+  PartialSums &partials;
   Eigen::VectorXd local_m;
   Eigen::VectorXd local_mu;
   std::vector<size_t> start_vol;
@@ -223,14 +238,17 @@ template <class ImageType, class MaskType> class WeightedMassFunctor {
 public:
   WeightedMassFunctor(const ImageType &image,
                       const MaskType &mask,
-                      default_type &weighted_mass,
-                      Eigen::Vector3d &weighted_centre_of_mass,
+                      const std::vector<size_t> &outer_axes,
+                      const std::vector<size_t> &inner_axes,
+                      PartialSums &partials,
                       const std::vector<MultiContrastSetting> &contrast_settings)
       : transform(image),
+        input(image),
         mask(mask),
         mass(0.0),
-        global_mass(weighted_mass),
-        global_centre_of_mass(weighted_centre_of_mass) {
+        outer_axes(outer_axes),
+        inner_loop(Loop(inner_axes)),
+        partials(partials) {
     centre_of_mass.setZero();
     start_vol.resize(std::max(contrast_settings.size(), size_t(1)), 0);
     weight.resize(std::max(contrast_settings.size(), size_t(1)), 1.0);
@@ -240,12 +258,18 @@ public:
     }
   }
 
-  ~WeightedMassFunctor() {
-    global_mass += mass;
-    global_centre_of_mass += centre_of_mass;
+  void operator()(const Iterator &pos) {
+    const size_t index = partials.chunk(pos);
+    mass = 0.0;
+    centre_of_mass.setZero();
+    assign_pos_of(pos, outer_axes).to(input);
+    for (auto i = inner_loop(input); i; ++i)
+      accumulate(input);
+    partials[index] << mass, centre_of_mass;
   }
 
-  template <class ImType> void operator()(ImType &image) {
+protected:
+  template <class ImType> void accumulate(ImType &image) {
     if (mask.valid()) {
       assign_pos_of(image, 0, 3).to(mask);
       if (!mask.value())
@@ -266,12 +290,13 @@ public:
       image.index(3) = 0;
   }
 
-protected:
   MR::Transform transform;
+  ImageType input;
   MaskType mask;
   default_type mass;
-  default_type &global_mass;
-  Eigen::Vector3d &global_centre_of_mass;
+  const std::vector<size_t> outer_axes;
+  const decltype(Loop(std::vector<size_t>())) inner_loop;
+  PartialSums &partials;
   Eigen::Vector3d centre_of_mass;
   std::vector<size_t> start_vol;
   std::vector<default_type> weight;
@@ -282,17 +307,18 @@ void get_centre_of_mass(Image<default_type> &im,
                         Image<default_type> &mask,
                         Eigen::Vector3d &centre_of_mass,
                         const std::vector<MultiContrastSetting> &contrast_settings) {
-  centre_of_mass.setZero();
-  default_type mass(0.0);
+  auto loop = ThreadedLoop(im, 0, 3, 2);
+  PartialSums partials(im, loop.outer_loop.axes, 4);
+  WeightedMassFunctor<Image<default_type>, Image<default_type>> functor(
+      im, mask, loop.outer_loop.axes, loop.inner_axes, partials, contrast_settings);
+  loop.run_outer(functor);
+  check_app_exit_code();
 
-  ThreadedLoop(im, 0, 3, 2)
-      .run(WeightedMassFunctor<Image<default_type>, Image<default_type>>(
-               im, mask, mass, centre_of_mass, contrast_settings),
-           im);
-
+  const Eigen::VectorXd total = partials.sum();
+  const default_type mass = total[0];
   if (mass == 0.0)
     throw Exception("centre of mass initialisation not possible for empty image");
-  centre_of_mass /= mass;
+  centre_of_mass = total.tail(3) / mass;
   DEBUG("centre of mass of " + im.name() + ": " + str(centre_of_mass.transpose()));
 }
 
@@ -511,10 +537,17 @@ bool MomentsInitialiser::calculate_eigenvectors(Image<default_type> &image_1,
   Eigen::VectorXd m = Eigen::VectorXd::Zero(4);  // m000, m100, m010, m001
   Eigen::VectorXd mu = Eigen::VectorXd::Zero(6); // mu110, mu011, mu101, mu200, mu020, mu002
   get_geometric_centre(image_1, im1_centre);
-  ThreadedLoop(image_1, 0, 3, 2)
-      .run(WeightedMomentsFunctor<Image<default_type>, Image<default_type>>(
-               image_1, mask_1, im1_centre, m, mu, contrast_settings),
-           image_1);
+  {
+    auto loop = ThreadedLoop(image_1, 0, 3, 2);
+    PartialSums partials(image_1, loop.outer_loop.axes, m.size() + mu.size());
+    WeightedMomentsFunctor<Image<default_type>, Image<default_type>> functor(
+        image_1, mask_1, im1_centre, loop.outer_loop.axes, loop.inner_axes, partials, contrast_settings);
+    loop.run_outer(functor);
+    check_app_exit_code();
+    const Eigen::VectorXd total = partials.sum();
+    m = total.head(m.size());
+    mu = total.tail(mu.size());
+  }
   im1_centre_of_mass << m[1] / m[0], m[2] / m[0], m[3] / m[0];
   im1_covariance_matrix(0, 0) = mu[3] / m[0];
   im1_covariance_matrix(0, 1) = mu[0] / m[0];
@@ -527,12 +560,17 @@ bool MomentsInitialiser::calculate_eigenvectors(Image<default_type> &image_1,
   im1_covariance_matrix(2, 2) = mu[5] / m[0];
 
   get_geometric_centre(image_2, im2_centre);
-  m.setZero();
-  mu.setZero();
-  ThreadedLoop(image_2, 0, 3, 2)
-      .run(WeightedMomentsFunctor<Image<default_type>, Image<default_type>>(
-               image_2, mask_2, im2_centre, m, mu, contrast_settings),
-           image_2);
+  {
+    auto loop = ThreadedLoop(image_2, 0, 3, 2);
+    PartialSums partials(image_2, loop.outer_loop.axes, m.size() + mu.size());
+    WeightedMomentsFunctor<Image<default_type>, Image<default_type>> functor(
+        image_2, mask_2, im2_centre, loop.outer_loop.axes, loop.inner_axes, partials, contrast_settings);
+    loop.run_outer(functor);
+    check_app_exit_code();
+    const Eigen::VectorXd total = partials.sum();
+    m = total.head(m.size());
+    mu = total.tail(mu.size());
+  }
   im2_centre_of_mass << m[1] / m[0], m[2] / m[0], m[3] / m[0];
   im2_covariance_matrix(0, 0) = mu[3] / m[0];
   im2_covariance_matrix(0, 1) = mu[0] / m[0];

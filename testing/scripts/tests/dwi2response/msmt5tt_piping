@@ -29,7 +29,7 @@ dwi2tensor BIDS/sub-01/dwi/sub-01_dwi.nii.gz - \
 tensor2metric - -vector - | \
 dwi2response msmt_5tt BIDS/sub-01/dwi/sub-01_dwi.nii.gz BIDS/sub-01/anat/sub-01_5TT.nii.gz \
 tmp_wm.txt tmp_gm.txt tmp_csf.txt -force \
--fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval | \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
 -voxels tmp.mif \
 -dirs - \
 -pvf 0.9
