@@ -569,6 +569,55 @@ class ProgressBar: #pylint: disable=unused-variable
 
 
 
+# Selection of the algorithm to be used by those commands that provide multiple algorithms.
+#   Substituted for the argparse default implementation, which would otherwise discard
+#   any option specified prior to the algorithm name on the command-line.
+
+class _AlgorithmSelectAction(argparse._SubParsersAction): # pylint: disable=protected-access
+
+  # Every option of the master parser is also possessed by each algorithm's parser,
+  #   since the latter is constructed with the former as a parent.
+  # The argparse implementation parses those arguments that follow the algorithm name
+  #   into a new namespace, and then copies every member of that namespace onto the master namespace;
+  #   the defaults of the algorithm's parser therefore erase the value of any option
+  #   that was specified prior to the algorithm name.
+  # Those arguments are here instead parsed directly into the existing namespace,
+  #   with the defaults of the algorithm's parser temporarily suppressed
+  #   so that only those options explicitly specified after the algorithm name are written;
+  #   defaults are subsequently applied to those options that remain unset.
+  def __call__(self, parser, namespace, values, option_string=None):
+    algorithm_name = values[0]
+    arg_strings = values[1:]
+    if self.dest is not argparse.SUPPRESS:
+      setattr(namespace, self.dest, algorithm_name)
+    try:
+      algorithm_parser = self._name_parser_map[algorithm_name]
+    except KeyError as exception:
+      raise argparse.ArgumentError(self,
+                                   f'unknown algorithm "{algorithm_name}" '
+                                   f'(choices: {", ".join(self._name_parser_map)})') \
+            from exception
+    # Actions are shared by reference between the master parser and the algorithm's parser;
+    #   the master parser has however already applied its own defaults by this point
+    suppressed_defaults = [action.default for action in algorithm_parser._actions]
+    for action in algorithm_parser._actions:
+      action.default = argparse.SUPPRESS
+    try:
+      namespace, arg_strings = algorithm_parser.parse_known_args(arg_strings, namespace)
+    finally:
+      for action, default in zip(algorithm_parser._actions, suppressed_defaults):
+        action.default = default
+    for action in algorithm_parser._actions:
+      if action.dest is not argparse.SUPPRESS \
+          and action.default is not argparse.SUPPRESS \
+          and not hasattr(namespace, action.dest):
+        setattr(namespace, action.dest, action.default)
+    if arg_strings:
+      vars(namespace).setdefault(argparse._UNRECOGNIZED_ARGS_ATTR, [])
+      getattr(namespace, argparse._UNRECOGNIZED_ARGS_ATTR).extend(arg_strings)
+
+
+
 # The Parser class is responsible for setting up command-line parsing for the script.
 #   This includes proper configuration of the argparse functionality, adding standard options
 #   that are common for all scripts, providing a custom help page that is consistent with the
@@ -862,6 +911,7 @@ class Parser(argparse.ArgumentParser):
     self._synopsis = None
     kwargs_in['add_help'] = False
     argparse.ArgumentParser.__init__(self, *args_in, **kwargs_in)
+    self.register('action', 'parsers', _AlgorithmSelectAction)
     if 'parents' in kwargs_in:
       for parent in kwargs_in['parents']:
         self._citation_list.extend(parent._citation_list)

@@ -71,12 +71,13 @@ command-line *does* matter, and hence the above demonstration does not apply:
    a tool is applied to the *most recent* data (image or otherwise) opened
    by the tool associated with that option.
 
--  *Scripts*: A subset of the Python scripts provided with *MRtrix3*
-   require the selection of an *algorithm*, which defines the approach that
-   the script will use to arrive at its end result based on the data
-   provided. The name of this algorithm *must* be the *first* argument on
-   the command-line; any command-line options provided *prior* to this
-   algorithm name will be **silently ignored**.
+A related but distinct consideration applies to those Python scripts provided
+with *MRtrix3* that require the selection of an *algorithm*, which defines the
+approach that the script will use to arrive at its end result based on the data
+provided. Because the arguments expected by the script depend on the algorithm
+nominated, the name of that algorithm *must* appear before any other argument of
+the script. Command-line *options* *should* also be provided after the
+algorithm name as this mitigates parsing errors.
 
 
 .. _number_sequences:
