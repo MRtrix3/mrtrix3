@@ -98,6 +98,7 @@ namespace MR
                 Shader () :
                     do_crop_to_slab (false),
                     use_lighting (false),
+                    colour_relative_to_projection (false),
                     color_type (TrackColourType::Direction),
                     threshold_type (TrackThresholdType::None),
                     geometry_type (Tractogram::default_tract_geom) { }
@@ -107,7 +108,7 @@ namespace MR
                 virtual bool need_update (const Displayable&) const override;
                 virtual void update (const Displayable&) override;
               protected:
-                bool do_crop_to_slab, use_lighting;
+                bool do_crop_to_slab, use_lighting, colour_relative_to_projection;
                 TrackColourType color_type;
                 TrackThresholdType threshold_type;
                 TrackGeometryType geometry_type;
