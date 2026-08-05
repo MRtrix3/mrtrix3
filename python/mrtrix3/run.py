@@ -148,7 +148,6 @@ class Shared:
     return self._scratch_dir
 
   def set_scratch_dir(self, path):
-    self.env['MRTRIX_TMPFILE_DIR'] = path
     self._scratch_dir = path
 
   # Controls verbosity of invoked MRtrix3 commands, as well as whether or not the

@@ -347,8 +347,7 @@ def activate_scratch_dir(): #pylint: disable=unused-variable
     outfile.write(f'{" ".join(sys.argv)}\n')
   with open('log.txt', 'w', encoding='utf-8'):
     pass
-  # Also use this scratch directory for any piped images within run.command() calls,
-  #   and for keeping a log of executed commands / functions
+  # Also use this scratch directory for keeping a log of executed commands / functions
   run.shared.set_scratch_dir(SCRATCH_DIR)
 
 
