@@ -14,9 +14,15 @@ mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp_in.mif -force \
 -strides 0,0,0,1
 
 # Input initial mask is a pipe
+# Both outputs are erased beforehand and their presence verified afterwards,
+#   since no other aspect of this invocation's result is compared against reference data
+rm -f tmp_out.mif tmp_mask.mif
 mrconvert BIDS/sub-01/dwi/sub-01_brainmask.nii.gz - | \
-dwibiasnormmask tmp_in.mif tmp_out.mif -force \
+dwibiasnormmask tmp_in.mif tmp_out.mif tmp_mask.mif -force \
 -init_mask -
+
+ls | grep "^tmp_out\.mif$"
+ls | grep "^tmp_mask\.mif$"
 
 # Output mask is a pipe
 dwibiasnormmask tmp_in.mif tmp_out.mif - -force | \

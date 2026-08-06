@@ -1021,7 +1021,9 @@ class Parser(argparse.ArgumentParser):
   # Overloads argparse.ArgumentParser function to give a better error message on failed parsing
   def error(self, message):
     for entry in sys.argv:
-      if '-help'.startswith(entry):
+      # A solitary dash denotes a piped image, and an empty string is not an option at all;
+      #   neither abbreviates "-help", even though both are prefixes of that string
+      if len(entry) > 1 and '-help'.startswith(entry):
         self.print_help()
         sys.exit(0)
     if self.prog and len(shlex.split(self.prog)) == len(sys.argv): # No arguments provided to subparser

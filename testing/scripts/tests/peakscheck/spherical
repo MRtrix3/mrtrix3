@@ -9,4 +9,4 @@ peaksconvert peakscheck/posdet_xyz3vector.mif \
     -out_format spherical \
     - | \
 peakscheck - \
-    -in_format spherical
+    -format spherical
