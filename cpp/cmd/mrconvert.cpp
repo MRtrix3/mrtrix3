@@ -366,7 +366,7 @@ template <class ImageType> inline std::vector<int> set_header(Header &header, co
 template <typename T, class InputType>
 void copy_permute(const InputType &in, Header &header_out, const std::filesystem::path &output_filepath) {
   const auto axes = set_header(header_out, in);
-  auto out = Image<T>::create(output_filepath, header_out, add_to_command_history);
+  auto out = Image<T>::create(output_filepath, header_out, std::nullopt, add_to_command_history);
   DWI::export_grad_commandline(out);
   Metadata::PhaseEncoding::export_commandline(out);
   auto perm = Adapter::make<Adapter::PermuteAxes>(in, axes);

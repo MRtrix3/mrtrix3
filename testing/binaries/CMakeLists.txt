@@ -356,6 +356,7 @@ add_bash_binary_test(mrcolour/upperlimit NO_FILESYSTEM_LOCK)
 
 add_bash_binary_test(mrconvert/big_endian NO_FILESYSTEM_LOCK)
 add_bash_binary_test(mrconvert/coord_end)
+add_bash_binary_test(mrconvert/export_grad_fsl_roundtrip)
 add_bash_binary_test(mrconvert/format_mgh)
 add_bash_binary_test(mrconvert/format_mgz)
 add_bash_binary_test(mrconvert/format_mif_gz)
