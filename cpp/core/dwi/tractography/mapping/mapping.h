@@ -31,10 +31,6 @@ namespace MR::DWI::Tractography::Mapping {
 //   in the absence of any other information
 constexpr default_type default_streamline2fixel_angle = 45.0;
 
-// Didn't bother making this a command-line option,
-//   since curvature contrast results were very poor regardless of smoothing
-constexpr default_type curvature_smoothing_mm = 10.0;
-
 // How many streamlines to read from a tractogram file
 //   in order to establish the spatial bounding box
 constexpr ssize_t streamlines_for_bounding_box = 1000000;

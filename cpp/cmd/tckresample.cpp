@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+
 #include "command.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -28,8 +30,6 @@
 #include "math/math.h"
 #include "ordered_thread_queue.h"
 #include "thread.h"
-
-#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -110,7 +110,7 @@ void run() {
   Properties properties;
   Reader<value_type> read(argument[0], properties);
 
-  const std::unique_ptr<Resampling::Base> resampler(Resampling::get_resampler());
+  const std::unique_ptr<Resampling::Base> resampler(Resampling::get_resampler(properties));
 
   Worker worker(resampler);
   Receiver receiver(argument[1], properties);

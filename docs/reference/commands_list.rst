@@ -115,7 +115,9 @@ List of MRtrix3 commands
     commands/shview
     commands/tck2connectome
     commands/tck2fixel
+    commands/tck2metric
     commands/tckconvert
+    commands/tckdecimatecalibrate
     commands/tckdfc
     commands/tckedit
     commands/tckgen
@@ -126,7 +128,6 @@ List of MRtrix3 commands
     commands/tcksample
     commands/tcksift
     commands/tcksift2
-    commands/tckstats
     commands/tcktransform
     commands/tckvalidate
     commands/tensor2metric
@@ -240,7 +241,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`mrthreshold`, "Create bitwise image by thresholding image intensity"
     |cpp.png|, :ref:`mrtransform`, "Apply spatial transformations to an image"
     |python.png|, :ref:`mrtrix_cleanup`, "Clean up residual temporary files & scratch directories from MRtrix3 commands"
-    |cpp.png|, :ref:`mrview`, "The MRtrix image viewer"
+    |cpp.png|, :ref:`mrview`, ""
     |cpp.png|, :ref:`mtnormalise`, "Multi-tissue informed log-domain intensity normalisation"
     |cpp.png|, :ref:`peaks2amp`, "Extract amplitudes from a peak directions image"
     |cpp.png|, :ref:`peaks2fixel`, "Convert peak directions image to a fixel directory"
@@ -254,10 +255,12 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`sh2peaks`, "Extract the peaks of a spherical harmonic function in each voxel"
     |cpp.png|, :ref:`sh2response`, "Generate an appropriate response function from the image data for spherical deconvolution"
     |cpp.png|, :ref:`shconv`, "Perform spherical convolution"
-    |cpp.png|, :ref:`shview`, "View spherical harmonics surface plots"
+    |cpp.png|, :ref:`shview`, ""
     |cpp.png|, :ref:`tck2connectome`, "Generate a connectome matrix from a streamlines file and a node parcellation image"
     |cpp.png|, :ref:`tck2fixel`, "Compute a fixel TDI map from a tractogram"
+    |cpp.png|, :ref:`tck2metric`, "Compute one or more per-streamline metrics for a tractogram"
     |cpp.png|, :ref:`tckconvert`, "Convert between different track file formats"
+    |cpp.png|, :ref:`tckdecimatecalibrate`, "Calibrate a streamline decimation resampler against geometric error and computational cost"
     |cpp.png|, :ref:`tckdfc`, "Perform the Track-Weighted Dynamic Functional Connectivity (TW-dFC) method"
     |cpp.png|, :ref:`tckedit`, "Perform various editing operations on track files"
     |cpp.png|, :ref:`tckgen`, "Perform streamlines tractography"
@@ -268,7 +271,6 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`tcksample`, "Sample values of an associated image along tracks"
     |cpp.png|, :ref:`tcksift`, "Filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals"
     |cpp.png|, :ref:`tcksift2`, "Optimise per-streamline cross-section multipliers to match a whole-brain tractogram to fixel-wise fibre densities"
-    |cpp.png|, :ref:`tckstats`, "Calculate statistics on streamlines lengths"
     |cpp.png|, :ref:`tcktransform`, "Apply a spatial transformation to a tracks file"
     |cpp.png|, :ref:`tckvalidate`, "Validate a tractogram (.tck) file"
     |cpp.png|, :ref:`tensor2metric`, "Generate maps of tensor-derived parameters"

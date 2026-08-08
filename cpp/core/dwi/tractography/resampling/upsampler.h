@@ -17,6 +17,7 @@
 #pragma once
 
 #include "dwi/tractography/resampling/resampling.h"
+#include "dwi/tractography/spline.h"
 
 namespace MR::DWI::Tractography::Resampling {
 
@@ -41,7 +42,7 @@ private:
   Eigen::MatrixXf M;
   mutable Eigen::MatrixXf temp, data;
 
-  void interp_prepare(Streamline<> &) const;
+  void interp_prepare(const SplineView<value_type> &) const;
   void increment(const point_type &) const;
 };
 
