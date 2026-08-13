@@ -159,7 +159,7 @@ Non-linear registration options
 
 -  **-nl_disp_smooth stdev** regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0)
 
--  **-nl_grad_step num** the gradient step size for non-linear registration (Default: 0.5)
+-  **-nl_grad_step num** the gradient step size for non-linear registration (Default: 1.5)
 
 -  **-nl_lmax num** explicitly set the lmax to be used per scale factor in non-linear FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
 

@@ -58,8 +58,8 @@ namespace MR
       + Option ("nl_disp_smooth", "regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0)")
         + Argument ("stdev").type_float ()
 
-      + Option ("nl_grad_step", "the gradient step size for non-linear registration (Default: 0.5)")
-        + Argument ("num").type_float (0.0001, 1.0)
+      + Option ("nl_grad_step", "the gradient step size for non-linear registration (Default: 1.5)")
+        + Argument ("num").type_float (0.0001, 10.0)
 
       + Option ("nl_lmax", "explicitly set the lmax to be used per scale factor in non-linear FOD registration. By default FOD registration will "
                            "use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.")
@@ -69,7 +69,11 @@ namespace MR
       // + Argument ("radius").type_integer (1,100)
 
       + Option("diagnostics_image", "write intermediate images for diagnostics purposes")
-      + Argument("path");
+      + Argument("path")
+
+      + Option("diagnostics_stats", "write per-iteration statistics of the non-linear optimisation "
+                                    "to a tab-delimited text file")
+      + Argument("path").type_file_out();
 
 
   }

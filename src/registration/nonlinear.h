@@ -17,6 +17,9 @@
 #ifndef __registration_nonlinear_h__
 #define __registration_nonlinear_h__
 
+#include <memory>
+
+#include "file/ofstream.h"
 #include "image.h"
 #include "types.h"
 
@@ -29,6 +32,7 @@
 #include "registration/warp/helpers.h"
 #include "registration/warp/invert.h"
 #include "registration/metric/demons.h"
+#include "registration/metric/demons_diagnostics.h"
 #include "registration/metric/demons_cc.h"
 #include "registration/metric/cc_helper.h"
 #include "registration/metric/demons4D.h"
@@ -44,6 +48,45 @@ namespace MR
     extern const App::OptionGroup nonlinear_options;
 
 
+    //! Summary of the magnitudes of the vectors within a 3-vector field
+    struct FieldMagnitudeStats { MEMALIGN(FieldMagnitudeStats)
+      FieldMagnitudeStats () : mean (0.0), rms (0.0), max (0.0) { }
+      default_type mean, rms, max;
+    };
+
+    //! Compute the mean, root-mean-square and maximum vector magnitude across a 3-vector field
+    /*! Magnitudes are multiplied by \a scale prior to accumulation, so that the
+     *  statistics of a field that is yet to be scaled by the gradient step size
+     *  can be reported in units of millimetres. */
+    inline FieldMagnitudeStats field_magnitude_stats (Image<default_type>& field, const default_type scale = 1.0)
+    {
+      default_type sum = 0.0;
+      default_type sum_squares = 0.0;
+      default_type maximum = 0.0;
+      size_t count = 0;
+      for (auto l = Loop (field, 0, 3) (field); l; ++l) {
+        Eigen::Vector3d value;
+        for (size_t axis = 0; axis != 3; ++axis) {
+          field.index(3) = axis;
+          value[axis] = field.value();
+        }
+        field.index(3) = 0;
+        const default_type magnitude = scale * value.norm();
+        sum += magnitude;
+        sum_squares += magnitude * magnitude;
+        maximum = std::max (maximum, magnitude);
+        ++count;
+      }
+      FieldMagnitudeStats result;
+      if (count > 0) {
+        result.mean = sum / static_cast<default_type> (count);
+        result.rms = std::sqrt (sum_squares / static_cast<default_type> (count));
+      }
+      result.max = maximum;
+      return result;
+    }
+
+
     class NonLinear
     { MEMALIGN(NonLinear)
 
@@ -55,11 +98,12 @@ namespace MR
           scale_factor (3),
           update_smoothing (2.0),
           disp_smoothing (1.0),
-          gradient_step (0.5),
+          gradient_step (1.5),
           do_reorientation (false),
           fod_lmax (3),
           use_cc (false),
-          diagnostics_image_prefix ("") {
+          diagnostics_image_prefix (""),
+          diagnostics_stats_path ("") {
             scale_factor[0] = 0.25;
             scale_factor[1] = 0.5;
             scale_factor[2] = 1.0;
@@ -88,6 +132,18 @@ namespace MR
               // if initialising only perform optimisation at the full resolution level
               scale_factor.resize (1);
               scale_factor[0] = 1.0;
+            }
+
+            std::unique_ptr<File::OFStream> diagnostics_stats;
+            if (!diagnostics_stats_path.empty()) {
+              diagnostics_stats.reset (new File::OFStream (diagnostics_stats_path));
+              *diagnostics_stats << "stage\tscale_factor\tvoxel_size_mm\tgrad_step\tupdate_smooth_mm\tdisp_smooth_mm"
+                                    "\titeration\tvoxel_count\tcost\taccepted"
+                                    "\tgrad_mean\tgrad_max\tgrad_mean_active\tgrad_dominant_fraction"
+                                    "\tupdate_mean\tupdate_max\tzeroed_fraction"
+                                    "\tstep_mean_mm\tstep_rms_mm\tstep_max_mm"
+                                    "\tdisp1_mean_mm\tdisp1_rms_mm\tdisp1_max_mm"
+                                    "\tdisp2_mean_mm\tdisp2_rms_mm\tdisp2_max_mm\n";
             }
 
             if (max_iter.size() == 1)
@@ -201,11 +257,15 @@ namespace MR
               }
 
               ssize_t iteration = 1;
-              default_type grad_step_altered = gradient_step * (field_header.spacing(0) + field_header.spacing(1) + field_header.spacing(2)) / 3.0;
               default_type cost = std::numeric_limits<default_type>::max();
               bool converged = false;
 
+              const default_type voxel_size_mm = (midway_image_header_resized.spacing(0)
+                                                + midway_image_header_resized.spacing(1)
+                                                + midway_image_header_resized.spacing(2)) / 3.0;
+
               while (!converged) {
+                FieldMagnitudeStats step_stats;
                 if (iteration > 1) {
                   DEBUG ("smoothing update fields");
                   Filter::Smooth smooth_filter (*im1_update);
@@ -218,9 +278,20 @@ namespace MR
                 Image<default_type> im2_deform_field = Image<default_type>::scratch (field_header);
 
                 if (iteration > 1) {
+                  if (diagnostics_stats)
+                    step_stats = field_magnitude_stats (*im1_update, gradient_step);
+
+                  // The Demons update is itself an estimate of the required displacement in millimetres,
+                  //   bounded in magnitude by half the voxel size of the level at which it is evaluated;
+                  //   the gradient step is therefore a dimensionless multiplier and requires no further
+                  //   scaling by a length. Scaling it by the voxel size of the level, as was necessary
+                  //   when the image gradient was a derivative per voxel index rather than per millimetre,
+                  //   would make the displacement increment applied per iteration grow in proportion to
+                  //   the multi-resolution downsampling factor, and would make the result depend on the
+                  //   physical scale at which the problem is posed.
                   DEBUG ("updating displacement field");
-                  Warp::update_displacement_scaling_and_squaring (*im1_to_mid, *im1_update, *im1_to_mid_new, grad_step_altered);
-                  Warp::update_displacement_scaling_and_squaring (*im2_to_mid, *im2_update, *im2_to_mid_new, grad_step_altered);
+                  Warp::update_displacement_scaling_and_squaring (*im1_to_mid, *im1_update, *im1_to_mid_new, gradient_step);
+                  Warp::update_displacement_scaling_and_squaring (*im2_to_mid, *im2_update, *im2_to_mid_new, gradient_step);
 
                   DEBUG ("smoothing displacement field");
                   Filter::Smooth smooth_filter (*im1_to_mid_new);
@@ -266,6 +337,8 @@ namespace MR
                 DEBUG ("evaluating metric and computing update field");
                 default_type cost_new = 0.0;
                 size_t voxel_count = 0;
+                Metric::DemonsDiagnostics demons_diagnostics;
+                Metric::DemonsDiagnostics* demons_diagnostics_ptr = diagnostics_stats ? &demons_diagnostics : nullptr;
 
                 if (use_cc) {
                   Metric::cc_precompute (im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, im_cca, im_ccb, im_ccc, im_cc1, im_cc2, cc_extent);
@@ -288,7 +361,7 @@ namespace MR
                     ThreadedLoop (im_cc1, 0, 3).run (metric, im_cc1, im_cc2, im_cca, im_ccb, im_ccc, *im1_update_new, *im2_update_new);
                   } else {
                     Metric::Demons<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
-                      cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
+                      cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, demons_diagnostics_ptr);
                     ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_new, *im2_update_new);
                   }
                 }
@@ -297,6 +370,7 @@ namespace MR
                   display<Image<default_type>>(*im1_update_new);
 
                 cost_new /= static_cast<default_type>(voxel_count);
+                const bool accepted = cost_new < cost;
 
                 // If cost is lower then keep new displacement fields and gradients
                 if (cost_new < cost) {
@@ -323,6 +397,23 @@ namespace MR
 
                 if (!converged)
                   INFO ("  iteration: " + str(iteration) + " cost: " + str(cost));
+
+                if (diagnostics_stats) {
+                  const FieldMagnitudeStats disp1_stats = field_magnitude_stats (*im1_to_mid);
+                  const FieldMagnitudeStats disp2_stats = field_magnitude_stats (*im2_to_mid);
+                  *diagnostics_stats << (level + 1) << "\t" << scale_factor[level] << "\t" << voxel_size_mm << "\t"
+                                     << gradient_step << "\t" << update_smoothing_mm << "\t" << disp_smoothing_mm << "\t"
+                                     << iteration << "\t" << voxel_count << "\t" << cost_new << "\t" << (accepted ? 1 : 0) << "\t"
+                                     << demons_diagnostics.gradient_mean() << "\t" << demons_diagnostics.gradient_max << "\t"
+                                     << demons_diagnostics.active_gradient_mean() << "\t"
+                                     << demons_diagnostics.gradient_dominant_fraction() << "\t"
+                                     << demons_diagnostics.update_mean() << "\t" << demons_diagnostics.update_max << "\t"
+                                     << demons_diagnostics.zeroed_fraction() << "\t"
+                                     << step_stats.mean << "\t" << step_stats.rms << "\t" << step_stats.max << "\t"
+                                     << disp1_stats.mean << "\t" << disp1_stats.rms << "\t" << disp1_stats.max << "\t"
+                                     << disp2_stats.mean << "\t" << disp2_stats.rms << "\t" << disp2_stats.max << "\n";
+                  diagnostics_stats->flush();
+                }
 
                 if (++iteration > max_iter[level])
                   converged = true;
@@ -526,6 +617,10 @@ namespace MR
             diagnostics_image_prefix = path;
           }
 
+          void set_diagnostics_stats (const std::string& path) {
+            diagnostics_stats_path = path;
+          }
+
 
         protected:
 
@@ -557,6 +652,7 @@ namespace MR
           vector<uint32_t> fod_lmax;
           bool use_cc;
           std::basic_string<char> diagnostics_image_prefix;
+          std::string diagnostics_stats_path;
 
           vector<size_t> cc_extent;
 

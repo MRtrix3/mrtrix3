@@ -70,7 +70,7 @@ Options for the non-linear registration
 
 - **-nl_disp_smooth** Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)
 
-- **-nl_grad_step** The gradient step size for non-linear registration (Default: 0.5)
+- **-nl_grad_step** The gradient step size for non-linear registration (Default: 1.5)
 
 Options for the linear registration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
