@@ -24,6 +24,7 @@
 #include "adapter/jacobian.h" //TODO remove after debug
 #include "registration/warp/helpers.h"
 #include "adapter/extract.h"
+#include <mutex>
 
 namespace MR
 {
@@ -31,6 +32,40 @@ namespace MR
   {
     namespace Warp
     {
+
+        class MaxNormSquaredFunctor { MEMALIGN(MaxNormSquaredFunctor)
+          public:
+            explicit MaxNormSquaredFunctor (default_type& overall_max_norm_squared) :
+                                            overall_max_norm_squared (&overall_max_norm_squared),
+                                            local_max_norm_squared (0.0) { }
+
+            MaxNormSquaredFunctor (const MaxNormSquaredFunctor&) = default;
+            MaxNormSquaredFunctor (MaxNormSquaredFunctor&&) = default;
+            MaxNormSquaredFunctor& operator= (const MaxNormSquaredFunctor&) = delete;
+            MaxNormSquaredFunctor& operator= (MaxNormSquaredFunctor&&) = delete;
+
+            ~MaxNormSquaredFunctor () {
+              const std::lock_guard<std::mutex> lock (mutex());
+              *overall_max_norm_squared = std::max (*overall_max_norm_squared, local_max_norm_squared);
+            }
+
+            void operator() (Image<default_type>& update) {
+              const default_type norm_squared = Eigen::Vector3d (update.row(3)).squaredNorm();
+              if (norm_squared > local_max_norm_squared)
+                local_max_norm_squared = norm_squared;
+            }
+
+          private:
+            // One shared mutex per translation unit that instantiates this function
+            // When we upgrade to C++17, we should just use `inline static max_norm_mutex`.
+            static std::mutex& mutex() {
+              static std::mutex max_norm_mutex;
+              return max_norm_mutex;
+            }
+
+            default_type* const overall_max_norm_squared;
+            default_type local_max_norm_squared;
+        };
 
         class ComposeLinearDeformKernel { MEMALIGN(ComposeLinearDeformKernel)
           public:
@@ -160,13 +195,9 @@ namespace MR
       {
         check_dimensions (input, output, 0, 3);
 
-        default_type max_norm = 0.0;
-        auto max_norm_func = [&max_norm](Image<default_type>& update) {
-          default_type norm = Eigen::Vector3d (update.row(3)).norm();
-          if (norm > max_norm)
-            max_norm = norm;
-        };
-        ThreadedLoop (update).run (max_norm_func, update);
+        default_type max_norm_squared = 0.0;
+        ThreadedLoop (update).run (MaxNormSquaredFunctor (max_norm_squared), update);
+        const default_type max_norm = std::sqrt (max_norm_squared);
         default_type min_vox_size = static_cast<default_type> (std::min (input.spacing(0), std::min (input.spacing(1), input.spacing(2))));
 
         // if the maximum update is larger than half a voxel, perform scaling and squaring to ensure the displacement field remains diffeomorphic
