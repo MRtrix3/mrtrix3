@@ -118,11 +118,8 @@ public:
     metric.precompute(params);
     {
       overlap_count = 0;
-      ThreadKernel<MetricType, ParamType> kernel(metric, params, overall_cost_function, gradient, &overlap_count);
-      {
-        LogLevelLatch log_level(0);
-        ThreadedLoop(params.processed_image, 0, 3).run(kernel);
-      }
+      LogLevelLatch log_level(0);
+      reduce(metric, params, params.processed_image, overall_cost_function, gradient, &overlap_count);
     }
     DEBUG("Metric evaluate iteration: " + str(iteration++) + ", cost: " + str(overall_cost_function.transpose()));
     DEBUG("  x: " + str(x.transpose()));
@@ -226,7 +223,6 @@ public:
       }
     } else {
       overlap_count = 0;
-      ThreadKernel<MetricType, ParamType> kernel(metric, params, overall_cost_function, gradient, &overlap_count);
       if (params.robust_estimate_subset) {
         assert(params.robust_estimate_subset_from.size() == 3);
         assert(params.robust_estimate_subset_size.size() == 3);
@@ -235,12 +231,16 @@ public:
         LogLevelLatch log_level(0);
         // single threaded as we loop over small VOIs. multi-threading of small VOIs is VERY slow compared to single
         // threading!
+        ThreadKernel<MetricType, ParamType> kernel(metric, params, overall_cost_function.size(), gradient.size());
         for (auto i = Loop(0, 3)(subset); i; ++i) {
           kernel(subset);
         }
+        overall_cost_function += kernel.partial_cost();
+        gradient += kernel.partial_gradient();
+        overlap_count += kernel.partial_count();
       } else {
         LogLevelLatch log_level(0);
-        ThreadedLoop(params.midway_image, 0, 3).run(kernel);
+        reduce(metric, params, params.midway_image, overall_cost_function, gradient, &overlap_count);
       }
     }
 

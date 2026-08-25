@@ -9,4 +9,4 @@ mrconvert - \
     -coord 3 0,2,1,3,5,4,6,8,7 \
     tmp.mif -force
 ! peakscheck tmp.mif \
-    -in_format spherical
+    -format spherical
