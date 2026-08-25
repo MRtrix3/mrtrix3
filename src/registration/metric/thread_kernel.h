@@ -17,6 +17,8 @@
 #ifndef __registration_metric_threadkernel_h__
 #define __registration_metric_threadkernel_h__
 
+#include <memory>
+
 #include "image.h"
 #include "algo/iterator.h"
 #include "transform.h"
@@ -112,6 +114,7 @@ namespace MR
             }
 
           ~ThreadKernel () {
+            std::lock_guard<std::mutex> lock (mutex);
             overall_cost_function += cost_function;
             overall_gradient += gradient;
             if (overall_cnt)
@@ -325,7 +328,10 @@ namespace MR
             ssize_t* overall_cnt;
             transform_type voxel2scanner;
             // MR::Transform transform;
+
+            static std::mutex mutex;
       };
+      template <class MetricType, class ParamType> std::mutex ThreadKernel<MetricType, ParamType>::mutex;
 
       template <class MetricType, class ParamType>
       struct StochasticThreadKernel { MEMALIGN(StochasticThreadKernel)
@@ -356,6 +362,7 @@ namespace MR
             }
 
           ~StochasticThreadKernel () {
+            std::lock_guard<std::mutex> lock (mutex);
             overall_cost_function += cost_function;
             overall_gradient += gradient;
           }
@@ -382,7 +389,10 @@ namespace MR
           Eigen::VectorXd& overall_gradient;
           Math::RNG rng;
           ssize_t* overlap_count;
+
+          static std::mutex mutex;
       };
+      template <class MetricType, class ParamType> std::mutex StochasticThreadKernel<MetricType, ParamType>::mutex;
     }
   }
 }
