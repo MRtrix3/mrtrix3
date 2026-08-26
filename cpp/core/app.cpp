@@ -121,8 +121,8 @@ bool fail_on_warn = false;
 bool terminal_use_colour = true;
 const std::thread::id main_thread_ID = std::this_thread::get_id();
 
-const std::string project_version;
-const std::string project_build_date;
+std::string project_version;
+std::string project_build_date;
 
 std::vector<std::string> raw_arguments_list;
 
