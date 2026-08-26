@@ -16,6 +16,13 @@
 
 import os, re, stat, sys, threading
 
+# MRtrix3 commands that this command may invoke at execution.
+# This list is parsed at build configure time to establish the set of
+#   compilation targets required by this command (see the cmake Python command dependency helpers),
+#   and is verified for completeness by the dependency linter run within continuous integration.
+# pylint: disable=unused-variable
+MRTRIX_DEPENDENCIES = set()
+
 
 
 # Since we're going to capture everything after the colon character and "hide" it from argparse,
