@@ -1,0 +1,140 @@
+# Default configuration file for MRtrix command labelconfig
+# Extracts the relevant cortical grey matter parcellations from the Schaefer2018 atlas
+# and relevant subcortical grey matter parcellations from the default FreeSurfer segmentation 
+# (desikan_killiany)
+
+# As of 07/2023 the left accumbens area is incorrectly labeled
+# as "Left-Accumbens-a" instead of "Left-Accumbens-area"
+# in the official Schaefer2018 LUTs
+# (see https://github.com/ThomasYeoLab/CBIG/issues/49).
+# Since labelconvert uses string recognition,
+# we provide both strings ("Left-Accumbens-a"/"Left-Accumbens-area")
+# and match them with label 58.
+# The second label can be omitted should the issue be resolved in the future. 
+
+58 Left-Accumbens-a
+
+0 Unknown
+
+1 17Networks_LH_VisCent_ExStr_1
+2 17Networks_LH_VisCent_ExStr_2
+3 17Networks_LH_VisCent_Striate_1
+4 17Networks_LH_VisCent_ExStr_3
+5 17Networks_LH_VisPeri_ExStrInf_1
+6 17Networks_LH_VisPeri_StriCal_1
+7 17Networks_LH_VisPeri_ExStrSup_1
+8 17Networks_LH_SomMotA_1
+9 17Networks_LH_SomMotA_2
+10 17Networks_LH_SomMotB_Aud_1
+11 17Networks_LH_SomMotB_S2_1
+12 17Networks_LH_SomMotB_S2_2
+13 17Networks_LH_SomMotB_Cent_1
+14 17Networks_LH_DorsAttnA_TempOcc_1
+15 17Networks_LH_DorsAttnA_ParOcc_1
+16 17Networks_LH_DorsAttnA_SPL_1
+17 17Networks_LH_DorsAttnB_PostC_1
+18 17Networks_LH_DorsAttnB_PostC_2
+19 17Networks_LH_DorsAttnB_PostC_3
+20 17Networks_LH_DorsAttnB_FEF_1
+21 17Networks_LH_SalVentAttnA_ParOper_1
+22 17Networks_LH_SalVentAttnA_Ins_1
+23 17Networks_LH_SalVentAttnA_Ins_2
+24 17Networks_LH_SalVentAttnA_ParMed_1
+25 17Networks_LH_SalVentAttnA_FrMed_1
+26 17Networks_LH_SalVentAttnB_PFCl_1
+27 17Networks_LH_SalVentAttnB_PFCmp_1
+28 17Networks_LH_LimbicB_OFC_1
+29 17Networks_LH_LimbicA_TempPole_1
+30 17Networks_LH_LimbicA_TempPole_2
+31 17Networks_LH_ContA_IPS_1
+32 17Networks_LH_ContA_PFCl_1
+33 17Networks_LH_ContA_PFCl_2
+34 17Networks_LH_ContB_PFClv_1
+35 17Networks_LH_ContC_pCun_1
+36 17Networks_LH_ContC_pCun_2
+37 17Networks_LH_ContC_Cingp_1
+38 17Networks_LH_DefaultA_PFCd_1
+39 17Networks_LH_DefaultA_pCunPCC_1
+40 17Networks_LH_DefaultA_PFCm_1
+41 17Networks_LH_DefaultB_Temp_1
+42 17Networks_LH_DefaultB_Temp_2
+43 17Networks_LH_DefaultB_IPL_1
+44 17Networks_LH_DefaultB_PFCd_1
+45 17Networks_LH_DefaultB_PFCl_1
+46 17Networks_LH_DefaultB_PFCv_1
+47 17Networks_LH_DefaultB_PFCv_2
+48 17Networks_LH_DefaultC_Rsp_1
+49 17Networks_LH_DefaultC_PHC_1
+50 17Networks_LH_TempPar_1
+
+51 Left-Cerebellum-Cortex
+
+52 Left-Thalamus-Proper
+53 Left-Caudate
+54 Left-Putamen
+55 Left-Pallidum
+56 Left-Hippocampus
+57 Left-Amygdala
+58 Left-Accumbens-area
+
+59 Right-Thalamus-Proper
+60 Right-Caudate
+61 Right-Putamen
+62 Right-Pallidum
+63 Right-Hippocampus
+64 Right-Amygdala
+65 Right-Accumbens-area
+
+66 17Networks_RH_VisCent_ExStr_1
+67 17Networks_RH_VisCent_ExStr_2
+68 17Networks_RH_VisCent_ExStr_3
+69 17Networks_RH_VisPeri_StriCal_1
+70 17Networks_RH_VisPeri_ExStrInf_1
+71 17Networks_RH_VisPeri_ExStrSup_1
+72 17Networks_RH_SomMotA_1
+73 17Networks_RH_SomMotA_2
+74 17Networks_RH_SomMotA_3
+75 17Networks_RH_SomMotA_4
+76 17Networks_RH_SomMotB_Aud_1
+77 17Networks_RH_SomMotB_S2_1
+78 17Networks_RH_SomMotB_S2_2
+79 17Networks_RH_SomMotB_Cent_1
+80 17Networks_RH_DorsAttnA_TempOcc_1
+81 17Networks_RH_DorsAttnA_ParOcc_1
+82 17Networks_RH_DorsAttnA_SPL_1
+83 17Networks_RH_DorsAttnB_PostC_1
+84 17Networks_RH_DorsAttnB_PostC_2
+85 17Networks_RH_DorsAttnB_FEF_1
+86 17Networks_RH_SalVentAttnA_ParOper_1
+87 17Networks_RH_SalVentAttnA_Ins_1
+88 17Networks_RH_SalVentAttnA_ParMed_1
+89 17Networks_RH_SalVentAttnA_FrMed_1
+90 17Networks_RH_SalVentAttnB_IPL_1
+91 17Networks_RH_SalVentAttnB_PFCl_1
+92 17Networks_RH_SalVentAttnB_PFCmp_1
+93 17Networks_RH_LimbicB_OFC_1
+94 17Networks_RH_LimbicA_TempPole_1
+95 17Networks_RH_ContA_IPS_1
+96 17Networks_RH_ContA_PFCl_1
+97 17Networks_RH_ContA_PFCl_2
+98 17Networks_RH_ContB_Temp_1
+99 17Networks_RH_ContB_IPL_1
+100 17Networks_RH_ContB_PFCld_1
+101 17Networks_RH_ContB_PFClv_1
+102 17Networks_RH_ContC_Cingp_1
+103 17Networks_RH_ContC_pCun_1
+104 17Networks_RH_DefaultA_IPL_1
+105 17Networks_RH_DefaultA_PFCd_1
+106 17Networks_RH_DefaultA_pCunPCC_1
+107 17Networks_RH_DefaultA_PFCm_1
+108 17Networks_RH_DefaultB_PFCd_1
+109 17Networks_RH_DefaultB_PFCv_1
+110 17Networks_RH_DefaultB_PFCv_2
+111 17Networks_RH_DefaultC_Rsp_1
+112 17Networks_RH_DefaultC_PHC_1
+113 17Networks_RH_TempPar_1
+114 17Networks_RH_TempPar_2
+115 17Networks_RH_TempPar_3
+
+116 Right-Cerebellum-Cortex
+
