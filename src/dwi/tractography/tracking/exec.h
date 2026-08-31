@@ -235,10 +235,7 @@ namespace MR
               gen_track_unidir (tck);
 
               if (!track_excluded && !unidirectional) {
-                tck.reverse();
-                method.pos = tck.back();
-                method.dir = -seed_dir;
-                method.reverse_track ();
+                method.reverse_track (tck, seed_dir);
                 gen_track_unidir (tck);
               }
 
