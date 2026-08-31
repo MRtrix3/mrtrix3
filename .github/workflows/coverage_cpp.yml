@@ -1,0 +1,84 @@
+
+name: C++ Coverage Analysis
+
+on:
+  workflow_dispatch:
+  # Run this every Sunday at midnight
+  schedule:
+    - cron: "0 0 * * 0"
+
+jobs:
+  linux-clang-build:
+    runs-on: ubuntu-latest
+
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_SIZE: "2G"
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+        ref: dev
+
+    - name: install dependencies
+      run: |
+         sudo apt-get update
+         sudo apt-get install gcovr libeigen3-dev zlib1g-dev libfftw3-dev libpng-dev ninja-build
+
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.9
+
+    - name: Get CMake
+      uses: lukka/get-cmake@latest
+      with:
+        cmakeVersion: '3.22.1'
+
+    - name: Print software versions
+      run: >
+        cmake --version
+        g++ --version
+        gcovr --version
+
+    - name: configure
+      run: >
+        cmake
+        -B build
+        -G Ninja
+        -D CMAKE_BUILD_TYPE=Debug
+        -D MRTRIX_BUILD_TESTS=ON
+        -D MRTRIX_BUILD_GUI=OFF
+        -D CMAKE_CXX_FLAGS="--coverage"
+
+    - name: build
+      run: cmake --build build
+
+    - name: Unit tests
+      run: cd build && ctest -L unittest --output-on-failure
+
+    - name: Binary tests
+      run: cd build && ctest -L binary --output-on-failure
+
+    - name: Report coverage
+      run: >
+        gcovr ${{ github.workspace }}/build
+        --root ${{ github.workspace }}
+        --exclude ${{ github.workspace }}/build
+        --gcov-ignore-parse-errors=negative_hits.warn
+
+    - name: Generate html report
+      run: >
+        mkdir report &&
+        gcovr ${{ github.workspace }}/build
+        --root ${{ github.workspace }}
+        --exclude ${{ github.workspace }}/build
+        --gcov-ignore-parse-errors=negative_hits.warn
+        --html --html-details
+        -o report/coverage.html
+
+    - name: Upload html report
+      uses: actions/upload-artifact@v4
+      with:
+        name: cpp-coverage-report
+        path: coverage_reports/
+        retrntion-days: 90
