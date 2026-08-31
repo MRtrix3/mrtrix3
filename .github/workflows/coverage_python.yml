@@ -1,0 +1,101 @@
+name: Python Coverage Analysis
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0'
+
+jobs:
+  python-coverage:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+        ref: dev
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+           libfftw3-dev libpng-dev ninja-build python3-numpy zlib1g-dev
+
+    - name: Get CMake
+      uses: lukka/get-cmake@latest
+      with:
+        cmakeVersion: '3.22.1'
+
+    - name: Install Python coverage tools
+      run: pip install coverage
+
+    - name: Configure
+      run: |
+        cmake \
+          -B build_release \
+          -G Ninja \
+          -D CMAKE_BUILD_TYPE=Release \
+          -D MRTRIX_BUILD_TESTS=ON \
+          -D MRTRIX_BUILD_GUI=OFF
+
+    - name: Build
+      # Also downloads test data via ExternalProject_Add
+      run: cmake --build build_release -j $(nproc)
+
+    - name: Set up coverage instrumentation
+      run: |
+        mkdir -p /tmp/pycov
+        printf 'import coverage\ncoverage.process_startup()\n' \
+          > /tmp/pycov/sitecustomize.py
+
+        cat > "$GITHUB_WORKSPACE/.coveragerc" << EOF
+        [run]
+        branch = True
+        parallel = True
+        data_file = $GITHUB_WORKSPACE/.coverage
+        source = $GITHUB_WORKSPACE/python/mrtrix3
+
+        [paths]
+        source =
+            $GITHUB_WORKSPACE/python/mrtrix3
+            $GITHUB_WORKSPACE/build_debug/lib/mrtrix3
+
+        [html]
+        title = MRtrix3 Python Coverage
+        EOF
+
+        echo "COVERAGE_PYTHONPATH=/tmp/pycov${PYTHONPATH:+:$PYTHONPATH}" >> $GITHUB_ENV
+
+    - name: Run Python script tests
+      # Tests requiring any external neuroimaging software will fail;
+      # their partial execution still contributes coverage for reached code paths.
+      # All tests share the same working directory (script_test_data root) and
+      # write to overlapping tmp* paths, so parallelism is explicitly disabled.
+      run: cd build_release && ctest -L script -j 1 --output-on-failure || true
+      env:
+        COVERAGE_PROCESS_START: ${{ github.workspace }}/.coveragerc
+        PYTHONPATH: ${{ env.COVERAGE_PYTHONPATH }}
+
+    - name: Generate coverage report
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        coverage combine
+        coverage html -d coverage-report
+        coverage report --branch -m | tee coverage-summary.txt
+        {
+          echo '### Python Coverage Summary'
+          echo '```'
+          cat coverage-summary.txt
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-coverage-report
+        path: coverage-reports/
+        retention-days: 90
