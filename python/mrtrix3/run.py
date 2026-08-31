@@ -15,7 +15,7 @@
 
 import collections, itertools, os, pathlib, shlex, shutil, signal, string, subprocess, sys, tempfile, threading
 from mrtrix3 import ANSI, COMMAND_HISTORY_STRING, MRtrixBaseError, MRtrixError
-from mrtrix3.commands import ALL_COMMANDS, EXECUTABLES_PATH
+from mrtrix3.commands import CPP_COMMANDS, PYTHON_COMMANDS, ALL_COMMANDS, EXECUTABLES_PATH
 
 IOStream = collections.namedtuple('IOStream', 'handle filename')
 
@@ -359,25 +359,17 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
         cmdstack[-1].extend([ '-append_property', 'command_history', COMMAND_HISTORY_STRING ])
 
     for line in cmdstack:
-      is_mrtrix_exe = line[0] in ALL_COMMANDS
+      cmdname = line[0]
+      is_mrtrix_exe = os.path.basename(cmdname) in ALL_COMMANDS
+      invocation = get_invocation(line[0])
       if is_mrtrix_exe:
-        line[0] = version_match(line[0])
         if shared.get_num_threads() is not None:
           line.extend( [ '-nthreads', str(shared.get_num_threads()) ] )
         if force:
           line.append('-force')
-      else:
-        line[0] = exe_name(line[0])
-      interpreter = get_interpreter(line[0])
-      if interpreter:
-        if not is_mrtrix_exe:
-          # If a shebang is found,
-          #   and this call is therefore explicitly invoking an interpreter,
-          #   can't rely on the interpreter finding the script from PATH;
-          #   need to find the full path ourselves.
-          line[0] = shutil.which(line[0])
-        for item in reversed(interpreter):
-          line.insert(0, item)
+      line[0] = invocation[-1]
+      for item in reversed(invocation[:-1]):
+        line.insert(0, item)
 
     with shared.lock:
       app.debug('To execute: ' + str(cmdstack))
@@ -576,39 +568,61 @@ def exe_name(item):
 #   or a non-MRtrix3 command with the same name as an MRtrix3 command
 #   (e.g. C:\Windows\system32\mrinfo.exe; On Windows, subprocess uses CreateProcess(),
 #   which checks system32\ before PATH)
-def version_match(item):
+def version_match(cmdname):
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  if not item in ALL_COMMANDS:
-    app.debug(f'Command "{item}" not in list of MRtrix3 commands')
-    return item
-  exe_path_manual = os.path.join(EXECUTABLES_PATH, exe_name(item))
+  if not cmdname in ALL_COMMANDS:
+    app.debug(f'Command "{cmdname}" not in list of MRtrix3 commands')
+    return cmdname
+  exe_path_manual = os.path.join(EXECUTABLES_PATH, exe_name(cmdname))
   if os.path.isfile(exe_path_manual):
-    app.debug(f'Version-matched executable for "{item}": {exe_path_manual}')
+    app.debug(f'Version-matched executable for "{cmdname}": {exe_path_manual}')
     return exe_path_manual
-  exe_path_sys = shutil.which(exe_name(item))
+  exe_path_sys = shutil.which(exe_name(cmdname))
   if exe_path_sys and os.path.isfile(exe_path_sys):
-    app.debug(f'Using non-version-matched executable for "{item}": {exe_path_sys}')
+    app.warn(f'Using non-MRtrix3-version-matched executable for "{cmdname}": {exe_path_sys}')
     return exe_path_sys
-  raise MRtrixError(f'Unable to find executable for MRtrix3 command "{item}"')
+  raise MRtrixError(f'Unable to find executable for MRtrix3 command "{cmdname}"')
 
 
 
-# If the target executable is not a binary, but is actually a script, use the
-#   shebang at the start of the file to alter the subprocess call
-def get_interpreter(item):
+# Figure out the right subprocess invocation for a given command execution
+# - If on Windows, may need to append ".exe" to the executable name
+# - If the target executable is not a binary, but is actually a script,
+#   use the shebang at the start of the file to alter the subprocess call
+# - If running an MRtrix3 command,
+#   make sure to execute the version matched to the currently executing script
+def get_invocation(cmdname):
   from mrtrix3 import app, utils #pylint: disable=import-outside-toplevel
-  # If a complete path has been provided rather than just a file name, don't perform any additional file search
-  if os.sep in item:
-    path = item
+  assert cmdname
+
+  # If we're invoking an MRtrix3 C++ binary,
+  #   no need to check for a shebang
+  if cmdname in CPP_COMMANDS:
+    app.debug('No need to check for shebang for MRtrix3 C++ binary {cmdname}')
+    return [version_match(cmdname)]
+  # If we are invoking an MRtrix3 Python command,
+  #   explicitly use the same interpreter as that currently executing
+  if cmdname in PYTHON_COMMANDS:
+    app.debug(f'Using current Python interpreter to execute MRtrix3 command {cmdname}')
+    return [sys.executable, version_match(cmdname)]
+
+  # We need to find the file that is going to be executed,
+  #   so that we can check its head for a shebang
+  if os.sep in cmdname:
+    # If a complete path has been provided rather than just a file name,
+    #   no need to perform a search
+    filepath = cmdname
   else:
-    path = version_match(item)
-    if path == item:
-      path = shutil.which(exe_name(item))
-  if not path:
-    app.debug(f'File "{item}": Could not find file to query')
-    return []
+    filepath = version_match(cmdname)
+    if filepath == cmdname:
+      filepath = shutil.which(exe_name(cmdname))
+    if not filepath:
+      app.debug(f'Command "{cmdname}": Could not find file to query')
+      return []
+    app.debug(f'For command {cmdname}, checking file {filepath}')
+
   # Read the first 1024 bytes of the file
-  with open(path, 'rb') as file_in:
+  with open(filepath, 'rb') as file_in:
     data = file_in.read(1024)
 
   class ShebangParseError(Exception):
@@ -616,58 +630,24 @@ def get_interpreter(item):
   def parse_shebang(line, resolve_env):
     # Need to strip first in case there's a gap between the shebang symbol and the interpreter path
     shebang = line[2:].strip().split(' ')
-    # On Windows MSYS2, can have issues attempting to run commands through subprocess
-    #   without the shell interpreter if /usr/bin/env is used in the shebang
-    #   Instead, manually find the right interpreter to call using shutil.which()
-    # Also if script is written in Python,
-    #   try to execute it using the same interpreter as that currently running,
-    #   as long as the version is an adequate match
-    # This selection should apply to shebangs both of the form "/usr/bin/env python3" and "/usr/bin/python3"
-    shebang_firstitem_basename = os.path.basename(shebang[0])
-    shebang_python_version = None
-    shebang_extras = None
-    if shebang_firstitem_basename == 'env':
-      shebang_extras = shebang[2:]
+    if os.path.basename(shebang[0]) == 'env':
       if len(shebang) < 2:
         raise ShebangParseError('missing interpreter after "env"')
-      if shebang[1] == 'python':
-        shebang_python_version = tuple()
-      elif shebang[1].startswith('python'):
-        try:
-          shebang_python_version = tuple(map(int, shebang[1][len('python'):].split('.')))
-        except ValueError as exc:
-          raise ShebangParseError(f'unable to extract Python version from text "{line}"') from exc
-      elif resolve_env:
-        return [ shutil.which(shebang[1]) ] + shebang[2:]
-    else:
-      shebang_extras = shebang[1:]
-      if shebang_firstitem_basename == 'python':
-        shebang_python_version = tuple()
-      elif shebang_firstitem_basename.startswith('python'):
-        try:
-          shebang_python_version = tuple(map(int, shebang_firstitem_basename[len('python'):].split('.')))
-        except ValueError as exc:
-          raise ShebangParseError(f'unable to extract Python version from text "{line}"') from exc
-    if shebang_python_version is None:
-      return shebang
-    if len(shebang_python_version) > 3:
-      raise ShebangParseError(f'erroneously long Python version "{shebang_python_version}" in shebang')
-    this_version = tuple(sys.version_info[:3])
-    # Either the shebang requested versions are compatible with the current interpreter,
-    #   or the shebang just requests "python"
-    if this_version[:len(shebang_python_version)] == shebang_python_version \
-        or not shebang_python_version:
-      return [ sys.executable ] + shebang_extras if sys.executable else []
-    if shebang_firstitem_basename == 'env' and resolve_env:
-      exe_path = shutil.which(shebang[1])
-      if not exe_path:
-        raise ShebangParseError(f'on Windows with "env" shebang, but unable to find command "{shebang[1]}"')
-      return [exe_path] + shebang_extras
-    if os.path.exists(shebang[0]):
-      if not os.access(shebang[0], os.X_OK):
-        raise ShebangParseError(f'no execution access to "{shebang[1]}"')
-      return shebang
-    return []
+      if resolve_env:
+        exe_path = shutil.which(shebang[1])
+        if not exe_path:
+          raise ShebangParseError(f'on Windows with "env" shebang, but unable to find command "{shebang[1]}"')
+        return [exe_path] + shebang[2:]
+    if not os.path.exists(shebang[0]):
+      raise ShebangParseError(f'unable to find interpreter {shebang[0]}')
+    if not os.access(shebang[0], os.X_OK):
+      raise ShebangParseError(f'no execution access to "{shebang[0]}"')
+    return shebang
+
+  # On Windows MSYS2, can have issues attempting to run commands through subprocess
+  #   without the shell interpreter if /usr/bin/env is used in the shebang
+  #   Instead, manually find the right interpreter to call using shutil.which()
+  resolve_env = utils.is_windows()
 
   # Try to find the shebang line
   for line in data.splitlines():
@@ -675,17 +655,18 @@ def get_interpreter(item):
     try:
       line = str(line.decode('utf-8'))
     except UnicodeDecodeError:
-      app.debug(f'File "{item}": Not a text file')
+      app.debug(f'File "{cmdname}": Not a text file')
       return []
     line = line.strip()
     if not (len(line) > 2 and line[0:2] == '#!'):
       continue
     try:
-      interpreter = parse_shebang(line, utils.is_windows())
-      app.debug(f'File "{item}": shebang line "{line}"; utilising interpreter {interpreter}')
+      interpreter = parse_shebang(line, resolve_env)
+      app.debug(f'File "{cmdname}": shebang line "{line}"; utilising interpreter "{interpreter}"')
       return interpreter
     except ShebangParseError as exc:
-      app.warn(f'Invalid shebang in script file "{item}": {exc}')
+      app.warn(f'Issue with shebang in command {cmdname}: {exc}')
+      app.warn('  (This may result in failure of the command to execute)')
       return []
-  app.debug(f'File "{item}": No shebang found')
+  app.debug(f'Command {cmdname}: No shebang found')
   return []
