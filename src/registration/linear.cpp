@@ -31,6 +31,19 @@ namespace MR
     const char* linear_optimisation_algo_choices[] = { "bbgd", "gd", nullptr };
     const char* optim_algo_names[] = { "BBGD", "GD", nullptr };
 
+    const char* rigid_linear_description =
+        "For rigid-body and affine registration, "
+        "command-line options relating to \"robust\" estimators are available, with choices: "
+        "\"l1\" (least absolute: |x|); "
+        "\"l2\" (ordinary least squares: x^2); "
+        "\"lp\" (least powers: |x|^1.2). "
+        "There are however no specific \"robust\" features of these similarity metrics "
+        "beyond the choice of exponent parameter yet implemented. "
+        "This means that registration behaviour with selection of the \"l2\" metric "
+        "is currently mathematically and behaviourally identical to not specifying this option as all, "
+        "as the default behaviour in the absence of any choice "
+        "is a naive mean squared metric.";
+
     // define parameters of initialisation methods used for both, rigid and affine registration
     void parse_general_options (Registration::Linear& registration) {
       if (get_options("init_translation.unmasked1").size()) registration.init.init_translation.unmasked1 = true;
@@ -256,11 +269,13 @@ namespace MR
                                  "Default: diff")
         + Argument ("type").type_choice (linear_metric_choices)
 
-      + Option ("rigid_metric.diff.estimator", "Valid choices are: "
-                                  "l1 (least absolute: |x|), "
-                                  "l2 (ordinary least squares), "
-                                  "lp (least powers: |x|^1.2), "
-                                  "Default: l2")
+      + Option ("rigid_metric.diff.estimator",
+                                "choose a \"robust\" estimator to use for rigid-body registration; "
+                                "valid choices are: "
+                                "l1 (least absolute: |x|), "
+                                "l2 (ordinary least squares), "
+                                "lp (least powers: |x|^1.2) "
+                                "(see Description for more info).")
         + Argument ("type").type_choice (linear_robust_estimator_choices)
 
       // + Option ("rigid_loop_density", "density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)")
@@ -324,11 +339,13 @@ namespace MR
                                  "Default: diff")
         + Argument ("type").type_choice (linear_metric_choices)
 
-      + Option ("affine_metric.diff.estimator", "Valid choices are: "
-                                  "l1 (least absolute: |x|), "
-                                  "l2 (ordinary least squares), "
-                                  "lp (least powers: |x|^1.2), "
-                                  "Default: l2")
+      + Option ("affine_metric.diff.estimator",
+                                "choose a \"robust\" estimator to use for affine registration; "
+                                "valid choices are: "
+                                "l1 (least absolute: |x|), "
+                                "l2 (ordinary least squares), "
+                                "lp (least powers: |x|^1.2) "
+                                "(see Description for more info).")
         + Argument ("type").type_choice (linear_robust_estimator_choices)
 
       // + Option ("affine_loop_density", "density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)")
