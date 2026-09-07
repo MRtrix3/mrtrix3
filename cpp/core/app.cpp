@@ -1023,7 +1023,7 @@ std::string pydra_code() {
     // Print name of field
     std::string f = base_indent + escape_id(opt.id) + ": ";
     std::string type_string = format_option_type(opt);
-    bool is_multi = type_string.length() > 19 && type_string.substr(0, 19) == "MultiInputObj";
+    bool is_multi = type_string.rfind("MultiInputObj[", 0) == 0;
     if (is_output && !is_multi) {
       type_string += "| bool | None";
     } else if (opt.flags.optional() && type_string != "bool" && type_string != "Any") {
