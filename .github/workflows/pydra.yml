@@ -39,8 +39,6 @@ jobs:
 
     - name: Get CMake
       uses: lukka/get-cmake@latest
-      with:
-        cmakeVersion: '3.16.3'
 
     - name: Print CMake version
       run: cmake --version
