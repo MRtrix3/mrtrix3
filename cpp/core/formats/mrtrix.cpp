@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,11 +22,12 @@
 #include "file/name_parser.h"
 #include "file/ofstream.h"
 #include "file/path.h"
-#include "file/utils.h"
 #include "formats/list.h"
 #include "formats/mrtrix_utils.h"
 #include "header.h"
 #include "image_io/default.h"
+
+#include <filesystem>
 
 namespace MR::Formats {
 
@@ -35,19 +36,19 @@ namespace MR::Formats {
 // mif: MRtrix Image File
 
 std::unique_ptr<ImageIO::Base> MRtrix::read(Header &H) const {
-  if (!Path::has_suffix(H.name(), ".mih") && !Path::has_suffix(H.name(), ".mif"))
+  if (!Path::has_suffix(H.path(), {".mih", ".mif"}))
     return std::unique_ptr<ImageIO::Base>();
 
-  File::KeyValue::Reader kv(H.name(), "mrtrix image");
+  File::KeyValue::Reader kv(static_cast<const Header &>(H).path(), "mrtrix image");
 
   read_mrtrix_header(H, kv);
 
-  std::string fname;
+  std::filesystem::path filepath;
   size_t offset;
-  get_mrtrix_file_path(H, "file", fname, offset);
+  get_mrtrix_file_path(H, "file", filepath, offset);
 
   File::ParsedName::List list;
-  auto num = list.parse_scan_check(fname);
+  auto num = list.parse_scan_check(filepath.string());
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
   for (size_t n = 0; n < list.size(); ++n)
@@ -57,7 +58,7 @@ std::unique_ptr<ImageIO::Base> MRtrix::read(Header &H) const {
 }
 
 bool MRtrix::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(H.name(), ".mih") && !Path::has_suffix(H.name(), ".mif"))
+  if (!Path::has_suffix(H.path(), {".mih", ".mif"}))
     return false;
 
   H.ndim() = num_axes;
@@ -69,32 +70,36 @@ bool MRtrix::check(Header &H, size_t num_axes) const {
 }
 
 std::unique_ptr<ImageIO::Base> MRtrix::create(Header &H) const {
-  File::OFStream out(H.name(), std::ios::out | std::ios::binary);
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  File::OFStream out(hpath, std::ios::out | std::ios::binary);
 
   out << "mrtrix image\n";
 
   write_mrtrix_header(H, out);
 
-  bool single_file = Path::has_suffix(H.name(), ".mif");
+  const bool single_file = const_cast<const Header &>(H).path().extension() == ".mif";
 
   int64_t offset = 0;
   out << "file: ";
   if (single_file) {
-    offset = int64_t(out.tellp()) + int64_t(18);
+    offset = static_cast<int64_t>(out.tellp()) + int64_t(18);
     offset += ((4 - (offset % 4)) % 4);
     out << ". " << offset << "\nEND\n";
-  } else
-    out << Path::basename(H.name().substr(0, H.name().size() - 4) + ".dat") << "\n";
+  } else {
+    out << static_cast<const Header &>(H).path().filename().replace_extension(".dat").string() << "\n";
+  }
 
   out.close();
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
   if (single_file) {
-    File::resize(H.name(), offset + footprint(H));
-    io_handler->files.push_back(File::Entry(H.name(), offset));
+    std::filesystem::resize_file(hpath, offset + footprint(H));
+    io_handler->files.push_back(File::Entry(hpath, offset));
   } else {
-    std::string data_file(H.name().substr(0, H.name().size() - 4) + ".dat");
-    File::create(data_file, footprint(H));
+    std::filesystem::path data_file = std::filesystem::path(hpath).replace_extension(".dat");
+    File::OFStream out_dat(data_file);
+    out_dat.close();
+    std::filesystem::resize_file(data_file, footprint(H));
     io_handler->files.push_back(File::Entry(data_file));
   }
 

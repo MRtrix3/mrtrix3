@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,9 +14,16 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <optional>
+#include <vector>
+
 #include "app.h"
 #include "debug.h"
+#include "env.h"
+#include "exception.h"
 #include "header.h"
+#include "mrtrix.h"
+#include "types.h"
 
 #include "file/config.h"
 #include "file/path.h"
@@ -36,35 +43,35 @@ const std::string Config::default_sys_config_file("/etc/" + file_basename);
 // ENVVAR the software to have different configurations, etc.
 
 void Config::init() {
-  const char *sysconf_location = getenv("MRTRIX_CONFIGFILE");
-  if (!sysconf_location)
-    sysconf_location = default_sys_config_file.c_str();
+  const std::string sysconf_location = MR::get_env("MRTRIX_CONFIGFILE", default_sys_config_file);
 
-  if (Path::is_file(sysconf_location)) {
-    INFO(std::string("reading config file \"") + sysconf_location + "\"...");
+  std::filesystem::path sysconf_path(sysconf_location);
+  if (std::filesystem::is_regular_file(sysconf_path)) {
+    INFO("reading config file \"" + sysconf_path.string() + "\"...");
     try {
-      KeyValue::Reader kv(sysconf_location);
+      KeyValue::Reader kv(sysconf_path);
       while (kv.next()) {
-        config[kv.key()] = kv.value();
+        config[std::string(kv.key())] = std::string(kv.value());
       }
-    } catch (...) {
+    } catch (Exception &e) {
+      WARN("Error reading key-values from system config file \"" + sysconf_location + "\": " + e[0]);
     }
   } else {
-    DEBUG(std::string("No config file found at \"") + sysconf_location + "\"");
+    DEBUG(std::string("No config file found at \"") + sysconf_path.string() + "\"");
   }
-
-  const std::string path = Path::join(Path::home(), "." + file_basename);
-  if (Path::is_file(path)) {
-    INFO("reading config file \"" + path + "\"...");
+  std::filesystem::path home_path = Path::home() / ("." + file_basename);
+  if (std::filesystem::is_regular_file(home_path)) {
+    INFO("reading config file \"" + home_path.string() + "\"...");
     try {
-      KeyValue::Reader kv(path);
+      KeyValue::Reader kv(home_path);
       while (kv.next()) {
-        config[kv.key()] = kv.value();
+        config[std::string(kv.key())] = std::string(kv.value());
       }
-    } catch (...) {
+    } catch (Exception &e) {
+      WARN("Error reading key-values from user config file \"" + home_path.string() + "\": " + e[0]);
     }
   } else {
-    DEBUG("No config file found at \"" + path + "\"");
+    DEBUG("No config file found at \"" + home_path.string() + "\"");
   }
 
   auto opt = App::get_options("config");
@@ -78,69 +85,67 @@ void Config::init() {
   Header::do_realign_transform = get_bool("RealignTransform", true);
 }
 
-std::string Config::get(const std::string &key) {
-  const KeyValues::const_iterator i = config.find(key);
-  return (i != config.end() ? i->second : "");
+std::optional<std::string> Config::get(std::string_view key) {
+  const KeyValues::const_iterator i = config.find(std::string(key));
+  return (i != config.end() ? std::optional<std::string>(i->second) : std::nullopt);
 }
 
-std::string Config::get(const std::string &key, const std::string &default_value) {
-  KeyValues::iterator i = config.find(key);
-  return (i != config.end() ? i->second : default_value);
+std::string Config::get(std::string_view key, std::string_view default_value) {
+  const KeyValues::const_iterator i = config.find(std::string(key));
+  return (i != config.end() ? i->second : std::string(default_value));
 }
 
-bool Config::get_bool(const std::string &key, bool default_value) {
-  std::string value = get(key);
-  if (value.empty())
+bool Config::get_bool(std::string_view key, bool default_value) {
+  const auto from_config = get(std::string(key));
+  if (!from_config.has_value())
     return default_value;
   try {
-    return to<bool>(value);
+    return to<bool>(from_config.value());
   } catch (...) {
-    WARN("malformed boolean entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
+    WARN("malformed boolean entry \"" + from_config.value() + "\" for key \"" + key + "\"" + //
+         " in configuration file - ignored");
     return default_value;
   }
 }
 
-int Config::get_int(const std::string &key, int default_value) {
-  std::string value = get(key);
-  if (value.empty())
+int Config::get_int(std::string_view key, int default_value) {
+  const auto from_config = get(std::string(key));
+  if (!from_config.has_value())
     return default_value;
   try {
-    return to<int>(value);
+    return to<int>(from_config.value());
   } catch (...) {
-    WARN("malformed integer entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
+    WARN("malformed integer entry \"" + from_config.value() + "\" for key \"" + key + "\"" + //
+         " in configuration file - ignored");
     return default_value;
   }
 }
 
-float Config::get_float(const std::string &key, float default_value) {
-  std::string value = get(key);
-  if (value.empty())
+float Config::get_float(std::string_view key, float default_value) {
+  const auto from_config = get(std::string(key));
+  if (!from_config.has_value())
     return default_value;
   try {
-    return to<float>(value);
+    return to<float>(from_config.value());
   } catch (...) {
-    WARN("malformed floating-point entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
+    WARN("malformed floating-point entry \"" + from_config.value() + "\" for key \"" + key + "\"" + //
+         " in configuration file - ignored");
     return default_value;
   }
 }
 
-void Config::get_RGB(const std::string &key, float *ret, float default_R, float default_G, float default_B) {
-  std::string value = get(key);
-  if (!value.empty()) {
-    try {
-      std::vector<default_type> V(parse_floats(value));
-      if (V.size() < 3)
-        throw Exception("malformed RGB entry \"" + value + "\" for key \"" + key +
-                        "\" in configuration file - ignored");
-      ret[0] = V[0];
-      ret[1] = V[1];
-      ret[2] = V[2];
-    } catch (Exception) {
-    }
-  } else {
-    ret[0] = default_R;
-    ret[1] = default_G;
-    ret[2] = default_B;
+Eigen::Array3f Config::get_RGB(std::string_view key, const Eigen::Array3f &default_value) {
+  const auto from_config = get(std::string(key));
+  if (!from_config.has_value())
+    return default_value;
+  try {
+    std::vector<default_type> V(parse_floats(from_config.value()));
+    if (V.size() < 3)
+      throw Exception("malformed RGB entry \"" + from_config.value() + "\" for key \"" + key + "\"" + //
+                      "in configuration file - ignored");
+    return {static_cast<float>(V[0]), static_cast<float>(V[1]), static_cast<float>(V[2])};
+  } catch (Exception &) {
+    return default_value;
   }
 }
 

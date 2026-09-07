@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2025 the MRtrix3 contributors.
+# Copyright (c) 2008-2026 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -113,6 +113,9 @@ def execute(): #pylint: disable=unused-variable
   else:
     run.command(f'mrconvert {app.ARGS.t1} T1.nii -strides -1,+2,+3',
                 preserve_pipes=True)
+
+  if app.VERBOSITY >= 3:
+    run.command('labelvalidate parc.mif')
 
   # Run FIRST
   first_input_is_brain_extracted = ''

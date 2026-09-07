@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -64,14 +64,19 @@ template <class Method> void calibrate(Method &method) {
   const float max_angle = std::isfinite(method.S.max_angle_ho) ? method.S.max_angle_ho : method.S.max_angle_1o;
 
   std::vector<Pair> amps;
-  for (float incl = 0.0; incl < max_angle; incl += 0.001) {
+  // for (float incl = 0.0; incl < max_angle; incl += 0.001) {
+  const size_t incl_maxindex = static_cast<size_t>(std::floor(1000.0F * max_angle));
+  for (size_t incl_index = 0; incl_index <= incl_maxindex; ++incl_index) {
+    const float incl = 0.001F * incl_index;
     amps.push_back(Pair(incl, calibrate_func(incl)));
-    if (!std::isfinite(amps.back().amp) || amps.back().amp <= 0.0)
+    if (!std::isfinite(amps.back().amp) || amps.back().amp <= 0.0F)
       break;
   }
   float zero = amps.back().incl;
 
-  float N_min = Inf, theta_min = NaN, ratio = NaN;
+  float N_min = InfF;
+  float theta_min = NaNF;
+  float ratio = NaNF;
   for (size_t i = 1; i < amps.size(); ++i) {
     float N = Math::pow2(max_angle);
     float Ns = N * (1.0 + amps[0].amp / amps[i].amp) / (2.0 * Math::pow2(zero));

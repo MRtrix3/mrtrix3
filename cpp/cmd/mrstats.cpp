@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,9 +15,11 @@
  */
 
 #include <iomanip>
+#include <vector>
 
 #include "command.h"
 #include "datatype.h"
+#include "enum.h"
 #include "image.h"
 #include "image_helpers.h"
 #include "memory.h"
@@ -94,7 +96,6 @@ void run_volume(Stats::Stats &stats, Image<complex_type> &data, Image<bool> &mas
 }
 
 void run() {
-
   auto header = Header::open(argument[0]);
   if (header.ndim() > 4)
     throw Exception("mrstats is not designed to handle images greater than 4D");
@@ -109,10 +110,11 @@ void run() {
     check_dimensions(mask, header, 0, 3);
   }
 
-  std::vector<std::string> fields;
+  std::vector<Stats::field_t> fields;
   opt = get_options("output");
+  fields.reserve(opt.size());
   for (size_t n = 0; n < opt.size(); ++n)
-    fields.push_back(opt[n][0]);
+    fields.push_back(MR::Enum::from_name<Stats::field_t>(opt[n][0]));
 
   if (App::log_level && fields.empty())
     Stats::print_header(is_complex);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,8 +34,10 @@ using point_type = typename Streamline<>::point_type;
 constexpr value_type hermite_tension = value_type(0.1);
 
 class Base {
-public:
+protected:
   Base() {}
+
+public:
   virtual ~Base() {}
 
   virtual Base *clone() const = 0;
@@ -44,6 +46,10 @@ public:
 };
 
 template <class Derived> class BaseCRTP : public Base {
+protected:
+  // NOLINTNEXTLINE(bugprone-crtp-constructor-accessibility)
+  BaseCRTP() = default;
+
 public:
   virtual Base *clone() const { return new Derived(static_cast<Derived const &>(*this)); }
 };

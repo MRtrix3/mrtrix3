@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -240,9 +240,9 @@ Window::~Window() {
 }
 
 void Window::open_slot() {
-  std::string coef_file = Dialog::File::get_file(this, "Select SH coefficients file");
-  if (!coef_file.empty())
-    set_values(coef_file);
+  auto load_paths = Dialog::File::input_filepath(this, "Select SH coefficients file");
+  if (!load_paths.empty())
+    set_values(load_paths.single_selection);
 }
 
 void Window::close_slot() {
@@ -294,9 +294,9 @@ void Window::next_slot() { set_values(current + 1); }
 void Window::previous_10_slot() { set_values(current - 10); }
 void Window::next_10_slot() { set_values(current + 10); }
 
-void Window::set_values(const std::string &filename) {
+void Window::set_values(const std::filesystem::path &file_path) {
   try {
-    values = File::Matrix::load_matrix<float>(filename);
+    values = File::Matrix::load_matrix<float>(file_path);
     if (values.cols() == 0 || values.rows() == 0)
       throw Exception("invalid matrix of SH coefficients");
 
@@ -306,7 +306,7 @@ void Window::set_values(const std::string &filename) {
     render_frame->set_lmax(is_response ? (values.cols() - 1) * 2 : Math::SH::LforN(values.cols()));
     lmax_group->actions()[render_frame->get_lmax() / 2]->setChecked(true);
 
-    name = Path::basename(filename);
+    name = file_path.filename().string();
     set_values(0);
   } catch (Exception &E) {
     E.display();
@@ -326,7 +326,7 @@ void Window::set_values(int row) {
 
     if (is_response) {
       val = decltype(val)::Zero(Math::SH::NforL(2 * (values.cols() - 1)));
-      for (size_t n = 0; n < size_t(values.cols()); n++)
+      for (size_t n = 0; n < static_cast<size_t>(values.cols()); n++)
         val[Math::SH::index(2 * n, 0)] = values(current, n);
     } else
       val = values.row(current);

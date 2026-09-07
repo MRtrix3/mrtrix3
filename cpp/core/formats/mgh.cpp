@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,7 +17,6 @@
 #include "file/mgh.h"
 #include "file/ofstream.h"
 #include "file/path.h"
-#include "file/utils.h"
 #include "formats/list.h"
 #include "header.h"
 #include "image_io/default.h"
@@ -26,10 +25,10 @@
 namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> MGH::read(Header &H) const {
-  if (!Path::has_suffix(H.name(), ".mgh"))
+  if (const_cast<const Header &>(H).path().extension() != ".mgh")
     return std::unique_ptr<ImageIO::Base>();
 
-  std::ifstream in(H.name(), std::ios_base::binary);
+  std::ifstream in(const_cast<const Header &>(H).path(), std::ios_base::binary);
   File::MGH::read_header(H, in);
 
   // Remaining header items appear AFTER the data
@@ -40,25 +39,26 @@ std::unique_ptr<ImageIO::Base> MGH::read(Header &H) const {
   in.close();
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(H.name(), File::MGH::data_offset));
+  io_handler->files.push_back(File::Entry(H.path(), File::MGH::data_offset));
 
   return io_handler;
 }
 
 bool MGH::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(H.name(), ".mgh"))
+  if (const_cast<const Header &>(H).path().extension() != ".mgh")
     return (false);
   return File::MGH::check(H, num_axes);
 }
 
 std::unique_ptr<ImageIO::Base> MGH::create(Header &H) const {
-  File::OFStream out(H.name(), std::ios_base::binary);
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  File::OFStream out(hpath, std::ios_base::binary);
   File::MGH::write_header(H, out);
   out.seekp(File::MGH::data_offset + footprint(H));
   File::MGH::write_other(H, out);
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(H.name(), File::MGH::data_offset));
+  io_handler->files.push_back(File::Entry(hpath, File::MGH::data_offset));
 
   return io_handler;
 }

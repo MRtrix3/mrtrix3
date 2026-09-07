@@ -1,4 +1,6 @@
 include(FetchContent)
+include(MacOSUniversalSlang)
+
 
 # Eigen
 if(MRTRIX_USE_SYSTEM_EIGEN)
@@ -24,6 +26,16 @@ else()
         set_target_properties(Eigen3 PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${eigen3_SOURCE_DIR})
     endif()
 endif()
+
+# Wrapper that re-exposes Eigen's headers via -isystem so that the high
+# warning level (and -Werror) applied to MRtrix3 sources does not flag
+# diagnostics originating from within Eigen headers. Consumers should link
+# against mrtrix::eigen rather than Eigen3::Eigen directly.
+add_library(mrtrix-eigen INTERFACE)
+add_library(mrtrix::eigen ALIAS mrtrix-eigen)
+get_target_property(MRTRIX_EIGEN_INCLUDE_DIRS Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)
+target_include_directories(mrtrix-eigen SYSTEM INTERFACE ${MRTRIX_EIGEN_INCLUDE_DIRS})
+target_link_libraries(mrtrix-eigen INTERFACE Eigen3::Eigen)
 
 
 # Json for Modern C++
@@ -60,25 +72,19 @@ if(MRTRIX_USE_SYSTEM_NIFTI)
 else()
     set(NIFTI1_URL "https://raw.githubusercontent.com/NIFTI-Imaging/nifti_clib/master/nifti2/nifti1.h")
     set(NIFTI2_URL "https://raw.githubusercontent.com/NIFTI-Imaging/nifti_clib/master/nifti2/nifti2.h")
-    # DOWNLOAD_NO_EXTRACT for FetchContent is only available in CMake 3.18 and later
-    if(CMAKE_VERSION VERSION_LESS 3.18)
-        file(DOWNLOAD ${NIFTI1_URL} "${CMAKE_CURRENT_BINARY_DIR}/nifti/nifti1.h")
-        file(DOWNLOAD ${NIFTI2_URL} "${CMAKE_CURRENT_BINARY_DIR}/nifti/nifti2.h")
-        set(NIFTI_INCLUDE_DIRS "${CMAKE_CURRENT_BINARY_DIR}/nifti")
-    else()
-        FetchContent_Declare(
-            nifti1
-            DOWNLOAD_NO_EXTRACT ON
-            URL ${NIFTI1_URL}
-        )
-        FetchContent_Declare(
-            nifti2
-            DOWNLOAD_NO_EXTRACT ON
-            URL ${NIFTI2_URL}
-        )
-        FetchContent_MakeAvailable(nifti1 nifti2)
-        set(NIFTI_INCLUDE_DIRS "${nifti1_SOURCE_DIR};${nifti2_SOURCE_DIR}")
-    endif()
+
+    FetchContent_Declare(
+        nifti1
+        DOWNLOAD_NO_EXTRACT ON
+        URL ${NIFTI1_URL}
+    )
+    FetchContent_Declare(
+        nifti2
+        DOWNLOAD_NO_EXTRACT ON
+        URL ${NIFTI2_URL}
+    )
+    FetchContent_MakeAvailable(nifti1 nifti2)
+    set(NIFTI_INCLUDE_DIRS "${nifti1_SOURCE_DIR};${nifti2_SOURCE_DIR}")
 endif()
 
 add_library(nifti INTERFACE)
@@ -101,4 +107,172 @@ if(MRTRIX_BUILD_TESTS)
         )
         FetchContent_MakeAvailable(googletest)
     endif()
+endif()
+
+
+if(MRTRIX_ENABLE_GPU)
+    # Dawn
+
+    # Threads (required by Dawn exported targets)
+    find_package(Threads REQUIRED)
+
+    if(NOT MRTRIX_USE_SYSTEM_DAWN)
+        message(STATUS "Downloading prebuilt binaries for Dawn...")
+        include(FetchContent)
+        set(FETCHCONTENT_QUIET OFF)
+
+        if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            set(DAWN_PLATFORM "linux")
+        elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+            set(DAWN_PLATFORM "macos")
+        elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+            set(DAWN_PLATFORM "windows-msys2")
+        else()
+            message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
+        endif()
+
+        set(DAWN_VERSION 7750)
+
+
+        set(DAWN_BINARIES_URL_PREFIX
+            "https://github.com/mrtrix3/webgpu-dawn-binaries/releases/download/chromium")
+        set(DAWN_BINARIES_URL
+            ${DAWN_BINARIES_URL_PREFIX}-${DAWN_VERSION}/webgpu-dawn-chromium-${DAWN_VERSION}-${DAWN_PLATFORM}.zip
+        )
+
+        FetchContent_Declare(
+            dawn
+            DOWNLOAD_NO_PROGRESS         1
+            URL ${DAWN_BINARIES_URL}
+        )
+        FetchContent_MakeAvailable(dawn)
+
+        set(DAWN_LIB_DIR_NAME "lib")
+        set(
+          Dawn_DIR
+          "${dawn_SOURCE_DIR}/${DAWN_LIB_DIR_NAME}/cmake/Dawn"
+          CACHE PATH "Folder containing DawnConfig.cmake"
+          FORCE
+        )
+        set(FETCHCONTENT_QUIET ON)
+    endif()
+
+
+    # Slang
+
+    if(MRTRIX_USE_SYSTEM_SLANG)
+        find_package(slang CONFIG REQUIRED)
+    else()
+        message(STATUS "Downloading prebuilt binaries for Slang...")
+        set(SLANG_VERSION "2026.5.1" CACHE STRING "Slang version to download from GitHub releases")
+        set(SLANG_DOWNLOAD_URL_PREFIX
+            "https://github.com/shader-slang/slang/releases/download/v${SLANG_VERSION}"
+        )
+
+        if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            set(SLANG_OS "linux")
+        elseif(APPLE)
+            set(SLANG_OS "macos")
+        else()
+            set(SLANG_OS "windows")
+        endif()
+
+        set(slang_use_universal FALSE)
+        if(APPLE AND CMAKE_OSX_ARCHITECTURES)
+            set(slang_requested_arches ${CMAKE_OSX_ARCHITECTURES})
+            list(LENGTH slang_requested_arches slang_requested_arch_count)
+
+            if("x86_64" IN_LIST slang_requested_arches AND "arm64" IN_LIST slang_requested_arches)
+                set(slang_use_universal TRUE)
+            elseif(slang_requested_arch_count GREATER 1)
+                message(FATAL_ERROR "Unsupported macOS architecture set for bundled Slang: ${CMAKE_OSX_ARCHITECTURES}")
+            elseif("arm64" IN_LIST slang_requested_arches)
+                set(SLANG_ARCH "aarch64")
+            else()
+                set(SLANG_ARCH "x86_64")
+            endif()
+        elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
+            set(SLANG_ARCH "aarch64")
+        else()
+            set(SLANG_ARCH "x86_64")
+        endif()
+
+        if(slang_use_universal)
+            message(STATUS "Downloading Slang ${SLANG_VERSION} (macos/x86_64 + macos/aarch64)...")
+
+            mrtrix_prepare_universal_slang(
+                "${SLANG_DOWNLOAD_URL_PREFIX}/slang-${SLANG_VERSION}-macos-x86_64.zip"
+                "${SLANG_DOWNLOAD_URL_PREFIX}/slang-${SLANG_VERSION}-macos-aarch64.zip"
+                slang_root
+            )
+        else()
+            set(slang_download_url
+                "${SLANG_DOWNLOAD_URL_PREFIX}/slang-${SLANG_VERSION}-${SLANG_OS}-${SLANG_ARCH}.zip"
+            )
+
+            message(STATUS "Downloading Slang ${SLANG_VERSION} (${SLANG_OS}/${SLANG_ARCH})...")
+
+            FetchContent_Declare(
+              slang
+                DOWNLOAD_NO_PROGRESS         1
+                URL                          ${slang_download_url}
+            )
+            FetchContent_MakeAvailable(slang)
+            set(slang_root "${slang_SOURCE_DIR}")
+        endif()
+
+        if(WIN32)
+            set(slang_DIR_PATH "${slang_root}/cmake")
+        else()
+            set(slang_DIR_PATH "${slang_root}/lib/cmake/slang")
+        endif()
+
+        set(
+          slang_DIR
+          "${slang_DIR_PATH}"
+          CACHE PATH "Folder containing SlangConfig.cmake"
+          FORCE
+        )
+    endif()
+endif()
+
+# tcb::span
+if(MRTRIX_USE_SYSTEM_TCB_SPAN)
+    find_path(TCB_SPAN_INCLUDE_DIR
+        NAMES tcb/span.hpp
+        PATHS /usr/include /usr/local/include
+    )
+    if(NOT TCB_SPAN_INCLUDE_DIR)
+        message(FATAL_ERROR "Could not find tcb::span headers. Please install tcb::span or disable MRTRIX_USE_SYSTEM_TCB_SPAN.")
+    endif()
+
+    add_library(tcb_span INTERFACE)
+    target_include_directories(tcb_span INTERFACE ${TCB_SPAN_INCLUDE_DIR})
+    add_library(tcb::span ALIAS tcb_span)
+else()
+    FetchContent_Declare(
+        tcb_span
+        GIT_REPOSITORY https://github.com/tcbrindle/span.git
+        GIT_TAG        836dc6a0efd9849cb194e88e4aa2387436bb079b
+        SOURCE_SUBDIR  non_existent_dir
+    )
+    FetchContent_MakeAvailable(tcb_span)
+
+    add_library(tcb_span INTERFACE)
+    target_include_directories(tcb_span INTERFACE ${tcb_span_SOURCE_DIR}/include)
+    add_library(tcb::span ALIAS tcb_span)
+endif()
+
+# magic_enum
+set(MAGIC_ENUM_VERSION 0.9.7)
+if(MRTRIX_USE_SYSTEM_MAGIC_ENUM)
+    find_package(magic_enum ${MAGIC_ENUM_VERSION} CONFIG REQUIRED)
+else()
+    set(magic_enum_url "https://github.com/Neargye/magic_enum/archive/refs/tags/v${MAGIC_ENUM_VERSION}.tar.gz")
+    FetchContent_Declare(
+        magic_enum
+        DOWNLOAD_EXTRACT_TIMESTAMP ON
+        URL ${magic_enum_url}
+    )
+    FetchContent_MakeAvailable(magic_enum)
 endif()

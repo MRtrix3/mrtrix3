@@ -1,0 +1,15 @@
+#!/bin/bash
+# Regression test for degenerate surfaces that occupy only a couple of voxels.
+# Here the two seed voxels share only a vertex (corner); the smoothing filter treats
+#   them as a single connected mesh, again yielding a sub-voxel-thin surface whose
+#   voxelised representation does not form a closed shell on the template grid.
+# Prior to the fix, MR::Surface::Algo::mesh2image() labelled the entire field of view
+#   as inside the surface (see twovoxels_sharededge test for details).
+# Reproduce the 5ttgen hsvs pipeline (voxel2mesh -> meshfilter smooth -> mesh2voxel),
+#   then assert that no voxel is (near-)fully classified as inside the surface.
+voxel2mesh mesh2voxel/twovoxels_sharedvertex.mif -threshold 0.5 tmp-init.vtk -force
+meshfilter tmp-init.vtk smooth tmp-smooth.vtk -force
+mesh2voxel tmp-smooth.vtk mesh2voxel/twovoxels_sharedvertex.mif tmp-pvf.mif -force
+mrcalc tmp-pvf.mif 0.9 -ge tmp-saturated.mif -force
+mrcalc tmp-pvf.mif 0 -mult tmp-zero.mif -force
+testing_diff_image tmp-saturated.mif tmp-zero.mif -abs 0.5

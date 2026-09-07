@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,11 +14,15 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <vector>
+
 #include "header.h"
 #include "image.h"
 
 #include "file/matrix.h"
-#include "misc/bitset.h"
+#include "fixel/helpers.h"
+#include "math/entropy.h"
+#include "math/math.h"
 
 #include "dwi/tractography/SIFT2/coeff_optimiser.h"
 #include "dwi/tractography/SIFT2/fixel_updater.h"
@@ -27,6 +31,7 @@
 #include "dwi/tractography/SIFT2/tckfactor.h"
 
 #include "dwi/tractography/SIFT/track_index_range.h"
+#include "dwi/tractography/SIFT/types.h"
 
 namespace MR::DWI::Tractography::SIFT2 {
 
@@ -36,7 +41,7 @@ void TckFactor::set_reg_lambdas(const double lambda_tikhonov, const double lambd
   for (size_t i = 1; i != fixels.size(); ++i)
     A += fixels[i].get_weight() * Math::pow2(fixels[i].get_FOD());
 
-  A /= double(num_tracks());
+  A /= static_cast<double>(num_tracks());
   INFO("Constant A scaling regularisation terms to match data term is " + str(A));
   reg_multiplier_tikhonov = lambda_tikhonov * A;
   reg_multiplier_tv = lambda_tv * A;
@@ -59,7 +64,8 @@ void TckFactor::remove_excluded_fixels(const float min_td_frac) {
   const double cf = calc_cost_function();
   SIFT::track_t excluded_count = 0, zero_TD_count = 0;
   double zero_TD_cf_sum = 0.0, excluded_cf_sum = 0.0;
-  for (std::vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i) {
+  std::vector<Fixel>::iterator i = fixels.begin(); // SKip first fixel, which is an intentional null in DWI::Fixel_map<>
+  for (++i; i != fixels.end(); ++i) {
     if (!i->get_orig_TD()) {
       ++zero_TD_count;
       zero_TD_cf_sum += i->get_cost(fixed_mu);
@@ -104,7 +110,7 @@ void TckFactor::test_streamline_length_scaling() {
   const double actual_TD_sum = TD_sum;
   std::ofstream out("mu.csv", std::ios_base::trunc);
   for (int i = -1000; i != 1000; ++i) {
-    const double factor = std::pow(10.0, double(i) / 1000.0);
+    const double factor = std::pow(10.0, static_cast<double>(i) / 1000.0);
     TD_sum = factor * actual_TD_sum;
     out << str(factor) << "," << str(calc_cost_function()) << "\n";
   }
@@ -182,7 +188,7 @@ void TckFactor::estimate_factors() {
   const double init_cf = calc_cost_function();
   double cf_data = init_cf;
   double new_cf = init_cf;
-  double prev_cf = init_cf;
+  double prev_cf = NaN;
   double cf_reg = 0.0;
   const double required_cf_change = -min_cf_decrease_percentage * init_cf;
 
@@ -214,7 +220,7 @@ void TckFactor::estimate_factors() {
   std::unique_ptr<std::ofstream> csv_out;
   if (!csv_path.empty()) {
     csv_out.reset(new std::ofstream());
-    csv_out->open(csv_path.c_str(), std::ios_base::trunc);
+    csv_out->open(csv_path, std::ios_base::trunc);
     (*csv_out)
         << "Iteration,Cost_data,Cost_reg_tik,Cost_reg_tv,Cost_reg,Cost_total,Streamlines,Fixels_excluded,Step_min,Step_"
            "mean,Step_mean_abs,Step_var,Step_max,Coeff_min,Coeff_mean,Coeff_mean_abs,Coeff_var,Coeff_max,Coeff_norm,\n";
@@ -230,7 +236,7 @@ void TckFactor::estimate_factors() {
 
   // Logging which fixels need to be excluded from optimisation in subsequent iterations,
   //   due to driving streamlines to unwanted high weights
-  BitSet fixels_to_exclude(fixels.size());
+  fixel_mask_type fixels_to_exclude(fixel_mask_type::Zero(fixels.size()));
 
   do {
 
@@ -240,7 +246,7 @@ void TckFactor::estimate_factors() {
     // Line search to optimise each coefficient
     StreamlineStats step_stats, coefficient_stats;
     nonzero_streamlines = 0;
-    fixels_to_exclude.clear();
+    fixels_to_exclude.setZero();
     double sum_costs = 0.0;
     {
       SIFT::TrackIndexRangeWriter writer(SIFT::TrackIndexRangeWriter::default_batch_size, num_tracks());
@@ -327,32 +333,20 @@ void TckFactor::report_entropy() const {
   const default_type logP_before = std::log2(P_before);
   const default_type H_before = -coefficients.size() * (P_before * logP_before);
   // After SIFT2:
-  // - First, need normalising factor, which is the reciprocal sum of all streamline weights
-  //   (as opposed to the reciprocal number of streamlines)
-  default_type sum_weights = 0.0;
-  for (ssize_t i = 0; i != coefficients.size(); ++i)
-    sum_weights += std::exp(coefficients[i]);
-  const default_type inv_sum_weights = 1.0 / sum_weights;
-  default_type H_after = 0.0;
-  for (ssize_t i = 0; i != coefficients.size(); ++i) {
-    const default_type P_after = std::exp(coefficients[i]) * inv_sum_weights;
-    const default_type logP_after = std::log2(P_after);
-    H_after += P_after * logP_after;
-  }
-  H_after *= -1.0;
+  const default_type H_after = Math::Entropy::shannons(coefficients.exp());
   const size_t equiv_N = std::round(std::pow(2.0, H_after));
   INFO("Entropy decreased from " + str(H_before, 6) + " to " + str(H_after, 6) + "; " + "this is equivalent to " +
        str(equiv_N) + " equally-weighted streamlines");
 }
 
-void TckFactor::output_factors(const std::string &path) const {
-  if (size_t(coefficients.size()) != contributions.size())
+void TckFactor::output_factors(const std::filesystem::path &path) const {
+  if (static_cast<size_t>(coefficients.size()) != contributions.size())
     throw Exception("Cannot output weighting factors if they have not first been estimated!");
   decltype(coefficients) weights;
   try {
     weights.resize(coefficients.size());
   } catch (...) {
-    WARN("Unable to assign memory for output factor file: \"" + Path::basename(path) + "\" not created");
+    WARN("Unable to assign memory for output factor file: \"" + path.filename().string() + "\" not created");
     return;
   }
   for (SIFT::track_t i = 0; i != num_tracks(); ++i)
@@ -360,16 +354,18 @@ void TckFactor::output_factors(const std::string &path) const {
   File::Matrix::save_vector(weights, path);
 }
 
-void TckFactor::output_coefficients(const std::string &path) const { File::Matrix::save_vector(coefficients, path); }
+void TckFactor::output_coefficients(const std::filesystem::path &path) const {
+  File::Matrix::save_vector(coefficients, path);
+}
 
-void TckFactor::output_TD_images(const std::string &dirpath,
-                                 const std::string &origTD_path,
-                                 const std::string &count_path) const {
+void TckFactor::output_TD_images(const std::filesystem::path &dirpath,
+                                 const std::filesystem::path &origTD_path,
+                                 const std::filesystem::path &count_path) const {
   Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Header H_count;
   H_count.datatype() = DataType::native(DataType::UInt32);
-  Image<float> origTD_image(Image<float>::create(Path::join(dirpath, origTD_path), H));
-  Image<uint32_t> count_image(Image<uint32_t>::create(Path::join(dirpath, count_path), H));
+  Image<float> origTD_image(Image<float>::create(dirpath / origTD_path, H));
+  Image<uint32_t> count_image(Image<uint32_t>::create(dirpath / count_path, H));
   for (auto l = Loop(0)(origTD_image, count_image); l; ++l) {
     const size_t index = count_image.index(0);
     origTD_image.value() = fixels[index].get_orig_TD();
@@ -377,7 +373,7 @@ void TckFactor::output_TD_images(const std::string &dirpath,
   }
 }
 
-void TckFactor::output_all_debug_images(const std::string &dirpath, const std::string &prefix) const {
+void TckFactor::output_all_debug_images(const std::filesystem::path &dirpath, std::string_view prefix) const {
 
   Model<Fixel>::output_all_debug_images(dirpath, prefix);
 
@@ -413,7 +409,8 @@ void TckFactor::output_all_debug_images(const std::string &dirpath, const std::s
   for (size_t i = 1; i != fixels.size(); ++i) {
     if (!std::isfinite(mins[i]))
       mins[i] = std::numeric_limits<double>::quiet_NaN();
-    stdevs[i] = (fixels[i].get_count() > 1) ? (std::sqrt(stdevs[i] / float(fixels[i].get_count() - 1))) : 0.0;
+    stdevs[i] =
+        (fixels[i].get_count() > 1) ? (std::sqrt(stdevs[i] / static_cast<float>(fixels[i].get_count() - 1))) : 0.0;
     if (!std::isfinite(maxs[i]))
       maxs[i] = std::numeric_limits<double>::quiet_NaN();
   }
@@ -421,12 +418,12 @@ void TckFactor::output_all_debug_images(const std::string &dirpath, const std::s
   Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Header H_excluded(H);
   H_excluded.datatype() = DataType::Bit;
-  Image<float> min_image(Image<float>::create(Path::join(dirpath, prefix + "_coeff_min.mif"), H));
-  Image<float> mean_image(Image<float>::create(Path::join(dirpath, prefix + "_coeff_mean.mif"), H));
-  Image<float> stdev_image(Image<float>::create(Path::join(dirpath, prefix + "_coeff_stdev.mif"), H));
-  Image<float> max_image(Image<float>::create(Path::join(dirpath, prefix + "_coeff_max.mif"), H));
-  Image<float> zeroed_image(Image<float>::create(Path::join(dirpath, prefix + "_coeff_zeroed.mif"), H));
-  Image<bool> excluded_image(Image<bool>::create(Path::join(dirpath, prefix + "_excludedfixels.mif"), H_excluded));
+  Image<float> min_image(Image<float>::create(dirpath / (prefix + "_coeff_min.mif"), H));
+  Image<float> mean_image(Image<float>::create(dirpath / (prefix + "_coeff_mean.mif"), H));
+  Image<float> stdev_image(Image<float>::create(dirpath / (prefix + "_coeff_stdev.mif"), H));
+  Image<float> max_image(Image<float>::create(dirpath / (prefix + "_coeff_max.mif"), H));
+  Image<float> zeroed_image(Image<float>::create(dirpath / (prefix + "_coeff_zeroed.mif"), H));
+  Image<bool> excluded_image(Image<bool>::create(dirpath / (prefix + "_excludedfixels.mif"), H_excluded));
 
   for (auto l = Loop(0)(min_image, mean_image, stdev_image, max_image, zeroed_image, excluded_image); l; ++l) {
     const size_t index = min_image.index(0);

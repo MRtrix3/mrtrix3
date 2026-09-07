@@ -22,6 +22,7 @@ if(MRTRIX_WARNINGS_AS_ERRORS)
     target_compile_options(mrtrix-common INTERFACE
         $<$<CXX_COMPILER_ID:MSVC>:/WX>
         $<$<CXX_COMPILER_ID:GNU,Clang>:-Werror>
+        $<$<CXX_COMPILER_ID:GNU>:-Wno-ignored-attributes>
     )
 endif()
 
@@ -29,6 +30,9 @@ endif()
 if(MINGW AND CMAKE_BUILD_TYPE MATCHES "Debug")
     target_compile_options(mrtrix-common INTERFACE -Wa,-mbig-obj)
 endif()
+
+# Add "#pragma once" to precompiled headers to stop clang-tidy confusion
+set(CMAKE_PCH_PROLOGUE "#pragma once")
 
 add_subdirectory(cmd)
 add_subdirectory(core)

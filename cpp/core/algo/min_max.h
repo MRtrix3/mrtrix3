@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,11 +22,11 @@ namespace MR {
 
 //! \cond skip
 namespace {
-template <class ImageType> class __MinMax {
+template <class ImageType> class MinMax {
 public:
   using value_type = typename ImageType::value_type;
 
-  __MinMax(value_type &overall_min, value_type &overall_max)
+  MinMax(value_type &overall_min, value_type &overall_max)
       : overall_min(overall_min),
         overall_max(overall_max),
         min(std::numeric_limits<value_type>::infinity()),
@@ -34,7 +34,7 @@ public:
     overall_min = min;
     overall_max = max;
   }
-  ~__MinMax() {
+  ~MinMax() {
     std::lock_guard<std::mutex> lock(mutex);
     overall_min = std::min(overall_min, min);
     overall_max = std::max(overall_max, max);
@@ -66,9 +66,10 @@ public:
   value_type &overall_max;
   value_type min, max;
 
+private:
   static std::mutex mutex;
 };
-template <class ImageType> std::mutex __MinMax<ImageType>::mutex;
+template <class ImageType> std::mutex MinMax<ImageType>::mutex;
 } // namespace
 //! \endcond
 
@@ -79,7 +80,7 @@ inline void min_max(ImageType &in,
                     size_t from_axis = 0,
                     size_t to_axis = std::numeric_limits<size_t>::max()) {
   ThreadedLoop("finding min/max of \"" + shorten(in.name()) + "\"", in, from_axis, to_axis)
-      .run(__MinMax<ImageType>(min, max), in);
+      .run(MinMax<ImageType>(min, max), in);
 }
 
 template <class ImageType, class MaskType>
@@ -90,7 +91,7 @@ inline void min_max(ImageType &in,
                     size_t from_axis = 0,
                     size_t to_axis = std::numeric_limits<size_t>::max()) {
   ThreadedLoop("finding min/max of \"" + shorten(in.name()) + "\"", in, from_axis, to_axis)
-      .run(__MinMax<ImageType>(min, max), in, mask);
+      .run(MinMax<ImageType>(min, max), in, mask);
 }
 
 } // namespace MR

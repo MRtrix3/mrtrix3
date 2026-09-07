@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,7 +22,7 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> choices = {"One", "Two", "Three"};
+enum class Choice { One, Two, Three };
 
 // clang-format off
 void usage() {
@@ -67,7 +67,7 @@ void usage() {
     + Argument("values").type_sequence_float()
 
   + Option("choice", "a choice from a set of options")
-    + Argument("item").type_choice(choices)
+    + Argument("item").type_choice<Choice>()
 
   + Option("file_in", "an input file")
     + Argument("input").type_file_in()
@@ -79,7 +79,7 @@ void usage() {
     + Argument("input").type_directory_in()
 
   + Option("dir_out", "an output directory")
-    + Argument("output").type_directory_out()
+    + Argument("output").type_directory_out(DirOutMode::MayExist)
 
   + Option("tracks_in", "an input tractogram")
     + Argument("input").type_tracks_in()
@@ -94,11 +94,11 @@ void usage() {
                       .type_float()
                       .type_sequence_int()
                       .type_sequence_float()
-                      .type_choice(choices)
+                      .type_choice<Choice>()
                       .type_file_in()
                       .type_file_out()
                       .type_directory_in()
-                      .type_directory_out()
+                      .type_directory_out(DirOutMode::MayExist)
                       .type_tracks_in()
                       .type_tracks_out()
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,17 +16,12 @@
 
 #pragma once
 
-#include <algorithm>
-#include <cerrno>
-#include <cstdlib>
-#include <cstring>
-#include <dirent.h>
+#include <filesystem>
+#include <stdlib.h>
 #include <string>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
+#include <string_view>
+#include <vector>
 
-#include "exception.h"
 #include "mrtrix.h"
 #include "types.h"
 
@@ -48,35 +43,16 @@
 #define PATH_SEPARATORS "/" // check_syntax off
 #endif
 
+#include <filesystem>
+
 namespace MR::Path {
 
-extern const std::string home_env;
+bool has_suffix(const std::filesystem::path &name, std::string_view suffix);
+bool has_suffix(const std::filesystem::path &name, const std::initializer_list<const std::string> &suffix_list);
+bool has_suffix(const std::filesystem::path &name, const std::vector<std::string> &suffix_list);
 
-std::string basename(const std::string &name);
-std::string dirname(const std::string &name);
-std::string join(const std::string &first, const std::string &second);
-bool exists(const std::string &path);
-bool is_dir(const std::string &path);
-bool is_file(const std::string &path);
-bool has_suffix(const std::string &name, const std::string &suffix);
-bool has_suffix(const std::string &name, const std::initializer_list<const std::string> &suffix_list);
-bool has_suffix(const std::string &name, const std::vector<std::string> &suffix_list);
-bool is_mrtrix_image(const std::string &name);
-char delimiter(const std::string &filename);
-std::string cwd();
-std::string home();
+bool is_mrtrix_image(const std::filesystem::path &path);
 
-class Dir {
-public:
-  Dir(const std::string &name);
-  ~Dir();
-
-  std::string read_name();
-  void rewind() { rewinddir(p); }
-  void close();
-
-protected:
-  DIR *p;
-};
+const std::filesystem::path &home();
 
 } // namespace MR::Path

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,6 +34,9 @@ constexpr size_t pve_nsamples = Math::pow3(pve_os_ratio);
 
 void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
 
+  if (image.ndim() < 3)
+    throw Exception("Template voxel grid for mesh2image operation must be at least 3D");
+
   // For initial segmentation of mesh - identify voxels on the mesh, inside & outside
   enum vox_mesh_t { UNDEFINED, ON_MESH, PRELIM_OUTSIDE, PRELIM_INSIDE, FILL_TEMP, OUTSIDE, INSIDE };
 
@@ -57,7 +60,8 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
     if (!mesh.have_normals())
       mesh.calculate_normals();
 
-    static const Vox adj_voxels[6] = {{-1, 0, 0}, {+1, 0, 0}, {0, -1, 0}, {0, +1, 0}, {0, 0, -1}, {0, 0, +1}};
+    static const std::array<Vox, 6> adj_voxels = {
+        Vox(-1, 0, 0), Vox(+1, 0, 0), Vox(0, -1, 0), Vox(0, +1, 0), Vox(0, 0, -1), Vox(0, 0, +1)};
 
     // Compute normals for polygons
     polygon_normals.reserve(mesh.num_polygons());
@@ -70,10 +74,29 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
     // Create some memory to work with:
     // Stores a flag for each voxel as encoded in enum vox_mesh_t
     Header H(image);
+    H.ndim() = 3;
     H.datatype() = DataType::UInt8;
     auto init_seg = Image<uint8_t>::scratch(H);
     for (auto l = Loop(init_seg)(init_seg); l; ++l)
       init_seg.value() = vox_mesh_t::UNDEFINED;
+
+#ifdef MRTRIX_MESH2IMAGE_DEBUG
+    // Preprocessor-gated export of intermediate image data,
+    //   used to diagnose mis-classification of voxels as inside / outside the surface.
+    // Enable by compiling this translation unit with -DMRTRIX_MESH2IMAGE_DEBUG.
+    auto debug_export_u8 = [](Image<uint8_t> &img, std::string_view path) {
+      Header H_out(img);
+      auto out = Image<uint8_t>::create(std::string(path), H_out);
+      for (auto l = Loop(img)(img, out); l; ++l)
+        out.value() = img.value();
+    };
+    auto debug_export_f32 = [](Image<float> &img, std::string_view path) {
+      Header H_out(img);
+      auto out = Image<float>::create(std::string(path), H_out);
+      for (auto l = Loop(img)(img, out); l; ++l)
+        out.value() = img.value();
+    };
+#endif
 
     // Map each polygon to the underlying voxels
     for (size_t poly_index = 0; poly_index != mesh.num_polygons(); ++poly_index) {
@@ -98,7 +121,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
       // Constrain to lie within the dimensions of the image
       for (size_t axis = 0; axis != 3; ++axis) {
         lower_bound[axis] = std::max(0, lower_bound[axis]);
-        upper_bound[axis] = std::min(int(H.size(axis) - 1), upper_bound[axis]);
+        upper_bound[axis] = std::min(static_cast<int>(H.size(axis) - 1), upper_bound[axis]);
       }
 
       // For all voxels within this rectangular region, assign this polygon to the map
@@ -118,14 +141,14 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
           default_type poly_low = std::numeric_limits<default_type>::infinity();
           default_type poly_high = -std::numeric_limits<default_type>::infinity();
 
-          static const Eigen::Vector3d voxel_offsets[8] = {{-0.5, -0.5, -0.5},
-                                                           {-0.5, -0.5, 0.5},
-                                                           {-0.5, 0.5, -0.5},
-                                                           {-0.5, 0.5, 0.5},
-                                                           {0.5, -0.5, -0.5},
-                                                           {0.5, -0.5, 0.5},
-                                                           {0.5, 0.5, -0.5},
-                                                           {0.5, 0.5, 0.5}};
+          static const std::array<Eigen::Vector3d, 8> voxel_offsets = {Eigen::Vector3d(-0.5, -0.5, -0.5),
+                                                                       Eigen::Vector3d(-0.5, -0.5, 0.5),
+                                                                       Eigen::Vector3d(-0.5, 0.5, -0.5),
+                                                                       Eigen::Vector3d(-0.5, 0.5, 0.5),
+                                                                       Eigen::Vector3d(0.5, -0.5, -0.5),
+                                                                       Eigen::Vector3d(0.5, -0.5, 0.5),
+                                                                       Eigen::Vector3d(0.5, 0.5, -0.5),
+                                                                       Eigen::Vector3d(0.5, 0.5, 0.5)};
 
           for (size_t i = 0; i != 8; ++i) {
             const Eigen::Vector3d v(vox.matrix().cast<default_type>() + voxel_offsets[i]);
@@ -200,6 +223,11 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
     }
     ++progress;
 
+#ifdef MRTRIX_MESH2IMAGE_DEBUG
+    // Stage 1: voxels intersected by the mesh (vox_mesh_t::ON_MESH); everything else still UNDEFINED
+    debug_export_u8(init_seg, "mesh2image_debug_1_onmesh.mif");
+#endif
+
     // For *any* voxel not on the mesh but neighbouring a voxel in which a vertex lies,
     //   track a floating-point value corresponding to its distance from the plane defined
     //   by the normal at the vertex.
@@ -214,7 +242,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
       for (adj_voxel[2] = centre_voxel[2] - 1; adj_voxel[2] <= centre_voxel[2] + 1; ++adj_voxel[2]) {
         for (adj_voxel[1] = centre_voxel[1] - 1; adj_voxel[1] <= centre_voxel[1] + 1; ++adj_voxel[1]) {
           for (adj_voxel[0] = centre_voxel[0] - 1; adj_voxel[0] <= centre_voxel[0] + 1; ++adj_voxel[0]) {
-            if (!is_out_of_bounds(H, adj_voxel) && (adj_voxel - centre_voxel).any()) {
+            if (!is_out_of_bounds(H, adj_voxel, 0, 3) && (adj_voxel - centre_voxel).any()) {
               const Eigen::Vector3d offset(adj_voxel.cast<default_type>().matrix() - mesh.vert(i));
               const default_type dp_normal = offset.dot(mesh.norm(i));
               const default_type offset_on_plane = (offset - (mesh.norm(i) * dp_normal)).norm();
@@ -233,6 +261,13 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
         init_seg.value() = sum_distances.value() < 0.0 ? vox_mesh_t::PRELIM_INSIDE : vox_mesh_t::PRELIM_OUTSIDE;
     }
     ++progress;
+
+#ifdef MRTRIX_MESH2IMAGE_DEBUG
+    // Stage 2: signed sum-of-distances field used to seed the preliminary inside / outside classification
+    debug_export_f32(sum_distances, "mesh2image_debug_2_sumdist.mif");
+    // Stage 3: preliminary classification (UNDEFINED / ON_MESH / PRELIM_INSIDE / PRELIM_OUTSIDE)
+    debug_export_u8(init_seg, "mesh2image_debug_3_prelim.mif");
+#endif
 
     // Can't guarantee that mesh might have a single isolated polygon pointing the wrong way
     // Therefore, need to:
@@ -275,30 +310,39 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
             }
           }
         } while (!to_expand.empty());
+        // Count how many of the eight corners of the field of view are contained
+        //   within this connected region.
+        // This is a topological signal that is more reliable than the preliminary
+        //   normal-based inside/outside vote:
+        //   a bounded interior cannot contain a corner of the FoV, whereas the
+        //   exterior background necessarily wraps around to encompass all eight.
+        size_t corner_count = 0;
+        for (const auto &voxel : to_fill) {
+          if ((voxel[0] == 0 || voxel[0] == H.size(0) - 1) && (voxel[1] == 0 || voxel[1] == H.size(1) - 1) &&
+              (voxel[2] == 0 || voxel[2] == H.size(2) - 1))
+            ++corner_count;
+        }
         vox_mesh_t fill_value = vox_mesh_t::UNDEFINED;
-        if (prelim_inside_count == prelim_outside_count && sum_sum_distances) {
+        // A region that encompasses every corner of the FoV wraps the entire volume
+        //   and therefore cannot be a bounded interior; it must lie outside the structure.
+        // This must take precedence over the preliminary normal-based vote: for degenerate
+        //   or sub-voxel meshes the voxelised surface does not form a closed shell separating
+        //   interior from exterior, so the flood fill merges the two into a single region whose
+        //   normal-based vote can be unanimous yet wrong (e.g. labelling the whole FoV inside).
+        if (corner_count == 8 || prelim_outside_count > 10 * prelim_inside_count) {
+          fill_value = vox_mesh_t::OUTSIDE;
+        } else if (prelim_inside_count == prelim_outside_count && sum_sum_distances != 0.0F) {
           fill_value = sum_sum_distances < 0.0f ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
         } else if (prelim_inside_count > 10 * prelim_outside_count) {
           fill_value = vox_mesh_t::INSIDE;
-        } else if (prelim_outside_count > 10 * prelim_inside_count) {
-          fill_value = vox_mesh_t::OUTSIDE;
         } else {
           // Residual ambiguity about whether the connected region is inside or outside the surface
           // What other tests can we perform to make this decision?
-          // If all eight corners of the FoV are included in to_fill, we can be
-          //   reasonably confident that this connected region lies outside the structure
-          size_t corner_count = 0;
-          for (const auto &voxel : to_fill) {
-            if ((voxel[0] == 0 || voxel[0] == H.size(0) - 1) && (voxel[1] == 0 || voxel[1] == H.size(1) - 1) &&
-                (voxel[2] == 0 || voxel[2] == H.size(2) - 1))
-              ++corner_count;
-          }
-          if (corner_count == 8) {
-            fill_value = vox_mesh_t::OUTSIDE;
-          } else if (!corner_count) {
+          // A region containing none of the FoV corners is most consistent with a bounded interior
+          if (corner_count == 0) {
             fill_value = vox_mesh_t::INSIDE;
-          } else if (sum_sum_distances) {
-            fill_value = sum_sum_distances < 0.0f ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
+          } else if (sum_sum_distances != 0.0F) {
+            fill_value = sum_sum_distances < 0.0F ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
           } else {
             Exception e("Internal error: fundamental ambiguity in voxel-based segmentation of surface");
             e.push_back("Fill region size: " + str(to_fill.size()));
@@ -317,12 +361,22 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
     }
     ++progress;
 
+#ifdef MRTRIX_MESH2IMAGE_DEBUG
+    // Stage 4: classification after flood-fill + majority vote, before residual UNDEFINED -> OUTSIDE
+    debug_export_u8(init_seg, "mesh2image_debug_4_filled.mif");
+#endif
+
     // Any voxel not yet processed must lie outside the structure(s)
     for (auto l = Loop(init_seg)(init_seg); l; ++l) {
       if (init_seg.value() == vox_mesh_t::UNDEFINED)
         init_seg.value() = vox_mesh_t::OUTSIDE;
     }
     ++progress;
+
+#ifdef MRTRIX_MESH2IMAGE_DEBUG
+    // Stage 5: final ternary segmentation (ON_MESH / INSIDE / OUTSIDE)
+    debug_export_u8(init_seg, "mesh2image_debug_5_final.mif");
+#endif
 
     // Write initial ternary segmentation
     for (auto l = Loop(init_seg)(init_seg, image); l; ++l) {
@@ -375,11 +429,14 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
       offsets_to_test.reset(new std::vector<Eigen::Vector3d>());
       offsets_to_test->reserve(pve_nsamples);
       for (size_t x_idx = 0; x_idx != pve_os_ratio; ++x_idx) {
-        const default_type x = -0.5 + ((default_type(x_idx) + 0.5) / default_type(pve_os_ratio));
+        const default_type x =
+            -0.5 + ((static_cast<default_type>(x_idx) + 0.5) / static_cast<default_type>(pve_os_ratio));
         for (size_t y_idx = 0; y_idx != pve_os_ratio; ++y_idx) {
-          const default_type y = -0.5 + ((default_type(y_idx) + 0.5) / default_type(pve_os_ratio));
+          const default_type y =
+              -0.5 + ((static_cast<default_type>(y_idx) + 0.5) / static_cast<default_type>(pve_os_ratio));
           for (size_t z_idx = 0; z_idx != pve_os_ratio; ++z_idx) {
-            const default_type z = -0.5 + ((default_type(z_idx) + 0.5) / default_type(pve_os_ratio));
+            const default_type z =
+                -0.5 + ((static_cast<default_type>(z_idx) + 0.5) / static_cast<default_type>(pve_os_ratio));
             offsets_to_test->push_back(Vertex(x, y, z));
           }
         }
@@ -483,7 +540,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
           }
 
           if (min_edge_distance_on_plane > 0.0) {
-            if (abs(distance_from_plane) < abs(best_min_distance_from_interior_projection)) {
+            if (std::fabs(distance_from_plane) < std::fabs(best_min_distance_from_interior_projection)) {
               best_min_distance_from_interior_projection = distance_from_plane;
               best_result_inside = is_inside;
             }
@@ -499,7 +556,8 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
           ++inside_mesh_count;
       }
 
-      out = std::make_pair(voxel, (default_type)inside_mesh_count / (default_type)pve_nsamples);
+      out =
+          std::make_pair(voxel, static_cast<default_type>(inside_mesh_count) / static_cast<default_type>(pve_nsamples));
       return true;
     }
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,41 +16,17 @@
 
 #include "dwi/tractography/properties.h"
 
+#include <cmath>
+
+#include "exception.h"
+
 namespace MR::DWI::Tractography {
-
-void check_timestamps(const Properties &a, const Properties &b, const std::string &type) {
-  Properties::const_iterator stamp_a = a.find("timestamp");
-  Properties::const_iterator stamp_b = b.find("timestamp");
-  if (stamp_a == a.end() || stamp_b == b.end())
-    throw Exception("unable to verify " + type + " pair: missing timestamp");
-  if (stamp_a->second != stamp_b->second)
-    throw Exception("invalid " + type + " combination - timestamps do not match");
-}
-
-void check_counts(const Properties &a, const Properties &b, const std::string &type, bool abort_on_fail) {
-  Properties::const_iterator count_a = a.find("count");
-  Properties::const_iterator count_b = b.find("count");
-  if ((count_a == a.end()) || (count_b == b.end())) {
-    std::string mesg = "unable to validate " + type + " pair: missing count field";
-    if (abort_on_fail)
-      throw Exception(mesg);
-    else
-      WARN(mesg);
-  }
-  if (to<size_t>(count_a->second) != to<size_t>(count_b->second)) {
-    std::string mesg = type + " files do not contain same number of elements";
-    if (abort_on_fail)
-      throw Exception(mesg);
-    else
-      WARN(mesg);
-  }
-}
 
 void Properties::set_timestamp() { (*this)["timestamp"] = str(Timer::current_time(), file_timestamp_precision); }
 
 void Properties::set_version_info() {
   (*this)["mrtrix_version"] = App::mrtrix_version;
-  if (App::project_version)
+  if (!App::project_version.empty())
     (*this)["project_version"] = App::project_version;
 }
 
@@ -77,18 +53,19 @@ float Properties::get_stepsize() const {
   if (it != KeyValues::end()) {
     try {
       return to<float>(it->second);
-    } catch (...) {
+    } catch (Exception &) {
+      DEBUG("Corrupt tractography property \"step_size\"; ignoring");
     }
   }
-  return NaN;
+  return NaNF;
 }
 
 void Properties::compare_stepsize_rois() const {
   const float step_size = get_stepsize();
-  if (!std::isfinite(step_size) || !step_size)
+  if (!std::isfinite(step_size) || step_size == 0.0F)
     return;
 
-  auto f = [](const ROISetBase &rois, const std::string &type, const float threshold) {
+  auto f = [](const ROISetBase &rois, std::string_view type, const float threshold) {
     for (size_t i = 0; i != rois.size(); ++i) {
       if (rois[i].min_featurelength() < threshold) {
         WARN("Streamline step size is large compared to " + type + " ROI \"" + rois[i].parameters() + "; " +

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,20 +16,20 @@
 
 #pragma once
 
-#include "debug.h"
-#include "image.h"
-#include "transform.h"
+#include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Geometry>
 #include <Eigen/SVD>
 #include <unsupported/Eigen/MatrixFunctions>
+
+#include "debug.h"
+#include "image.h"
+#include "transform.h"
 
 namespace MR::Math {
 double matrix_average(std::vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixXd &mat_avg, bool verbose = false);
 }
 
 namespace MR {
-
-extern const std::vector<std::string> avgspace_voxspacing_choices;
 
 enum class avgspace_voxspacing_t { MIN_PROJECTION, MEAN_PROJECTION, MIN_NEAREST, MEAN_NEAREST };
 

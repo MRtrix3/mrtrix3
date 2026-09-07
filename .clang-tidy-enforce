@@ -1,0 +1,16 @@
+Checks: >
+  -*,
+  -cpp/core/eigen_plugins/*,
+  -cpp/gui/opengl/gl_core_3_3.*,
+  bugprone-*,
+  clang-analyzer-*,
+  concurrency-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  -clang-analyzer-optin.core.EnumCastOutOfRange,
+  -clang-analyzer-unix.Malloc,
+  -clang-analyzer-core.UndefinedBinaryOperatorResult,
+  -clang-analyzer-core.uninitialized.Assign,
+WarningsAsErrors: '*'
+HeaderFilterRegex: '(cpp\/|testing\/(lib\/|tools\/|unit_tests\/)).*\.(h|hpp)'
+ExcludeHeaderFilterRegex: '(_deps\/|cpp\/core\/eigen_plugins\/|cpp\/gui\/opengl\/gl_core_3_3).*'

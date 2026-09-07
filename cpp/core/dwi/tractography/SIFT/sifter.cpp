@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -126,8 +126,11 @@ void SIFTer::perform_filtering() {
     // Trying a heuristic for now; go for a sort size of 1000 following initial sort, assuming half of all
     //   remaining streamlines have a negative gradient
 
-    const track_t sort_size = std::min(std::ceil(num_tracks() / double(Thread::number_of_threads())),
-                                       std::round(2000.0 * double(num_tracks()) / double(tracks_remaining)));
+    const track_t sort_size =
+        std::min(static_cast<track_t>(std::ceil(static_cast<default_type>(num_tracks()) /
+                                                static_cast<default_type>(Thread::number_of_threads()))),
+                 static_cast<track_t>(std::round(2000.0 * static_cast<default_type>(num_tracks()) /
+                                                 static_cast<default_type>(tracks_remaining))));
     MT_gradient_vector_sorter sorter(gradient_vector, sort_size);
 
     // Remove candidate streamlines one at a time, and correspondingly modify the fixels to which they were attributed
@@ -140,8 +143,8 @@ void SIFTer::perform_filtering() {
         if (App::log_level)
           fprintf(stderr, "\n");
         output_filtered_tracks(tck_file_path, prefix + "_tracks.tck");
-        if (!debug_dir.empty())
-          output_all_debug_images(debug_dir, prefix);
+        if (debug_dir.has_value())
+          output_all_debug_images(debug_dir.value(), prefix);
         INFO("\nProportionality coefficient at " + str(tracks_remaining) + " streamlines is " + str(mu()));
         output_at_counts.pop_back();
       }
@@ -341,7 +344,8 @@ void SIFTer::perform_filtering() {
   INFO("Proportionality coefficient at end of filtering is " + str(mu()));
 }
 
-void SIFTer::output_filtered_tracks(const std::string &input_path, const std::string &output_path) const {
+void SIFTer::output_filtered_tracks(const std::filesystem::path &input_path,
+                                    const std::filesystem::path &output_path) const {
   Tractography::Properties p;
   Tractography::Reader<float> reader(input_path, p);
   p["SIFT_mu"] = str(mu());
@@ -359,7 +363,7 @@ void SIFTer::output_filtered_tracks(const std::string &input_path, const std::st
   reader.close();
 }
 
-void SIFTer::output_selection(const std::string &path) const {
+void SIFTer::output_selection(const std::filesystem::path &path) const {
   File::OFStream out(path, std::ios_base::out | std::ios_base::trunc);
   for (track_t i = 0; i != contributions.size(); ++i) {
     if (contributions[i])
@@ -369,7 +373,7 @@ void SIFTer::output_selection(const std::string &path) const {
   }
 }
 
-void SIFTer::set_regular_outputs(const std::vector<uint32_t> &in, const std::string &dirpath) {
+void SIFTer::set_regular_outputs(const std::vector<uint32_t> &in, const std::optional<std::filesystem::path> &dirpath) {
   for (auto i : in) {
     if (i > 0 && i <= contributions.size())
       output_at_counts.push_back(i);

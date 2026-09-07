@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2025 the MRtrix3 contributors.
+# Copyright (c) 2008-2026 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,7 +17,7 @@
 
 
 
-import errno, os, platform, random, re, string
+import errno, os, platform, random, re, string, tempfile
 from mrtrix3 import CONFIG
 
 
@@ -116,8 +116,13 @@ def load_keyval(filename, **kwargs): #pylint: disable=unused-variable
 # If you want to create a temporary file / directory, use the make_temporary() function above.
 def name_temporary(suffix): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  dir_path = CONFIG['TmpFileDir'] if 'TmpFileDir' in CONFIG else (app.SCRATCH_DIR if app.SCRATCH_DIR else os.getcwd())
-  prefix = CONFIG['TmpFilePrefix'] if 'TmpFilePrefix' in CONFIG else 'mrtrix-tmp-'
+  # Resolution of both location and prefix mirrors that of the C++ API:
+  #   environment variable, then configuration file entry, then system temporary directory.
+  # Note in particular that a temporary is never placed within a command's scratch directory:
+  #   a piped image so placed would be erased upon deletion of that scratch directory,
+  #   potentially before the receiving command has read from it.
+  dir_path = os.environ.get('MRTRIX_TMPFILE_DIR', CONFIG.get('TmpFileDir', tempfile.gettempdir()))
+  prefix = os.environ.get('MRTRIX_TMPFILE_PREFIX', CONFIG.get('TmpFilePrefix', 'mrtrix-tmp-'))
   full_path = dir_path
   suffix = suffix.lstrip('.')
   while os.path.exists(full_path):

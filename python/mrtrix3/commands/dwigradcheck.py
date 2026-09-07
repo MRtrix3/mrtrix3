@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2025 the MRtrix3 contributors.
+# Copyright (c) 2008-2026 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -177,7 +177,7 @@ def execute(): #pylint: disable=unused-variable
           assert False
 
         # Run the tracking experiment
-        run.command(f'tckgen -algorithm tensor_det data.mif -seed_image mask.mif -mask mask.mif -minlength 0 -downsample 5 tracks{suffix}.tck '
+        run.command(f'tckgen -algorithm tensor_det data.mif -seed_voxels mask.mif -mask mask.mif -minlength 0 -downsample 5 tracks{suffix}.tck '
                     f'{grad_option} {number_option}')
 
         # Get the mean track length
@@ -203,7 +203,7 @@ def execute(): #pylint: disable=unused-variable
       flip_str = f'{line[1]:4d}'
     else:
       flip_str = line[1]
-    length_string = '{line[0]:5.2f}'
+    length_string = f'{line[0]:5.2f}'
     sys.stderr.write(f'{length_string}         {flip_str}                {line[2]}           {line[3]}\n')
 
 

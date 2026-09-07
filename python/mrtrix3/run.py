@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2025 the MRtrix3 contributors.
+# Copyright (c) 2008-2026 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -148,7 +148,6 @@ class Shared:
     return self._scratch_dir
 
   def set_scratch_dir(self, path):
-    self.env['MRTRIX_TMPFILE_DIR'] = path
     self._scratch_dir = path
 
   # Controls verbosity of invoked MRtrix3 commands, as well as whether or not the
@@ -350,6 +349,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
       if cmdstack[-1][0] != 'mrconvert':
         raise TypeError('Argument "mrconvert_keyval=" can only be used '
                         'if the mrconvert command is being invoked')
+      cmdstack[-1].append('-clear_properties')
       if isinstance(mrconvert_keyval, pathlib.Path):
         cmdstack[-1].extend([ '-copy_properties', str(mrconvert_keyval) ])
       else:

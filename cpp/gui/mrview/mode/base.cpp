@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,7 +15,9 @@
  */
 
 #include "mrview/mode/base.h"
+
 #include "file/config.h"
+#include "opengl/gl_core_3_3.h"
 #include "opengl/glutils.h"
 
 namespace MR::GUI::MRView::Mode {
@@ -56,8 +58,8 @@ void Base::paintGL() {
 
     projection.setup_render_text();
     if (window().show_voxel_info()) {
-      Eigen::Vector3f voxel(image()->scanner2voxel() * focus());
-      ssize_t vox[] = {ssize_t(std::round(voxel[0])), ssize_t(std::round(voxel[1])), ssize_t(std::round(voxel[2]))};
+      const Eigen::Vector3f voxel(image()->scanner2voxel() * focus());
+      const Eigen::Matrix<ssize_t, 3, 1> vox(voxel.array().round().cast<ssize_t>());
 
       std::string vox_str = printf("voxel index: [ %d %d %d ", vox[0], vox[1], vox[2]);
       for (size_t n = 3; n < image()->header().ndim(); ++n)
@@ -72,7 +74,7 @@ void Base::paintGL() {
       // Draw additional labels from tools
       QList<QAction *> tools = window().tools()->actions();
       for (size_t i = 0, line_num = 4, N = tools.size(); i < N; ++i) {
-        Tool::Dock *dock = dynamic_cast<Tool::__Action__ *>(tools[i])->dock;
+        Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tools[i])->dock;
         if (dock)
           line_num += dock->tool->draw_tool_labels(LeftEdge | BottomEdge, line_num, projection);
       }
@@ -89,7 +91,7 @@ void Base::paintGL() {
     GL_CHECK_ERROR;
     if (window().show_colourbar()) {
 
-      auto &colourbar_renderer = window().colourbar_renderer;
+      auto &colourbar_renderer = window().annotation_colourbar(window().supersample());
 
       colourbar_renderer.begin(&projection, window().colourbar_position, 1);
       colourbar_renderer.render(*image(), image()->scale_inverted());
@@ -98,7 +100,7 @@ void Base::paintGL() {
       QList<QAction *> tools = window().tools()->actions();
       size_t num_tool_colourbars = 0;
       for (size_t i = 0, N = tools.size(); i < N; ++i) {
-        Tool::Dock *dock = dynamic_cast<Tool::__Action__ *>(tools[i])->dock;
+        Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tools[i])->dock;
         if (dock)
           num_tool_colourbars += dock->tool->visible_number_colourbars();
       }
@@ -106,7 +108,7 @@ void Base::paintGL() {
       colourbar_renderer.begin(&projection, window().tools_colourbar_position, num_tool_colourbars);
 
       for (size_t i = 0, N = tools.size(); i < N; ++i) {
-        Tool::Dock *dock = dynamic_cast<Tool::__Action__ *>(tools[i])->dock;
+        Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tools[i])->dock;
         if (dock)
           dock->tool->draw_colourbars();
       }
@@ -229,12 +231,12 @@ void Base::setup_projection(const GL::mat4 &M, ModelViewProjection &with_project
 Eigen::Quaternionf Base::get_tilt_rotation(const ModelViewProjection &proj) const {
   QPoint dpos = window().mouse_displacement();
   if (dpos.x() == 0 && dpos.y() == 0)
-    return Eigen::Quaternionf(NaN, NaN, NaN, NaN);
+    return Eigen::Quaternionf(NaNF, NaNF, NaNF, NaNF);
 
   const Eigen::Vector3f x = proj.screen_to_model_direction(dpos, target());
   const Eigen::Vector3f z = proj.screen_normal();
   const Eigen::Vector3f v(x.cross(z).normalized());
-  float angle = -rotation_increment * std::sqrt(float(Math::pow2(dpos.x()) + Math::pow2(dpos.y())));
+  float angle = -rotation_increment * std::sqrt(static_cast<float>(Math::pow2(dpos.x()) + Math::pow2(dpos.y())));
   if (angle > Math::pi_2)
     angle = Math::pi_2;
   return Eigen::Quaternionf(Eigen::AngleAxisf(angle, v));
@@ -243,16 +245,18 @@ Eigen::Quaternionf Base::get_tilt_rotation(const ModelViewProjection &proj) cons
 Eigen::Quaternionf Base::get_rotate_rotation(const ModelViewProjection &proj) const {
   QPoint dpos = window().mouse_displacement();
   if (dpos.x() == 0 && dpos.y() == 0)
-    return Eigen::Quaternionf(NaN, NaN, NaN, NaN);
+    return Eigen::Quaternionf(NaNF, NaNF, NaNF, NaNF);
 
-  Eigen::Vector3f x1(window().mouse_position().x() - proj.x_position() - proj.width() / 2,
-                     window().mouse_position().y() - proj.y_position() - proj.height() / 2,
-                     0.0);
+  Eigen::Vector3f x1(static_cast<float>(window().mouse_position().x() - proj.x_position()) -
+                         (0.5F * static_cast<float>(proj.width())),
+                     static_cast<float>(window().mouse_position().y() - proj.y_position()) -
+                         (0.5F * static_cast<float>(proj.height())),
+                     0.0F);
 
   if (x1.norm() < 16.0f)
-    return Eigen::Quaternionf(NaN, NaN, NaN, NaN);
+    return Eigen::Quaternionf(NaNF, NaNF, NaNF, NaNF);
 
-  Eigen::Vector3f x0(dpos.x() - x1[0], dpos.y() - x1[1], 0.0);
+  Eigen::Vector3f x0(static_cast<float>(dpos.x()) - x1[0], static_cast<float>(dpos.y()) - x1[1], 0.0F);
 
   x1.normalize();
   x0.normalize();
@@ -321,9 +325,9 @@ void Base::reset_view() {
   if (!proj)
     return;
 
-  float dim[] = {float(image()->header().size(0) * image()->header().spacing(0)),
-                 float(image()->header().size(1) * image()->header().spacing(1)),
-                 float(image()->header().size(2) * image()->header().spacing(2))};
+  const Eigen::Vector3f dim{static_cast<float>(image()->header().size(0) * image()->header().spacing(0)),
+                            static_cast<float>(image()->header().size(1) * image()->header().spacing(1)),
+                            static_cast<float>(image()->header().size(2) * image()->header().spacing(2))};
   if (dim[0] < dim[1] && dim[0] < dim[2])
     set_plane(0);
   else if (dim[1] < dim[0] && dim[1] < dim[2])
@@ -331,9 +335,9 @@ void Base::reset_view() {
   else
     set_plane(2);
 
-  Eigen::Vector3f p(std::floor((image()->header().size(0) - 1) / 2.0f),
-                    std::floor((image()->header().size(1) - 1) / 2.0f),
-                    std::floor((image()->header().size(2) - 1) / 2.0f));
+  const Eigen::Vector3f p(std::floor(static_cast<float>(image()->header().size(0) - 1) / 2.0f),
+                          std::floor(static_cast<float>(image()->header().size(1) - 1) / 2.0f),
+                          std::floor(static_cast<float>(image()->header().size(2) - 1) / 2.0f));
 
   set_focus(image()->voxel2scanner() * p);
   set_target(focus());

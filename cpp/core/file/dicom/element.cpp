@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,10 +15,12 @@
  */
 
 #include "file/dicom/element.h"
-#include "debug.h"
-#include "file/path.h"
 
 #include <iomanip>
+#include <string.h>
+
+#include "debug.h"
+#include "file/path.h"
 
 namespace MR::File::Dicom {
 
@@ -31,51 +33,58 @@ std::ostream &operator<<(std::ostream &stream, const Date &item) {
 std::ostream &operator<<(std::ostream &stream, const Time &item) {
   stream << std::setfill('0') << std::setw(2) << item.hour << ":" << std::setfill('0') << std::setw(2) << item.minute
          << ":" << std::setfill('0') << std::setw(2) << item.second;
-  if (item.fraction)
+  if (item.fraction != 0.0)
     stream << str(item.fraction, 6).substr(1);
   return stream;
 }
 
-const char *Element::type_as_str[] = {
-    "invalid", "integer", "unsigned integer", "floating-point", "date", "time", "string", "sequence", "other", nullptr};
+const std::unordered_map<Element::Type, std::string> Element::type_as_str{{INVALID, "invalid"},
+                                                                          {INT, "integer"},
+                                                                          {UINT, "unsigned integer"},
+                                                                          {FLOAT, "floating-point"},
+                                                                          {DATE, "date"},
+                                                                          {TIME, "time"},
+                                                                          {STRING, "string"},
+                                                                          {SEQ, "sequence"},
+                                                                          {OTHER, "other"}};
 
-void Element::set(const std::string &filename, bool force_read, bool read_write) {
+void Element::set(const std::filesystem::path &filepath, bool force_read, bool read_write) {
   group = element = VR = 0;
   size = 0;
-  start = data = next = NULL;
+  start = data = next = nullptr;
   is_BE = is_transfer_syntax_BE = false;
   transfer_syntax_supported = true;
   parents.clear();
 
-  fmap.reset(new File::MMap(filename, read_write));
+  fmap.reset(new File::MMap(filepath, read_write));
 
   if (fmap->size() < 256)
-    throw Exception("\"" + fmap->name() + "\" is too small to be a valid DICOM file");
+    throw Exception("\"" + fmap->path().string() + "\" is too small to be a valid DICOM file");
 
   next = fmap->address();
 
-  if (memcmp(next + 128, "DICM", 4)) {
+  if (memcmp(next + 128, "DICM", 4) != 0) {
     is_explicit = false;
-    DEBUG("DICOM magic number not found in file \"" + fmap->name() + "\" - trying truncated format");
+    DEBUG("DICOM magic number not found in file \"" + fmap->path().string() + "\" - trying truncated format");
     if (!force_read)
-      if (!Path::has_suffix(fmap->name(), ".dcm"))
-        throw Exception("file \"" + fmap->name() +
-                        "\" does not have the DICOM magic number or the .dcm extension - assuming not DICOM");
+      if (fmap->path().extension() != ".dcm")
+        throw Exception("file \"" + fmap->path().string() + "\"" + //
+                        " does not have the DICOM magic number or the .dcm extension - assuming not DICOM");
   } else
     next += 132;
 
   try {
     set_explicit_encoding();
-  } catch (Exception) {
-    throw Exception("\"" + fmap->name() + "\" is not a valid DICOM file");
+  } catch (Exception &e) {
     fmap.reset();
+    throw Exception(e, "\"" + fmap->path().string() + "\" is not a valid DICOM file");
   }
 }
 
 void Element::set_explicit_encoding() {
   assert(fmap);
   if (read_GR_EL())
-    throw Exception("\"" + fmap->name() + "\" is too small to be DICOM");
+    throw Exception("\"" + fmap->path().string() + "\" is too small to be DICOM");
 
   is_explicit = true;
   next = start;
@@ -96,7 +105,7 @@ bool Element::read_GR_EL() {
   group = element = VR = 0;
   size = 0;
   start = next;
-  data = next = NULL;
+  data = next = nullptr;
 
   if (start < fmap->address())
     throw Exception("invalid DICOM element");
@@ -110,7 +119,7 @@ bool Element::read_GR_EL() {
 
   if (group == group_byte_order_swapped) {
     if (!is_BE)
-      throw Exception("invalid DICOM group ID " + str(group) + " in file \"" + fmap->name() + "\"");
+      throw Exception("invalid DICOM group ID " + str(group) + " in file \"" + fmap->path().string() + "\"");
 
     is_BE = false;
     group = group_byte_order;
@@ -151,7 +160,7 @@ bool Element::read() {
                    "with implicit encoding in file \"",
                    group,
                    element) +
-            fmap->name() + "\"");
+            fmap->path().string() + "\"");
       VR = VR_UN;
     } else
       VR = get_VR_from_tag_name(name);
@@ -165,16 +174,16 @@ bool Element::read() {
       INFO("undefined length used for DICOM tag " +            //
            (!tag_name().empty() ? tag_name().substr(2) : "") + //
            MR::printf("(%04X, %04X)", group, element) +        //
-           " in file \"" + fmap->name() + "\"");
+           " in file \"" + fmap->path().string() + "\"");
   } else if (next + size > fmap->address() + fmap->size())
-    throw Exception("file \"" + fmap->name() + "\" is too small to contain DICOM elements specified");
+    throw Exception("file \"" + fmap->path().string() + "\" is too small to contain DICOM elements specified");
   else {
     if (size % 2)
       DEBUG("WARNING: odd length (" + str(size) + ")" +         //
             " used for DICOM tag " +                            //
             (!tag_name().empty() ? tag_name().substr(2) : "") + //
             " (" + str(group) + ", " + str(element) + ")" +     //
-            " in file \"" + fmap->name() + "");
+            " in file \"" + fmap->path().string() + "");
     if (VR != VR_SQ) {
       if (group == group_sequence && element == element_sequence_item) {
         if (!parents.empty() && parents.back().group == group_data && parents.back().element == element_data)
@@ -199,26 +208,31 @@ bool Element::read() {
   switch (group) {
   case group_byte_order:
     switch (element) {
-    case element_transfer_syntax_uid:
-      if (strncmp(reinterpret_cast<const char *>(data), "1.2.840.10008.1.2.1", size) == 0) {
+    case element_transfer_syntax_uid: {
+      std::string data_as_string(reinterpret_cast<const char *>(data), size);
+      data_as_string.erase(data_as_string.find_last_not_of('\0') + 1, std::string::npos);
+      if (data_as_string == "1.2.840.10008.1.2.1") {
         is_BE = is_transfer_syntax_BE = false; // explicit VR Little Endian
         is_explicit = true;
-      } else if (strncmp(reinterpret_cast<const char *>(data), "1.2.840.10008.1.2.2", size) == 0) {
+      } else if (data_as_string == "1.2.840.10008.1.2.2") {
         is_BE = is_transfer_syntax_BE = true; // Explicit VR Big Endian
         is_explicit = true;
-      } else if (strncmp(reinterpret_cast<const char *>(data), "1.2.840.10008.1.2", size) == 0) {
+      } else if (data_as_string == "1.2.840.10008.1.2") {
         is_BE = is_transfer_syntax_BE = false; // Implicit VR Little Endian
         is_explicit = false;
-      } else if (strncmp(reinterpret_cast<const char *>(data), "1.2.840.10008.1.2.1.99", size) == 0) {
+      } else if (data_as_string == "1.2.840.10008.1.2.1.99") {
         throw Exception("DICOM deflated explicit VR little endian transfer syntax not supported");
       } else {
         transfer_syntax_supported = false;
-        INFO("unsupported DICOM transfer syntax: \"" + std::string(reinterpret_cast<const char *>(data), size) +
-             "\" in file \"" + fmap->name() + "\"");
+        INFO("unsupported DICOM transfer syntax: \"" + data_as_string + "\" in file \"" + fmap->path().string() + "\"");
       }
+    } break;
+    default:
       break;
     }
 
+    break;
+  default:
     break;
   }
 
@@ -276,10 +290,10 @@ Element::Type Element::type() const {
 std::vector<int32_t> Element::get_int() const {
   std::vector<int32_t> V;
   if (VR == VR_SL)
-    for (const uint8_t *p = data; p < data + size; p += sizeof(int32_t))
+    for (const std::byte *p = data; p < data + size; p += sizeof(int32_t))
       V.push_back(Raw::fetch_<int32_t>(p, is_BE));
   else if (VR == VR_SS)
-    for (const uint8_t *p = data; p < data + size; p += sizeof(int16_t))
+    for (const std::byte *p = data; p < data + size; p += sizeof(int16_t))
       V.push_back(Raw::fetch_<int16_t>(p, is_BE));
   else if (VR == VR_IS) {
     auto strings = split(std::string(reinterpret_cast<const char *>(data), size), "\\", false);
@@ -295,10 +309,10 @@ std::vector<int32_t> Element::get_int() const {
 std::vector<uint32_t> Element::get_uint() const {
   std::vector<uint32_t> V;
   if (VR == VR_UL)
-    for (const uint8_t *p = data; p < data + size; p += sizeof(uint32_t))
+    for (const std::byte *p = data; p < data + size; p += sizeof(uint32_t))
       V.push_back(Raw::fetch_<uint32_t>(p, is_BE));
   else if (VR == VR_US)
-    for (const uint8_t *p = data; p < data + size; p += sizeof(uint16_t))
+    for (const std::byte *p = data; p < data + size; p += sizeof(uint16_t))
       V.push_back(Raw::fetch_<uint16_t>(p, is_BE));
   else if (VR == VR_IS) {
     auto strings = split(std::string(reinterpret_cast<const char *>(data), size), "\\", false);
@@ -313,10 +327,10 @@ std::vector<uint32_t> Element::get_uint() const {
 std::vector<default_type> Element::get_float() const {
   std::vector<default_type> V;
   if (VR == VR_FD)
-    for (const uint8_t *p = data; p < data + size; p += sizeof(float64))
+    for (const std::byte *p = data; p < data + size; p += sizeof(float64))
       V.push_back(Raw::fetch_<float64>(p, is_BE));
   else if (VR == VR_FL)
-    for (const uint8_t *p = data; p < data + size; p += sizeof(float32))
+    for (const std::byte *p = data; p < data + size; p += sizeof(float32))
       V.push_back(Raw::fetch_<float32>(p, is_BE));
   else if (VR == VR_DS || VR == VR_IS) {
     auto strings = split(std::string(reinterpret_cast<const char *>(data), size), "\\", false);
@@ -393,7 +407,7 @@ std::string Element::as_string() const {
         return "unknown data type";
     }
   } catch (Exception &e) {
-    DEBUG("Error converting data at offset " + str(offset(start)) + " to " + type_as_str[type()] + " type: ");
+    DEBUG("Error converting data at offset " + str(offset(start)) + " to " + type_as_str.at(type()) + " type: ");
     for (auto &s : e.description)
       DEBUG(s);
     return "invalid entry";
@@ -409,19 +423,19 @@ template <class T> inline void print_vec(const std::vector<T> &V) {
 } // namespace
 
 void Element::error_in_get(size_t idx) const {
-  const std::string &name(tag_name());
-  DEBUG("value not found for DICOM tag " +             //
-        printf("%04X %04X ", group, element) +         //
-        (!name.empty() ? name.substr(2) : "unknown") + //
-        " (at index " + str(idx) + ")");
+  const std::string name(tag_name());
+  DEBUG("value not found for DICOM tag " +            //
+        printf("%04X %04X ", group, element) +        //
+        (name.empty() ? "unknown" : name.substr(2)) + //
+        " (at index " + str(idx) + ")");              //
 }
 
 void Element::error_in_check_size(size_t min_size, size_t actual_size) const {
-  const std::string &name(tag_name());
-  throw Exception("not enough items in for DICOM tag " +         //
-                  printf("%04X %04X ", group, element) +         //
-                  (!name.empty() ? name.substr(2) : "unknown") + //
-                  " (expected " + str(min_size) + ", got " + str(actual_size) + ")");
+  const std::string name(tag_name());
+  throw Exception("not enough items in for DICOM tag " +                              //
+                  printf("%04X %04X ", group, element) +                              //
+                  (name.empty() ? "unknown" : name.substr(2)) +                       //
+                  " (expected " + str(min_size) + ", got " + str(actual_size) + ")"); //
 }
 
 void Element::report_unknown_tag_with_implicit_syntax() const {
@@ -434,7 +448,7 @@ void Element::report_unknown_tag_with_implicit_syntax() const {
 std::ostream &operator<<(std::ostream &stream, const Element &item) {
   // return "TYPE  GROUP ELEMENT VR  SIZE  OFFSET  NAME                               CONTENTS";
 
-  const std::string &name(item.tag_name());
+  const std::string name(item.tag_name());
   stream << printf("[DCM] %04X %04X %c%c % 8u % 8llu ",
                    item.group,
                    item.element,
@@ -453,7 +467,7 @@ std::ostream &operator<<(std::ostream &stream, const Element &item) {
     tmp += "- ";
   else
     tmp += "  ";
-  tmp += (!name.empty() ? name.substr(2) : "unknown");
+  tmp += (name.empty() ? "unknown" : name.substr(2));
   tmp.resize(40, ' ');
   stream << tmp << " " << item.as_string() << "\n";
 

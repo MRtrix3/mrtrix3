@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,9 +22,12 @@
 
 namespace MR::File::Dicom {
 
-bool QuickScan::read(
-    const std::string &file_name, bool print_DICOM_fields, bool print_CSA_fields, bool print_Phoenix, bool force_read) {
-  filename = file_name;
+bool QuickScan::read(const std::filesystem::path &file_path,
+                     bool print_DICOM_fields,
+                     bool print_CSA_fields,
+                     bool print_Phoenix,
+                     bool force_read) {
+  filepath = file_path;
   modality.clear();
   patient.clear();
   patient_ID.clear();
@@ -45,7 +48,7 @@ bool QuickScan::read(
   {
     Element item;
     try {
-      item.set(filename, force_read);
+      item.set(filepath, force_read);
       std::string current_image_type;
       bool in_frames = false;
 
@@ -94,8 +97,9 @@ bool QuickScan::read(
           else if (item.is(0x7FE0U, 0x0010U))
             data = item.offset(item.data);
           else if (item.is(0xFFFEU, 0xE000U)) {
+            // multi-frame item
             if (!item.parents.empty() && item.parents.back().group == 0x5200U &&
-                item.parents.back().element == 0x9230U) { // multi-frame item
+                item.parents.back().element == 0x9230U) {
               if (in_frames)
                 ++image_type[current_image_type];
               else
@@ -112,7 +116,7 @@ bool QuickScan::read(
               item.element == 0x1120U || item.element == 0x1210U || item.element == 0x1220U) {
             CSAEntry entry(item.data, item.data + item.size);
             while (entry.parse()) {
-              const bool is_phoenix = (strcmp("MrPhoenixProtocol", entry.key()) == 0);
+              const bool is_phoenix = entry.key() == "MrPhoenixProtocol";
               if ((print_Phoenix && is_phoenix) || (print_CSA_fields && !is_phoenix)) {
                 if (print_CSA_fields) {
                   print(str(entry));
@@ -152,8 +156,8 @@ bool QuickScan::read(
 }
 
 std::ostream &operator<<(std::ostream &stream, const QuickScan &file) {
-  stream << "file: \"" << file.filename << "\" [" << file.modality << "]:\n    patient: " << file.patient << " "
-         << format_ID(file.patient_ID) << " - " << format_date(file.patient_DOB)
+  stream << "file: \"" << file.filepath.string() << "\" [" << file.modality << "]:\n    patient: " << file.patient
+         << " " << format_ID(file.patient_ID) << " - " << format_date(file.patient_DOB)
          << "\n    study: " << (!file.study.empty() ? file.study : "[unspecified]") << " " << format_ID(file.study_ID)
          << " - " << format_date(file.study_date) << " " << format_time(file.study_time) << "\n    series: ["
          << file.series_number << "] " << (!file.series.empty() ? file.series : "[unspecified]") << " - "

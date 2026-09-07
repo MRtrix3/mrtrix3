@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,9 +22,9 @@
 
 namespace MR::Connectome {
 
-LUT::LUT(const std::string &path) : exclusive(true) { load(path); }
+LUT::LUT(const std::filesystem::path &path) : exclusive(true) { load(path); }
 
-void LUT::load(const std::string &path) {
+void LUT::load(const std::filesystem::path &path) {
   file_format format = LUT_NONE;
   try {
     format = guess_file_format(path);
@@ -61,7 +61,7 @@ void LUT::load(const std::string &path) {
   }
 }
 
-LUT::file_format LUT::guess_file_format(const std::string &path) {
+LUT::file_format LUT::guess_file_format(const std::filesystem::path &path) {
 
   class Column {
   public:
@@ -73,7 +73,7 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
           sum_lengths(0),
           count(0) {}
 
-    void operator()(const std::string &entry) {
+    void operator()(std::string_view entry) {
       try {
         const default_type value = to<default_type>(entry);
         min = std::min(min, value);
@@ -87,7 +87,7 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
       ++count;
     }
 
-    default_type mean_length() const { return sum_lengths / default_type(count); }
+    default_type mean_length() const { return sum_lengths / static_cast<default_type>(count); }
     bool is_numeric() const { return numeric; }
     bool is_integer() const { return integer; }
     bool is_unary_range_float() const { return is_numeric() && min >= 0.0 && max <= 1.0; }
@@ -129,9 +129,9 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
       //   encased within quotation marks
       auto split_by_quotes = split(line, "\"\'", false);
       if (!(split_by_quotes.size() % 2))
-        throw Exception("Line " + str(line_counter) +                     //
-                        " of LUT file \"" + Path::basename(path) + "\"" + //
-                        " contains an odd number of quotation marks," +   //
+        throw Exception("Line " + str(line_counter) +                         //
+                        " of LUT file \"" + path.filename().string() + "\"" + //
+                        " contains an odd number of quotation marks," +       //
                         " and hence cannot be properly split up according to quotation marks");
       decltype(split_by_quotes) entries;
       for (size_t i = 0; i != split_by_quotes.size(); ++i) {
@@ -152,7 +152,7 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
       }
       if (!entries.empty()) {
         if (!columns.empty() && entries.size() != columns.size()) {
-          Exception E("Inconsistent number of columns in LUT file \"" + Path::basename(path) + "\"");
+          Exception E("Inconsistent number of columns in LUT file \"" + path.filename().string() + "\"");
           E.push_back("Initial file contents contain " + str(columns.size()) + " columns," + //
                       " but line " + str(line_counter) + " contains " + str(entries.size()) + " entries:");
           E.push_back("\"" + line + "\"");
@@ -168,21 +168,21 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
 
   // Make an assessment of the LUT format
   if (columns.size() == 2 && columns[0].is_integer() && !columns[1].is_numeric()) {
-    DEBUG("LUT file \"" + Path::basename(path) +
+    DEBUG("LUT file \"" + path.filename().string() +
           "\" contains 1 integer, 1 string per line:"
           " Basic format");
     return LUT_BASIC;
   }
   if (columns.size() == 6 && columns[0].is_integer() && !columns[1].is_numeric() && columns[2].is_8bit() &&
       columns[3].is_8bit() && columns[4].is_8bit() && columns[5].is_8bit()) {
-    DEBUG("LUT file \"" + Path::basename(path) +
+    DEBUG("LUT file \"" + path.filename().string() +
           "\" contains 1 integer, 1 string, then 4 8-bit integers per line:"
           " Freesurfer format");
     return LUT_FREESURFER;
   }
   if (columns.size() == 3 && !columns[0].is_numeric() && !columns[1].is_numeric() &&
       columns[0].mean_length() < columns[1].mean_length() && columns[2].is_integer()) {
-    DEBUG("LUT file \"" + Path::basename(path) +
+    DEBUG("LUT file \"" + path.filename().string() +
           "\" contains 2 strings (shorter first), then an integer per line:"
           " AAL format");
     return LUT_AAL;
@@ -190,7 +190,7 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
   if (columns.size() == 8 && columns[0].is_integer() && columns[1].is_8bit() && columns[2].is_8bit() &&
       columns[3].is_8bit() && columns[4].is_unary_range_float() && columns[5].is_integer() && columns[6].is_integer() &&
       !columns[7].is_numeric()) {
-    DEBUG("LUT file \"" + Path::basename(path) +
+    DEBUG("LUT file \"" + path.filename().string() +
           "\" contains an integer, 3 8-bit integers, a float, two integers, and a string per line:"
           " ITKSNAP format");
     return LUT_ITKSNAP;
@@ -198,7 +198,7 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
   if (columns.size() == 7 && columns[0].is_integer() && !columns[1].is_numeric() && !columns[2].is_numeric() &&
       columns[1].mean_length() < columns[2].mean_length() && columns[3].is_8bit() && columns[4].is_8bit() &&
       columns[5].is_8bit() && columns[6].is_8bit()) {
-    DEBUG("LUT file \"" + Path::basename(path) +
+    DEBUG("LUT file \"" + path.filename().string() +
           "\" contains 1 integer, 2 strings (shortest first), then 4 8-bit integers per line:"
           " MRtrix format");
     return LUT_MRTRIX;
@@ -208,59 +208,66 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
   for (auto c : columns)
     format_string += std::string(c) + " ";
   format_string += "]";
-  Exception e("LUT file \"" + Path::basename(path) + "\" in unrecognized format:");
+  Exception e("LUT file \"" + path.filename().string() + "\" in unrecognized format:");
   e.push_back(format_string);
   throw e;
   return LUT_NONE;
 }
 
-void LUT::parse_line_basic(const std::string &line) {
+void LUT::parse_line_basic(const std::string &line) { // check_syntax off
   node_t index = std::numeric_limits<node_t>::max();
-  char name[80];
-  sscanf(line.c_str(), "%u %s", &index, name);
-  if (index != std::numeric_limits<node_t>::max()) {
+  std::string name;
+  std::istringstream iss(line);
+  iss >> index >> name;
+  if (!iss.fail()) {
     const std::string strname(strip(name, " \t\n\""));
     check_and_insert(index, LUT_node(strname));
   }
 }
-void LUT::parse_line_freesurfer(const std::string &line) {
+void LUT::parse_line_freesurfer(const std::string &line) { // check_syntax off
   node_t index = std::numeric_limits<node_t>::max();
   node_t r = 256, g = 256, b = 256, a = 255;
-  char name[80];
-  sscanf(line.c_str(), "%u %s %u %u %u %u", &index, name, &r, &g, &b, &a);
-  if (index != std::numeric_limits<node_t>::max()) {
+  std::string name;
+  std::istringstream iss(line);
+  iss >> index >> name >> r >> g >> b >> a;
+  if (!iss.fail()) {
     const std::string strname(strip(name, " \t\n\""));
     check_and_insert(index, LUT_node(strname, r, g, b, a));
   }
 }
-void LUT::parse_line_aal(const std::string &line) {
+void LUT::parse_line_aal(const std::string &line) { // check_syntax off
   node_t index = std::numeric_limits<node_t>::max();
-  char short_name[20], name[80];
-  sscanf(line.c_str(), "%s %s %u", short_name, name, &index);
-  if (index != std::numeric_limits<node_t>::max()) {
+  std::string short_name;
+  std::string long_name;
+  std::istringstream iss(line);
+  iss >> short_name >> long_name >> index;
+  if (!iss.fail()) {
     const std::string strshortname(strip(short_name, " \t\n\""));
-    const std::string strname(strip(name, " \t\n\""));
+    const std::string strname(strip(long_name, " \t\n\""));
     check_and_insert(index, LUT_node(strname, strshortname));
   }
 }
-void LUT::parse_line_itksnap(const std::string &line) {
+void LUT::parse_line_itksnap(const std::string &line) { // check_syntax off
   node_t index = std::numeric_limits<node_t>::max();
   node_t r = 256, g = 256, b = 256;
   float a = 1.0;
   unsigned int label_vis = 0, mesh_vis = 0;
-  char name[80];
-  sscanf(line.c_str(), "%u %u %u %u %f %u %u %s", &index, &r, &g, &b, &a, &label_vis, &mesh_vis, name);
-  if (index != std::numeric_limits<node_t>::max()) {
+  std::string name;
+  std::istringstream iss(line);
+  iss >> index >> r >> g >> b >> a >> label_vis >> mesh_vis >> name;
+  if (!iss.fail()) {
     std::string strname(strip(name, " \t\n\""));
-    check_and_insert(index, LUT_node(strname, r, g, b, uint8_t(a * 255.0)));
+    check_and_insert(index, LUT_node(strname, r, g, b, static_cast<uint8_t>(std::round(a * 255.0F))));
   }
 }
-void LUT::parse_line_mrtrix(const std::string &line) {
+void LUT::parse_line_mrtrix(const std::string &line) { // check_syntax off
   node_t index = std::numeric_limits<node_t>::max();
   node_t r = 256, g = 256, b = 256, a = 255;
-  char short_name[20], name[80];
-  sscanf(line.c_str(), "%u %s %s %u %u %u %u", &index, short_name, name, &r, &g, &b, &a);
-  if (index != std::numeric_limits<node_t>::max()) {
+  std::string short_name;
+  std::string name;
+  std::istringstream iss(line);
+  iss >> index >> short_name >> name >> r >> g >> b >> a;
+  if (!iss.fail()) {
     const std::string strshortname(strip(short_name, " \t\n\""));
     const std::string strname(strip(name, " \t\n\""));
     check_and_insert(index, LUT_node(strname, strshortname, r, g, b, a));

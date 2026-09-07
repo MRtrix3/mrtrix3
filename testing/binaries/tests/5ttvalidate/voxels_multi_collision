@@ -1,0 +1,8 @@
+#!/bin/bash
+# With multiple input images, -voxels should error if a directory already exists at the output path
+
+rm -rf tmpvoxels/ && mkdir tmpvoxels/
+rm -f tmp.txt
+! ( 5ttvalidate 5ttedit/in.mif 5ttedit/in.mif -voxels tmpvoxels/ > tmp.txt 2>&1 )
+cat tmp.txt
+grep "already exists" tmp.txt

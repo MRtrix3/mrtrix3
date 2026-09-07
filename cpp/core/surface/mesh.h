@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 
 #include "header.h"
@@ -28,16 +29,16 @@
 
 #include "surface/types.h"
 
-namespace MR::Surface {
-
-namespace Filter {
+namespace MR::Surface::Filter {
 class Smooth;
-}
+} // namespace MR::Surface::Filter
+
+namespace MR::Surface {
 
 class Mesh {
 
 public:
-  Mesh(const std::string &);
+  Mesh(const std::filesystem::path &);
 
   Mesh(const Mesh &that) = default;
 
@@ -124,9 +125,9 @@ public:
     quads.clear();
   }
 
-  void save(const std::string &, const bool binary = false) const;
+  void save(const std::filesystem::path &, const bool binary = false) const;
 
-  size_t num_vertices() const { return vertices.size(); }
+  vertex_index_type num_vertices() const { return vertices.size(); }
   size_t num_triangles() const { return triangles.size(); }
   size_t num_quads() const { return quads.size(); }
   size_t num_polygons() const { return triangles.size() + quads.size(); }
@@ -134,14 +135,14 @@ public:
   bool have_normals() const { return !normals.empty(); }
   void calculate_normals();
 
-  const std::string &get_name() const { return name; }
-  void set_name(const std::string &s) { name = s; }
+  std::string get_name() const { return name; }
+  void set_name(std::string_view n) { name = n; }
 
-  const Vertex &vert(const size_t i) const {
+  const Vertex &vert(const vertex_index_type i) const {
     assert(i < vertices.size());
     return vertices[i];
   }
-  const Vertex &norm(const size_t i) const {
+  const Vertex &norm(const vertex_index_type i) const {
     assert(i < normals.size());
     return normals[i];
   }
@@ -171,13 +172,13 @@ protected:
 private:
   std::string name;
 
-  void load_vtk(const std::string &);
-  void load_stl(const std::string &);
-  void load_obj(const std::string &);
-  void load_fs(const std::string &);
-  void save_vtk(const std::string &, const bool) const;
-  void save_stl(const std::string &, const bool) const;
-  void save_obj(const std::string &) const;
+  void load_vtk(const std::filesystem::path &);
+  void load_stl(const std::filesystem::path &);
+  void load_obj(const std::filesystem::path &);
+  void load_fs(const std::filesystem::path &);
+  void save_vtk(const std::filesystem::path &, const bool) const;
+  void save_stl(const std::filesystem::path &, const bool) const;
+  void save_obj(const std::filesystem::path &) const;
 
   void verify_data() const;
 

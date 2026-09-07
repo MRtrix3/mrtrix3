@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,7 +16,9 @@
 
 #include "adapter/regrid.h"
 #include "algo/copy.h"
+#include "app.h"
 #include "command.h"
+#include "enum.h"
 #include "filter/resize.h"
 #include "filter/reslice.h"
 #include "image.h"
@@ -26,13 +28,15 @@
 #include "interp/nearest.h"
 #include "interp/sinc.h"
 #include "progressbar.h"
+
+#include <filesystem>
 #include <set>
 
 using namespace MR;
 using namespace App;
 
 constexpr MR::Interp::interp_type default_interp = MR::Interp::interp_type::CUBIC;
-const std::vector<std::string> operation_choices = {"regrid", "crop", "pad"};
+enum class Operation { REGRID, CROP, PAD };
 
 // clang-format off
 void usage() {
@@ -100,7 +104,7 @@ void usage() {
   ARGUMENTS
   + Argument ("input", "input image to be regridded.").type_image_in ()
   + Argument ("operation", "the operation to be performed;"
-                           " one of: " + join(operation_choices, ", ") + ".").type_choice (operation_choices)
+                           " one of: " + MR::Enum::join<Operation>() + ".").type_choice<Operation>()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
@@ -128,9 +132,9 @@ void usage() {
     + Argument ("factor").type_sequence_float()
 
     + Option ("interp", std::string("set the interpolation method to use when reslicing")
-                        + " (choices: " + join(MR::Interp::interp_choices, ", ") + ";"
-                        " default: " + MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)] + ").")
-    + Argument ("method").type_choice (MR::Interp::interp_choices)
+                        + " (choices: " + MR::Enum::join<MR::Interp::interp_type>() + ";"
+                        " default: " + MR::Enum::lowercase_name(default_interp) + ").")
+    + Argument ("method").type_choice<MR::Interp::interp_type>()
 
     + Option ("oversample",
         "set the amount of over-sampling (in the target space) to perform when regridding."
@@ -201,21 +205,24 @@ void usage() {
 // clang-format on
 
 void run() {
-  auto input_header = Header::open(argument[0]);
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[2]};
 
-  const int op = argument[1];
+  auto input_header = Header::open(input_path);
+
+  const Operation op = MR::Enum::from_name<Operation>(argument[1]);
+  const std::string operation_name = MR::Enum::lowercase_name(op);
 
   // Out of bounds value
   const default_type out_of_bounds_value = get_option_value("fill", 0.0);
 
-  if (op == 0) { // regrid
-    INFO("operation: " + str(operation_choices[op]));
+  if (op == Operation::REGRID) {
+    INFO("operation: " + operation_name);
     Filter::Resize regrid_filter(input_header);
     regrid_filter.set_out_of_bounds_value(out_of_bounds_value);
     size_t resize_option_count = 0;
     size_t template_option_count = 0;
-    const MR::Interp::interp_type interp =
-        MR::Interp::interp_type(get_option_value("interp", static_cast<ssize_t>(default_interp)));
+    const MR::Interp::interp_type interp = get_option_choice<MR::Interp::interp_type>("interp", default_interp);
 
     // over-sampling
     std::vector<uint32_t> oversample = Adapter::AutoOverSample;
@@ -230,7 +237,7 @@ void run() {
       if (template_header.ndim() < 3)
         throw Exception("the template image requires at least 3 spatial dimensions");
       add_line(regrid_filter.keyval()["comments"],
-               std::string("regridded to template image \"" + template_header.name() + "\""));
+               std::string("regridded to template image \"" + template_header.path().string() + "\""));
       for (auto i = 0; i < 3; ++i) {
         regrid_filter.spacing(i) = template_header.spacing(i);
         regrid_filter.size(i) = template_header.size(i);
@@ -286,9 +293,9 @@ void run() {
     regrid_filter(input, output);
 
   } else { // crop or pad
-    const bool do_crop = op == 1;
+    const bool do_crop = op == Operation::CROP;
     std::string message = do_crop ? "cropping image" : "padding image";
-    INFO("operation: " + str(operation_choices[op]));
+    INFO("operation: " + operation_name);
     const bool crop_unbound = !get_options("crop_unbound").empty();
     if (crop_unbound && !do_crop)
       throw Exception("-crop_unbound only applies only to the crop operation");
@@ -357,7 +364,7 @@ void run() {
     opt = get_options("as");
     if (!opt.empty()) {
       if (crop_pad_option_count)
-        throw Exception(str(operation_choices[op]) + " can be performed using either a mask or a template image");
+        throw Exception(operation_name + " can be performed using either a mask or a template image");
       ++crop_pad_option_count;
 
       Header template_header = Header::open(opt[0][0]);
@@ -417,7 +424,7 @@ void run() {
         try {
           delta = parse_ints<int>(opt[i][1]);
         } catch (Exception &E) {
-          Exception(E, "-axis " + str(axis) + ": can't parse delta specifier \"" + spec + "\"");
+          throw Exception(E, "-axis " + str(axis) + ": can't parse delta specifier \"" + spec + "\"");
         }
         if (delta.size() != 2)
           throw Exception("-axis " + str(axis) + ": can't parse delta specifier \"" + spec + "\"");
@@ -477,7 +484,7 @@ void run() {
     output_header.datatype() = DataType::from_command_line(DataType::from<float>());
     Stride::set_from_command_line(output_header);
 
-    auto output = Image<float>::create(argument[2], output_header);
+    auto output = Image<float>::create(output_path, output_header);
     threaded_copy_with_progress_message(message.c_str(), regridded, output);
   }
 }

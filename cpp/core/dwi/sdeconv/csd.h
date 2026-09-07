@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,8 +16,11 @@
 
 #pragma once
 
+#include <filesystem>
+
 #include "app.h"
 #include "dwi/directions/predefined.h"
+#include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "file/matrix.h"
@@ -25,10 +28,11 @@
 #include "math/SH.h"
 #include "math/ZSH.h"
 #include "math/least_squares.h"
+#include "math/sphere.h"
 
 namespace MR::DWI::SDeconv {
 
-constexpr ssize_t default_csd_lmax = 8;
+constexpr uint32_t default_csd_lmax = 8;
 constexpr default_type csd_normlambda_multiplier = 0.0002;
 constexpr default_type default_csd_neglambda = 1.0;
 constexpr default_type default_csd_normlambda = 1.0;
@@ -72,8 +76,11 @@ public:
       if (!opt.empty())
         init_filter = File::Matrix::load_vector(opt[0][0]);
       opt = get_options("directions");
-      if (!opt.empty())
-        HR_dirs = File::Matrix::load_matrix(opt[0][0]);
+      if (!opt.empty()) {
+        const Eigen::MatrixXd directions = File::Matrix::load_matrix(opt[0][0]);
+        DWI::Directions::validate(directions, opt[0][0], false);
+        HR_dirs = Math::Sphere::as_spherical(directions);
+      }
       opt = get_options("neg_lambda");
       if (!opt.empty())
         neg_lambda = opt[0][0];
@@ -88,8 +95,8 @@ public:
         niter = opt[0][0];
     }
 
-    void set_response(const std::string &path) {
-      INFO("loading response function from file \"" + path + "\"");
+    void set_response(const std::filesystem::path &path) {
+      INFO("loading response function from file \"" + path.string() + "\"");
       set_response(File::Matrix::load_vector(path));
     }
 
@@ -108,7 +115,7 @@ public:
       if (lmax_response <= 0)
         throw Exception("response function does not contain anisotropic terms");
 
-      lmax = (lmax_cmdline > 0 ? lmax_cmdline : std::min(lmax_response, uint32_t(default_csd_lmax)));
+      lmax = lmax_cmdline > 0 ? lmax_cmdline : std::min(lmax_response, default_csd_lmax);
 
       if (lmax <= 0 || lmax % 2)
         throw Exception("lmax must be a positive even integer");
@@ -122,7 +129,7 @@ public:
       init_filter.conservativeResizeLike(Eigen::VectorXd::Zero(Math::ZSH::NforL(lmax_response)));
 
       RH = Math::ZSH::ZSH2RH(response);
-      if (size_t(RH.size()) < Math::ZSH::NforL(lmax))
+      if (static_cast<size_t>(RH.size()) < Math::ZSH::NforL(lmax))
         RH.conservativeResizeLike(Eigen::VectorXd::Zero(Math::ZSH::NforL(lmax)));
 
       // inverse sdeconv for initialisation:
@@ -157,7 +164,7 @@ public:
 
       // high-res sampling to apply constraint:
       HR_trans = init_transform(HR_dirs, lmax);
-      default_type constraint_multiplier = neg_lambda * 50.0 * response[0] / default_type(HR_trans.rows());
+      default_type constraint_multiplier = neg_lambda * 50.0 * response[0] / static_cast<default_type>(HR_trans.rows());
       HR_trans.array() *= constraint_multiplier;
 
       // adjust threshold accordingly:

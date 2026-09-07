@@ -10,7 +10,8 @@ mkdir tmp/not_a_scratchdir/
 mkdir tmp/command-tmp-ABCDEF/
 
 mrtrix_cleanup tmp/
-ITEMCOUNT=$(ls tmp/ | wc)
-if [ "$ITEMCOUNT" -neq "2" ]; then
-    exit 1
-fi
+# The temporary file & scratch directory should have been erased,
+#   and the two items that do not conform to those naming conventions preserved
+[ "$(ls tmp/ | wc -l)" -eq 2 ]
+ls tmp/ | grep -q "^not_a_tempfile\.txt$"
+ls tmp/ | grep -q "^not_a_scratchdir$"

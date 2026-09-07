@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -63,7 +63,10 @@ public:
   ProgressBar(ProgressBar &&other) noexcept;
   ProgressBar &operator=(ProgressBar &&other) noexcept;
 
-  FORCE_INLINE ~ProgressBar() { done(); }
+  //! Virtual so that GUI code can subclass ProgressBar (e.g. to opt in to cancellation support)
+  //! and have that subtype detected via dynamic_cast from within the display/done hooks, without
+  //! this class needing to declare any GUI-specific concept in its own interface.
+  virtual ~ProgressBar() { done(); }
 
   //! Create a new ProgressBar, displaying the specified text.
   /*! If \a target is unspecified or set to zero, the ProgressBar will
@@ -71,7 +74,7 @@ public:
    * Otherwise, the ProgressBar will display the percentage completed,
    * computed from the number of times the ProgressBar::operator++()
    * function was called relative to the value specified with \a target. */
-  ProgressBar(const std::string &text, size_t target = 0, int log_level = 1);
+  ProgressBar(std::string_view text, size_t target = 0, int log_level = 1);
 
   //! returns whether the progress will be shown
   /*! The progress may not be shown if the -quiet option has been supplied
@@ -87,10 +90,12 @@ public:
 
   FORCE_INLINE size_t value() const { return _value; }
   FORCE_INLINE size_t count() const { return current_val; }
-  FORCE_INLINE bool show_percent() const { return _multiplier; }
+  FORCE_INLINE bool show_percent() const { return _multiplier != 0.0F; }
   FORCE_INLINE bool text_has_been_modified() const { return _text_has_been_modified; }
-  FORCE_INLINE const std::string &text() const { return _text; }
-  FORCE_INLINE const std::string &ellipsis() const { return _ellipsis; }
+  FORCE_INLINE std::string_view text() const { return _text; }
+  FORCE_INLINE std::string_view ellipsis() const { return _ellipsis; }
+  FORCE_INLINE const char *const text_cstr() const { return _text.c_str(); }         // check_syntax off
+  FORCE_INLINE const char *const ellipsis_cstr() const { return _ellipsis.c_str(); } // check_syntax off
 
   //! set the maximum target value of the ProgressBar
   /*! This function should only be called if the ProgressBar has been
@@ -99,7 +104,7 @@ public:
    * indicator. */
   FORCE_INLINE void set_max(size_t new_target);
 
-  FORCE_INLINE void set_text(const std::string &new_text);
+  FORCE_INLINE void set_text(std::string_view new_text);
 
   //! update text displayed and optionally increment counter
   /*! This expects a function, functor or lambda function that should
@@ -181,7 +186,7 @@ inline void ProgressBar::set_max(size_t target) {
   }
 }
 
-FORCE_INLINE void ProgressBar::set_text(const std::string &new_text) {
+FORCE_INLINE void ProgressBar::set_text(std::string_view new_text) {
   if (!show)
     return;
   _text_has_been_modified = true;
@@ -202,7 +207,7 @@ template <class TextFunc> FORCE_INLINE void ProgressBar::update(TextFunc &&text_
     return;
   const std::unique_lock<std::mutex> lock(mutex);
   const double time = timer.elapsed();
-  if (increment && _multiplier && ++current_val >= next_percent) {
+  if (increment && _multiplier != 0.0F && ++current_val >= next_percent) {
     set_text(text_func());
     _ellipsis.clear();
     _value = std::round(current_val / _multiplier);
@@ -214,7 +219,7 @@ template <class TextFunc> FORCE_INLINE void ProgressBar::update(TextFunc &&text_
   if (time >= next_time) {
     set_text(text_func());
     _ellipsis.clear();
-    if (_multiplier)
+    if (_multiplier != 0.0F)
       next_time = time + busy_interval;
     else {
       _value = time / busy_interval;
@@ -230,19 +235,19 @@ FORCE_INLINE void ProgressBar::operator++() {
   if (!show)
     return;
   const std::unique_lock<std::mutex> lock(mutex);
-  if (_multiplier) {
-    if (++current_val >= next_percent) {
-      _value = std::round(current_val / _multiplier);
-      next_percent = std::ceil((_value + 1) * _multiplier);
-      display_now();
-    }
-  } else {
+  if (_multiplier == 0.0F) {
     double time = timer.elapsed();
     if (time >= next_time) {
       _value = time / busy_interval;
       do {
         next_time += busy_interval;
       } while (next_time <= time);
+      display_now();
+    }
+  } else {
+    if (++current_val >= next_percent) {
+      _value = static_cast<size_t>(std::round(static_cast<float>(current_val) / _multiplier));
+      next_percent = static_cast<size_t>(std::ceil(static_cast<float>(_value + 1) * _multiplier));
       display_now();
     }
   }

@@ -15,19 +15,19 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from mrtrix3 import app
+from mrtrix3 import app # pylint: disable=import-error
 
 CHOICES = ('One', 'Two', 'Three')
 
 class Custom(app.Parser.CustomTypeBase):
-    def __call__(self, input_value):
-      return input_value
-    @staticmethod
-    def _legacytypestring():
-      return 'CUSTOM'
-    @staticmethod
-    def _metavar():
-      return 'custom'
+  def __call__(self, input_value):
+    return input_value
+  @staticmethod
+  def _legacytypestring():
+    return 'CUSTOM'
+  @staticmethod
+  def _metavar():
+    return 'custom'
 
 def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
@@ -53,33 +53,33 @@ def usage(cmdline): #pylint: disable=unused-variable
                         type=float,
                         help='A floating-point; built-in type')
 
-  complex = cmdline.add_argument_group('Complex interfaces; nargs, metavar, etc.')
-  complex.add_argument('-nargs_plus',
-                       nargs='+',
-                       help='A command-line option with nargs="+", no metavar')
-  complex.add_argument('-nargs_asterisk',
-                       nargs='*',
-                       help='A command-line option with nargs="*", no metavar')
-  complex.add_argument('-nargs_question',
-                       nargs='?',
-                       help='A command-line option with nargs="?", no metavar')
-  complex.add_argument('-nargs_two',
-                       nargs=2,
-                       help='A command-line option with nargs=2, no metavar')
-  complex.add_argument('-metavar_one',
-                       metavar='metavar',
-                       help='A command-line option with nargs=1 and metavar="metavar"')
-  complex.add_argument('-metavar_two',
-                       metavar='metavar',
-                       nargs=2,
-                       help='A command-line option with nargs=2 and metavar="metavar"')
-  complex.add_argument('-metavar_tuple',
-                       metavar=('metavar_one', 'metavar_two'),
-                       nargs=2,
-                       help='A command-line option with nargs=2 and metavar=("metavar_one", "metavar_two")')
-  complex.add_argument('-append',
-                       action='append',
-                       help='A command-line option with "append" action (can be specified multiple times)')
+  complex_types = cmdline.add_argument_group('Complex interfaces; nargs, metavar, etc.')
+  complex_types.add_argument('-nargs_plus',
+                             nargs='+',
+                             help='A command-line option with nargs="+", no metavar')
+  complex_types.add_argument('-nargs_asterisk',
+                             nargs='*',
+                             help='A command-line option with nargs="*", no metavar')
+  complex_types.add_argument('-nargs_question',
+                             nargs='?',
+                             help='A command-line option with nargs="?", no metavar')
+  complex_types.add_argument('-nargs_two',
+                             nargs=2,
+                             help='A command-line option with nargs=2, no metavar')
+  complex_types.add_argument('-metavar_one',
+                             metavar='metavar',
+                             help='A command-line option with nargs=1 and metavar="metavar"')
+  complex_types.add_argument('-metavar_two',
+                             metavar='metavar',
+                             nargs=2,
+                             help='A command-line option with nargs=2 and metavar="metavar"')
+  complex_types.add_argument('-metavar_tuple',
+                             metavar=('metavar_one', 'metavar_two'),
+                             nargs=2,
+                             help='A command-line option with nargs=2 and metavar=("metavar_one", "metavar_two")')
+  complex_types.add_argument('-append',
+                             action='append',
+                             help='A command-line option with "append" action (can be specified multiple times)')
 
   custom = cmdline.add_argument_group('Custom types')
   custom.add_argument('-bool',

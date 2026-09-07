@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
 #include <unordered_map>
 
 #include "file/dicom/definitions.h"
@@ -28,9 +31,9 @@ namespace MR::File::Dicom {
 
 class Sequence {
 public:
-  Sequence(uint16_t group, uint16_t element, uint8_t *end) : group(group), element(element), end(end) {}
+  Sequence(uint16_t group, uint16_t element, std::byte *end) : group(group), element(element), end(end) {}
   uint16_t group, element;
-  uint8_t *end;
+  std::byte *end;
 
   bool is(uint16_t Group, uint16_t Element) const {
     if (group != Group)
@@ -41,7 +44,7 @@ public:
 
 class Date {
 public:
-  Date(const std::string &entry) : year(0), month(0), day(0) {
+  Date(std::string_view entry) : year(0), month(0), day(0) {
     if (entry.size() >= 8) {
       year = to<uint32_t>(entry.substr(0, 4));
       month = to<uint32_t>(entry.substr(4, 2));
@@ -56,7 +59,7 @@ public:
 
 class Time {
 public:
-  Time(const std::string &entry) : Time() {
+  Time(std::string_view entry) : Time() {
     if (entry.size() < 6)
       throw Exception("field \"" + entry + "\" is too short to be interpreted as a time");
     hour = to<uint32_t>(entry.substr(0, 2));
@@ -78,7 +81,7 @@ public:
   }
   Time() : hour(0), minute(0), second(0), fraction(0.0) {}
   operator default_type() const { return (hour * 3600.0 + minute * 60 + second + fraction); }
-  Time operator-(const Time &t) const { return Time(default_type(*this) - default_type(t)); }
+  Time operator-(const Time &t) const { return Time(static_cast<default_type>(*this) - static_cast<default_type>(t)); }
   uint32_t hour, minute, second;
   default_type fraction;
   friend std::ostream &operator<<(std::ostream &stream, const Time &item);
@@ -86,15 +89,16 @@ public:
 
 class Element {
 public:
-  typedef enum _Type { INVALID, INT, UINT, FLOAT, DATE, TIME, DATETIME, STRING, SEQ, OTHER } Type;
+  typedef enum Type : uint8_t { INVALID, INT, UINT, FLOAT, DATE, TIME, DATETIME, STRING, SEQ, OTHER } Type;
+  static const std::unordered_map<Type, std::string> type_as_str;
 
   uint16_t group, element, VR;
   uint32_t size;
-  uint8_t *data;
+  std::byte *data;
   std::vector<Sequence> parents;
   bool transfer_syntax_supported;
 
-  void set(const std::string &filename, bool force_read = false, bool read_write = false);
+  void set(const std::filesystem::path &filepath, bool force_read = false, bool read_write = false);
   bool read();
 
   bool is(uint16_t Group, uint16_t Element) const {
@@ -106,13 +110,13 @@ public:
   std::string tag_name() const {
     if (dict.empty())
       init_dict();
-    const char *s = dict[tag()];
-    return (s ? s : "");
+    const char *s = dict[tag()]; // check_syntax off
+    return (s == nullptr ? "" : s);
   }
 
   uint32_t tag() const {
-    union __DICOM_group_element_pair__ {
-      uint16_t s[2];
+    const union {
+      uint16_t s[2]; // check_syntax off
       uint32_t i;
     } val = {{
 #if MRTRIX_BYTE_ORDER_BIG_ENDIAN
@@ -124,7 +128,7 @@ public:
     return val.i;
   }
 
-  size_t offset(uint8_t *address) const { return address - fmap->address(); }
+  size_t offset(std::byte *address) const { return address - fmap->address(); }
   bool is_big_endian() const { return is_BE; }
   bool is_new_sequence() const {
     return VR == VR_SQ || (group == group_data && element == element_data && size == undefined_length);
@@ -180,15 +184,15 @@ protected:
   void set_explicit_encoding();
   bool read_GR_EL();
 
-  uint8_t *next;
-  uint8_t *start;
+  std::byte *next;
+  std::byte *start;
   bool is_explicit, is_BE, is_transfer_syntax_BE;
 
-  std::vector<uint8_t *> end_seq;
+  std::vector<std::byte *> end_seq;
 
-  uint16_t get_VR_from_tag_name(const std::string &name) {
+  static uint16_t get_VR_from_tag_name(std::string_view name) {
     union {
-      char t[2];
+      std::array<char, 2> t;
       uint16_t i;
     } d = {{name[0], name[1]}};
     return ByteOrder::BE(d.i);
@@ -207,8 +211,6 @@ protected:
   void error_in_get(size_t idx) const;
   void error_in_check_size(size_t min_size, size_t actual_size) const;
   void report_unknown_tag_with_implicit_syntax() const;
-
-  static const char *type_as_str[];
 };
 
 } // namespace MR::File::Dicom

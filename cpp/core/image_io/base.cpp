@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,7 +30,7 @@ void Base::open(const Header &header, size_t buffer_size) {
     return;
 
   load(header, buffer_size);
-  DEBUG("image \"" + header.name() + "\" loaded");
+  DEBUG("image \"" + header.path().string() + "\" loaded");
 }
 
 void Base::close(const Header &header) {
@@ -38,7 +38,7 @@ void Base::close(const Header &header) {
     return;
 
   unload(header);
-  DEBUG("image \"" + header.name() + "\" unloaded");
+  DEBUG("image \"" + header.path().string() + "\" unloaded");
   addresses.clear();
 }
 

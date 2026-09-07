@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,12 @@
 
 #include "dwi/tractography/editing/worker.h"
 
+#include "eigen_plugins/eigen_plugins.h"
+#include <Eigen/Dense>
+#include <cstddef>
+
+#include "exception.h"
+
 namespace MR::DWI::Tractography::Editing {
 
 bool Worker::operator()(Streamline<> &in, Streamline<> &out) const {
@@ -24,47 +30,47 @@ bool Worker::operator()(Streamline<> &in, Streamline<> &out) const {
   out.set_index(in.get_index());
   out.weight = in.weight;
 
-  // Need to track exclusion separately, since we may still need to apply
-  //   mask (or, more accurately, their inverse) afterwards if -inverse is specified
-  bool exclude = false;
+  // Need to track exclusion separately, since we may still need to apply mask
+  //   (or, more accurately, their inverse) afterwards if -inverse is specified
+  bool exclude = !thresholds(in);
 
-  if (!thresholds(in)) {
-    exclude = true;
-  } else if (include_visitation.size() || properties.exclude.size()) {
-
-    // Assign to ROIs
-    include_visitation.reset();
-
-    if (ends_only) {
-      for (size_t i = 0; i != 2; ++i) {
-        const Eigen::Vector3f &p(i ? in.back() : in.front());
-        include_visitation(p);
-        if (properties.exclude.contains(p)) {
-          exclude = true;
-          break;
-        }
-      }
-    } else {
-      for (const auto &p : in) {
-        include_visitation(p);
-        if (properties.exclude.contains(p)) {
-          exclude = true;
-          break;
-        }
-      }
-    }
-
-    // Make sure all of the include regions were visited
-    if (!include_visitation)
-      exclude = true;
-
-  } else if (inverse) {
-
+  if (!exclude) {
     // If no thresholds are specified, and no include / exclude ROIs are defined, then
     //   it's still possible that one or more masks have been provided;
     //   if this is the case, then we want to continue processing this streamline,
     //   regardless of whether or not -inverse has been specified
-    exclude = true;
+    if (include_visitation.empty() && properties.exclude.empty() && inverse) {
+
+      exclude = true;
+
+    } else if (!include_visitation.empty() || !properties.exclude.empty()) {
+
+      // Assign to ROIs
+      include_visitation.reset();
+
+      if (ends_only) {
+        for (size_t i = 0; i != 2; ++i) {
+          const Eigen::Vector3f &p(i ? in.back() : in.front());
+          include_visitation(p);
+          if (properties.exclude.contains(p)) {
+            exclude = true;
+            break;
+          }
+        }
+      } else {
+        for (const auto &p : in) {
+          include_visitation(p);
+          if (properties.exclude.contains(p)) {
+            exclude = true;
+            break;
+          }
+        }
+      }
+
+      // Make sure all of the include regions were visited
+      if (!include_visitation)
+        exclude = true;
+    }
   }
 
   // In default usage, pass the empty track down the queue if track is excluded
@@ -104,31 +110,33 @@ bool Worker::operator()(Streamline<> &in, Streamline<> &out) const {
   }
 
   // Stitch back together in preparation for sending down queue as a single track
-  out.push_back({NaN, NaN, NaN});
+  out.push_back({NaNF, NaNF, NaNF});
   for (const auto &i : cropped_tracks) {
     for (const auto &p : i)
       out.push_back(p);
-    out.push_back({NaN, NaN, NaN});
+    out.push_back({NaNF, NaNF, NaNF});
   }
   return true;
 }
 
 Worker::Thresholds::Thresholds(Tractography::Properties &properties)
     : max_length(std::numeric_limits<float>::infinity()),
-      min_length(0.0f),
+      min_length(0.0F),
       max_weight(std::numeric_limits<float>::infinity()),
-      min_weight(0.0f),
+      min_weight(0.0F),
       step_size(properties.get_stepsize()) {
   if (properties.find("max_dist") != properties.end()) {
     try {
       max_length = to<float>(properties["max_dist"]);
-    } catch (...) {
+    } catch (Exception &) {
+      WARN("Ignoring corrupt key-value \"max_dist\"");
     }
   }
   if (properties.find("min_dist") != properties.end()) {
     try {
       min_length = to<float>(properties["min_dist"]);
-    } catch (...) {
+    } catch (Exception &) {
+      WARN("Ignoring corrupt key-value \"min_dist\"");
     }
   }
 

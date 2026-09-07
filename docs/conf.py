@@ -3,6 +3,11 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+# Sphinx reads these module-level names by convention; their lower-case naming
+#   and apparent non-use (they are consumed by Sphinx, not this module) are
+#   inherent to the configuration format.
+# pylint: disable=invalid-name,redefined-builtin,unused-variable
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
@@ -33,4 +38,3 @@ rst_prolog = """
 
   <br/>
 """
-

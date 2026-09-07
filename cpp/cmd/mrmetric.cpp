@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,7 +16,9 @@
 
 #include "algo/loop.h"
 #include "algo/threaded_loop.h"
+#include "app.h"
 #include "command.h"
+#include "enum.h"
 #include "image.h"
 #include "math/math.h"
 
@@ -39,7 +41,6 @@ using namespace MR;
 using namespace App;
 
 constexpr MR::Interp::interp_type default_interp = MR::Interp::interp_type::LINEAR;
-const std::vector<std::string> space_choices = {"voxel", "image1", "image2", "average"};
 enum class space_t { VOXEL, IMAGE1, IMAGE2, AVERAGE };
 constexpr space_t default_space = space_t::VOXEL;
 
@@ -170,7 +171,7 @@ void evaluate_voxelwise_msq(InType1 &in1,
 }
 
 enum MetricType { MeanSquared, CrossCorrelation };
-const std::vector<std::string> metric_choices = {"diff", "cc"};
+enum class MetricChoice { DIFF, CC };
 
 // clang-format off
 void usage() {
@@ -195,13 +196,13 @@ void usage() {
                      " image2: scanner space of image 2;"
                      " average: scanner space of the average affine transformation"
                      " of image 1 and 2;"
-                     " default: " + space_choices[static_cast<ssize_t>(default_space)] + ".")
-    + Argument ("iteration method").type_choice (space_choices)
+                     " default: " + MR::Enum::lowercase_name(default_space) + ".")
+    + Argument ("iteration method").type_choice<space_t>()
 
   + Option ("interp", std::string("set the interpolation method to use when reslicing") +
-                      " (choices: nearest, linear, cubic, sinc."
-                      " Default: " + MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)] + ").")
-    + Argument ("method").type_choice(MR::Interp::interp_choices)
+                      " (choices: " + MR::Enum::join<MR::Interp::interp_type>() + "."
+                      " Default: " + MR::Enum::lowercase_name(default_interp) + ").")
+    + Argument ("method").type_choice<MR::Interp::interp_type>()
 
   + Option ("metric",
             "define the dissimilarity metric used to calculate the cost."
@@ -210,7 +211,7 @@ void usage() {
             " cc (non-normalised negative cross correlation aka negative cross covariance)."
             " Default: diff)."
             " cc is only implemented for -space average and -interp linear and cubic.")
-    + Argument ("method").type_choice (metric_choices)
+    + Argument ("method").type_choice<MetricChoice>()
 
   + Option ("mask1", "mask for image 1")
     + Argument ("image").type_image_in ()
@@ -230,24 +231,21 @@ using value_type = double;
 using MaskType = Image<bool>;
 
 void run() {
-  const space_t space = space_t(get_option_value<ssize_t>("space", static_cast<ssize_t>(default_space)));
-  const MR::Interp::interp_type interp =
-      MR::Interp::interp_type(get_option_value<ssize_t>("interp", static_cast<ssize_t>(default_interp)));
+  const space_t space = get_option_choice<space_t>("space", default_space);
+  const MR::Interp::interp_type interp = get_option_choice<MR::Interp::interp_type>("interp", default_interp);
 
   MetricType metric_type = MetricType::MeanSquared;
-  auto opt = get_options("metric");
-  if (!opt.empty()) {
-    if (int(opt[0][0]) == 1) { // CC
-      if (space != space_t::AVERAGE)
-        throw Exception("CC metric only implemented for use in average space");
-      if (interp != MR::Interp::interp_type::LINEAR && interp != MR::Interp::interp_type::CUBIC)
-        throw Exception("CC metric only implemented for use with linear and cubic interpolation");
-      metric_type = MetricType::CrossCorrelation;
-    }
+  const MetricChoice metric_choice = get_option_choice<MetricChoice>("metric", MetricChoice::DIFF);
+  if (metric_choice == MetricChoice::CC) {
+    if (space != space_t::AVERAGE)
+      throw Exception("CC metric only implemented for use in average space");
+    if (interp != MR::Interp::interp_type::LINEAR && interp != MR::Interp::interp_type::CUBIC)
+      throw Exception("CC metric only implemented for use with linear and cubic interpolation");
+    metric_type = MetricType::CrossCorrelation;
   }
 
-  auto input1 = Image<value_type>::open(argument[0]).with_direct_io(Stride::contiguous_along_axis(3));
-  auto input2 = Image<value_type>::open(argument[1]).with_direct_io(Stride::contiguous_along_axis(3));
+  auto input1 = Image<value_type>::open(argument[0], DirectIO{Stride::contiguous_along_axis(3)});
+  auto input2 = Image<value_type>::open(argument[1], DirectIO{Stride::contiguous_along_axis(3)});
 
   const size_t dimensions = input1.ndim();
   if (input1.ndim() != input2.ndim())
@@ -292,7 +290,7 @@ void run() {
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> sos = Eigen::Matrix<value_type, Eigen::Dynamic, 1>::Zero(volumes, 1);
   if (space == space_t::VOXEL) {
     INFO("per-voxel");
-    check_dimensions(input1, input2);
+    check_voxel_grids_match_in_scanner_space(input1, input2);
     if (!use_mask1 and !use_mask2)
       n_voxels = input1.size(0) * input1.size(1) * input1.size(2);
     evaluate_voxelwise_msq(input1, input2, mask1, mask2, dimensions, use_mask1, use_mask2, n_voxels, sos);

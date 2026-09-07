@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,11 +16,13 @@
 
 #include "algo/threaded_loop.h"
 #include "command.h"
+#include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "file/matrix.h"
 #include "image.h"
 #include "math/SH.h"
+#include "math/sphere.h"
 #include "metadata/phase_encoding.h"
 #include "progressbar.h"
 
@@ -85,7 +87,7 @@ void usage() {
 // clang-format on
 
 using value_type = float;
-constexpr value_type rician_power = 2.25F;
+constexpr default_type rician_power = 2.25;
 
 class Amp2SHCommon {
 public:
@@ -105,7 +107,11 @@ public:
 class Amp2SH {
 public:
   Amp2SH(const Amp2SHCommon &common)
-      : C(common), a(common.amp2sh.cols()), s(common.amp2sh.rows()), c(common.amp2sh.rows()) {}
+      : C(common),
+        a(common.amp2sh.cols()),
+        s(common.amp2sh.rows()),
+        c(common.amp2sh.rows()),
+        Q(common.amp2sh.rows(), common.amp2sh.rows()) {}
 
   template <class SHImageType, class AmpImageType> void operator()(SHImageType &SH, AmpImageType &amp) {
     get_amps(amp);
@@ -119,19 +125,19 @@ public:
     w = Eigen::VectorXd::Ones(C.sh2amp.rows());
 
     get_amps(amp);
-    c = C.amp2sh * a;
+    c.noalias() = C.amp2sh * a;
 
     for (size_t iter = 0; iter < 20; ++iter) {
       sh2amp = C.sh2amp;
       if (get_rician_bias(sh2amp, noise.value()))
         break;
-      for (ssize_t n = 0; n < sh2amp.rows(); ++n)
+      for (Eigen::Index n = 0; n < C.sh2amp.rows(); ++n)
         sh2amp.row(n).array() *= w[n];
 
       s.noalias() = sh2amp.transpose() * ap;
       Q.triangularView<Eigen::Lower>() = sh2amp.transpose() * sh2amp;
       llt.compute(Q);
-      c = llt.solve(s);
+      c.noalias() = llt.solve(s);
     }
 
     write_SH(SH);
@@ -165,12 +171,12 @@ protected:
   }
 
   bool get_rician_bias(const Eigen::MatrixXd &sh2amp, default_type noise) {
-    ap = sh2amp * c;
+    ap.noalias() = sh2amp * c;
     default_type norm_diff = 0.0;
     default_type norm_amp = 0.0;
     for (ssize_t n = 0; n < ap.size(); ++n) {
-      ap[n] = std::max(ap[n], default_type(0.0));
-      const default_type t = std::pow(ap[n] / noise, default_type(rician_power));
+      ap[n] = std::max(ap[n], 0.0);
+      const default_type t = std::pow(ap[n] / noise, rician_power);
       w[n] = Math::pow2((t + 1.7) / (t + 1.12));
       const default_type diff = a[n] - noise * std::pow(t + 1.65, 1.0 / rician_power);
       norm_diff += Math::pow2(diff);
@@ -191,6 +197,13 @@ void run() {
   auto opt = get_options("directions");
   if (!opt.empty()) {
     dirs = File::Matrix::load_matrix(opt[0][0]);
+    auto dv = DWI::Directions::validate(dirs, opt[0][0], false);
+    if (dv.n_non_unit > 0) {
+      WARN("Input directions file \"" + opt[0][0] + "\"" +                          //
+           " contains " + str(dv.n_non_unit) + " direction" +                       //
+           (dv.n_non_unit > 1 ? "s that are" : " that is") + " not of unit norm;" + //
+           " all directions will be interpreted agnostically of norm");             //
+    }
     if (dirs.cols() == 3)
       dirs = Math::Sphere::cartesian2spherical(dirs);
   } else {
@@ -231,12 +244,12 @@ void run() {
   Stride::set_from_command_line(header_out);
 
   Amp2SHCommon common(sh2amp, bzeros, dwis, normalise);
-  auto amp = header_in.get_image<value_type>().with_direct_io(3);
+  auto amp = header_in.get_image<value_type>(DirectIO{3});
   auto SH = Image<value_type>::create(argument[1], header_out);
 
   opt = get_options("rician");
   if (!opt.empty()) {
-    auto noise = Image<value_type>::open(opt[0][0]).with_direct_io();
+    auto noise = Image<value_type>::open(opt[0][0]);
     ThreadedLoop("mapping amplitudes to SH coefficients", amp, 0, 3).run(Amp2SH(common), SH, amp, noise);
   } else {
     ThreadedLoop("mapping amplitudes to SH coefficients", amp, 0, 3).run(Amp2SH(common), SH, amp);

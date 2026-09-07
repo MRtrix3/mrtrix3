@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,19 +15,20 @@
  */
 
 #include "file/nifti_utils.h"
+
+#include <array>
+#include <nifti1.h>
+#include <nifti2.h>
+
 #include "file/config.h"
 #include "file/gz.h"
 #include "file/json_utils.h"
 #include "file/ofstream.h"
 #include "file/path.h"
-#include "file/utils.h"
 #include "header.h"
 #include "image_io/default.h"
 #include "image_io/gz.h"
 #include "raw.h"
-
-#include <nifti1.h>
-#include <nifti2.h>
 
 namespace MR::File::NIfTI {
 
@@ -38,14 +39,14 @@ template <class NiftiHeader> struct Type {
   using dim_type = int16_t;
   using vox_offset_type = float32;
   static constexpr bool is_version2 = false;
-  static const char *signature_extra() { return "\0\0\0\0"; }
-  static const char *magic1() { return "n+1\0"; }
-  static const char *magic2() { return "ni1\0"; }
+  static constexpr std::array<char, 4> signature_extra{'\0', '\0', '\0', '\0'};
+  static constexpr std::array<char, 4> magic1{'n', '+', '1', '\0'};
+  static constexpr std::array<char, 4> magic2{'n', 'i', '1', '\0'};
   static const std::string version() { return "NIFTI-1.1"; }
-  static const char *db_name(const NiftiHeader &NH) { return NH.db_name; }
-  static char *db_name(NiftiHeader &NH) { return NH.db_name; }
+  static const char *db_name(const NiftiHeader &NH) { return NH.db_name; } // check_syntax off
+  static char *db_name(NiftiHeader &NH) { return NH.db_name; }             // check_syntax off
   static int *extents(NiftiHeader &NH) { return &NH.extents; }
-  static char *regular(NiftiHeader &NH) { return &NH.regular; }
+  static char *regular(NiftiHeader &NH) { return &NH.regular; } // check_syntax off
 };
 
 template <> struct Type<nifti_2_header> {
@@ -54,14 +55,14 @@ template <> struct Type<nifti_2_header> {
   using dim_type = int64_t;
   using vox_offset_type = int64_t;
   static constexpr bool is_version2 = true;
-  static const char *signature_extra() { return "\r\n\032\n"; }
-  static const char *magic1() { return "n+2\0"; }
-  static const char *magic2() { return "ni2\0"; }
+  static constexpr std::array<char, 4> signature_extra{'\r', '\n', '\032', '\n'};
+  static constexpr std::array<char, 4> magic1{'n', '+', '2', '\0'};
+  static constexpr std::array<char, 4> magic2{'n', 'i', '2', '\0'};
   static const std::string version() { return "NIFTI-2"; }
-  static const char *db_name(const nifti_2_header &NH) { return nullptr; }
-  static char *db_name(nifti_2_header &NH) { return nullptr; }
+  static const char *db_name(const nifti_2_header &NH) { return nullptr; } // check_syntax off
+  static char *db_name(nifti_2_header &NH) { return nullptr; }             // check_syntax off
   static int *extents(nifti_2_header &NH) { return nullptr; }
-  static char *regular(nifti_2_header &NH) { return nullptr; }
+  static char *regular(nifti_2_header &NH) { return nullptr; } // check_syntax off
 };
 
 const std::vector<std::string> suffixes{".nii", ".img"};
@@ -70,7 +71,7 @@ const std::vector<std::string> suffixes{".nii", ".img"};
 bool right_left_warning_issued = false;
 
 template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
-  const std::string &version = Type<NiftiHeader>::version();
+  const std::string version = Type<NiftiHeader>::version();
   using dim_type = typename Type<NiftiHeader>::dim_type;
   using code_type = typename Type<NiftiHeader>::code_type;
   using float_type = typename Type<NiftiHeader>::float_type;
@@ -80,30 +81,29 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
   if (Raw::fetch_<int32_t>(&NH.sizeof_hdr, is_BE) != sizeof(NH)) {
     is_BE = true;
     if (Raw::fetch_<int32_t>(&NH.sizeof_hdr, is_BE) != sizeof(NH))
-      throw Exception("image \"" + H.name() + "\" is not in " + version + " format (sizeof_hdr != " + str(sizeof(NH)) +
-                      ")");
+      throw Exception("image \"" + H.path().string() + "\" is not in " + version +
+                      " format (sizeof_hdr != " + str(sizeof(NH)) + ")");
   }
 
   bool is_nifti = true;
-  if (memcmp(NH.magic, Type<NiftiHeader>::magic1(), 4) && memcmp(NH.magic, Type<NiftiHeader>::magic2(), 4)) {
+  if (memcmp(&NH.magic[0], Type<NiftiHeader>::magic1.data(), 4) != 0 &&
+      memcmp(&NH.magic[0], Type<NiftiHeader>::magic2.data(), 4) != 0) {
     if (Type<NiftiHeader>::is_version2) {
-      throw Exception("image \"" + H.name() + "\" is not in " + version + " format (invalid magic signature)");
+      throw Exception("image \"" + H.path().string() + "\" is not in " + version + " format (invalid magic signature)");
     } else {
       is_nifti = false;
-      DEBUG("assuming image \"" + H.name() + "\" is in AnalyseAVW format.");
+      DEBUG("assuming image \"" + H.path().string() + "\" is in AnalyseAVW format.");
     }
   }
 
   if (Type<NiftiHeader>::is_version2) {
-    if (memcmp(NH.magic + 4, Type<NiftiHeader>::signature_extra(), 4))
-      WARN("possible file transfer corruption of file \"" + H.name() + "\" (invalid magic signature)");
+    if (memcmp(&NH.magic[4], Type<NiftiHeader>::signature_extra.data(), 4) != 0)
+      WARN("possible file transfer corruption of file \"" + H.path().string() + "\" (invalid magic signature)");
   } else {
-    char db_name[19];
-    strncpy(db_name, Type<NiftiHeader>::db_name(NH), 18);
-    if (db_name[0]) {
-      db_name[18] = '\0';
+    std::string db_name(19, '\0');
+    strncpy(&db_name[0], Type<NiftiHeader>::db_name(NH), 18); // check_syntax off
+    if (db_name[0] != '\0')
       add_line(H.keyval()["comments"], db_name);
-    }
   }
 
   DataType dtype;
@@ -148,7 +148,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
     dtype = DataType::CFloat64;
     break;
   default:
-    throw Exception("unknown data type for " + version + " image \"" + H.name() + "\"");
+    throw Exception("unknown data type for " + version + " image \"" + H.path().string() + "\"");
   }
 
   if (!(dtype.is(DataType::Bit) || dtype.is(DataType::UInt8) || dtype.is(DataType::Int8))) {
@@ -158,23 +158,23 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
       dtype.set_flag(DataType::LittleEndian);
   }
 
-  if (Raw::fetch_<int16_t>(&NH.bitpix, is_BE) != (int16_t)dtype.bits())
-    WARN("bitpix field does not match data type in " + version + " image \"" + H.name() + "\" - ignored");
+  if (Raw::fetch_<int16_t>(&NH.bitpix, is_BE) != static_cast<int16_t>(dtype.bits()))
+    WARN("bitpix field does not match data type in " + version + " image \"" + H.path().string() + "\" - ignored");
 
   H.datatype() = dtype;
 
   const int ndim = Raw::fetch_<dim_type>(&NH.dim, is_BE);
   if (ndim < 1)
-    throw Exception("too few dimensions specified in NIfTI image \"" + H.name() + "\"");
+    throw Exception("too few dimensions specified in NIfTI image \"" + H.path().string() + "\"");
   if (ndim > 7)
-    throw Exception("too many dimensions specified in NIfTI image \"" + H.name() + "\"");
+    throw Exception("too many dimensions specified in NIfTI image \"" + H.path().string() + "\"");
   H.ndim() = ndim;
   for (int i = 0; i != ndim; i++) {
     H.size(i) = Raw::fetch_<dim_type>(&NH.dim[i + 1], is_BE);
     if (H.size(i) < 0) {
-      INFO("dimension along axis " + str(i) + " specified as negative in NIfTI image \"" + H.name() +
+      INFO("dimension along axis " + str(i) + " specified as negative in NIfTI image \"" + H.path().string() +
            "\" - taking absolute value");
-      H.size(i) = abs(H.size(i));
+      H.size(i) = MR::abs(H.size(i));
     }
     if (!H.size(i))
       H.size(i) = 1;
@@ -182,13 +182,13 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
   }
 
   // voxel sizes:
-  double pixdim[8];
+  std::array<double, 8> pixdim{};
   for (int i = 0; i < ndim; i++) {
     pixdim[i] = Raw::fetch_<float_type>(&NH.pixdim[i + 1], is_BE);
     if (pixdim[i] < 0.0) {
-      INFO("voxel size along axis " + str(i) + " specified as negative in NIfTI image \"" + H.name() +
+      INFO("voxel size along axis " + str(i) + " specified as negative in NIfTI image \"" + H.path().string() +
            "\" - taking absolute value");
-      pixdim[i] = abs(pixdim[i]);
+      pixdim[i] = std::fabs(pixdim[i]);
     }
     H.spacing(i) = pixdim[i];
   }
@@ -205,14 +205,14 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
 
   const int64_t data_offset = Raw::fetch_<vox_offset_type>(&NH.vox_offset, is_BE);
 
-  char descrip[81];
-  strncpy(descrip, NH.descrip, 80);
-  if (descrip[0]) {
-    descrip[80] = '\0';
-    if (strncmp(descrip, "MRtrix version: ", 16) == 0)
-      H.keyval()["mrtrix_version"] = descrip + 16;
+  std::string descrip(81, '\0');
+  strncpy(&descrip[0], NH.descrip, 80); // check_syntax off
+  if (descrip[0] != '\0') {
+    descrip.resize(descrip.find('\0'));
+    if (descrip.substr(0, 16) == "MRtrix version: ")
+      H.keyval()["mrtrix_version"] = descrip.substr(16);
     else
-      add_line(H.keyval()["comments"], descrip);
+      add_line(H.keyval()["comments"], descrip.data());
   }
 
   // used to rescale voxel sizes in case of mismatch between pixdim and
@@ -242,9 +242,9 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
       M(2, 3) = Raw::fetch_<float_type>(&NH.srow_z[3], is_BE);
 
       // check voxel sizes:
-      for (size_t axis = 0; axis != 3; ++axis) {
-        if (size_t(H.ndim()) > axis) {
-          if (abs(pixdim[axis] / M.col(axis).head<3>().norm() - 1.0) > 1e-5) {
+      for (ssize_t axis = 0; axis != 3; ++axis) {
+        if (H.ndim() > axis) {
+          if (std::fabs(pixdim[axis] / M.col(axis).head<3>().norm() - 1.0) > 1e-5) {
             WARN("voxel spacings inconsistent between NIFTI s-form and header field pixdim");
             rescale_voxel_sizes = true;
             break;
@@ -254,8 +254,8 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
 
       // normalize each transform axis and rescale voxel sizes if
       // needed:
-      for (size_t axis = 0; axis != 3; ++axis) {
-        if (size_t(H.ndim()) > axis) {
+      for (ssize_t axis = 0; axis != 3; ++axis) {
+        if (H.ndim() > axis) {
           auto length = M.col(axis).head<3>().norm();
           M.col(axis).head<3>() /= length;
           H.spacing(axis) = rescale_voxel_sizes ? length : pixdim[axis];
@@ -300,7 +300,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
         Header header2(H);
         header2.transform() = M_qform;
         if (!voxel_grids_match_in_scanner_space(H, header2, 0.1))
-          WARN("qform and sform are inconsistent in NIfTI image \"" + H.name() + "\" - using " +
+          WARN("qform and sform are inconsistent in NIfTI image \"" + H.path().string() + "\" - using " +
                (use_sform ? "sform" : "qform"));
       }
 
@@ -317,15 +317,8 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
     // CONF A boolean value to indicate whether, when opening NIfTI images,
     // CONF any corresponding JSON file should be automatically loaded.
     if (File::Config::get_bool("NIfTIAutoLoadJSON", false)) {
-      std::string json_path = H.name();
-      if (Path::has_suffix(json_path, ".nii.gz"))
-        json_path = json_path.substr(0, json_path.size() - 7);
-      else if (Path::has_suffix(json_path, ".nii"))
-        json_path = json_path.substr(0, json_path.size() - 4);
-      else
-        assert(0);
-      json_path += ".json";
-      if (Path::exists(json_path))
+      std::filesystem::path json_path = get_json_path(static_cast<const Header &>(H).path());
+      if (std::filesystem::exists(json_path))
         File::JSON::load(H, json_path);
     }
   } else {
@@ -347,14 +340,14 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
 }
 
 template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const bool single_file) {
-  const std::string &version = Type<NiftiHeader>::version();
+  const std::string version = Type<NiftiHeader>::version();
   using dim_type = typename Type<NiftiHeader>::dim_type;
   using vox_offset_type = typename Type<NiftiHeader>::vox_offset_type;
   using code_type = typename Type<NiftiHeader>::code_type;
   using float_type = typename Type<NiftiHeader>::float_type;
 
   if (H.ndim() > 7)
-    throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
+    throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.path().string() + "\"");
 
   bool is_BE = H.datatype().is_big_endian();
 
@@ -366,16 +359,21 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
   // magic number:
   Raw::store<int32_t>(sizeof(NH), &NH.sizeof_hdr, is_BE);
 
-  memcpy((char *)&NH.magic, single_file ? Type<NiftiHeader>::magic1() : Type<NiftiHeader>::magic2(), 4);
+  memcpy((char *)&NH.magic, single_file ? Type<NiftiHeader>::magic1.data() : Type<NiftiHeader>::magic2.data(), 4);
   if (Type<NiftiHeader>::is_version2)
-    memcpy((char *)&NH.magic + 4, Type<NiftiHeader>::signature_extra(), 4);
+    memcpy((char *)&NH.magic + 4, Type<NiftiHeader>::signature_extra.data(), 4);
 
   if (!Type<NiftiHeader>::is_version2) {
     const auto hit = H.keyval().find("comments");
-    auto comments = split_lines(hit == H.keyval().end() ? std::string() : hit->second);
-    strncpy(
-        Type<NiftiHeader>::db_name(NH), !comments.empty() ? comments[0].c_str() : "untitled\0\0\0\0\0\0\0\0\0\0\0", 17);
-    Type<NiftiHeader>::db_name(NH)[17] = '\0';
+    if (hit == H.keyval().end()) {
+      memcpy(Type<NiftiHeader>::db_name(NH), "untitled\0\0\0\0\0\0\0\0\0\0", 18);
+    } else {
+      auto comments = split_lines(hit->second);
+      strncpy(Type<NiftiHeader>::db_name(NH), // check_syntax off
+              comments[0].c_str(),
+              17);
+      Type<NiftiHeader>::db_name(NH)[17] = '\0';
+    }
     Raw::store<int32_t>(16384, Type<NiftiHeader>::extents(NH), is_BE);
     *Type<NiftiHeader>::regular(NH) = 'r';
   }
@@ -434,7 +432,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
     dt = DT_COMPLEX128;
     break;
   default:
-    throw Exception("unknown data type for " + version + " image \"" + H.name() + "\"");
+    throw Exception("unknown data type for " + version + " image \"" + H.path().string() + "\"");
   }
   Raw::store<int16_t>(dt, &NH.datatype, is_BE);
 
@@ -468,10 +466,11 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
   Raw::store<float_type>(H.intensity_scale(), &NH.scl_slope, is_BE);
   Raw::store<float_type>(H.intensity_offset(), &NH.scl_inter, is_BE);
 
-  std::string version_string = std::string("MRtrix version: ") + App::mrtrix_version;
-  if (App::project_version)
-    version_string += std::string(", project version: ") + App::project_version;
-  strncpy((char *)&NH.descrip, version_string.c_str(), 79);
+  std::string version_string = "MRtrix version: " + App::mrtrix_version;
+  if (!App::project_version.empty())
+    version_string += ", project version: " + App::project_version;
+  strncpy((char *)&NH.descrip, version_string.c_str(), 79); // check_syntax off
+  NH.descrip[79] = '\0';
 
   // qform:
   Eigen::Matrix3d R = M.matrix().topLeftCorner<3, 3>();
@@ -497,7 +496,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
     Raw::store<float_type>(M(1, 3), &NH.qoffset_y, is_BE);
     Raw::store<float_type>(M(2, 3), &NH.qoffset_z, is_BE);
   } else {
-    WARN("image \"" + H.name() + "\" contains non-rigid transform - qform will not be stored.");
+    WARN("image \"" + H.path().string() + "\" contains non-rigid transform - qform will not be stored.");
     Raw::store<code_type>(NIFTI_XFORM_UNKNOWN, &NH.qform_code, is_BE);
   }
 
@@ -520,8 +519,8 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
   Raw::store<float_type>(M(2, 3), &NH.srow_z[3], is_BE);
 
   if (Type<NiftiHeader>::is_version2) {
-    const char xyzt_units[4]{NIFTI_UNITS_MM, NIFTI_UNITS_MM, NIFTI_UNITS_MM, NIFTI_UNITS_SEC};
-    const int32_t *const xyzt_units_as_int_ptr = reinterpret_cast<const int32_t *>(xyzt_units);
+    const std::array<char, 4> xyzt_units{NIFTI_UNITS_MM, NIFTI_UNITS_MM, NIFTI_UNITS_MM, NIFTI_UNITS_SEC};
+    const int32_t *const xyzt_units_as_int_ptr = reinterpret_cast<const int32_t *>(xyzt_units.data());
     Raw::store<int32_t>(*xyzt_units_as_int_ptr, &NH.xyzt_units, is_BE);
   } else
     NH.xyzt_units = SPACE_TIME_TO_XYZT(NIFTI_UNITS_MM, NIFTI_UNITS_SEC);
@@ -533,15 +532,8 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
   // CONF to save any header entries that cannot be stored in the NIfTI
   // CONF header.
   if (single_file && File::Config::get_bool("NIfTIAutoSaveJSON", false)) {
-    std::string json_path = H.name();
-    if (Path::has_suffix(json_path, ".nii.gz"))
-      json_path = json_path.substr(0, json_path.size() - 7);
-    else if (Path::has_suffix(json_path, ".nii"))
-      json_path = json_path.substr(0, json_path.size() - 4);
-    else
-      assert(0);
-    json_path += ".json";
-    File::JSON::save(H, json_path, H.name());
+    std::filesystem::path json_path = get_json_path(H.path());
+    File::JSON::save(H, json_path, H.path());
   }
 }
 
@@ -573,7 +565,7 @@ transform_type adjust_transform(const Header &H, Axes::permutations_type &axes) 
   auto translation = M_out.col(3);
   for (size_t i = 0; i < 3; ++i) {
     if (shuffle.flips[i]) {
-      auto length = default_type(H.size(axes[i]) - 1) * H.spacing(axes[i]);
+      auto length = static_cast<default_type>(H.size(axes[i]) - 1) * H.spacing(axes[i]);
       auto axis = M_out.col(i);
       axis = -axis;
       translation -= length * axis;
@@ -584,13 +576,13 @@ transform_type adjust_transform(const Header &H, Axes::permutations_type &axes) 
 }
 
 bool check(int VERSION, Header &H, const size_t num_axes, const std::vector<std::string> &suffixes) {
-  if (!Path::has_suffix(H.name(), suffixes))
+  if (!Path::has_suffix(H.path(), suffixes))
     return false;
 
   if (version(H) != VERSION)
     return false;
 
-  std::string format = VERSION == 1 ? Type<nifti_1_header>::version() : Type<nifti_2_header>::version();
+  const std::string format = VERSION == 1 ? Type<nifti_1_header>::version() : Type<nifti_2_header>::version();
 
   if (num_axes < 3)
     throw Exception("cannot create " + format + " image with less than 3 dimensions");
@@ -607,8 +599,8 @@ bool check(int VERSION, Header &H, const size_t num_axes, const std::vector<std:
   // while preserving original strides as much as possible
   ssize_t max_spatial_stride = 0;
   for (size_t n = 0; n < 3; ++n)
-    if (abs(H.stride(n)) > max_spatial_stride)
-      max_spatial_stride = abs(H.stride(n));
+    if (MR::abs(H.stride(n)) > max_spatial_stride)
+      max_spatial_stride = MR::abs(H.stride(n));
   for (size_t n = 3; n < H.ndim(); ++n)
     H.stride(n) += H.stride(n) > 0 ? max_spatial_stride : -max_spatial_stride;
   Stride::symbolise(H);
@@ -644,17 +636,18 @@ template <> struct Get<2> {
 template <int VERSION> std::unique_ptr<ImageIO::Base> read(Header &H) {
   using nifti_header = typename Get<VERSION>::type;
 
-  if (!Path::has_suffix(H.name(), ".nii") && !Path::has_suffix(H.name(), ".img"))
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  if (!Path::has_suffix(hpath, ".nii") && !Path::has_suffix(hpath, ".img"))
     return std::unique_ptr<ImageIO::Base>();
 
-  const bool single_file = Path::has_suffix(H.name(), ".nii");
-  const std::string header_path = single_file ? H.name() : H.name().substr(0, H.name().size() - 4) + ".hdr";
+  const bool single_file = Path::has_suffix(hpath, ".nii");
+  std::filesystem::path header_path = single_file ? hpath : std::filesystem::path(hpath).replace_extension(".hdr");
 
   try {
-    File::MMap fmap(header_path);
+    File::MMap fmap{MR::File::Entry(header_path)};
     const size_t data_offset = fetch(H, *((const nifti_header *)fmap.address()));
     std::unique_ptr<ImageIO::Default> handler(new ImageIO::Default(H));
-    handler->files.push_back(File::Entry(H.name(), (single_file ? data_offset : 0)));
+    handler->files.push_back(File::Entry(hpath, (single_file ? data_offset : 0)));
     return handler;
   } catch (Exception &e) {
     e.display();
@@ -665,12 +658,12 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read(Header &H) {
 template <int VERSION> std::unique_ptr<ImageIO::Base> read_gz(Header &H) {
   using nifti_header = typename Get<VERSION>::type;
 
-  if (!Path::has_suffix(H.name(), ".nii.gz"))
+  if (!Path::has_suffix(H.path(), ".nii.gz"))
     return std::unique_ptr<ImageIO::Base>();
 
   nifti_header NH;
-  File::GZ zf(H.name(), "rb");
-  zf.read(reinterpret_cast<char *>(&NH), sizeof(NH));
+  File::GZ zf(H.path(), "rb");
+  zf.read(reinterpret_cast<void *>(&NH), sizeof(NH));
   zf.close();
 
   try {
@@ -678,27 +671,28 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read_gz(Header &H) {
     std::unique_ptr<ImageIO::GZ> io_handler(new ImageIO::GZ(H, data_offset));
     memcpy(io_handler.get()->header(), &NH, sizeof(NH));
     memset(io_handler.get()->header() + sizeof(NH), 0, sizeof(nifti1_extender));
-    io_handler->files.push_back(File::Entry(H.name(), data_offset));
+    io_handler->files.push_back(File::Entry(static_cast<const Header &>(H).path(), data_offset));
     return io_handler;
-  } catch (...) {
-    return std::unique_ptr<ImageIO::Base>();
+  } catch (Exception &e) {
+    throw Exception(e, "Error reading compressed NIfTI image \"" + H.name() + "\"");
   }
 }
 
 template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
   using nifti_header = typename Get<VERSION>::type;
-  const std::string &version = Type<nifti_header>::version();
+  const std::string version = Type<nifti_header>::version();
 
   if (H.ndim() > 7)
-    throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
+    throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.path().string() + "\"");
 
-  const bool single_file = Path::has_suffix(H.name(), ".nii");
-  const std::string header_path = single_file ? H.name() : H.name().substr(0, H.name().size() - 4) + ".hdr";
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  const bool single_file = Path::has_suffix(hpath, ".nii");
+  std::filesystem::path header_path = single_file ? hpath : std::filesystem::path(hpath).replace_extension(".hdr");
 
   nifti_header NH;
   store(NH, H, single_file);
   File::OFStream out(header_path, std::ios::out | std::ios::binary);
-  out.write((char *)&NH, sizeof(nifti_header));
+  out.write((const char *)&NH, sizeof(nifti_header));
   nifti1_extender extender;
   memset(extender.extension, 0x00, sizeof(nifti1_extender));
   out.write(extender.extension, sizeof(nifti1_extender));
@@ -707,22 +701,25 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
   const size_t data_offset = single_file ? sizeof(NH) + 4 : 0;
 
   if (single_file)
-    File::resize(H.name(), data_offset + footprint(H));
-  else
-    File::create(H.name(), footprint(H));
+    std::filesystem::resize_file(hpath, data_offset + footprint(H));
+  else {
+    File::OFStream data_file(hpath);
+    data_file.close();
+    std::filesystem::resize_file(hpath, footprint(H));
+  }
 
   std::unique_ptr<ImageIO::Default> handler(new ImageIO::Default(H));
-  handler->files.push_back(File::Entry(H.name(), data_offset));
+  handler->files.push_back(File::Entry(hpath, data_offset));
 
   return handler;
 }
 
 template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H) {
   using nifti_header = typename Get<VERSION>::type;
-  const std::string &version = Type<nifti_header>::version();
+  const std::string version = Type<nifti_header>::version();
 
   if (H.ndim() > 7)
-    throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
+    throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.path().string() + "\"");
 
   std::unique_ptr<ImageIO::GZ> io_handler(new ImageIO::GZ(H, sizeof(nifti_header) + 4));
   nifti_header &NH = *reinterpret_cast<nifti_header *>(io_handler->header());
@@ -730,8 +727,10 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H) {
   store(NH, H, true);
   memset(io_handler->header() + sizeof(nifti_header), 0, sizeof(nifti1_extender));
 
-  File::create(H.name());
-  io_handler->files.push_back(File::Entry(H.name(), sizeof(nifti_header) + 4));
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  File::OFStream data_file(hpath);
+  data_file.close();
+  io_handler->files.push_back(File::Entry(hpath, sizeof(nifti_header) + 4));
 
   return io_handler;
 }
@@ -761,7 +760,7 @@ int version(Header &H) {
 
   for (size_t axis = 0; axis != H.ndim(); ++axis) {
     if (H.size(axis) > std::numeric_limits<int16_t>::max()) {
-      INFO("Forcing file \"" + H.name() + "\" to use NIfTI version 2 due to image dimensions");
+      INFO("Forcing file \"" + H.path().string() + "\" to use NIfTI version 2 due to image dimensions");
       return 2;
     }
   }
@@ -769,15 +768,16 @@ int version(Header &H) {
   return 1;
 }
 
-std::string get_json_path(const std::string &nifti_path) {
-  std::string json_path;
-  if (Path::has_suffix(nifti_path, ".nii.gz"))
-    json_path = nifti_path.substr(0, nifti_path.size() - 7);
-  else if (Path::has_suffix(nifti_path, ".nii"))
-    json_path = nifti_path.substr(0, nifti_path.size() - 4);
+std::filesystem::path get_json_path(const std::filesystem::path &nifti_path) {
+  std::filesystem::path json_path = nifti_path;
+  if (Path::has_suffix(json_path, ".nii.gz"))
+    json_path.replace_filename(json_path.stem().stem());
+  else if (Path::has_suffix(json_path, ".nii"))
+    json_path.replace_filename(json_path.stem());
   else
     assert(0);
-  return json_path + ".json";
+  json_path.replace_extension(".json");
+  return json_path;
 }
 
 } // namespace MR::File::NIfTI

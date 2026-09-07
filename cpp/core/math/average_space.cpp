@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,7 +26,7 @@ double matrix_average(std::vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixX
   assert(cols);
   // check input
   for (const auto &mat : mat_in) {
-    if (cols != (size_t)mat.cols() or rows != (size_t)mat.rows())
+    if (cols != static_cast<size_t>(mat.cols()) || rows != static_cast<size_t>(mat.rows()))
       throw Exception("matrix average cannot be computed for matrices of different size");
   }
   mat_avg.resize(rows, cols);
@@ -55,9 +55,6 @@ double matrix_average(std::vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixX
 } // namespace MR::Math
 
 namespace MR {
-
-const std::vector<std::string> avgspace_voxspacing_choices{
-    "min_projection", "mean_projection", "min_nearest", "mean_nearest"};
 
 FORCE_INLINE Eigen::Matrix<default_type, 8, 4> get_cuboid_corners(const Eigen::Matrix<default_type, 4, 1> &xyz_sizes) {
   Eigen::Matrix<default_type, 8, 4> corners;
@@ -269,8 +266,8 @@ void compute_average_voxel2scanner(
     average_space_extent(1) = std::round(average_space_extent(1)) + 1;
     average_space_extent(2) = std::round(average_space_extent(2)) + 1;
 
-    Eigen::Vector3d c000 =
-        average_v2s_trafo.linear() * (bounding_box_corners_inv_min - padding).head<3>(); // voxel space min corner
+    // voxel space min corner
+    Eigen::Vector3d c000 = average_v2s_trafo.linear() * (bounding_box_corners_inv_min - padding).head<3>();
     average_v2s_trafo.matrix().col(3).template head<3>() = c000.template head<3>();
   }
 }

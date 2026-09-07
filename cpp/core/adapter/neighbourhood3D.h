@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -39,12 +39,8 @@ public:
     for (size_t i = 0; i < ndim(); ++i) {
       from_[i] = (iter_.index(i) - extent[i] < 0) ? 0 : iter_.index(i) - extent[i];
       size_[i] = (from_[i] + extent[i] >= original.size(i)) ? original.size(i) - from_[i] - 1 : extent[i];
-      assert(from_[n] + size_[n] < original.size(n));
+      assert(from_[i] + size_[i] < original.size(i));
     }
-
-    // for (size_t n = 0; n < ndim(); ++n)
-    //   if (from_[n] + size_[n] > original.size(n))
-    //     throw Exception ("FIXME: dimensions requested for NeighbourhoodCoord adapter are out of bounds!");
 
     for (size_t j = 0; j < 3; ++j)
       for (size_t i = 0; i < 3; ++i)

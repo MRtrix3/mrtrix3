@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,6 +22,8 @@
 #include "mutexprotected.h"
 #include "thread.h"
 #include <tuple>
+#include <type_traits>
+#include <utility>
 
 namespace MR {
 
@@ -296,11 +298,16 @@ template <class Functor, class... ImageType> struct ThreadedLoopRunInner<0, Func
   }
 };
 
-inline void __manage_progress(...) {}
+//! Detect whether \a LoopType exposes a \c progress member to be updated during threaded execution.
+template <class LoopType, class = void> struct has_progress : std::false_type {};
+template <class LoopType>
+struct has_progress<LoopType, std::void_t<decltype(std::declval<const LoopType &>().progress)>> : std::true_type {};
+
+//! Spawn a progress-update thread for the duration of the loop, but only if \a loop carries a progress bar.
 template <class LoopType, class ThreadType>
-inline auto __manage_progress(const LoopType *loop, const ThreadType *threads)
-    -> decltype((void)(&loop->progress), void()) {
-  loop->progress.run_update_thread(*threads);
+inline void _manage_progress(const LoopType *loop, const ThreadType *threads) {
+  if constexpr (has_progress<LoopType>::value)
+    loop->progress.run_update_thread(*threads);
 }
 
 template <class OuterLoopType> struct ThreadedLoopRunOuter {
@@ -337,9 +344,13 @@ template <class OuterLoopType> struct ThreadedLoopRunOuter {
     };
 
     MutexProtected<Shared> shared = {iterator, outer_loop(iterator)};
-
+    auto get_iterator = [](MutexProtected<Shared> &shared) {
+      auto guard = shared.lock();
+      return guard->iterator;
+    };
     struct PerThread {
       MutexProtected<Shared> &shared;
+      Iterator pos;
       PerThread(const PerThread &) = default;
       PerThread(PerThread &&) noexcept = default;
       PerThread &operator=(const PerThread &) = delete;
@@ -347,16 +358,15 @@ template <class OuterLoopType> struct ThreadedLoopRunOuter {
       ~PerThread() = default;
       typename std::remove_reference<Functor>::type func;
       void execute() {
-        auto pos = shared.lock()->iterator;
         while (shared.lock()->next(pos))
           func(pos);
       }
-    } loop_thread = {shared, functor};
+    } loop_thread = {shared, get_iterator(shared), functor};
 
     auto threads = Thread::run(Thread::multi(loop_thread), "loop threads");
 
     auto *loop = &(shared.lock()->loop);
-    __manage_progress(loop, &threads);
+    _manage_progress(loop, &threads);
     threads.wait();
   }
 
@@ -405,7 +415,7 @@ ThreadedLoop(const HeaderType &source,
 //* \sa image_thread_looping for details */
 template <class HeaderType>
 inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))>
-ThreadedLoop(const std::string &progress_message,
+ThreadedLoop(std::string_view progress_message,
              const HeaderType &source,
              const std::vector<size_t> &outer_axes,
              const std::vector<size_t> &inner_axes) {
@@ -415,7 +425,7 @@ ThreadedLoop(const std::string &progress_message,
 //! Multi-threaded loop object
 //* \sa image_thread_looping for details */
 template <class HeaderType>
-inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))> ThreadedLoop(const std::string &progress_message,
+inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))> ThreadedLoop(std::string_view progress_message,
                                                                                     const HeaderType &source,
                                                                                     const std::vector<size_t> &axes,
                                                                                     size_t num_inner_axes = 1) {
@@ -426,7 +436,7 @@ inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))> ThreadedL
 //* \sa image_thread_looping for details */
 template <class HeaderType>
 inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))>
-ThreadedLoop(const std::string &progress_message,
+ThreadedLoop(std::string_view progress_message,
              const HeaderType &source,
              size_t from_axis = 0,
              size_t to_axis = std::numeric_limits<size_t>::max(),

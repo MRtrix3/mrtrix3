@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <set>
 
 #include "types.h"
@@ -30,7 +31,6 @@
 namespace MR::DWI::Tractography::Connectome {
 
 enum stat_edge { SUM, MEAN, MIN, MAX };
-extern std::vector<std::string> statistics;
 extern const App::Option EdgeStatisticOption;
 
 // The number of nodes that must be exceeded in a connectome matrix in
@@ -63,13 +63,13 @@ public:
 
   void finalize();
 
-  void error_check(const std::set<node_t> &);
+  void error_check(const std::vector<node_t> &);
 
-  void write_assignments(const std::string &) const;
+  void write_assignments(const std::filesystem::path &) const;
 
   bool is_vector() const { return (vector_output); }
 
-  void save(const std::string &, const bool, const bool, const bool) const;
+  void save(const std::filesystem::path &, const bool, const bool, const bool) const;
 
 private:
   const stat_edge statistic;

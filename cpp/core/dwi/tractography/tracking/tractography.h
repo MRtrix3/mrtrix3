@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,14 +20,12 @@
 #include "dwi/tractography/properties.h"
 #include "mrtrix.h"
 
-namespace MR {
-namespace App {
+namespace MR::App {
 class OptionGroup;
-}
+} // namespace MR::App
 
-namespace DWI::Tractography::Tracking {
+namespace MR::DWI::Tractography::Tracking::Defaults {
 
-namespace Defaults {
 constexpr size_t num_selected_tracks = 5000;
 constexpr size_t seed_to_select_ratio = 1000;
 constexpr size_t max_attempts_per_seed = 1000;
@@ -52,12 +50,13 @@ constexpr float minlength_voxels_withact = 2.0f;
 constexpr float maxlength_voxels = 100.0f;
 
 constexpr size_t ifod2_nsamples = 4;
-} // namespace Defaults
+
+} // namespace MR::DWI::Tractography::Tracking::Defaults
+
+namespace MR::DWI::Tractography::Tracking {
 
 extern const App::OptionGroup TrackOption;
 
 void load_streamline_properties_and_rois(Properties &);
 
-} // namespace DWI::Tractography::Tracking
-
-} // namespace MR
+} // namespace MR::DWI::Tractography::Tracking

@@ -1,0 +1,26 @@
+#!/bin/bash
+# Verify the -ellipsoid option draws an anisotropic ellipsoid of voxels,
+#   both with respect to the voxel grid (default) and to scanner space (-scanner).
+# oblique.mif is a 16x16x16 grid of 2mm isotropic voxels whose image-to-scanner
+#   transform is a 45-degree rotation about the (1,1,1) axis
+#   (see the mredit cube test for its construction),
+#   so the voxel and scanner coordinate frames are strongly misaligned.
+# The same command-line numbers (centre 8,8,8; radii 2,4,6) are used in both
+#   cases; toggling -scanner changes the interpretation of the position
+#   (voxel index vs scanner mm), the sizes (voxels vs mm)
+#   and the orientation of the principal axes (image axes vs scanner axes),
+#   so the two results differ substantially.
+# Each result is compared against its own manually-verified reference image,
+#   and the two results are confirmed to differ
+#   (a byte-identical pair would indicate that -scanner had no effect).
+
+mredit mredit/oblique.mif.gz -ellipsoid 8,8,8 2,4,6 2.0 tmp_ellipsoid_voxel.mif -force
+testing_diff_image tmp_ellipsoid_voxel.mif mredit/ellipsoid_voxel.mif.gz -abs 0
+
+mredit mredit/oblique.mif.gz -scanner -ellipsoid 8,8,8 2,4,6 2.0 tmp_ellipsoid_scanner.mif -force
+testing_diff_image tmp_ellipsoid_scanner.mif mredit/ellipsoid_scanner.mif.gz -abs 0
+
+# The voxel-space and scanner-space interpretations must not coincide:
+mrcalc tmp_ellipsoid_voxel.mif.gz tmp_ellipsoid_scanner.mif.gz -subtract -abs - | \
+mrstats - -output max | \
+awk '{ exit !($1 > 0) }'

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,15 +22,16 @@
 #include "mrview/tool/base.h"
 #include "mrview/tool/odf/type.h"
 
-namespace MR::GUI {
-namespace DWI {
+namespace MR::GUI::DWI {
 class Renderer;
 class RenderFrame;
-} // namespace DWI
+} // namespace MR::GUI::DWI
 
+namespace MR::GUI {
 class LightingDock;
+} // namespace MR::GUI
 
-namespace MRView::Tool {
+namespace MR::GUI::MRView::Tool {
 
 class ODF_Item;
 class ODF_Model;
@@ -94,7 +95,7 @@ protected:
 
   int lmax;
 
-  void add_images(std::vector<std::string> &list, const odf_type_t mode);
+  void add_images(std::vector<std::filesystem::path> &list, const odf_type_t mode);
 
   virtual void closeEvent(QCloseEvent *event) override;
 
@@ -105,6 +106,4 @@ protected:
   friend class ODF_Preview;
 };
 
-} // namespace MRView::Tool
-
-} // namespace MR::GUI
+} // namespace MR::GUI::MRView::Tool

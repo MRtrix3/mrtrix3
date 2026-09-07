@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,11 +16,13 @@
 
 #include "command.h"
 #include "dwi/directions/file.h"
+#include "dwi/directions/validate.h"
+#include "file/matrix.h"
 #include "math/rng.h"
 #include "progressbar.h"
 #include "thread.h"
 
-constexpr size_t default_number = 1e8;
+constexpr size_t default_permutations = 1e8;
 
 using namespace MR;
 using namespace App;
@@ -40,7 +42,7 @@ ARGUMENTS
 
 OPTIONS
   + Option ("number", "number of permutations to try"
-                      " (default: " + str(default_number) + ")")
+                      " (default: " + str(default_permutations) + ")")
     + Argument ("num").type_integer (1)
 
   + DWI::Directions::cartesian_option;
@@ -152,13 +154,15 @@ protected:
 };
 
 void run() {
-  auto directions = DWI::Directions::load_cartesian(argument[0]);
+  auto directions = File::Matrix::load_matrix(argument[0]);
+  DWI::Directions::validate(directions, argument[0], false);
+  directions = Math::Sphere::as_cartesian(directions);
 
   const size_t num_subsets = argument.size() - 1;
   if (num_subsets == 1)
     throw Exception("Directions must be split across two or more output files");
 
-  const size_t num_permutations = get_option_value<size_t>("number", default_number);
+  const size_t num_permutations = get_option_value<size_t>("number", default_permutations);
 
   std::vector<std::vector<size_t>> best;
   {

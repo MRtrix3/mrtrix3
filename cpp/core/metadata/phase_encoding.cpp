@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -78,8 +78,8 @@ void check(const scheme_type &PE, const Header &header) {
 }
 
 namespace {
-void erase(KeyValues &keyval, const std::string &s) {
-  auto it = keyval.find(s);
+void erase(KeyValues &keyval, std::string_view s) {
+  auto it = keyval.find(std::string(s));
   if (it != keyval.end())
     keyval.erase(it);
 };
@@ -118,7 +118,7 @@ void set_scheme(KeyValues &keyval, const scheme_type &PE) {
     erase(keyval, "TotalReadoutTime");
   } else {
     erase(keyval, "pe_scheme");
-    const Metadata::BIDS::axis_vector_type dir{int(PE(0, 0)), int(PE(0, 1)), int(PE(0, 2))};
+    const Metadata::BIDS::axis_vector_type dir(PE.block<1, 3>(0, 0).cast<Metadata::BIDS::axis_vector_type::Scalar>());
     keyval["PhaseEncodingDirection"] = Metadata::BIDS::vector2axisid(dir);
     if (PE.cols() >= 4)
       keyval["TotalReadoutTime"] = str(PE(0, 3), 3);
@@ -128,7 +128,7 @@ void set_scheme(KeyValues &keyval, const scheme_type &PE) {
 }
 
 void clear_scheme(KeyValues &keyval) {
-  auto erase = [&](const std::string &s) {
+  auto erase = [&](const std::string s) {
     auto it = keyval.find(s);
     if (it != keyval.end())
       keyval.erase(it);
@@ -147,9 +147,9 @@ scheme_type parse_scheme(const KeyValues &keyval, const Header &header) {
     } catch (Exception &e) {
       throw Exception(e, "malformed PE scheme associated with image \"" + header.name() + "\"");
     }
-    if (ssize_t(PE.rows()) != ((header.ndim() > 3) ? header.size(3) : 1))
+    if (static_cast<ssize_t>(PE.rows()) != ((header.ndim() > 3) ? header.size(3) : 1))
       throw Exception("malformed PE scheme associated with image \"" + header.name() + "\":" + //
-                      " number of rows does not equal number of volumes");
+                      " number of rows does not equal number of volumes");                     //
   } else {
     const auto it_dir = keyval.find("PhaseEncodingDirection");
     if (it_dir != keyval.end()) {
@@ -225,27 +225,36 @@ void transform_for_image_load(KeyValues &keyval, const Header &H) {
          && keyval["PhaseEncodingDirection"] != "variable")
         || (keyval.find("pe_scheme") != keyval.end()
             && keyval["pe_scheme"] != "variable")) {
-      WARN("Unable to conform phase encoding information to image realignment"
-           " for image \"" + H.name() + "\"; erasing");
+      WARN("Unable to conform phase encoding information to image realignment" //
+           " for image \"" + H.name() + "\"; erasing");                        //
     }
     // clang-format on
     clear_scheme(keyval);
     return;
   }
   if (pe_scheme.rows() == 0) {
-    DEBUG("No phase encoding information found for transformation with load of image \"" + H.name() + "\"");
+    DEBUG(std::string("No phase encoding information found for transformation") + //
+          " with load of image \"" + H.name() + "\"");                            //
     return;
   }
-  if (H.realignment().is_identity()) {
-    INFO("No transformation of phase encoding data for load of image \"" + H.name() + "\" required");
+  switch (H.realignment().state()) {
+  case MR::Header::Realignment::State::Disabled:
+    [[fallthrough]];
+  case MR::Header::Realignment::State::Identity:
+    return;
+  case MR::Header::Realignment::State::Applied:
+    set_scheme(keyval, transform_for_image_load(pe_scheme, H));
+    return;
+  case MR::Header::Realignment::State::Unknown:
+    [[fallthrough]];
+  default:
+    assert(false);
     return;
   }
-  set_scheme(keyval, transform_for_image_load(pe_scheme, H));
-  INFO("Phase encoding data transformed to match RAS realignment of image \"" + H.name() + "\"");
 }
 
 scheme_type transform_for_image_load(const scheme_type &pe_scheme, const Header &H) {
-  if (H.realignment().is_identity())
+  if (H.realignment().state() != MR::Header::Realignment::State::Applied)
     return pe_scheme;
   scheme_type result(pe_scheme.rows(), pe_scheme.cols());
   for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
@@ -259,7 +268,8 @@ scheme_type transform_for_image_load(const scheme_type &pe_scheme, const Header 
 void transform_for_nifti_write(KeyValues &keyval, const Header &H) {
   scheme_type pe_scheme = parse_scheme(keyval, H);
   if (pe_scheme.rows() == 0) {
-    DEBUG("No phase encoding information found for transformation with save of NIfTI image \"" + H.name() + "\"");
+    DEBUG(std::string("No phase encoding information found for transformation") + //
+          " with save of NIfTI image \"" + H.name() + "\"");                      //
     return;
   }
   set_scheme(keyval, transform_for_nifti_write(pe_scheme, H));
@@ -301,7 +311,7 @@ void topup2eddy(const scheme_type &PE, Eigen::MatrixXd &config, Eigen::Array<int
   for (ssize_t PE_row = 0; PE_row != PE.rows(); ++PE_row) {
     for (ssize_t config_row = 0; config_row != config.rows(); ++config_row) {
       bool dir_match = PE.template block<1, 3>(PE_row, 0).isApprox(config.block<1, 3>(config_row, 0));
-      bool time_match = abs(PE(PE_row, 3) - config(config_row, 3)) < trt_tolerance;
+      bool time_match = std::fabs(PE(PE_row, 3) - config(config_row, 3)) < trt_tolerance;
       if (dir_match && time_match) {
         // FSL-style index file indexes from 1
         indices[PE_row] = config_row + 1;
@@ -334,7 +344,7 @@ void export_commandline(const Header &header) {
   auto check = [&](const scheme_type &m) -> const scheme_type & {
     if (m.rows() == 0)
       throw Exception("no phase-encoding information found within image \"" + header.name() + "\"");
-    return m;
+    return m; // NOLINT(bugprone-return-const-ref-from-parameter)
   };
 
   auto scheme = parse_scheme(header.keyval(), header);
@@ -352,8 +362,8 @@ void export_commandline(const Header &header) {
     save_eddy(check(scheme), header, opt[0][0], opt[0][1]);
 }
 
-scheme_type load_table(const std::string &path, const Header &header) {
-  if (Path::has_suffix(header.name(), {".nii", ".nii.gz", ".img", ".mgh", "mgz"})) {
+scheme_type load_table(const std::filesystem::path &path, const Header &header) {
+  if (Path::has_suffix(header.path(), {".nii", ".nii.gz", ".img", ".mgh", "mgz"})) {
     // clang-format off
     WARN("Note use of -import_pe_table"
          " in conjunction with MGH / NIfTI image \"" + header.name() + "\""
@@ -374,8 +384,8 @@ scheme_type load_table(const std::string &path, const Header &header) {
   return transform_for_image_load(PE, header);
 }
 
-scheme_type load_topup(const std::string &path, const Header &header) {
-  if (!Path::has_suffix(header.name(), {".nii", ".nii.gz", ".img", ".mgh", "mgz"})) {
+scheme_type load_topup(const std::filesystem::path &path, const Header &header) {
+  if (!Path::has_suffix(header.path(), {".nii", ".nii.gz", ".img", ".mgh", "mgz"})) {
     // clang-format off
     WARN("Loading FSL topup format phase encoding information"
          " accompanying image \"" + header.name() + "\""
@@ -396,12 +406,13 @@ scheme_type load_topup(const std::string &path, const Header &header) {
   return transform_for_image_load(PE, header);
 }
 
-scheme_type load_eddy(const std::string &config_path, const std::string &index_path, const Header &header) {
-  if (!Path::has_suffix(header.name(), {".nii", ".nii.gz", ".img", ".mgh", "mgz"})) {
-    WARN("Loading FSL eddy format phase encoding information" //
-         " accompanying image \"" +
-         header.name() +
-         "\" that is not MGH / NIfTI format"                                        //
+scheme_type load_eddy(const std::filesystem::path &config_path, //
+                      const std::filesystem::path &index_path,  //
+                      const Header &header) {                   //
+  if (!Path::has_suffix(header.path(), {".nii", ".nii.gz", ".img", ".mgh", "mgz"})) {
+    WARN(std::string("Loading FSL eddy format phase encoding information") +        //
+         " accompanying image \"" + header.name() + "\"" +                          //
+         " that is not MGH / NIfTI format"                                          //
          " may be erroneous due to possible flipping of first image axis"           //
          " (see: mrtrix.readthedocs.org/en/"                                        //
          MRTRIX_BASE_VERSION                                                        //
@@ -416,7 +427,7 @@ scheme_type load_eddy(const std::string &config_path, const std::string &index_p
   return transform_for_image_load(PE, header);
 }
 
-void save_table(const scheme_type &PE, const std::string &path, const bool write_command_history) {
+void save_table(const scheme_type &PE, const std::filesystem::path &path, const bool write_command_history) {
   File::OFStream out(path);
   if (write_command_history)
     out << "# " << App::command_history_string << "\n";

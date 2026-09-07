@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
  */
 
 #pragma once
+
+#include <filesystem>
 
 #include "mrview/mode/slice.h"
 
@@ -71,7 +73,7 @@ private:
 
   // Want layout state to persist even after instance is destroyed
   static bool show_grid_lines, show_volumes;
-  static std::string prev_image_name;
+  static std::filesystem::path prev_image_path;
   static ssize_t n_rows, n_cols, volume_increment;
   static float slice_focus_increment;
   static float slice_focus_inc_adjust_rate;

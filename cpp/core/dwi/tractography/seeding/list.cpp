@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -49,7 +49,7 @@ bool List::get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d) {
       if (i->get_seed(p, d))
         return true;
 
-    p = {NaN, NaN, NaN};
+    p.fill(NaNF);
     return false;
 
   } else {
@@ -59,10 +59,12 @@ bool List::get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d) {
 
     do {
       float incrementer = 0.0;
-      const float sample = uniform(rng) * total_volume;
-      for (auto &i : seeders)
-        if ((incrementer += i->vol()) > sample)
+      const float sample = uniform(rng()) * total_volume;
+      for (auto &i : seeders) {
+        incrementer += i->vol();
+        if (incrementer > sample)
           return i->get_seed(p, d);
+      }
 
     } while (1);
     return false;

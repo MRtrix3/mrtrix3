@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -44,7 +44,8 @@ void Connector::Adjacency::initialise(const Header &header, const Voxel2Vector &
     // Determine whether or not this offset should be added to the list:
     // - Don't add if we're only using 6 nearest neighbours and this offset isn't one of those six
     // - Don't add self-connection
-    if (!(!use_26_neighbours && ((abs(o[0]) + abs(o[1]) + abs(o[2])) > 1)) && (abs(o[0]) + abs(o[1]) + abs(o[2]) > 0))
+    if (!(!use_26_neighbours && ((MR::abs(o[0]) + MR::abs(o[1]) + MR::abs(o[2])) > 1)) &&
+        (MR::abs(o[0]) + MR::abs(o[1]) + MR::abs(o[2]) > 0))
       offsets.push_back(o);
     // Find the next offset to be tested
     ++o[start_axis];
@@ -81,11 +82,12 @@ void Connector::Adjacency::initialise(const Header &header, const Voxel2Vector &
     }
     data.push_back(indices);
   }
+  is_initialised = true;
   DEBUG("Adjacency data for " + str(data.size()) + " voxels initialised");
 }
 
 void Connector::run(std::vector<Cluster> &clusters, std::vector<uint32_t> &labels) const {
-  assert(adjacency.size());
+  assert(adjacency.valid());
   labels.resize(adjacency.size(), 0);
   uint32_t current_label = 0;
   for (uint32_t i = 0; i < labels.size(); i++) {

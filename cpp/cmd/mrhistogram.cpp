@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,6 +18,8 @@
 #include "command.h"
 #include "header.h"
 #include "image.h"
+
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -75,16 +77,15 @@ template <class Functor> void run_volume(Functor &functor, Image<float> &data, I
   if (mask.valid()) {
     for (auto l = Loop(0, 3)(data, mask); l; ++l) {
       if (mask.value())
-        functor(float(data.value()));
+        functor(static_cast<float>(data.value()));
     }
   } else {
     for (auto l = Loop(0, 3)(data); l; ++l)
-      functor(float(data.value()));
+      functor(static_cast<float>(data.value()));
   }
 }
 
 void run() {
-
   auto header = Header::open(argument[0]);
   if (header.ndim() > 4)
     throw Exception("mrhistogram is not designed to handle images greater than 4D");

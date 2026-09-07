@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,12 +16,8 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
-
 namespace MR::Interp {
 
-const std::vector<std::string> interp_choices{"nearest", "linear", "cubic", "sinc"};
 enum class interp_type { NEAREST, LINEAR, CUBIC, SINC };
 
 } // namespace MR::Interp

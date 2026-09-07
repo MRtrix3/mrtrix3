@@ -1,0 +1,29 @@
+#!/bin/bash
+# Verify that -voxel combined with -scanner modifies the single voxel that contains
+#   the specified scanner-space position (rather than treating the numbers as indices).
+# oblique.mif is a 16x16x16 grid of 2mm isotropic voxels whose image-to-scanner
+#   transform is a 45-degree rotation about the (1,1,1) axis
+#   (see the mredit cube test for its construction),
+#   so a scanner-space position maps non-trivially onto the voxel grid.
+# oblique.mif is everywhere zero, so the edited voxel can be isolated by its value.
+
+# Scanner-space coordinate of the centre of voxel (8,8,8), obtained via mrcalc's per-voxel
+#   position generators.
+sx=$(mrcalc -template mredit/oblique.mif.gz pos.x - | mrconvert - -coord 0 8 -coord 1 8 -coord 2 8 - | mrstats - -output mean)
+sy=$(mrcalc -template mredit/oblique.mif.gz pos.y - | mrconvert - -coord 0 8 -coord 1 8 -coord 2 8 - | mrstats - -output mean)
+sz=$(mrcalc -template mredit/oblique.mif.gz pos.z - | mrconvert - -coord 0 8 -coord 1 8 -coord 2 8 - | mrstats - -output mean)
+
+# Editing at that scanner position must modify exactly one voxel, and it must be (8,8,8).
+mredit mredit/oblique.mif.gz -scanner -voxel ${sx},${sy},${sz} 7 tmp_voxel_scanner.mif -force
+mrcalc tmp_voxel_scanner.mif 7 -eq tmp_voxel_scanner_mask.mif -force -quiet
+[ "$(mrstats tmp_voxel_scanner_mask.mif -mask tmp_voxel_scanner_mask.mif -output count -quiet)" -eq 1 ]
+val=$(mrconvert tmp_voxel_scanner.mif -coord 0 8 -coord 1 8 -coord 2 8 - | mrstats - -output max)
+awk -v v="$val" 'BEGIN { if (v + 0 != 7) { print "ERROR: scanner-space voxel mapped to the wrong voxel"; exit 1 } }'
+
+# An off-centre scanner position must still address the voxel that contains it:
+#   a 0.9mm shift along scanner-x is a 0.45-voxel displacement (norm-preserving rotation,
+#   2mm voxels), which remains within voxel (8,8,8).
+sx2=$(awk -v s="$sx" 'BEGIN { print s + 0.9 }')
+mredit mredit/oblique.mif.gz -scanner -voxel ${sx2},${sy},${sz} 7 tmp_voxel_scanner2.mif -force
+val2=$(mrconvert tmp_voxel_scanner2.mif -coord 0 8 -coord 1 8 -coord 2 8 - | mrstats - -output max)
+awk -v v="$val2" 'BEGIN { if (v + 0 != 7) { print "ERROR: scanner position within a voxel did not address that voxel"; exit 1 } }'

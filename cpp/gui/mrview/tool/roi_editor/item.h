@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -65,7 +65,7 @@ template <class ImageType> void ROI_Item::save(ImageType &&out, GLubyte *data) {
   for (auto l = Loop(out)(out); l; ++l)
     out.value() = data[out.index(0) + out.size(0) * (out.index(1) + out.size(1) * out.index(2))];
   saved = true;
-  filename = out.name();
+  filepath = out.path();
 }
 
 } // namespace MR::GUI::MRView::Tool

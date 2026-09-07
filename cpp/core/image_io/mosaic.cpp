@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,22 +25,22 @@ namespace MR::ImageIO {
 
 void Mosaic::load(const Header &header, size_t) {
   if (files.empty())
-    throw Exception("no files specified in header for image \"" + header.name() + "\"");
+    throw Exception("no files specified in header for image \"" + header.path().string() + "\"");
 
   assert(header.datatype().bits() > 1);
 
   size_t bytes_per_segment = header.datatype().bytes() * segsize;
   if (files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
-    throw Exception("image \"" + header.name() + "\" is larger than maximum accessible memory");
+    throw Exception("image \"" + header.path().string() + "\" is larger than maximum accessible memory");
 
-  DEBUG("loading mosaic image \"" + header.name() + "\"...");
+  DEBUG("loading mosaic image \"" + header.path().string() + "\"...");
   addresses.resize(1);
-  addresses[0].reset(new uint8_t[files.size() * bytes_per_segment]);
+  addresses[0].reset(new std::byte[files.size() * bytes_per_segment]);
   if (!addresses[0])
-    throw Exception("failed to allocate memory for image \"" + header.name() + "\"");
+    throw Exception("failed to allocate memory for image \"" + header.path().string() + "\"");
 
   ProgressBar progress("reformatting DICOM mosaic images", slices * files.size());
-  uint8_t *data = addresses[0].get();
+  std::byte *data = addresses[0].get();
   for (size_t n = 0; n < files.size(); n++) {
     File::MMap file(files[n], false, false, m_xdim * m_ydim * header.datatype().bytes());
     size_t nx = 0, ny = 0;

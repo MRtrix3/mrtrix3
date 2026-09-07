@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,9 @@
  */
 
 #pragma once
+
+#include <filesystem>
+#include <string>
 
 #include "app.h"
 #include "file/config.h"
@@ -38,8 +41,8 @@ constexpr default_type default_bzero_threshold = 22.5;
 App::OptionGroup GradImportOptions();
 App::OptionGroup GradExportOptions();
 
-extern App::Option bvalue_scaling_option;
-extern const char *const bvalue_scaling_description;
+extern const App::Option bvalue_scaling_option;
+extern const std::string bvalue_scaling_description;
 
 default_type bzero_threshold();
 
@@ -54,7 +57,7 @@ template <class MatrixType> inline void check_DW_scheme(const Header &header, co
     throw Exception("unexpected diffusion gradient table matrix dimensions");
 
   if (header.ndim() >= 4) {
-    if (header.size(3) != (int)grad.rows())
+    if (header.size(3) != static_cast<ssize_t>(grad.rows()))
       throw Exception("number of studies in base image (" + str(header.size(3)) +
                       ") does not match number of rows in diffusion gradient table (" + str(grad.rows()) + ")");
   } else if (grad.rows() != 1)
@@ -96,7 +99,9 @@ template <class MatrixType> default_type condition_number_for_lmax(const MatrixT
  * vectors into the scanner frame of reference, and may also involve
  * re-ordering and/or inverting of the vector elements to match the
  * re-ordering performed by MRtrix for non-axial scans. */
-Eigen::MatrixXd load_bvecs_bvals(const Header &header, const std::string &bvecs_path, const std::string &bvals_path);
+Eigen::MatrixXd load_bvecs_bvals(const Header &header,
+                                 const std::filesystem::path &bvecs_path,
+                                 const std::filesystem::path &bvals_path);
 
 //! export gradient table in FSL format (bvecs/bvals)
 /*! This will take the gradient table information from a header and export it
@@ -105,7 +110,7 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, const std::string &bvecs_
  * image space, and then to compensate for the fact that FSL defines its vectors
  * with regards to the data strides in the image file.
  */
-void save_bvecs_bvals(const Header &, const std::string &, const std::string &);
+void save_bvecs_bvals(const Header &, const std::filesystem::path &, const std::filesystem::path &);
 
 namespace {
 template <class MatrixType> std::string scheme2str(const MatrixType &G) {
@@ -189,7 +194,7 @@ Eigen::MatrixXd resolve_DW_scheme(const MatrixType1 &one, const MatrixType2 &two
     }
     if (one_bvalue == two_bvalue) {
       result(rowindex, 3) = one_bvalue;
-    } else if (is_bzero || abs(one_bvalue - two_bvalue) <= 1.0) {
+    } else if (is_bzero || std::fabs(one_bvalue - two_bvalue) <= 1.0) {
       result(rowindex, 3) = 0.5 * (one_bvalue + two_bvalue);
     } else {
       throw Exception("Diffusion gradient table b-values not equivalent");
@@ -275,8 +280,9 @@ void export_grad_commandline(const Header &header);
  * Note that this uses get_valid_DW_scheme() to get the DW_scheme, so will
  * check for the -grad option as required. */
 template <class MatrixType>
-Eigen::MatrixXd
-compute_SH2amp_mapping(const MatrixType &directions, bool lmax_from_command_line = true, int default_lmax = 8) {
+Eigen::MatrixXd compute_SH2amp_mapping(const MatrixType &directions,       //
+                                       bool lmax_from_command_line = true, //
+                                       int default_lmax = 8) {             //
   int lmax = -1;
   int lmax_from_ndir = Math::SH::LforN(directions.rows());
   bool lmax_set_from_commandline = false;
@@ -284,7 +290,7 @@ compute_SH2amp_mapping(const MatrixType &directions, bool lmax_from_command_line
     auto opt = App::get_options("lmax");
     if (!opt.empty()) {
       lmax_set_from_commandline = true;
-      lmax = to<int>(opt[0][0]);
+      lmax = static_cast<int>(opt[0][0].as_int());
       if (lmax % 2)
         throw Exception("lmax must be an even number");
       if (lmax < 0)

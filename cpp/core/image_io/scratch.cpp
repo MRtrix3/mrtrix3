@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,9 +25,9 @@ bool Scratch::is_file_backed() const { return false; }
 
 void Scratch::load(const Header &header, size_t buffer_size) {
   assert(buffer_size);
-  DEBUG("allocating scratch buffer for image \"" + header.name() + "\"...");
+  DEBUG("allocating scratch buffer for image \"" + header.path().string() + "\"...");
   try {
-    addresses.push_back(std::unique_ptr<uint8_t[]>(new uint8_t[buffer_size]));
+    addresses.push_back(std::unique_ptr<std::byte[]>(new std::byte[buffer_size]));
     memset(addresses[0].get(), 0, buffer_size);
   } catch (...) {
     throw Exception("Error allocating memory for scratch buffer");

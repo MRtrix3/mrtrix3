@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,8 +15,6 @@
  */
 
 #include "dwi/tractography/connectome/extract.h"
-
-#include "misc/bitset.h"
 
 namespace MR::DWI::Tractography::Connectome {
 
@@ -47,23 +45,20 @@ bool Selector::operator()(const NodePair &nodes) const {
 }
 
 bool Selector::operator()(const std::vector<node_t> &nodes) const {
-  BitSet found(list.size());
+  Eigen::Array<bool, Eigen::Dynamic, 1> found(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(list.size()));
   for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
     for (size_t i = 0; i != list.size(); ++i)
       if (*n == list[i])
         found[i] = true;
   }
-  if (exact_match)
-    return found.full();
-  else
-    return !found.empty();
+  return exact_match ? found.all() : found.any();
 }
 
 WriterExemplars::WriterExemplars(const Tractography::Properties &properties,
                                  const std::vector<node_t> &nodes,
                                  const bool exclusive,
                                  const node_t first_node,
-                                 const std::vector<Eigen::Vector3f> &COMs)
+                                 const std::vector<Eigen::Vector3d> &COMs)
     : step_size(properties.get_stepsize()) {
   if (!std::isfinite(step_size))
     step_size = 1.0f;
@@ -83,7 +78,10 @@ WriterExemplars::WriterExemplars(const Tractography::Properties &properties,
       for (size_t j = i; j != nodes.size(); ++j) {
         const node_t two = nodes[j];
         selectors.push_back(Selector(one, two));
-        exemplars.push_back(Exemplar(index++, length, std::make_pair(one, two), std::make_pair(COMs[one], COMs[two])));
+        exemplars.push_back(Exemplar(index++,
+                                     length,
+                                     std::make_pair(one, two),
+                                     std::make_pair(COMs[one].cast<float>(), COMs[two].cast<float>())));
       }
     }
   } else {
@@ -94,8 +92,10 @@ WriterExemplars::WriterExemplars(const Tractography::Properties &properties,
         if (std::find(nodes.begin(), nodes.end(), one) != nodes.end() ||
             std::find(nodes.begin(), nodes.end(), two) != nodes.end()) {
           selectors.push_back(Selector(one, two));
-          exemplars.push_back(
-              Exemplar(index++, length, std::make_pair(one, two), std::make_pair(COMs[one], COMs[two])));
+          exemplars.push_back(Exemplar(index++,
+                                       length,
+                                       std::make_pair(one, two),
+                                       std::make_pair(COMs[one].cast<float>(), COMs[two].cast<float>())));
         }
       }
     }
@@ -129,8 +129,8 @@ void WriterExemplars::finalize() {
 
 void WriterExemplars::write(const node_t one,
                             const node_t two,
-                            const std::string &path,
-                            const std::string &weights_path) {
+                            const std::filesystem::path &path,
+                            const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
   Tractography::Properties properties;
   properties["step_size"] = str(step_size);
   Tractography::WriterUnbuffered<float> writer(path, properties);
@@ -140,8 +140,8 @@ void WriterExemplars::write(const node_t one,
     else
       writer.skip();
   }
-  if (!weights_path.empty()) {
-    File::OFStream output(weights_path);
+  if (weights_path.has_value()) {
+    File::OFStream output(weights_path.value());
     for (size_t i = 0; i != exemplars.size(); ++i) {
       if (selectors[i](one, two))
         output << str(exemplars[i].get_weight()) << "\n";
@@ -149,7 +149,9 @@ void WriterExemplars::write(const node_t one,
   }
 }
 
-void WriterExemplars::write(const node_t node, const std::string &path, const std::string &weights_path) {
+void WriterExemplars::write(const node_t node,
+                            const std::filesystem::path &path,
+                            const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
   Tractography::Properties properties;
   properties["step_size"] = str(step_size);
   Tractography::Writer<float> writer(path, properties);
@@ -159,8 +161,8 @@ void WriterExemplars::write(const node_t node, const std::string &path, const st
     else
       writer.skip();
   }
-  if (!weights_path.empty()) {
-    File::OFStream output(weights_path);
+  if (weights_path.has_value()) {
+    File::OFStream output(weights_path.value());
     for (size_t i = 0; i != exemplars.size(); ++i) {
       if (selectors[i](node))
         output << str(exemplars[i].get_weight()) << "\n";
@@ -168,14 +170,15 @@ void WriterExemplars::write(const node_t node, const std::string &path, const st
   }
 }
 
-void WriterExemplars::write(const std::string &path, const std::string &weights_path) {
+void WriterExemplars::write(const std::filesystem::path &path,
+                            const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
   Tractography::Properties properties;
   properties["step_size"] = str(step_size);
   Tractography::Writer<float> writer(path, properties);
   for (std::vector<Exemplar>::const_iterator i = exemplars.begin(); i != exemplars.end(); ++i)
     writer(i->get());
-  if (!weights_path.empty()) {
-    File::OFStream output(weights_path);
+  if (weights_path.has_value()) {
+    File::OFStream output(weights_path.value());
     for (std::vector<Exemplar>::const_iterator i = exemplars.begin(); i != exemplars.end(); ++i)
       output << str(i->get_weight()) << "\n";
   }
@@ -187,32 +190,34 @@ WriterExtraction::WriterExtraction(const Tractography::Properties &p,
                                    const bool keep_self)
     : properties(p), node_list(nodes), exclusive(exclusive), keep_self(keep_self) {}
 
-void WriterExtraction::add(const node_t node, const std::string &path, const std::string weights_path = "") {
+void WriterExtraction::add(const node_t node,
+                           const std::filesystem::path &path,
+                           const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
   selectors.emplace_back(Selector(node, keep_self));
   writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
-  if (!weights_path.empty())
-    writers.back()->set_weights_path(weights_path);
+  if (weights_path.has_value())
+    writers.back()->set_weights_path(weights_path.value());
 }
 
 void WriterExtraction::add(const node_t node_one,
                            const node_t node_two,
-                           const std::string &path,
-                           const std::string weights_path = "") {
+                           const std::filesystem::path &path,
+                           const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
   if (keep_self || (node_one != node_two)) {
     selectors.emplace_back(Selector(node_one, node_two));
     writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
-    if (!weights_path.empty())
-      writers.back()->set_weights_path(weights_path);
+    if (weights_path.has_value())
+      writers.back()->set_weights_path(weights_path.value());
   }
 }
 
 void WriterExtraction::add(const std::vector<node_t> &list,
-                           const std::string &path,
-                           const std::string weights_path = "") {
+                           const std::filesystem::path &path,
+                           const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
   selectors.emplace_back(Selector(list, exclusive, keep_self));
   writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
-  if (!weights_path.empty())
-    writers.back()->set_weights_path(weights_path);
+  if (weights_path.has_value())
+    writers.back()->set_weights_path(weights_path.value());
 }
 
 void WriterExtraction::clear() {
@@ -250,13 +255,13 @@ bool WriterExtraction::operator()(const Connectome::Streamline_nodelist &in) con
   if (exclusive) {
     // Make sure _all_ nodes are within the list of nodes of interest;
     //   if not, don't pass to any of the selectors
-    BitSet in_list(in.get_nodes().size());
+    Eigen::Array<bool, Eigen::Dynamic, 1> in_list(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(in.get_nodes().size()));
     for (std::vector<node_t>::const_iterator i = node_list.begin(); i != node_list.end(); ++i) {
       for (size_t n = 0; n != in.get_nodes().size(); ++n)
         if (*i == in.get_nodes()[n])
           in_list[n] = true;
     }
-    if (!in_list.full()) {
+    if (!in_list.all()) {
       for (size_t i = 0; i != file_count(); ++i)
         writers[i]->skip();
       return true;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,10 @@
 
 #pragma once
 
+#include <cstddef>
+#include <limits>
+#include <string>
+
 #include "exception.h"
 #include "math/least_squares.h"
 #include "math/legendre.h"
@@ -32,7 +36,7 @@ namespace MR::Math::SH {
 //! a string containing a description of the SH storage convention
 /*! This can used directly in the DESCRIPTION field of a command's
  * usage() function. */
-extern const char *encoding_description;
+extern const std::string encoding_description;
 
 //! the number of (even-degree) coefficients for the given value of \a lmax
 inline size_t NforL(int lmax) { return (lmax + 1) * (lmax + 2) / 2; }
@@ -41,13 +45,18 @@ inline size_t NforL(int lmax) { return (lmax + 1) * (lmax + 2) / 2; }
 inline size_t index(int l, int m) { return l * (l + 1) / 2 + m; }
 
 //! same as NforL(), but consider only non-negative orders \e m
-inline size_t NforL_mpos(int lmax) { return (lmax / 2 + 1) * (lmax / 2 + 1); }
+inline size_t NforL_mpos(int lmax) { return (static_cast<size_t>(lmax) / 2 + 1) * (static_cast<size_t>(lmax) / 2 + 1); }
 
 //! same as index(), but consider only non-negative orders \e m
 inline size_t index_mpos(int l, int m) { return l * l / 4 + m; }
 
 //! returns the largest \e lmax given \a N parameters
-inline size_t LforN(int N) { return N ? 2 * std::floor<size_t>((std::sqrt(float(1 + 8 * N)) - 3.0) / 4.0) : 0; }
+inline size_t LforN(int N) {
+  return N ? 2 * std::floor<size_t>((std::sqrt(static_cast<default_type>(1 + 8 * N)) - 3.0) / 4.0) : 0;
+}
+
+//! returns whether a cardinality is commensurate with a set of SH coefficients
+inline bool feasible_N(int N) { return NforL(LforN(N)) == N; }
 
 //! form the SH->amplitudes matrix
 /*! This computes the matrix \a SHT mapping spherical harmonic
@@ -93,9 +102,9 @@ Eigen::Matrix<typename MatrixType::Scalar, Eigen::Dynamic, Eigen::Dynamic> init_
   Matrix<value_type, Dynamic, 1, 0, 64> AL(lmax + 1);
   for (ssize_t i = 0; i < dirs.rows(); i++) {
     value_type z = dirs(i, 2);
-    value_type rxy = std::hypot(dirs(i, 0), dirs(i, 1));
-    value_type cp = (rxy) ? dirs(i, 0) / rxy : 1.0;
-    value_type sp = (rxy) ? dirs(i, 1) / rxy : 0.0;
+    const value_type rxy = std::hypot(dirs(i, 0), dirs(i, 1));
+    const value_type cp = (rxy == value_type(0)) ? value_type(1) : (dirs(i, 0) / rxy);
+    const value_type sp = (rxy == value_type(0)) ? value_type(0) : (dirs(i, 1) / rxy);
     Legendre::Plm_sph(AL, lmax, 0, z);
     for (int l = 0; l <= lmax; l += 2)
       SHT(i, index(l, 0)) = AL[l];
@@ -231,9 +240,9 @@ inline typename VectorType::Scalar value(const VectorType &coefs,
 template <class VectorType1, class VectorType2>
 inline typename VectorType1::Scalar value(const VectorType1 &coefs, const VectorType2 &unit_dir, int lmax) {
   using value_type = typename VectorType1::Scalar;
-  value_type rxy = std::sqrt(pow2(unit_dir[1]) + pow2(unit_dir[0]));
-  value_type cp = (rxy) ? unit_dir[0] / rxy : 1.0;
-  value_type sp = (rxy) ? unit_dir[1] / rxy : 0.0;
+  const value_type rxy = std::hypot(unit_dir[0], unit_dir[1]);
+  const value_type cp = (rxy == value_type(0)) ? value_type(1) : (unit_dir[0] / rxy);
+  const value_type sp = (rxy == value_type(0)) ? value_type(0) : (unit_dir[1] / rxy);
   return value(coefs, unit_dir[2], cp, sp, lmax);
 }
 
@@ -241,9 +250,9 @@ template <class VectorType1, class VectorType2>
 inline VectorType1 &delta(VectorType1 &delta_vec, const VectorType2 &unit_dir, int lmax) {
   using value_type = typename VectorType1::Scalar;
   delta_vec.resize(NforL(lmax));
-  value_type rxy = std::sqrt(pow2(unit_dir[1]) + pow2(unit_dir[0]));
-  value_type cp = (rxy) ? unit_dir[0] / rxy : 1.0;
-  value_type sp = (rxy) ? unit_dir[1] / rxy : 0.0;
+  const value_type rxy = std::hypot(unit_dir[0], unit_dir[1]);
+  const value_type cp = (rxy == value_type(0)) ? value_type(1) : (unit_dir[0] / rxy);
+  const value_type sp = (rxy == value_type(0)) ? value_type(0) : (unit_dir[1] / rxy);
   Eigen::Matrix<value_type, Eigen::Dynamic, 1, 0, 64> AL(lmax + 1);
   Legendre::Plm_sph(AL, lmax, 0, unit_dir[2]);
   for (int l = 0; l <= lmax; l += 2)
@@ -285,7 +294,7 @@ inline Eigen::Matrix<typename VectorType::Scalar, Eigen::Dynamic, 1> SH2RH(const
 /*! perform spherical convolution of SH coefficients \a sh with response
  * function \a RH, storing the results in place in vector \a sh. */
 template <class VectorType1, class VectorType2> inline VectorType1 &sconv(VectorType1 &sh, const VectorType2 &RH) {
-  assert(sh.size() >= ssize_t(NforL(2 * (RH.size() - 1))));
+  assert(static_cast<size_t>(sh.size()) >= NforL(2 * (RH.size() - 1)));
   for (ssize_t i = 0; i < RH.size(); ++i) {
     int l = 2 * i;
     for (int m = -l; m <= l; ++m)
@@ -299,7 +308,7 @@ template <class VectorType1, class VectorType2> inline VectorType1 &sconv(Vector
  * function \a RH, storing the results in vector \a C. */
 template <class VectorType1, class VectorType2, class VectorType3>
 inline VectorType1 &sconv(VectorType1 &C, const VectorType2 &RH, const VectorType3 &sh) {
-  assert(sh.size() >= ssize_t(NforL(2 * (RH.size() - 1))));
+  assert(static_cast<size_t>(sh.size()) >= NforL(2 * (RH.size() - 1)));
   C.resize(NforL(2 * (RH.size() - 1)));
   for (ssize_t i = 0; i < RH.size(); ++i) {
     int l = 2 * i;
@@ -314,7 +323,7 @@ inline VectorType1 &sconv(VectorType1 &C, const VectorType2 &RH, const VectorTyp
  * in matrix \a sh with response function \a RH, storing the results
  * in place in matrix \a sh. */
 template <class MatrixType1, class VectorType2> inline MatrixType1 &sconv_mat(MatrixType1 &sh, const VectorType2 &RH) {
-  assert(sh.cols() >= ssize_t(NforL(2 * (RH.size() - 1))));
+  assert(static_cast<size_t>(sh.cols()) >= NforL(2 * (RH.size() - 1)));
   for (ssize_t i = 0; i < RH.size(); ++i) {
     int l = 2 * i;
     for (int m = -l; m <= l; ++m)
@@ -324,7 +333,7 @@ template <class MatrixType1, class VectorType2> inline MatrixType1 &sconv_mat(Ma
 }
 
 namespace {
-template <typename> struct __dummy {
+template <typename> struct _dummy {
   using type = int;
 };
 } // namespace
@@ -369,7 +378,7 @@ public:
 
   void set(PrecomputedFraction<ValueType> &f, const ValueType inclination) const {
     f.f2 = inclination / inc;
-    int i = int(f.f2);
+    int i = static_cast<int>(std::trunc(f.f2));
     if (i < 0) {
       i = 0;
       f.f1 = 1.0;
@@ -407,10 +416,10 @@ public:
   template <class VectorType, class UnitVectorType>
   ValueType value(const VectorType &val, const UnitVectorType &unit_dir) const {
     PrecomputedFraction<ValueType> f;
-    set(f, std::acos(unit_dir[2]));
-    ValueType rxy = std::sqrt(pow2(unit_dir[1]) + pow2(unit_dir[0]));
-    ValueType cp = (rxy) ? unit_dir[0] / rxy : 1.0;
-    ValueType sp = (rxy) ? unit_dir[1] / rxy : 0.0;
+    set(f, std::acos(std::clamp(static_cast<ValueType>(unit_dir[2]), ValueType(-1), ValueType(1))));
+    const ValueType rxy = std::hypot(unit_dir[0], unit_dir[1]);
+    const ValueType cp = (rxy == ValueType(0)) ? ValueType(1) : (unit_dir[0] / rxy);
+    const ValueType sp = (rxy == ValueType(0)) ? ValueType(0) : (unit_dir[1] / rxy);
     ValueType v = 0.0;
     for (int l = 0; l <= lmax; l += 2)
       v += get(f, l, 0) * val[index(l, 0)];
@@ -437,37 +446,95 @@ protected:
  * to operate directly in spherical coordinates. The initial search
  * direction is \a unit_init_dir. If \a precomputer is not nullptr, it
  * will be used to speed up the calculations, at the cost of a minor
- * reduction in accuracy. */
-template <class VectorType, class UnitVectorType, class ValueType = float>
+ * reduction in accuracy.
+ *
+ * On convergence the following checks are applied before the peak is
+ * accepted:
+ *   - The 2x2 spherical Hessian must be negative-definite
+ *     (trace < 0 and determinant > 0), confirming that the stationary
+ *     point is a local maximum rather than a saddle or minimum.
+ *   - The amplitude must exceed zero.
+ *
+ * During iteration:
+ *   - If the directional curvature along the gradient is non-negative,
+ *     a fixed gradient-ascent step of \a max_dir_change is used instead
+ *     of the Newton step (which would point toward a minimum or saddle).
+ *   - If a step decreases the amplitude, the iteration backtracks from
+ *     the previous direction with the step magnitude halved, up to
+ *     \a max_backtracks times before accepting the descent.
+ *
+ * Returns NaN (and sets \a unit_init_dir to NaN) on any failure. */
+template <class VectorType, class UnitVectorType>
 inline typename VectorType::Scalar get_peak(const VectorType &sh,
                                             int lmax,
                                             UnitVectorType &unit_init_dir,
                                             PrecomputedAL<typename VectorType::Scalar> *precomputer = nullptr) {
   static const default_type max_dir_change = 0.2;
   static const default_type angle_tolerance = 1e-4;
+  static const default_type amplitude_tolerance = 1e-6;
+  static const int max_backtracks = 5;
   using value_type = typename VectorType::Scalar;
   assert(std::isfinite(unit_init_dir[0]));
+
+  value_type prev_amplitude = -std::numeric_limits<value_type>::infinity();
+  UnitVectorType prev_dir = unit_init_dir;
+  value_type last_grad_del = 0.0;
+  value_type last_grad_daz = 0.0;
+  value_type last_dt = 0.0;
+  value_type last_az = 0.0;
+  value_type last_el = 0.0;
+  int backtracks = 0;
+
+  value_type amplitude = 0.0;
+  value_type dSH_del = 0.0;
+  value_type dSH_daz = 0.0;
+  value_type d2SH_del2 = 0.0;
+  value_type d2SH_deldaz = 0.0;
+  value_type d2SH_daz2 = 0.0;
+
   for (int i = 0; i < 50; i++) {
-    value_type az = std::atan2(unit_init_dir[1], unit_init_dir[0]);
-    value_type el = std::acos(unit_init_dir[2]);
-    value_type amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2;
+    const value_type az = std::atan2(unit_init_dir[1], unit_init_dir[0]);
+    const value_type el = std::atan2(std::hypot(unit_init_dir[0], unit_init_dir[1]), unit_init_dir[2]);
     derivatives(sh, lmax, el, az, amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2, precomputer);
 
-    value_type del = sqrt(dSH_del * dSH_del + dSH_daz * dSH_daz);
+    // Backtrack if the most recent step decreased the objective.
+    if (i > 0 && amplitude < prev_amplitude - amplitude_tolerance && backtracks < max_backtracks) {
+      ++backtracks;
+      last_dt *= 0.5;
+      const value_type del = last_grad_del * last_dt;
+      const value_type daz = last_grad_daz * last_dt;
+      unit_init_dir = prev_dir;
+      unit_init_dir[0] += del * std::cos(last_az) * std::cos(last_el) - daz * std::sin(last_az);
+      unit_init_dir[1] += del * std::sin(last_az) * std::cos(last_el) + daz * std::cos(last_az);
+      unit_init_dir[2] -= del * std::sin(last_el);
+      unit_init_dir.normalize();
+      continue;
+    }
+
+    backtracks = 0;
+    prev_amplitude = amplitude;
+    prev_dir = unit_init_dir;
+
+    value_type del = std::sqrt(dSH_del * dSH_del + dSH_daz * dSH_daz);
     value_type daz = 0.0;
     if (del != 0.0) {
       daz = dSH_daz / del;
       del = dSH_del / del;
     }
 
-    value_type dSH_dt = daz * dSH_daz + del * dSH_del;
-    value_type d2SH_dt2 = daz * daz * d2SH_daz2 + 2.0 * daz * del * d2SH_deldaz + del * del * d2SH_del2;
-    value_type dt = d2SH_dt2 ? (-dSH_dt / d2SH_dt2) : 0.0;
-
-    if (dt < 0.0)
-      dt = -dt;
+    const value_type dSH_dt = daz * dSH_daz + del * dSH_del;
+    const value_type d2SH_dt2 = daz * daz * d2SH_daz2 + 2.0 * daz * del * d2SH_deldaz + del * del * d2SH_del2;
+    // Newton step is only valid when curvature is concave-down along +gradient.
+    // Otherwise we are stepping toward a minimum or saddle; fall back to gradient ascent.
+    value_type dt = (d2SH_dt2 < 0.0) ? std::fabs(dSH_dt / d2SH_dt2) : max_dir_change;
     if (dt > max_dir_change)
       dt = max_dir_change;
+
+    last_grad_del = del;
+    last_grad_daz = daz;
+    last_dt = dt;
+    last_az = az;
+    last_el = el;
 
     del *= dt;
     daz *= dt;
@@ -477,13 +544,27 @@ inline typename VectorType::Scalar get_peak(const VectorType &sh,
     unit_init_dir[2] -= del * std::sin(el);
     unit_init_dir.normalize();
 
-    if (dt < angle_tolerance)
+    if (dt < angle_tolerance) {
+      // Verify Hessian is negative-definite: confirms maximum, rejects saddle/minimum.
+      const value_type trace = d2SH_del2 + d2SH_daz2;
+      const value_type determinant = (d2SH_del2 * d2SH_daz2) - (d2SH_deldaz * d2SH_deldaz);
+      if (trace >= 0.0 || determinant <= 0.0) {
+        unit_init_dir.fill(std::numeric_limits<typename UnitVectorType::Scalar>::quiet_NaN());
+        DEBUG("SH stationary point is not a local maximum (non-negative-definite Hessian)");
+        return std::numeric_limits<value_type>::quiet_NaN();
+      }
+      if (amplitude <= 0.0) {
+        unit_init_dir.fill(std::numeric_limits<typename UnitVectorType::Scalar>::quiet_NaN());
+        DEBUG("SH peak rejected: amplitude is non-positive");
+        return std::numeric_limits<value_type>::quiet_NaN();
+      }
       return amplitude;
+    }
   }
 
-  unit_init_dir = {NaN, NaN, NaN};
+  unit_init_dir.fill(std::numeric_limits<typename UnitVectorType::Scalar>::quiet_NaN());
   DEBUG("failed to find SH peak!");
-  return NaN;
+  return std::numeric_limits<typename VectorType::Scalar>::quiet_NaN();
 }
 
 //! computes first and second order derivatives of SH series
@@ -519,19 +600,19 @@ inline void derivatives(const VectorType &sh,
   } else {
     Eigen::Matrix<value_type, Eigen::Dynamic, 1, 0, 64> buf(lmax + 1);
     for (int m = 0; m <= lmax; m++) {
-      Legendre::Plm_sph(buf, lmax, m, cos_incl);
+      Legendre::Plm_sph(buf, lmax, m, cos_incl, sin_incl);
       for (int l = ((m & 1) ? m + 1 : m); l <= lmax; l += 2)
         AL[index_mpos(l, m)] = buf[l];
     }
   }
 
   amplitude = sh[index(0, 0)] * AL[index_mpos(0, 0)];
-  for (int l = 2; l <= (int)lmax; l += 2) {
+  for (int l = 2; l <= lmax; l += 2) {
     const value_type &v(sh[index(l, 0)]);
     amplitude += v * AL[index_mpos(l, 0)];
-    dSH_del += v * sqrt(value_type(l * (l + 1))) * AL[index_mpos(l, 1)];
+    dSH_del += v * sqrt(static_cast<value_type>(l * (l + 1))) * AL[index_mpos(l, 1)];
     d2SH_del2 += v *
-                 (sqrt(value_type(l * (l + 1) * (l - 1) * (l + 2))) * AL[index_mpos(l, 2)] -
+                 (sqrt(static_cast<value_type>(l * (l + 1) * (l - 1) * (l + 2))) * AL[index_mpos(l, 2)] -
                   l * (l + 1) * AL[index_mpos(l, 0)]) /
                  2.0;
   }
@@ -544,19 +625,21 @@ inline void derivatives(const VectorType &sh,
       const value_type &vm(sh[index(l, -m)]);
       amplitude += (vp * caz + vm * saz) * AL[index_mpos(l, m)];
 
-      value_type tmp = sqrt(value_type((l + m) * (l - m + 1))) * AL[index_mpos(l, m - 1)];
+      value_type tmp = sqrt(static_cast<value_type>((l + m) * (l - m + 1))) * AL[index_mpos(l, m - 1)];
       if (l > m)
-        tmp -= sqrt(value_type((l - m) * (l + m + 1))) * AL[index_mpos(l, m + 1)];
+        tmp -= sqrt(static_cast<value_type>((l - m) * (l + m + 1))) * AL[index_mpos(l, m + 1)];
       tmp /= -2.0;
       dSH_del += (vp * caz + vm * saz) * tmp;
 
       value_type tmp2 = -((l + m) * (l - m + 1) + (l - m) * (l + m + 1)) * AL[index_mpos(l, m)];
       if (m == 1)
-        tmp2 -= sqrt(value_type((l + m) * (l - m + 1) * (l + m - 1) * (l - m + 2))) * AL[index_mpos(l, 1)];
+        tmp2 -= sqrt(static_cast<value_type>((l + m) * (l - m + 1) * (l + m - 1) * (l - m + 2))) * AL[index_mpos(l, 1)];
       else
-        tmp2 += sqrt(value_type((l + m) * (l - m + 1) * (l + m - 1) * (l - m + 2))) * AL[index_mpos(l, m - 2)];
+        tmp2 +=
+            sqrt(static_cast<value_type>((l + m) * (l - m + 1) * (l + m - 1) * (l - m + 2))) * AL[index_mpos(l, m - 2)];
       if (l > m + 1)
-        tmp2 += sqrt(value_type((l - m) * (l + m + 1) * (l - m - 1) * (l + m + 2))) * AL[index_mpos(l, m + 2)];
+        tmp2 +=
+            sqrt(static_cast<value_type>((l - m) * (l + m + 1) * (l - m - 1) * (l + m + 2))) * AL[index_mpos(l, m + 2)];
       tmp2 /= 4.0;
       d2SH_del2 += (vp * caz + vm * saz) * tmp2;
 
@@ -673,7 +756,7 @@ template <class ImageType> void check(const ImageType &H) {
   if (H.ndim() < 4)
     throw Exception("image \"" + H.name() + "\" does not contain SH coefficients - not 4D");
   size_t l = LforN(H.size(3));
-  if (l % 2 || NforL(l) != size_t(H.size(3)))
+  if (l % 2 || NforL(l) != static_cast<size_t>(H.size(3)))
     throw Exception("image \"" + H.name() + "\" does not contain SH coefficients - unexpected number of coefficients");
 }
 /** @} */

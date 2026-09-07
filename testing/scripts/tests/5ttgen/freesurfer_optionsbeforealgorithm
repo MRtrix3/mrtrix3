@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify that a command-line option specified prior to the algorithm name is honoured
+# The -nocrop option is here provided before "freesurfer" rather than after it;
+#   the result must be identical to that of the "freesurfer_nocrop" test,
+#   against the reference image of which the output is compared
+5ttgen -nocrop freesurfer BIDS/sub-01/anat/aparc+aseg.mgz - | \
+testing_diff_image - 5ttgen/freesurfer/nocrop.mif.gz

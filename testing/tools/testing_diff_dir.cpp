@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -52,9 +52,9 @@ void run() {
   for (ssize_t i = 0; i < dir1.cols(); ++i) {
     for (ssize_t j = 0; j < dir1.rows(); ++j) {
       if (abs(dir1(i, j) - dir2(i, j)) > tol)
-        throw Exception("direction files \"" + str(argument[0]) + "\" and \"" + str(argument[1]) +
-                        "\" do not match within specified precision of " + str(tol) + " (" + str(dir1(i, j)) + " vs " +
-                        str(dir2(i, j)) + ")");
+        throw Exception("direction files \"" + argument[0].as_text() + "\" and \"" + argument[1].as_text() + "\"" + //
+                        " do not match within specified precision of " + str(tol) +                                 //
+                        " (" + str(dir1(i, j)) + " vs " + str(dir2(i, j)) + ")");                                   //
     }
   }
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,7 +22,7 @@
 #include "mrview/tool/odf/odf.h"
 #include "mrview/tool/overlay.h"
 #include "mrview/tool/roi_editor/roi.h"
-#include "mrview/tool/screen_capture.h"
+#include "mrview/tool/screen_capture/screen_capture.h"
 #include "mrview/tool/tractography/tractography.h"
 #include "mrview/tool/transform.h"
 #include "mrview/tool/view.h"

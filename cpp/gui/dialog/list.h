@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,7 +23,7 @@ namespace MR::GUI::Dialog {
 
 class TreeItem {
 public:
-  TreeItem(const std::string &key, const std::string &value, TreeItem *parent = 0) {
+  TreeItem(std::string_view key, std::string_view value, TreeItem *parent = 0) {
     parentItem = parent;
     itemData << qstr(key) << qstr(value);
   }

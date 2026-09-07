@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,18 +16,17 @@
 
 #include "mrview/qthelpers.h"
 
-#include <QString>
 #include <QUrl>
-
 #include <string>
+
+#include "exception.h"
 
 namespace MR::GUI::MRView::QtHelpers {
 
-std::string url_to_std_string(const QUrl &url) {
-  const bool isLocal = url.isLocalFile();
-  const std::string str = isLocal ? url.toLocalFile().toStdString() : url.toString().toStdString();
-
-  return str;
+std::filesystem::path url_to_fspath(const QUrl &url) {
+  if (!url.isLocalFile())
+    throw Exception("Currently unable to accept drag-and-drop events not from local filesystem");
+  return {url.toLocalFile().toStdString()};
 }
 
 } // namespace MR::GUI::MRView::QtHelpers

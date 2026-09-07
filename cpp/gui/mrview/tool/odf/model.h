@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 
+#include "gui.h"
 #include "types.h"
 
 #include "mrview/tool/odf/item.h"
@@ -35,7 +36,7 @@ public:
       return {};
     if (role != Qt::DisplayRole && role != Qt::ToolTipRole)
       return {};
-    return qstr(items[index.row()]->image.get_filename());
+    return qstr(items[index.row()]->image.get_filepath().string());
   }
 
   bool setData(const QModelIndex &index, const QVariant &value, int role) {
@@ -56,18 +57,18 @@ public:
   }
 
   int columnCount(const QModelIndex &parent = QModelIndex()) const {
-    (void)parent; // to suppress warnings about unused parameters
+    (void)parent;
     return 1;
   }
 
-  size_t add_items(const std::vector<std::string> &list,
+  size_t add_items(const std::vector<std::filesystem::path> &list,
                    const odf_type_t type,
                    bool colour_by_direction,
                    bool hide_negative_lobes,
                    float scale);
 
   QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const {
-    (void)parent; // to suppress warnings about unused parameters
+    (void)parent;
     return createIndex(row, column);
   }
 
@@ -78,7 +79,7 @@ public:
   }
 
   ODF_Item *get_image(QModelIndex &index) {
-    return index.isValid() ? dynamic_cast<ODF_Item *>(items[index.row()].get()) : NULL;
+    return index.isValid() ? dynamic_cast<ODF_Item *>(items[index.row()].get()) : nullptr;
   }
 
   std::vector<std::unique_ptr<ODF_Item>> items;

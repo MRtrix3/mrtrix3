@@ -25,7 +25,7 @@ Description
 This command will reconstruct the global white matter fibre tractogram that best explains the input DWI data, using a multi-tissue spherical convolution model.
 
 A more thorough description of the operation of global tractography in MRtrix3 can be found in the online documentation:  |br|
-https://mrtrix.readthedocs.io/en/3.0.7/quantitative_structural_connectivity/global_tractography.html
+https://mrtrix.readthedocs.io/en/3.0.8/quantitative_structural_connectivity/global_tractography.html
 
 Example usages
 --------------
@@ -100,7 +100,7 @@ Standard options
 
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
--  **-debug** display debugging messages.
+-  **-debug** display debugging messages & debug input data.
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,6 +19,8 @@
 #include "dwi/tractography/properties.h"
 #include "file/ofstream.h"
 #include "progressbar.h"
+
+#include <filesystem>
 
 using namespace MR;
 using namespace MR::DWI;
@@ -41,14 +43,16 @@ void usage() {
 // clang-format on
 
 void run() {
+
   const bool actual_count = !get_options("count").empty();
 
   for (size_t i = 0; i < argument.size(); ++i) {
+    const std::filesystem::path input_path{argument[i]};
     Tractography::Properties properties;
-    Tractography::Reader<float> file(argument[i], properties);
+    Tractography::Reader<float> file(input_path, properties);
 
     std::cout << "***********************************\n";
-    std::cout << "  Tracks file: \"" << argument[i] << "\"\n";
+    std::cout << "  Tracks file: \"" << input_path.string() << "\"\n";
 
     for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i) {
       std::string S(i->first + ':');

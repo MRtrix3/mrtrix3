@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cinttypes>
+#include <filesystem>
 #include <string>
 
 #include "progressbar.h"
@@ -30,7 +31,7 @@ namespace MR::DWI::Tractography::Editing {
 class Receiver {
 
 public:
-  Receiver(const std::string &path, const Properties &properties, const size_t n, const size_t s)
+  Receiver(const std::filesystem::path &path, const Properties &properties, const size_t n, const size_t s)
       : writer(path, properties),
         number(n),
         skip(s),

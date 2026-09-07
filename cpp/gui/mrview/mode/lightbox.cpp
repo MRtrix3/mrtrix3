@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,8 @@
 
 #include "mrview/mode/lightbox.h"
 
+#include "opengl/gl_core_3_3.h"
+
 namespace MR::GUI::MRView::Mode {
 
 bool LightBox::show_grid_lines = true;
@@ -25,14 +27,14 @@ ssize_t LightBox::n_cols = 5;
 ssize_t LightBox::volume_increment = 1;
 float LightBox::slice_focus_increment = 1.0f;
 float LightBox::slice_focus_inc_adjust_rate = 0.2f;
-std::string LightBox::prev_image_name;
+std::filesystem::path LightBox::prev_image_path;
 ssize_t LightBox::current_slice_index = 0;
 
 LightBox::LightBox() : frames_dirty(true) {
   Image *img = image();
 
-  if (!img || prev_image_name != img->header().name())
-    image_changed_event();
+  if (!img || prev_image_path != img->header().path())
+    LightBox::image_changed_event();
   else {
     set_volume_increment(volume_increment);
     set_slice_increment(slice_focus_increment);
@@ -90,9 +92,12 @@ void LightBox::draw_plane_primitive(int axis, Displayable::Shader &shader_progra
 
 void LightBox::paint(Projection &) {
   GL::assert_context_is_current();
-  GLint x = projection.x_position(), y = projection.y_position();
-  GLint w = projection.width(), h = projection.height();
-  GLfloat dw = w / (float)n_cols, dh = h / (float)n_rows;
+  const GLint x = projection.x_position();
+  const GLint y = projection.y_position();
+  const GLint w = projection.width();
+  const GLint h = projection.height();
+  const GLfloat dw = static_cast<float>(w) / static_cast<float>(n_cols);
+  const GLfloat dh = static_cast<float>(h) / static_cast<float>(n_rows);
 
   const Eigen::Vector3f orig_focus = window().focus();
   const ssize_t original_slice_index = image()->image.index(3);
@@ -109,7 +114,7 @@ void LightBox::paint(Projection &) {
       current_slice_index = original_slice_index / volume_increment;
   }
 
-  float value_min = NaN, value_max = NaN;
+  float value_min = NaNF, value_max = NaNF;
 
   ssize_t slice_idx = 0;
   for (ssize_t row = 0; row < n_rows; ++row) {
@@ -190,7 +195,7 @@ void LightBox::draw_grid() {
     frame_VAO.bind();
 
     gl::EnableVertexAttribArray(0);
-    gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE_, 0, (void *)0);
+    gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
     GLfloat data[num_points];
 
@@ -332,7 +337,7 @@ void LightBox::image_changed_event() {
 
   if (image()) {
     const auto &header = image()->header();
-    if (prev_image_name.empty()) {
+    if (prev_image_path.empty()) {
       float slice_inc = std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.f / 3.f);
       slice_focus_inc_adjust_rate = slice_inc / 5.f;
 
@@ -340,9 +345,9 @@ void LightBox::image_changed_event() {
       emit slice_increment_reset();
     }
 
-    prev_image_name = image()->header().name();
+    prev_image_path = image()->header().path();
   } else
-    prev_image_name.clear();
+    prev_image_path.clear();
 }
 
 } // namespace MR::GUI::MRView::Mode

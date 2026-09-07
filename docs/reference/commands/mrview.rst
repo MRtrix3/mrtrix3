@@ -180,6 +180,12 @@ Screen Capture tool options
 
 -  **-capture.prefix string** *(multiple uses permitted)* Set the output file prefix for the screen capture tool.
 
+-  **-capture.supersample factor** *(multiple uses permitted)* Set the super-sampling (super-resolution) factor for the screen capture tool.
+
+-  **-capture.msaa factor** *(multiple uses permitted)* Set the multi-sample anti-aliasing factor for the screen capture tool (rounded to a supported power of two).
+
+-  **-capture.downsample factor** *(multiple uses permitted)* Set the down-sampling factor for the screen capture tool; the exported resolution is the native resolution times the super-sampling factor divided by this factor.
+
 -  **-capture.grab** *(multiple uses permitted)* Start the screen capture process.
 
 Standard options
@@ -189,7 +195,7 @@ Standard options
 
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
--  **-debug** display debugging messages.
+-  **-debug** display debugging messages & debug input data.
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
@@ -214,7 +220,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com) and Dave Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au) and Rami Tabbara (rami.tabbara@florey.edu.au) and Max Pietsch (maximilian.pietsch@kcl.ac.uk) and Thijs Dhollander (thijs.dhollander@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

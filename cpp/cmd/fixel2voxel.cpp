@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 #include "apply.h"
 #include "command.h"
+#include "enum.h"
 #include "progressbar.h"
 
 #include "algo/loop.h"
@@ -27,29 +28,34 @@
 #include "dwi/tractography/scalar_file.h"
 
 #include "math/SH.h"
+#include "math/entropy.h"
 
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "fixel/loop.h"
+#include "fixel/validate.h"
 
 using namespace MR;
 using namespace App;
 
 using Fixel::index_type;
 
-const std::vector<std::string> operations = {"mean",
-                                             "sum",
-                                             "product",
-                                             "min",
-                                             "max",
-                                             "absmax",
-                                             "magmax",
-                                             "count",
-                                             "complexity",
-                                             "sf",
-                                             "dec_unit",
-                                             "dec_scaled",
-                                             "none"};
+enum class Operation {
+  MEAN,
+  SUM,
+  PRODUCT,
+  MIN,
+  MAX,
+  ABSMAX,
+  MAGMAX,
+  COUNT,
+  COMPLEXITY,
+  SF,
+  ENTROPY,
+  DEC_UNIT,
+  DEC_SCALED,
+  NONE
+};
 
 // clang-format off
 
@@ -65,7 +71,7 @@ void usage() {
   + "- Some statistic computed across all fixel values within a voxel:"
        " mean, sum, product, min, max, absmax, magmax"
   + "- The number of fixels in each voxel: count"
-  + "- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre')"
+  + "- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre'), entropy"
   + "- A 4D directionally-encoded colour image: dec_unit, dec_scaled"
   + "- A 4D image containing all fixel data values in each voxel unmodified: none"
 
@@ -89,7 +95,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("fixel_in", "the input fixel data file").type_image_in()
-  + Argument ("operation", "the operation to apply, one of: " + join(operations, ", ") + ".").type_choice(operations)
+  + Argument ("operation", "the operation to apply, one of: " + MR::Enum::join<Operation>() + ".").type_choice<Operation>()
   + Argument ("image_out", "the output scalar image.").type_image_out();
 
   OPTIONS
@@ -262,7 +268,7 @@ public:
       if (!f.padding() && data.value() < min)
         min = data.value();
     }
-    out.value() = std::isfinite(min) ? min : NAN;
+    out.value() = std::isfinite(min) ? min : NaNF;
   }
 };
 
@@ -276,7 +282,7 @@ public:
       if (!f.padding() && data.value() > max)
         max = data.value();
     }
-    out.value() = std::isfinite(max) ? max : NAN;
+    out.value() = std::isfinite(max) ? max : NaNF;
   }
 };
 
@@ -285,12 +291,12 @@ public:
   AbsMax(FixelDataType &data, const index_type max_fixels) : Base(data, max_fixels) {}
 
   void operator()(FixelIndexType &index, Image<float> &out) {
-    default_type absmax = -std::numeric_limits<default_type>::infinity();
+    float absmax = -std::numeric_limits<float>::infinity();
     for (auto f = Base::Loop(index)(data); f; ++f) {
-      if (!f.padding() && abs(float(data.value())) > absmax)
-        absmax = abs(float(data.value()));
+      if (!f.padding() && std::fabs(static_cast<typename FixelDataType::value_type>(data.value())) > absmax)
+        absmax = std::fabs(static_cast<float>(data.value()));
     }
-    out.value() = std::isfinite(absmax) ? absmax : 0.0;
+    out.value() = std::isfinite(absmax) ? absmax : 0.0F;
   }
 };
 
@@ -299,12 +305,12 @@ public:
   MagMax(FixelDataType &data, const index_type num_fixels) : Base(data, num_fixels) {}
 
   void operator()(FixelIndexType &index, Image<float> &out) {
-    default_type magmax = 0.0;
+    float magmax = 0.0;
     for (auto f = Base::Loop(index)(data); f; ++f) {
-      if (!f.padding() && abs(float(data.value())) > abs(magmax))
-        magmax = data.value();
+      if (!f.padding() && std::fabs(static_cast<typename FixelDataType::value_type>(data.value())) > std::fabs(magmax))
+        magmax = static_cast<float>(data.value());
     }
-    out.value() = std::isfinite(magmax) ? magmax : 0.0;
+    out.value() = std::isfinite(magmax) ? magmax : 0.0F;
   }
 };
 
@@ -324,11 +330,12 @@ public:
     default_type sum = 0.0;
     for (auto f = Base::Loop(index)(data); f; ++f) {
       if (!f.padding()) {
-        max = std::max(max, default_type(data.value()));
+        max = std::max(max, static_cast<default_type>(data.value()));
         sum += data.value();
       }
     }
-    out.value() = (default_type(num_fixels) / default_type(num_fixels - 1.0)) * (1.0 - (max / sum));
+    out.value() =
+        (static_cast<default_type>(num_fixels) / static_cast<default_type>(num_fixels - 1)) * (1.0 - (max / sum));
   }
 };
 
@@ -341,11 +348,33 @@ public:
     default_type sum = 0.0;
     for (auto f = Base::Loop(index)(data); f; ++f) {
       if (!f.padding()) {
-        max = std::max(max, default_type(data.value()));
+        max = std::max(max, static_cast<default_type>(data.value()));
         sum += data.value();
       }
     }
     out.value() = sum ? (max / sum) : 0.0;
+  }
+};
+
+class Entropy : protected Base {
+public:
+  Entropy(FixelDataType &data, const index_type max_fixels) : Base(data, max_fixels) {}
+
+  void operator()(FixelIndexType &index, Image<float> &out) {
+    std::vector<default_type> values;
+    for (auto f = Base::Loop(index)(data); f; ++f) {
+      if (!f.padding())
+        values.push_back(data.value());
+    }
+    if (values.empty()) {
+      out.value() = NaNF;
+      return;
+    }
+    try {
+      out.value() = static_cast<float>(MR::Math::Entropy::nats(values));
+    } catch (Exception &) {
+      out.value() = NaNF;
+    }
   }
 };
 
@@ -359,19 +388,20 @@ public:
     if (vol.valid()) {
       for (auto f = Base::Loop(index)(data, vol, dir); f; ++f) {
         if (!f.padding())
-          sum_dec +=
-              Eigen::Vector3d(abs(dir.row(1)[0]), abs(dir.row(1)[1]), abs(dir.row(1)[2])) * data.value() * vol.value();
+          sum_dec += Eigen::Vector3d(std::fabs(dir.row(1)[0]), std::fabs(dir.row(1)[1]), std::fabs(dir.row(1)[2])) *
+                     data.value() * vol.value();
       }
     } else {
       for (auto f = Base::Loop(index)(data, dir); f; ++f) {
         if (!f.padding())
-          sum_dec += Eigen::Vector3d(abs(dir.row(1)[0]), abs(dir.row(1)[1]), abs(dir.row(1)[2])) * data.value();
+          sum_dec += Eigen::Vector3d(std::fabs(dir.row(1)[0]), std::fabs(dir.row(1)[1]), std::fabs(dir.row(1)[2])) *
+                     data.value();
       }
     }
     if ((sum_dec.array() != 0.0).any())
       sum_dec.normalize();
     for (out.index(3) = 0; out.index(3) != 3; ++out.index(3))
-      out.value() = sum_dec[size_t(out.index(3))];
+      out.value() = sum_dec[static_cast<decltype(sum_dec)::Index>(out.index(3))];
   }
 
 protected:
@@ -391,8 +421,8 @@ public:
       default_type sum_volume = 0.0;
       for (auto f = Base::Loop(index)(data, vol, dir); f; ++f) {
         if (!f.padding()) {
-          sum_dec +=
-              Eigen::Vector3d(abs(dir.row(1)[0]), abs(dir.row(1)[1]), abs(dir.row(1)[2])) * data.value() * vol.value();
+          sum_dec += Eigen::Vector3d(std::fabs(dir.row(1)[0]), std::fabs(dir.row(1)[1]), std::fabs(dir.row(1)[2])) *
+                     data.value() * vol.value();
           sum_volume += vol.value();
           sum_value += vol.value() * data.value();
         }
@@ -403,7 +433,8 @@ public:
     } else {
       for (auto f = Base::Loop(index)(data, dir); f; ++f) {
         if (!f.padding()) {
-          sum_dec += Eigen::Vector3d(abs(dir.row(1)[0]), abs(dir.row(1)[1]), abs(dir.row(1)[2])) * data.value();
+          sum_dec += Eigen::Vector3d(std::fabs(dir.row(1)[0]), std::fabs(dir.row(1)[1]), std::fabs(dir.row(1)[2])) *
+                     data.value();
           sum_value += data.value();
         }
       }
@@ -412,7 +443,7 @@ public:
       sum_dec *= sum_value;
     }
     for (out.index(3) = 0; out.index(3) != 3; ++out.index(3))
-      out.value() = sum_dec[size_t(out.index(3))];
+      out.value() = sum_dec[static_cast<decltype(sum_dec)::Index>(out.index(3))];
   }
 
 protected:
@@ -438,15 +469,16 @@ void run() {
   if (in_data.size(2) != 1)
     throw Exception("Input fixel data file must have a single scalar value per fixel (i.e. have dimensions Nx1x1)");
 
-  Header in_index_header = Fixel::find_index_header(Fixel::get_fixel_directory(argument[0]));
+  const std::filesystem::path in_fixel_directory = Fixel::get_fixel_directory(argument[0]);
+  Header in_index_header = Fixel::find_index_header(in_fixel_directory);
+  Fixel::check_fixel_size(in_index_header, in_data);
   auto in_index_image = in_index_header.get_image<typename FixelIndexType::value_type>();
+  Fixel::debug_validate_index_image(in_index_image);
 
-  Image<float> in_directions;
-
-  const int op = argument[1];
+  const Operation op = MR::Enum::from_name<Operation>(argument[1]);
 
   const index_type max_fixels = get_option_value("number", 0);
-  if (max_fixels && op == 7)
+  if ((max_fixels != 0U) && op == Operation::COUNT)
     throw Exception(
         "\"count\" statistic is meaningless if constraining the number of fixels per voxel using the -number option");
 
@@ -454,20 +486,20 @@ void run() {
   H_out.datatype() = DataType::Float32;
   H_out.datatype().set_byte_order_native();
   H_out.keyval().erase(Fixel::n_fixels_key);
-  if (op == 7) { // count
+  if (op == Operation::COUNT) {
     H_out.ndim() = 3;
     H_out.datatype() = DataType::UInt8;
-  } else if (op == 10 || op == 11) { // dec
+  } else if (op == Operation::DEC_UNIT || op == Operation::DEC_SCALED) { // dec
     H_out.ndim() = 4;
     H_out.size(3) = 3;
-  } else if (op == 12) { // none
+  } else if (op == Operation::NONE) { // none
     H_out.ndim() = 4;
     if (max_fixels) {
       H_out.size(3) = max_fixels;
     } else {
       index_type max_count = 0;
       for (auto l = Loop("determining largest fixel count", in_index_image, 0, 3)(in_index_image); l; ++l)
-        max_count = std::max(max_count, (index_type)in_index_image.value());
+        max_count = std::max(max_count, static_cast<index_type>(in_index_image.value()));
       if (max_count == 0)
         throw Exception("fixel image is empty");
       // 3 volumes per fixel if performing split_dir
@@ -477,9 +509,9 @@ void run() {
     H_out.ndim() = 3;
   }
 
-  if (op == 10 || op == 11) // dec
-    in_directions =
-        Fixel::find_directions_header(Fixel::get_fixel_directory(in_data.name())).get_image<float>().with_direct_io();
+  Image<float> in_directions;
+  if (op == Operation::DEC_UNIT || op == Operation::DEC_SCALED) // dec
+    in_directions = Fixel::find_directions_header(in_fixel_directory).get_image<float>(DirectIO(1));
 
   FixelDataType in_vol;
   auto opt = get_options("weighted");
@@ -488,15 +520,28 @@ void run() {
     check_dimensions(in_data, in_vol);
   }
 
-  if (op == 2 || op == 3 || op == 4 || op == 5 || op == 6 || op == 7 || op == 8 || op == 9 || op == 12) {
+  switch (op) {
+  case Operation::PRODUCT:
+  case Operation::MIN:
+  case Operation::MAX:
+  case Operation::ABSMAX:
+  case Operation::MAGMAX:
+  case Operation::COUNT:
+  case Operation::COMPLEXITY:
+  case Operation::SF:
+  case Operation::ENTROPY:
+  case Operation::NONE:
     if (in_vol.valid())
       WARN("Option -weighted has no meaningful interpretation for the operation specified; ignoring");
+    break;
+  default:
+    break;
   }
 
   opt = get_options("fill");
   float fill_value = 0.0;
   if (!opt.empty()) {
-    if (op == 12) {
+    if (op == Operation::NONE) {
       fill_value = opt[0][0];
     } else {
       WARN("Option -fill ignored; only applicable to \"none\" operation");
@@ -508,48 +553,46 @@ void run() {
   auto loop = ThreadedLoop("converting sparse fixel data to scalar image", in_index_image, 0, 3);
 
   switch (op) {
-  case 0:
+  case Operation::MEAN:
     loop.run(Mean(in_data, max_fixels, in_vol), in_index_image, out);
     break;
-  case 1:
+  case Operation::SUM:
     loop.run(Sum(in_data, max_fixels, in_vol), in_index_image, out);
     break;
-  case 2:
+  case Operation::PRODUCT:
     loop.run(Product(in_data, max_fixels), in_index_image, out);
     break;
-  case 3:
+  case Operation::MIN:
     loop.run(Min(in_data, max_fixels), in_index_image, out);
     break;
-  case 4:
+  case Operation::MAX:
     loop.run(Max(in_data, max_fixels), in_index_image, out);
     break;
-  case 5:
+  case Operation::ABSMAX:
     loop.run(AbsMax(in_data, max_fixels), in_index_image, out);
     break;
-  case 6:
+  case Operation::MAGMAX:
     loop.run(MagMax(in_data, max_fixels), in_index_image, out);
     break;
-  case 7:
-    loop.run(
-        [](Image<index_type> &index, Image<float> &out) { // count
-          out.value() = index.value();
-        },
-        in_index_image,
-        out);
+  case Operation::COUNT:
+    loop.run([](Image<index_type> &index, Image<float> &out) { out.value() = index.value(); }, in_index_image, out);
     break;
-  case 8:
+  case Operation::COMPLEXITY:
     loop.run(Complexity(in_data, max_fixels), in_index_image, out);
     break;
-  case 9:
+  case Operation::SF:
     loop.run(SF(in_data, max_fixels), in_index_image, out);
     break;
-  case 10:
+  case Operation::ENTROPY:
+    loop.run(Entropy(in_data, max_fixels), in_index_image, out);
+    break;
+  case Operation::DEC_UNIT:
     loop.run(DEC_unit(in_data, max_fixels, in_vol, in_directions), in_index_image, out);
     break;
-  case 11:
+  case Operation::DEC_SCALED:
     loop.run(DEC_scaled(in_data, max_fixels, in_vol, in_directions), in_index_image, out);
     break;
-  case 12:
+  case Operation::NONE:
     loop.run(::None(in_data, max_fixels, fill_value), in_index_image, out);
     break;
   }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -93,9 +93,9 @@ const OptionGroup nonlinear_options =
     // + Option("cc", "use cc metric with radius")
     // + Argument ("radius").type_integer (1,100)
 
-    + Option("diagnostics_image",
+    + Option("nl_diagnostics_dir",
              "write intermediate images for diagnostics purposes")
-      + Argument("path");
+      + Argument("dir").type_directory_out(DirOutMode::MayExist);
 // clang-format on
 
 template void NonLinear::run<Transform::Affine, Image<double>>(

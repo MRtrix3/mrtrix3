@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,13 +19,16 @@
 #include <cstring>
 #include <limits>
 #include <string>
+#include <string_view>
 #include <thread>
+#include <unordered_map>
 
 #ifdef None
 #undef None
 #endif
 
 #include "cmdline_option.h"
+#include "enum.h"
 #include "file/path.h"
 #include "types.h"
 
@@ -41,15 +44,15 @@ extern int exit_error_code;
 extern std::string NAME;
 extern std::string command_history_string;
 extern bool overwrite_files;
-extern void (*check_overwrite_files_func)(const std::string &name);
+extern void (*check_overwrite_files_func)(const std::filesystem::path &name);
 extern bool fail_on_warn;
 extern bool terminal_use_colour;
 extern const std::thread::id main_thread_ID;
 
 extern std::vector<std::string> raw_arguments_list;
 
-extern const char *project_version;
-extern const char *project_build_date;
+extern const std::string project_version;
+extern const std::string project_build_date;
 
 struct HelpFormatting {
   struct Indents {
@@ -78,11 +81,11 @@ std::string usage_syntax(const bool format);
 // @{
 
 //! vector of strings to hold more comprehensive command description
-class Description : public std::vector<const char *> {
+class Description : public std::vector<std::string> {
 public:
-  Description &operator+(const char *text);
-
-  Description &operator+(const char *const text[]);
+  Description &operator+(const char *text); // check_syntax off
+  Description &operator+(std::string_view text);
+  Description &operator+(const char *const text[]); // check_syntax off
 
   std::string syntax(const bool format) const;
 };
@@ -90,7 +93,7 @@ public:
 //! object for storing a single example command usage
 class Example {
 public:
-  Example(const std::string &title, const std::string &code, const std::string &description);
+  Example(std::string_view title, std::string_view code, std::string_view description);
   const std::string title, code, description;
 
   operator std::string() const;
@@ -127,13 +130,13 @@ public:
   std::string syntax(const bool format) const;
 };
 
-void check_overwrite(const std::string &name);
+void check_overwrite(const std::filesystem::path &path);
 
 //! initialise MRtrix and parse command-line arguments
 /*! this function must be called from within main(), immediately after the
  * argument and options have been specified, and before any further
  * processing takes place. */
-void init(int argc, const char *const *argv);
+void init(int argc, const char *const *argv); // check_syntax off
 
 //! verify that command's usage() function has set requisite fields [used internally]
 void verify_usage();
@@ -155,24 +158,28 @@ std::string full_usage();
 
 class ParsedArgument {
 public:
-  operator std::string() const { return p; }
+  using IntType = int64_t; // Native single-integer parsed type before conversion
+  using UIntType = std::make_unsigned_t<IntType>;
 
-  const std::string &as_text() const {
-    assert(arg->types[ArgTypeFlags::Text]);
-    return p;
-  }
-  bool as_bool() const {
-    assert(arg->types[ArgTypeFlags::Boolean]);
-    return to<bool>(p);
-  }
-  int64_t as_int() const;
-  uint64_t as_uint() const;
+  operator std::string() const;
+  operator std::string_view() const;
+  operator std::filesystem::path() const;
+
+  // This particular function is permissive of reading the argument in this form
+  //   even if the argument is not explicitly flagged as being of text type;
+  //   in particular, attempting to implicitly convert to std::string
+  //   for an argument that is a filesystem path type will fail,
+  //   whereas this function can be used
+  std::string as_text() const { return p; }
+
+  std::filesystem::path as_path() const;
+  bool as_bool() const;
+  IntType as_int() const;
+  UIntType as_uint() const;
   default_type as_float() const;
 
-  std::vector<int32_t> as_sequence_int() const;
-
-  std::vector<uint32_t> as_sequence_uint() const;
-
+  std::vector<IntType> as_sequence_int() const;
+  std::vector<UIntType> as_sequence_uint() const;
   std::vector<default_type> as_sequence_float() const;
 
   operator bool() const { return as_bool(); }
@@ -184,11 +191,11 @@ public:
   operator long long unsigned int() const { return as_uint(); }
   operator float() const { return as_float(); }
   operator double() const { return as_float(); }
-  operator std::vector<int32_t>() const { return as_sequence_int(); }
-  operator std::vector<uint32_t>() const { return as_sequence_uint(); }
+  operator std::vector<IntType>() const { return as_sequence_int(); }
+  operator std::vector<UIntType>() const { return as_sequence_uint(); }
   operator std::vector<default_type>() const { return as_sequence_float(); }
 
-  const char *c_str() const { return p.c_str(); }
+  const char *c_str() const { return p.c_str(); } // check_syntax off
 
   //! the index of this argument in the raw command-line arguments list
   size_t index() const { return index_; }
@@ -199,13 +206,14 @@ private:
   std::string p;
   size_t index_;
 
-  ParsedArgument(const Option *option, const Argument *argument, std::string text, size_t index);
+  bool includes_filesystem_arg_types() const noexcept;
+  bool only_filesystem_arg_types() const noexcept;
 
-  void error(Exception &e) const;
+  ParsedArgument(const Option *option, const Argument *argument, std::string text, size_t index);
 
   friend class ParsedOption;
   friend class Options;
-  friend void MR::App::init(int argc, const char *const *argv);
+  friend void MR::App::init(int argc, const char *const *argv); // check_syntax off
   friend void MR::App::parse();
   friend void MR::App::sort_arguments(const std::vector<std::string> &arguments);
 };
@@ -227,7 +235,7 @@ public:
   ParsedArgument operator[](size_t num) const;
 
   //! check whether this option matches the name supplied
-  bool operator==(const char *match) const;
+  bool operator==(std::string_view match) const;
 };
 
 //! the list of arguments parsed from the command-line
@@ -326,7 +334,7 @@ extern std::string SYNOPSIS;
 extern Description REFERENCES;
 
 //! the group of standard options for all commands
-extern OptionGroup __standard_options;
+extern const OptionGroup _standard_options;
 
 //! return all command-line options matching \c name
 /*! This returns a vector of vectors, where each top-level entry
@@ -346,7 +354,7 @@ extern OptionGroup __standard_options;
  *    auto values = opt[0][4].as_sequence_float();
  * }
  * \endcode */
-const std::vector<ParsedOption> get_options(const std::string &name);
+std::vector<ParsedOption> get_options(std::string_view name);
 
 //! Returns the option value if set, and the default otherwise.
 /*! Only be used for command-line options that do not specify
@@ -358,7 +366,7 @@ const std::vector<ParsedOption> get_options(const std::string &name);
  *  int arg2 = get_option_value("myotheropt", arg2_default);
  * \endcode
  */
-template <typename T> inline T get_option_value(const std::string &name, const T default_value) {
+template <typename T> inline T get_option_value(std::string_view name, const T default_value) {
   auto opt = get_options(name);
   switch (opt.size()) {
   case 0:
@@ -372,8 +380,57 @@ template <typename T> inline T get_option_value(const std::string &name, const T
   }
 }
 
+//! Returns the enum choice selected for an option, and the default otherwise.
+/*! Only be used for command-line options that do not specify
+ * .allow_multiple(), and that have only one associated Argument declared
+ * using Argument::type_choice<Enum>().
+ */
+template <typename Enum> inline Enum get_option_choice(std::string_view name, const Enum default_value) {
+  static_assert(std::is_enum_v<Enum>, "Template parameter must be an enum type");
+
+  auto opt = get_options(name);
+  switch (opt.size()) {
+  case 0:
+    return default_value;
+  case 1:
+    if (opt[0].opt->size() == 1)
+      return MR::Enum::from_name<Enum>(std::string_view(opt[0][0]));
+  default:
+    assert(false);
+    throw Exception("Internal error parsing command-line option \"-" + name + "\"");
+  }
+}
+
+//! Returns the user-specified choice in a std::optional<> if present, std::nullopt otherwise.
+template <typename T>
+typename std::enable_if<!std::is_enum_v<T>, std::optional<T>>::type get_optional(std::string_view name) {
+  auto opt = get_options(name);
+  switch (opt.size()) {
+  case 0:
+    return std::nullopt;
+  case 1:
+    return static_cast<T>(opt[0][0]);
+  default:
+    assert(false);
+    throw Exception("Internal error parsing command-line option \"-" + name + "\"");
+  }
+}
+template <typename Enum>
+typename std::enable_if<std::is_enum_v<Enum>, std::optional<Enum>>::type get_optional(std::string_view name) {
+  auto opt = get_options(name);
+  switch (opt.size()) {
+  case 0:
+    return std::nullopt;
+  case 1:
+    return MR::Enum::from_name<Enum>(std::string_view(opt[0][0]));
+  default:
+    assert(false);
+    throw Exception("Internal error parsing command-line option \"-" + name + "\"");
+  }
+}
+
 //! convenience function provided mostly to ease writing Exception strings
-std::string operator+(const char *left, const App::ParsedArgument &right);
+std::string operator+(const char *const left, const App::ParsedArgument &right); // check_syntax off
 
 std::ostream &operator<<(std::ostream &stream, const App::ParsedArgument &arg);
 

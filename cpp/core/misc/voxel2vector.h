@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -52,6 +52,7 @@ public:
           str(reverse.size()) + " elements");
   }
 
+  bool empty() const { return reverse.empty(); }
   size_t size() const { return reverse.size(); }
 
   const std::vector<index_t> &operator[](const size_t index) const {

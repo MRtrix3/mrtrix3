@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,9 +16,11 @@
 
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
 
 #include "command.h"
 #include "datatype.h"
+#include "enum.h"
 #include "header.h"
 #include "image.h"
 
@@ -29,7 +31,7 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> choices = {"scale", "linear", "nonlinear"};
+enum class MatchType { SCALE, LINEAR, NONLINEAR };
 
 // clang-format off
 void usage() {
@@ -40,7 +42,7 @@ void usage() {
 
   ARGUMENTS
     + Argument ("type", "type of histogram matching to perform;"
-                        " options are: " + join(choices, ",")).type_choice (choices)
+                        " options are: " + MR::Enum::join<MatchType>() + ".").type_choice<MatchType>()
     + Argument ("input", "the input image to be modified").type_image_in ()
     + Argument ("target", "the input image from which to derive the target histogram").type_image_in()
     + Argument ("output", "the output image").type_image_out();
@@ -73,6 +75,7 @@ void match_linear(Image<float> &input,
                   Image<bool> &mask_target,
                   const bool estimate_intercept) {
   std::vector<float> input_data, target_data;
+  const std::filesystem::path output_path{argument[3]};
   {
     ProgressBar progress("Loading & sorting image data", 4);
 
@@ -111,10 +114,10 @@ void match_linear(Image<float> &input,
   Eigen::Matrix<default_type, Eigen::Dynamic, 1> output_vector(input_data.size());
   for (size_t input_index = 0; input_index != input_data.size() - 1; ++input_index) {
     input_matrix(input_index, 0) = input_data[input_index];
-    const default_type output_position =
-        (target_data.size() - 1) * (default_type(input_index) / default_type(input_data.size() - 1));
-    const size_t target_index_lower = std::floor(output_position);
-    const default_type mu = output_position - default_type(target_index_lower);
+    const default_type output_position = (target_data.size() - 1) * (static_cast<default_type>(input_index) /
+                                                                     static_cast<default_type>(input_data.size() - 1));
+    const size_t target_index_lower = static_cast<size_t>(std::floor(output_position));
+    const default_type mu = output_position - static_cast<default_type>(target_index_lower);
     output_vector[input_index] =
         ((1.0 - mu) * target_data[target_index_lower]) + (mu * target_data[target_index_lower + 1]);
   }
@@ -133,7 +136,7 @@ void match_linear(Image<float> &input,
   if (estimate_intercept) {
     CONSOLE("Estimated linear transform is: " + str(parameters[0]) + "x + " + str(parameters[1]));
     H.keyval()["mrhistmatch_offset"] = str<float>(parameters[1]);
-    auto output = Image<float>::create(argument[3], H);
+    auto output = Image<float>::create(output_path, H);
     for (auto l = Loop("Writing output image data", input)(input, output); l; ++l) {
       if (std::isfinite(static_cast<float>(input.value()))) {
         output.value() = parameters[0] * input.value() + parameters[1];
@@ -143,7 +146,7 @@ void match_linear(Image<float> &input,
     }
   } else {
     CONSOLE("Estimated scale factor is " + str(parameters[0]));
-    auto output = Image<float>::create(argument[3], H);
+    auto output = Image<float>::create(output_path, H);
     for (auto l = Loop("Writing output image data", input)(input, output); l; ++l) {
       if (std::isfinite(static_cast<float>(input.value()))) {
         output.value() = input.value() * parameters[0];
@@ -156,6 +159,7 @@ void match_linear(Image<float> &input,
 
 void match_nonlinear(
     Image<float> &input, Image<float> &target, Image<bool> &mask_input, Image<bool> &mask_target, const size_t nbins) {
+  const std::filesystem::path output_path{argument[3]};
   Algo::Histogram::Calibrator calib_input(nbins, true);
   Algo::Histogram::calibrate(calib_input, input, mask_input);
   INFO("Input histogram ranges from " + str(calib_input.get_min()) + " to " + str(calib_input.get_max()) + "; using " +
@@ -174,7 +178,7 @@ void match_nonlinear(
   Header H(input);
   H.datatype() = DataType::Float32;
   H.datatype().set_byte_order_native();
-  auto output = Image<float>::create(argument[3], H);
+  auto output = Image<float>::create(output_path, H);
   for (auto l = Loop("Writing output data", input)(input, output); l; ++l) {
     if (std::isfinite(static_cast<float>(input.value()))) {
       output.value() = matcher(input.value());
@@ -191,7 +195,9 @@ void run() {
   Image<bool> mask_input, mask_target;
   auto opt = get_options("mask_input");
   if (!opt.empty()) {
-    mask_input = Image<bool>::open(opt[0][0]);
+    const std::filesystem::path mask_input_path{opt[0][0]};
+
+    mask_input = Image<bool>::open(mask_input_path);
     check_dimensions(input, mask_input, 0, 3);
   }
   opt = get_options("mask_target");
@@ -200,14 +206,14 @@ void run() {
     check_dimensions(target, mask_target, 0, 3);
   }
 
-  switch (int(argument[0])) {
-  case 0: // Scale
+  switch (MR::Enum::from_name<MatchType>(argument[0])) {
+  case MatchType::SCALE:
     match_linear(input, target, mask_input, mask_target, false);
     break;
-  case 1: // Linear
+  case MatchType::LINEAR:
     match_linear(input, target, mask_input, mask_target, true);
     break;
-  case 2: // Non-linear
+  case MatchType::NONLINEAR:
     match_nonlinear(input, target, mask_input, mask_target, get_option_value("bins", 0));
     break;
   default:

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,6 +18,8 @@
 #include "gui.h"
 #include "command.h"
 // clang-format on
+
+#include <filesystem>
 
 #include "memory.h"
 #include "mrview/icons.h"
@@ -89,7 +91,8 @@ void run() {
       QFileOpenEvent *openEvent = static_cast<QFileOpenEvent *>(event);
       std::vector<std::unique_ptr<MR::Header>> list;
       try {
-        list.push_back(std::make_unique<MR::Header>(MR::Header::open(openEvent->file().toUtf8().data())));
+        const std::filesystem::path file_path{openEvent->file().toUtf8().constData()};
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(file_path)));
       } catch (Exception &E) {
         E.display();
       }

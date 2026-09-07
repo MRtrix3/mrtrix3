@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,10 @@
 
 #include "mrview/tool/view.h"
 
+#include <cstdint>
+#include <sys/types.h>
+
+#include "exception.h"
 #include "math/math.h"
 #include "mrtrix.h"
 #include "mrview/adjust_button.h"
@@ -28,7 +32,8 @@
 namespace {
 
 inline float get_alpha_from_slider(float slider_value) {
-  return MR::GUI::MRView::Tool::min_opacity * std::exp(MR::GUI::MRView::Tool::opacity_exponent * float(slider_value));
+  return MR::GUI::MRView::Tool::min_opacity *
+         std::exp(MR::GUI::MRView::Tool::opacity_exponent * static_cast<float>(slider_value));
 }
 
 inline float get_slider_value_from_alpha(float alpha) {
@@ -77,12 +82,12 @@ public:
   QModelIndex parent(const QModelIndex &) const { return {}; }
 
   int rowCount(const QModelIndex &parent = QModelIndex()) const {
-    (void)parent; // to suppress warnings about unused parameters
+    (void)parent;
     return planes.size();
   }
 
   int columnCount(const QModelIndex &parent = QModelIndex()) const {
-    (void)parent; // to suppress warnings about unused parameters
+    (void)parent;
     return 1;
   }
 
@@ -479,11 +484,12 @@ void View::showEvent(QShowEvent *) {
 void View::onVolumeIndexChanged() {
   assert(window().image());
   const auto &image(window().image()->image);
-  assert(image.ndim() == size_t(volume_index_layout->count() + 3));
+  assert(image.ndim() == static_cast<size_t>(volume_index_layout->count() + 3));
 
   for (int i = 0; i < volume_index_layout->count(); ++i) {
     auto *box = dynamic_cast<SpinBox *>(volume_index_layout->itemAt(i)->widget());
-    box->setValue(image.ndim() > size_t(i + 3) ? image.index(i + 3) : 0);
+    box->setValue(image.ndim() > static_cast<size_t>(i) + 3 ? static_cast<int>(image.index(static_cast<ssize_t>(i) + 3))
+                                                            : 0);
   }
 }
 
@@ -588,7 +594,8 @@ void View::onSetFocus() {
   try {
     window().set_focus(Eigen::Vector3f{focus_x->value(), focus_y->value(), focus_z->value()});
     window().updateGL();
-  } catch (Exception) {
+  } catch (Exception &e) {
+    WARN("Error parsing requested focus point: " + e[0]);
   }
 }
 
@@ -598,18 +605,19 @@ void View::onSetVoxel() {
     focus = window().image()->voxel2scanner() * focus;
     window().set_focus(focus);
     window().updateGL();
-  } catch (Exception) {
+  } catch (Exception &e) {
+    WARN("Error parsing requested voxel position: " + e[0]);
   }
 }
 
 void View::onSetVolumeIndex() {
   if (window().image()) {
     const auto &image(window().image()->image);
-    assert(image.ndim() == size_t(volume_index_layout->count() + 3));
+    assert(image.ndim() == static_cast<size_t>(volume_index_layout->count() + 3));
 
     for (int i = 0; i < volume_index_layout->count(); ++i) {
       auto *box = dynamic_cast<SpinBox *>(volume_index_layout->itemAt(i)->widget());
-      if (image.ndim() <= size_t(i + 3))
+      if (image.ndim() <= static_cast<size_t>(i) + 3)
         break;
       window().set_image_volume(i + 3, box->value());
     }
@@ -656,9 +664,10 @@ void View::onCheckThreshold(bool) {
 }
 
 void View::set_transparency_from_image() {
+  // reset:
   if (!std::isfinite(window().image()->transparent_intensity) || !std::isfinite(window().image()->opaque_intensity) ||
       !std::isfinite(window().image()->alpha) || !std::isfinite(window().image()->lessthan) ||
-      !std::isfinite(window().image()->greaterthan)) { // reset:
+      !std::isfinite(window().image()->greaterthan)) {
     if (!std::isfinite(window().image()->intensity_min()) || !std::isfinite(window().image()->intensity_max()))
       return;
 

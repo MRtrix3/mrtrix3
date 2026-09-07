@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,7 +22,8 @@ namespace {
 
 constexpr float x = .525731112119133606;
 constexpr float z = .850650808352039932;
-constexpr float initial_vertices_data[]{x,   0.0, z,   //
+constexpr float initial_vertices_data[]{-x,  0.0, z,   //
+                                        x,   0.0, z,   //
                                         0.0, z,   x,   //
                                         0.0, -z,  x,   //
                                         z,   x,   0.0, //
@@ -74,7 +75,7 @@ public:
   GLuint &operator[](int n) { return index[n]; }
 
 protected:
-  GLuint index[3];
+  std::array<GLuint, 3> index;
 };
 
 class Edge {
@@ -119,8 +120,8 @@ void HalfSphere::LOD(const size_t level_of_detail) {
       GLuint index1, index2, index3;
 
       Edge E(indices[n][0], indices[n][1]);
-      std::map<Edge, GLuint>::const_iterator iter;
-      if ((iter = edges.find(E)) == edges.end()) {
+      std::map<Edge, GLuint>::const_iterator iter = edges.find(E);
+      if (iter == edges.end()) {
         index1 = vertices.size();
         edges.insert(std::make_pair(E, index1));
         vertices.push_back(Vertex(vertices, indices[n][0], indices[n][1]));
@@ -128,7 +129,8 @@ void HalfSphere::LOD(const size_t level_of_detail) {
         index1 = iter->second;
 
       E.set(indices[n][1], indices[n][2]);
-      if ((iter = edges.find(E)) == edges.end()) {
+      iter = edges.find(E);
+      if (iter == edges.end()) {
         index2 = vertices.size();
         edges.insert(std::make_pair(E, index2));
         vertices.push_back(Vertex(vertices, indices[n][1], indices[n][2]));
@@ -136,7 +138,8 @@ void HalfSphere::LOD(const size_t level_of_detail) {
         index2 = iter->second;
 
       E.set(indices[n][2], indices[n][0]);
-      if ((iter = edges.find(E)) == edges.end()) {
+      iter = edges.find(E);
+      if (iter == edges.end()) {
         index3 = vertices.size();
         edges.insert(std::make_pair(E, index3));
         vertices.push_back(Vertex(vertices, indices[n][2], indices[n][0]));

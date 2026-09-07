@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,19 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+
+#include "enum.h"
 #include "registration/linear.h"
 
 namespace MR::Registration {
 
 using namespace App;
-
-const std::vector<std::string> initialisation_translation_choices = {"mass", "geometric", "none"};
-const std::vector<std::string> initialisation_rotation_choices = {"search", "moments", "none"};
-
-const std::vector<std::string> linear_metric_choices = {"diff", "ncc"};
-const std::vector<std::string> linear_robust_estimator_choices = {"l1", "l2", "lp", "none"};
-const std::vector<std::string> linear_optimisation_algo_choices = {"bbgd", "gd"};
-const std::vector<std::string> optim_algo_names = {"BBGD", "GD"};
 
 // define parameters of initialisation methods used for both, rigid and affine registration
 void parse_general_options(Registration::Linear &registration) {
@@ -74,49 +69,14 @@ void parse_general_options(Registration::Linear &registration) {
   }
 
   opt = get_options("linstage.optimiser.default");
-  if (!opt.empty()) {
-    switch ((int)opt[0][0]) {
-    case 0:
-      registration.set_stage_optimiser_default(Registration::OptimiserAlgoType::bbgd);
-      break;
-    case 1:
-      registration.set_stage_optimiser_default(Registration::OptimiserAlgoType::gd);
-      break;
-    default:
-      assert(0 && "FIXME: linstage.optimiser.default not understood");
-      break;
-    }
-  }
-
+  if (!opt.empty())
+    registration.set_stage_optimiser_default(MR::Enum::from_name<OptimiserAlgoType>(opt[0][0]));
   opt = get_options("linstage.optimiser.first");
-  if (!opt.empty()) {
-    switch ((int)opt[0][0]) {
-    case 0:
-      registration.set_stage_optimiser_first(Registration::OptimiserAlgoType::bbgd);
-      break;
-    case 1:
-      registration.set_stage_optimiser_first(Registration::OptimiserAlgoType::gd);
-      break;
-    default:
-      assert(0 && "FIXME: linstage.optimiser.first not understood");
-      break;
-    }
-  }
-
+  if (!opt.empty())
+    registration.set_stage_optimiser_first(MR::Enum::from_name<OptimiserAlgoType>(opt[0][0]));
   opt = get_options("linstage.optimiser.last");
-  if (!opt.empty()) {
-    switch ((int)opt[0][0]) {
-    case 0:
-      registration.set_stage_optimiser_last(Registration::OptimiserAlgoType::bbgd);
-      break;
-    case 1:
-      registration.set_stage_optimiser_last(Registration::OptimiserAlgoType::gd);
-      break;
-    default:
-      assert(0 && "FIXME: linstage.optimiser.last not understood");
-      break;
-    }
-  }
+  if (!opt.empty())
+    registration.set_stage_optimiser_last(MR::Enum::from_name<OptimiserAlgoType>(opt[0][0]));
 
   opt = get_options("linstage.iterations");
   if (!opt.empty()) {
@@ -126,41 +86,39 @@ void parse_general_options(Registration::Linear &registration) {
     registration.set_stage_iterations(std::vector<uint32_t>{1});
   }
 
-  opt = get_options("linstage.diagnostics.prefix");
+  opt = get_options("linstage.diagnostics.dir");
   if (!opt.empty()) {
-    registration.set_diagnostics_image_prefix(opt[0][0]);
+    const std::filesystem::path diag_dir{opt[0][0]};
+    std::filesystem::create_directories(diag_dir);
+    registration.set_diagnostics_image_dir(diag_dir);
   }
 }
 
-void set_init_translation_model_from_option(Registration::Linear &registration, const int &option) {
+void set_init_translation_model_from_option(Registration::Linear &registration, const init_translation_t option) {
   switch (option) {
-  case 0:
+  case init_translation_t::mass:
     registration.set_init_translation_type(Registration::Transform::Init::mass);
     break;
-  case 1:
+  case init_translation_t::geometric:
     registration.set_init_translation_type(Registration::Transform::Init::geometric);
     break;
-  case 2:
+  case init_translation_t::none:
     registration.set_init_translation_type(Registration::Transform::Init::none);
-    break;
-  default:
     break;
   }
 }
 
-void set_init_rotation_model_from_option(Registration::Linear &registration, const int &option) {
+void set_init_rotation_model_from_option(Registration::Linear &registration, const init_rotation_t option) {
   switch (option) {
   //  TODO registration.set_init_type (Registration::Transform::Init::fod);
-  case 0:
+  case init_rotation_t::search:
     registration.set_init_rotation_type(Registration::Transform::Init::rot_search);
     break;
-  case 1:
+  case init_rotation_t::moments:
     registration.set_init_rotation_type(Registration::Transform::Init::moments);
     break;
-  case 2:
+  case init_rotation_t::none:
     registration.set_init_rotation_type(Registration::Transform::Init::none);
-    break;
-  default:
     break;
   }
 }
@@ -210,7 +168,7 @@ const OptionGroup lin_stage_options =
              "number of iterations for each registration stage."
              " Not to be confused with -rigid_niter or -affine_niter."
              " This can be used to generate intermediate diagnostics images"
-             " (-linstage.diagnostics.prefix)"
+             " (-linstage.diagnostics.dir)"
              " or to change the cost function optimiser during registration"
              " (without the need to repeatedly resize the images)."
              " (Default: 1 == no repetition)")
@@ -224,30 +182,30 @@ const OptionGroup lin_stage_options =
     + Option("linstage.optimiser.first",
              "Cost function optimisation algorithm to use at first iteration of all stages."
              " Valid choices:"
-             " bbgd (Barzilai-Borwein gradient descent);"
-             " gd (simple gradient descent)."
-             " (Default: bbgd)")
-      + Argument("algorithm").type_choice(linear_optimisation_algo_choices)
+             " BBGD (Barzilai-Borwein gradient descent);"
+             " GD (simple gradient descent)."
+             " (Default: BBGD)")
+      + Argument("algorithm").type_choice<OptimiserAlgoType>()
     + Option("linstage.optimiser.last",
              "Cost function optimisation algorithm to use at last iteration of all stages"
              " (if there are more than one)."
              " Valid choices:"
-             " bbgd (Barzilai-Borwein gradient descent);"
-             " gd (simple gradient descent)."
-             " (Default: bbgd)")
-      + Argument("algorithm").type_choice(linear_optimisation_algo_choices)
+             " BBGD (Barzilai-Borwein gradient descent);"
+             " GD (simple gradient descent)."
+             " (Default: BBGD)")
+      + Argument("algorithm").type_choice<OptimiserAlgoType>()
     + Option("linstage.optimiser.default",
              "Cost function optimisation algorithm to use at any stage iteration"
              " other than first or last iteration."
              " Valid choices:"
-             " bbgd (Barzilai-Borwein gradient descent);"
-             " gd (simple gradient descent)."
-             " (Default: bbgd)")
-      + Argument("algorithm").type_choice(linear_optimisation_algo_choices)
+             " BBGD (Barzilai-Borwein gradient descent);"
+             " GD (simple gradient descent)."
+             " (Default: BBGD)")
+      + Argument("algorithm").type_choice<OptimiserAlgoType>()
 
-    + Option("linstage.diagnostics.prefix",
+    + Option("linstage.diagnostics.dir",
              "generate diagnostics images after every registration stage")
-      + Argument("prefix").type_text();
+      + Argument("dir").type_directory_out(DirOutMode::MayExist);
 
 const OptionGroup rigid_options =
     OptionGroup("Rigid registration options")
@@ -273,7 +231,7 @@ const OptionGroup rigid_options =
              " mass (aligns the centers of mass of both images, default);"
              " geometric (aligns geometric image centres);"
              " none.")
-      + Argument("type").type_choice(initialisation_translation_choices)
+      + Argument("type").type_choice<init_translation_t>()
 
     + Option("rigid_init_rotation",
              "Method to use to initialise the rotation."
@@ -281,7 +239,7 @@ const OptionGroup rigid_options =
              " search (search for the best rotation using mean squared residuals);" // TODO CC
              " moments (rotation based on directions of intensity variance with respect to centre of mass);"
              " none (default).") // TODO  This can be combined with rigid_init_translation.
-      + Argument("type").type_choice(initialisation_rotation_choices)
+      + Argument("type").type_choice<init_rotation_t>()
 
     + Option("rigid_init_matrix",
              "initialise either the rigid, affine, or syn registration"
@@ -309,7 +267,7 @@ const OptionGroup rigid_options =
              " diff (intensity differences);"
              // " ncc (normalised cross-correlation);" TODO
              " Default: diff")
-      + Argument("type").type_choice(linear_metric_choices)
+      + Argument("type").type_choice<LinearMetricType>()
 
     + Option("rigid_metric.diff.estimator",
              "Robust estimator to use during rigid-body registration."
@@ -319,7 +277,7 @@ const OptionGroup rigid_options =
              " lp (least powers: |x|^1.2);"
              " none."
              " Default: none.")
-      + Argument("type").type_choice(linear_robust_estimator_choices)
+      + Argument("type").type_choice<LinearRobustMetricEstimatorType>()
 
     // + Option ("rigid_loop_density", "density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)")
     //   + Argument ("num").type_sequence_float () // TODO
@@ -364,7 +322,7 @@ const OptionGroup affine_options =
              " geometric (aligns geometric image centres);"
              " none."
              " (Default: mass)")
-      + Argument("type").type_choice(initialisation_translation_choices)
+      + Argument("type").type_choice<init_translation_t>()
 
     + Option("affine_init_rotation",
              "initialise the rotation."
@@ -373,7 +331,7 @@ const OptionGroup affine_options =
              " moments (rotation based on directions of intensity variance with respect to centre of mass);"
              " none"
              " (Default: none).") // TODO  This can be combined with affine_init_translation.
-      + Argument("type").type_choice(initialisation_rotation_choices)
+      + Argument("type").type_choice<init_rotation_t>()
 
     + Option("affine_init_matrix",
              "initialise either the affine or syn registration"
@@ -400,7 +358,7 @@ const OptionGroup affine_options =
              " diff (intensity differences);"
              // "ncc (normalised cross-correlation) " TODO
              " Default: diff")
-      + Argument("type").type_choice(linear_metric_choices)
+      + Argument("type").type_choice<LinearMetricType>()
 
     + Option("affine_metric.diff.estimator",
              "Robust estimator to use durring affine registration."
@@ -410,7 +368,7 @@ const OptionGroup affine_options =
              " lp (least powers: |x|^1.2);"
              " none."
              " Default: none.")
-      + Argument("type").type_choice(linear_robust_estimator_choices)
+      + Argument("type").type_choice<LinearRobustMetricEstimatorType>()
 
     // + Option ("affine_loop_density", "density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)")
     //   + Argument ("num").type_sequence_float () // TODO

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,13 +17,15 @@
 #pragma once
 
 #include "math/median.h"
+#include "mrtrix.h"
 
 #include <iomanip>
 #include <vector>
 
 namespace MR::Stats {
 
-extern std::vector<std::string> field_choices;
+//! enumeration of the per-field statistics that can be requested via "-output"
+enum class field_t { MEAN, MEDIAN, STD, STD_RV, IQR, MIN, MAX, COUNT };
 extern const App::OptionGroup Options;
 
 using value_type = default_type;
@@ -38,24 +40,25 @@ public:
         m2(0.0, 0.0),
         std(0.0, 0.0),
         std_rv(0.0, 0.0),
-        min(INFINITY, INFINITY),
-        max(-INFINITY, -INFINITY),
+        min(Inf, Inf),
+        max(-Inf, -Inf),
         count(0),
         is_complex(is_complex),
         ignore_zero(ignorezero) {}
 
   void operator()(complex_type val);
 
-  template <class ImageType> void print(ImageType &ima, const std::vector<std::string> &fields) {
+  template <class ImageType> void print(ImageType &ima, const std::vector<field_t> &fields) {
 
     if (count > 1) {
-      std = complex_type(sqrt(m2.real() / value_type(count - 1)), sqrt(m2.imag() / value_type(count - 1)));
-      std_rv = complex_type(sqrt((m2.real() + m2.imag()) / value_type(count - 1)));
+      std = complex_type(sqrt(m2.real() / static_cast<value_type>(count - 1)),
+                         sqrt(m2.imag() / static_cast<value_type>(count - 1)));
+      std_rv = complex_type(sqrt((m2.real() + m2.imag()) / static_cast<value_type>(count - 1)));
       std::sort(values.begin(), values.end());
     }
     if (!fields.empty()) {
       if (!count) {
-        if (fields.size() == 1 && fields.front() == "count") {
+        if (fields.size() == 1 && fields.front() == field_t::COUNT) {
           std::cout << "0\n";
           return;
         } else {
@@ -63,22 +66,34 @@ public:
         }
       }
       for (size_t n = 0; n < fields.size(); ++n) {
-        if (fields[n] == "mean")
-          std::cout << str(mean) << " ";
-        else if (fields[n] == "median")
-          std::cout << (!values.empty() ? str(Math::median(values)) : "N/A") << " ";
-        else if (fields[n] == "std")
-          std::cout << (count > 1 ? str(std) : "N/A") << " ";
-        else if (fields[n] == "std_rv")
-          std::cout << (count > 1 ? str(std_rv) : "N/A") << " ";
-        else if (fields[n] == "min")
-          std::cout << str(min) << " ";
-        else if (fields[n] == "max")
-          std::cout << str(max) << " ";
-        else if (fields[n] == "count")
-          std::cout << count << " ";
-        else
-          throw Exception("stats type not supported: " + fields[n]);
+        switch (fields[n]) {
+        case field_t::MEAN:
+          std::cout << str(mean);
+          break;
+        case field_t::MEDIAN:
+          std::cout << (values.empty() ? "N/A" : str(Math::median(values)));
+          break;
+        case field_t::STD:
+          std::cout << (count > 1 ? str(std) : "N/A");
+          break;
+        case field_t::STD_RV:
+          std::cout << (count > 1 ? str(std_rv) : "N/A");
+          break;
+        case field_t::IQR:
+          std::cout << (!values.empty() ? str(Math::quantile(values, 0.75) - Math::quantile(values, 0.25)) : "N/A");
+          break;
+        case field_t::MIN:
+          std::cout << str(min);
+          break;
+        case field_t::MAX:
+          std::cout << str(max);
+          break;
+        case field_t::COUNT:
+          std::cout << count;
+          break;
+        }
+        if (n < fields.size() - 1)
+          std::cout << " ";
       }
       std::cout << "\n";
 

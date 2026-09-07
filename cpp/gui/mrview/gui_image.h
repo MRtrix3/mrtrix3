@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,13 +16,15 @@
 
 #pragma once
 
+#include <array>
+#include <unordered_map>
+
 #include "image.h"
 #include "interp/linear.h"
 #include "interp/nearest.h"
 #include "mrview/volume.h"
 #include "opengl/glutils.h"
 #include "types.h"
-#include <unordered_map>
 
 namespace MR::GUI {
 
@@ -50,7 +52,7 @@ public:
   void get_axes(const int plane, int &x, int &y) const;
 
 protected:
-  GL::Texture texture2D[3];
+  std::array<GL::Texture, 3> texture2D;
   std::vector<ssize_t> tex_positions;
 };
 

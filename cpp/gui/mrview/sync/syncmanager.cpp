@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -52,11 +52,8 @@ void SyncManager::OnWindowFocusChanged() {
  */
 bool SyncManager::SendData(DataKey code, QByteArray dat) {
   QByteArray data;
-  char codeAsChar[4];
-  InterprocessCommunicator::Int32ToChar(codeAsChar, (int)code);
-  data.insert(0, codeAsChar, 4);
+  data.insert(0, reinterpret_cast<const char *>(&code), 4);
   data.insert(4, dat, dat.size());
-
   return ips->SendData(data);
 }
 
@@ -80,16 +77,16 @@ void SyncManager::OnIPSDataReceived(std::vector<std::shared_ptr<QByteArray>> all
       continue;
     }
 
-    int idOfDataEntry = InterprocessCommunicator::CharTo32bitNum(data->data());
+    const int idOfDataEntry = *reinterpret_cast<int *>(data->data());
 
     switch (idOfDataEntry) {
-    case (int)DataKey::WindowFocus: {
+    case static_cast<int>(DataKey::WindowFocus): {
       // This message has window focus information to sync with
       winFocus = data;
       break;
     }
     default: {
-      DEBUG("Unknown data key received: " + std::to_string(idOfDataEntry));
+      DEBUG("Unknown data key received: " + str(idOfDataEntry));
       break;
     }
     }
@@ -125,10 +122,9 @@ void SyncManager::OnIPSDataReceived(std::vector<std::shared_ptr<QByteArray>> all
  * Serialises a Vector3f as a QByteArray
  */
 QByteArray SyncManager::ToQByteArray(Eigen::Vector3f data) {
-  char a[12];
-  memcpy(a, data.data(), 12);
   QByteArray q;
-  q.insert(0, a, 12); // don't use the constructor; it ignores any data after hitting a \0
+  // don't use the constructor; it ignores any data after hitting a \0
+  q.insert(0, reinterpret_cast<const char *>(data.data()), 12);
   return q;
 }
 /**

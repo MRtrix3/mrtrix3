@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "progressbar.h"
 #include "thread_queue.h"
 
@@ -22,12 +23,16 @@
 #include "surface/filter/smooth.h"
 #include "surface/mesh.h"
 #include "surface/mesh_multi.h"
+#include "surface/validate.h"
+
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
 using namespace MR::Surface;
 
-const std::vector<std::string> filters = {"smooth"};
+enum class FilterType { SMOOTH };
+const std::vector<std::string> filters = MR::Enum::lower_case_names<FilterType>();
 
 // clang-format off
 const OptionGroup smooth_option = OptionGroup ("Options for mesh smoothing filter")
@@ -61,7 +66,7 @@ void usage() {
   ARGUMENTS
   + Argument ("input",  "the input mesh file").type_file_in()
   + Argument ("filter", "the filter to apply;"
-                        " options are: smooth").type_choice (filters)
+                        " options are: " + MR::Enum::join<FilterType>() + ".").type_choice<FilterType>()
   + Argument ("output", "the output mesh file").type_file_out();
 
   OPTIONS
@@ -71,23 +76,26 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[2]};
 
   MeshMulti in;
 
   // Read in the mesh data
   try {
-    Mesh mesh(argument[0]);
+    Mesh mesh(input_path);
     in.push_back(mesh);
   } catch (...) {
-    in.load(argument[0]);
+    in.load(input_path);
   }
+  debug_validate(in);
 
   MeshMulti out;
 
   // Apply the relevant filter
   std::unique_ptr<Filter::Base> filter;
-  int filter_index = argument[1];
-  if (filter_index == 0) {
+  const FilterType selected_filter = MR::Enum::from_name<FilterType>(argument[1]);
+  if (selected_filter == FilterType::SMOOTH) {
     const default_type spatial = get_option_value("smooth_spatial", Filter::default_smoothing_spatial_factor);
     const default_type influence = get_option_value("smooth_influence", Filter::default_smoothing_influence_factor);
     const std::string msg = in.size() > 1 ? "Applying smoothing filter to multiple meshes" : "";
@@ -101,7 +109,7 @@ void run() {
 
   // Create the output file
   if (out.size() == 1)
-    out.front().save(argument[2]);
+    out.front().save(output_path);
   else
-    out.save(argument[2]);
+    out.save(output_path);
 }

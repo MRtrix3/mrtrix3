@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -83,7 +83,7 @@ void Arc::init_line() {
   start_dir = (end - start).normalized();
   mid_dir = end_dir = start_dir;
   for (size_t n = 0; n < nsamples; n++) {
-    value_type f = value_type(n) / value_type(nsamples - 1);
+    const value_type f = static_cast<value_type>(n) / static_cast<value_type>(nsamples - 1);
     planes.push_back(Plane((1.0f - f) * start + f * end, (1.0f - f) * start_dir + f * end_dir));
   }
 }
@@ -128,7 +128,7 @@ void Arc::init_arc() {
     angle += 2.0 * Math::pi;
 
   for (size_t n = 0; n < nsamples; n++) {
-    value_type f = angle * value_type(n) / value_type(nsamples - 1);
+    const value_type f = angle * static_cast<value_type>(n) / static_cast<value_type>(nsamples - 1);
     planes.push_back(Plane(c + x * cos(f) + y * sin(f), y * cos(f) - x * sin(f)));
   }
 

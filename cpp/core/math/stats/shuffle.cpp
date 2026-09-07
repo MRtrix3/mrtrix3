@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,96 +25,86 @@
 
 namespace MR::Math::Stats {
 
-std::vector<std::string> error_types = {"ee", "ise", "both"};
-
+// clang-format off
 App::OptionGroup shuffle_options(const bool include_nonstationarity, const default_type default_skew) {
   using namespace App;
 
-  // clang-format off
-  OptionGroup result =
-      OptionGroup("Options relating to shuffling of data for nonparametric statistical inference")
-      + Option("notest",
-               "don't perform statistical inference;"
-               " only output population statistics"
-               " (effect size, stdev etc)")
-      + Option("errors",
-               "specify nature of errors for shuffling;"
-               " options are: " + join(error_types, ",") +
-               " (default: ee)")
-        + Argument("spec").type_choice(error_types)
-      + Option("exchange_within",
-               "specify blocks of observations within each of which data may undergo restricted exchange")
-        + Argument("file").type_file_in()
-      + Option("exchange_whole",
-               "specify blocks of observations that may be exchanged with one another"
-               " (for independent and symmetric errors, sign-flipping will occur block-wise)")
-        + Argument("file").type_file_in()
-      + Option("strong",
-               "use strong familywise error control across multiple hypotheses")
-      + Option("nshuffles",
-               "the number of shuffles"
-               " (default: " + str(default_numshuffles_nulldist) + ")")
-        + Argument("number").type_integer(1)
-      + Option("permutations",
-               "manually define the permutations (relabelling)."
-               " The input should be a text file defining a m x n matrix,"
-               " where each relabelling is defined as a column vector of size m,"
-               " and the number of columns n defines the number of permutations."
-               " Can be generated with the palm_quickperms function in PALM"
-               " (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM)."
-               " Overrides the -nshuffles option.")
-        + Argument("file").type_file_in();
+  OptionGroup result = OptionGroup("Options relating to shuffling of data for nonparametric statistical inference")
+
+  + Option("notest",
+           "don't perform statistical inference;"
+           " only output population statistics (effect size, stdev etc)")
+
+  + Option("errors",
+           "specify nature of errors for shuffling;"
+           " options are: " + Enum::join<Shuffler::error_t>(",") + " (default: ee)")
+    + Argument("spec").type_choice<Shuffler::error_t>()
+
+  + Option("exchange_within",
+           "specify blocks of observations within each of which data may undergo restricted exchange")
+    + Argument("file").type_file_in()
+
+  + Option("exchange_whole",
+           "specify blocks of observations that may be exchanged with one another "
+           "(for independent and symmetric errors, sign-flipping will occur block-wise)")
+    + Argument("file").type_file_in()
+
+  + Option("strong", "use strong familywise error control across multiple hypotheses")
+
+  + Option("nshuffles",
+           "the number of shuffles"
+           " (default: " + str(default_numshuffles_nulldist) + ")")
+    + Argument("number").type_integer(1)
+
+  + Option("permutations",
+           "manually define the permutations (relabelling). The input should be a text file defining a m x n matrix, "
+           "where each relabelling is defined as a column vector of size m, and the number of columns, n, defines "
+           "the number of permutations. Can be generated with the palm_quickperms function in PALM "
+           "(http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM). "
+           "Overrides the -nshuffles option.")
+    + Argument("file").type_file_in();
 
   if (include_nonstationarity) {
-    result + Option("nonstationarity",
-                    "perform non-stationarity correction")
-           + Option("skew_nonstationarity",
-                    "specify the skew parameter for empirical statistic calculation"
-                    " (default for this command is " + str(default_skew) + ")")
-             + Argument("value").type_float(0.0)
-           + Option("nshuffles_nonstationarity",
-                    "the number of shuffles to use when precomputing the empirical statistic image"
-                    " for non-stationarity correction"
-                    " (default: " + str(default_numshuffles_nonstationarity) + ")")
-             + Argument("number").type_integer(1)
-           + Option("permutations_nonstationarity",
-                    "manually define the permutations (relabelling)"
-                    " for computing the emprical statistics for non-stationarity correction."
-                    " The input should be a text file defining a m x n matrix,"
-                    " where each relabelling is defined as a column vector of size m,"
-                    " and the number of columns n defines the number of permutations."
-                    " Can be generated with the palm_quickperms function in PALM"
-                    " (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM)."
-                    " Overrides the -nshuffles_nonstationarity option.")
-             + Argument("file").type_file_in();
+
+    result
+    + Option("nonstationarity", "perform empirical non-stationarity correction")
+
+    + Option("skew_nonstationarity",
+             "specify the skew parameter for empirical statistic calculation"
+             " (default for this command is " + str(default_skew) + ")")
+      + Argument("value").type_float(0.0)
+
+    + Option("nshuffles_nonstationarity",
+             "the number of shuffles to use when precomputing the empirical statistic image for non-stationarity correction"
+             " (default: " + str(default_numshuffles_nonstationarity) + ")")
+      + Argument("number").type_integer(1)
+
+    + Option("permutations_nonstationarity",
+             "manually define the permutations (relabelling) for computing the emprical statistics for "
+             "non-stationarity correction. "
+             "The input should be a text file defining a m x n matrix, where each relabelling is defined as a "
+             "column vector of size m, "
+             "and the number of columns, n, defines the number of permutations. Can be generated with the "
+             "palm_quickperms function in PALM "
+             "(http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM) "
+             "Overrides the -nshuffles_nonstationarity option.")
+      + Argument("file").type_file_in();
   }
-  // clang-format on
+
   return result;
 }
+// clang-format on
 
-Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, const std::string msg)
+Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std::string_view msg)
     : rows(num_rows),
       nshuffles(is_nonstationarity ? default_numshuffles_nonstationarity : default_numshuffles_nulldist),
       counter(0) {
+
   using namespace App;
-  auto opt = get_options("errors");
-  error_t error_types = error_t::EE;
-  if (!opt.empty()) {
-    switch (int(opt[0][0])) {
-    case 0:
-      error_types = error_t::EE;
-      break;
-    case 1:
-      error_types = error_t::ISE;
-      break;
-    case 2:
-      error_types = error_t::BOTH;
-      break;
-    }
-  }
+  const error_t error_types = get_option_choice<error_t>("errors", error_t::EE);
 
   bool nshuffles_explicit = false;
-  opt = get_options(is_nonstationarity ? "nshuffles_nonstationarity" : "nshuffles");
+  auto opt = get_options(is_nonstationarity ? "nshuffles_nonstationarity" : "nshuffles");
   if (!opt.empty()) {
     nshuffles = opt[0][0];
     nshuffles_explicit = true;
@@ -125,12 +115,12 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, con
     if (error_types == error_t::EE || error_types == error_t::BOTH) {
       load_permutations(opt[0][0]);
       if (permutations[0].size() != rows)
-        throw Exception("Number of entries per shuffle in file \"" + std::string(opt[0][0]) +
-                        "\" does not match number of rows in design matrix (" + str(rows) + ")");
+        throw Exception("Number of entries per shuffle in file \"" + opt[0][0].as_text() + "\"" + //
+                        " does not match number of rows in design matrix (" + str(rows) + ")");   //
       if (nshuffles_explicit && nshuffles != permutations.size())
-        throw Exception("Number of shuffles explicitly requested (" + str(nshuffles) +
-                        ") does not match number of shuffles in file \"" + std::string(opt[0][0]) + "\" (" +
-                        str(permutations.size()) + ")");
+        throw Exception("Number of shuffles explicitly requested (" + str(nshuffles) + ")" +           //
+                        " does not match number of shuffles in file \"" + opt[0][0].as_text() + "\"" + //
+                        " (" + str(permutations.size()) + ")");                                        //
       nshuffles = permutations.size();
     } else {
       throw Exception("Cannot manually provide permutations if errors are not exchangeable");
@@ -141,9 +131,9 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, con
   index_array_type eb_within;
   if (!opt.empty()) {
     try {
-      eb_within = load_blocks(std::string(opt[0][0]), false);
+      eb_within = load_blocks(opt[0][0], false);
     } catch (Exception &e) {
-      throw Exception(e, "Unable to read file \"" + std::string(opt[0][0]) + "\" as within-block exchangeability");
+      throw Exception(e, "Unable to read file \"" + opt[0][0].as_text() + "\" as within-block exchangeability");
     }
   }
 
@@ -153,9 +143,9 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, con
     if (eb_within.size())
       throw Exception("Cannot specify both \"within\" and \"whole\" exchangeability block data");
     try {
-      eb_whole = load_blocks(std::string(opt[0][0]), true);
+      eb_whole = load_blocks(opt[0][0], true);
     } catch (Exception &e) {
-      throw Exception(e, "Unable to read file \"" + std::string(opt[0][0]) + "\" as whole-block exchangeability");
+      throw Exception(e, "Unable to read file \"" + opt[0][0].as_text() + "\" as whole-block exchangeability");
     }
   }
 
@@ -169,7 +159,7 @@ Shuffler::Shuffler(const index_type num_rows,
                    const index_type num_shuffles,
                    const error_t error_types,
                    const bool is_nonstationarity,
-                   const std::string msg)
+                   std::string_view msg)
     : Shuffler(num_rows, num_shuffles, error_types, is_nonstationarity, index_array_type(), index_array_type(), msg) {}
 
 Shuffler::Shuffler(const index_type num_rows,
@@ -178,7 +168,7 @@ Shuffler::Shuffler(const index_type num_rows,
                    const bool is_nonstationarity,
                    const index_array_type &eb_within,
                    const index_array_type &eb_whole,
-                   const std::string msg)
+                   std::string_view msg)
     : rows(num_rows), nshuffles(num_shuffles) {
   initialise(error_types, true, is_nonstationarity, eb_within, eb_whole);
   if (!msg.empty())
@@ -193,20 +183,19 @@ bool Shuffler::operator()(Shuffle &output) {
     output.data.resize(0, 0);
     return false;
   }
-  // TESTME Think I need to adjust the signflips application based on the permutations
   if (!permutations.empty()) {
-    output.data = matrix_type::Zero(rows, rows);
+    output.data = shuffle_matrix_type::Zero(rows, rows);
     for (index_type i = 0; i != rows; ++i)
       output.data(i, permutations[counter][i]) = 1.0;
   } else {
-    output.data = matrix_type::Identity(rows, rows);
+    output.data = shuffle_matrix_type::Identity(rows, rows);
   }
   if (!signflips.empty()) {
     for (index_type r = 0; r != rows; ++r) {
       if (signflips[counter][r]) {
         for (index_type c = 0; c != rows; ++c) {
           if (output.data(r, c))
-            output.data(r, c) *= -1.0;
+            output.data(r, c) *= -1;
         }
       }
     }
@@ -229,11 +218,11 @@ void Shuffler::initialise(const error_t error_types,
                           const index_array_type &eb_whole) {
   assert(!(eb_within.size() && eb_whole.size()));
   if (eb_within.size()) {
-    assert(index_type(eb_within.size()) == rows);
+    assert(static_cast<index_type>(eb_within.size()) == rows);
     assert(!eb_within.minCoeff());
   }
   if (eb_whole.size()) {
-    assert(index_type(eb_whole.size()) == rows);
+    assert(static_cast<index_type>(eb_whole.size()) == rows);
     assert(!eb_whole.minCoeff());
   }
 
@@ -281,19 +270,15 @@ void Shuffler::initialise(const error_t error_types,
 
   if (max_shuffles < nshuffles) {
     if (nshuffles_explicit) {
-      WARN("User requested " + str(nshuffles) + " shuffles for " +
-           (is_nonstationarity ? "non-stationarity correction" : "null distribution generation") + ", but only " +
-           str(max_shuffles) +
-           " unique shuffles can be generated; "
-           "this will restrict the minimum achievable p-value to " +
-           str(1.0 / max_shuffles));
+      WARN("User requested " + str(nshuffles) + " shuffles for " +                                       //
+           (is_nonstationarity ? "non-stationarity correction" : "null distribution generation") + "," + //
+           " but only " + str(max_shuffles) + " unique shuffles can be generated;" +                     //
+           " this will restrict the minimum achievable p-value to " + str(1.0 / max_shuffles));          //
     } else {
-      WARN("Only " + str(max_shuffles) +
-           " unique shuffles can be generated, which is less than the default number of " + str(nshuffles) + " for " +
-           (is_nonstationarity ? "non-stationarity correction" : "null distribution generation") +
-           "; "
-           "this will restrict the minimum achievable p-value to " +
-           str(1.0 / max_shuffles));
+      WARN("Only " + str(max_shuffles) + " unique shuffles can be generated," +                                    //
+           " which is less than the default number of " + str(nshuffles) +                                         //
+           " for " + (is_nonstationarity ? "non-stationarity correction" : "null distribution generation") + ";" + //
+           " this will restrict the minimum achievable p-value to " + str(1.0 / max_shuffles));                    //
     }
     nshuffles = max_shuffles;
   } else if (max_shuffles == std::numeric_limits<uint64_t>::max()) {
@@ -351,7 +336,7 @@ void Shuffler::initialise(const error_t error_types,
       if (nshuffles == max_shuffles) {
         generate_all_signflips(rows, eb_whole);
         assert(signflips.size() == max_num_signflips);
-        std::vector<BitSet> duplicated_signflips;
+        std::vector<FlipSigns> duplicated_signflips;
         duplicated_signflips.reserve(max_shuffles);
         for (index_type i = 0; i != max_num_permutations; ++i)
           duplicated_signflips.insert(duplicated_signflips.end(), signflips.begin(), signflips.end());
@@ -375,30 +360,32 @@ void Shuffler::initialise(const error_t error_types,
     nshuffles = max_shuffles;
 }
 
-index_array_type Shuffler::load_blocks(const std::string &filename, const bool equal_sizes) {
+index_array_type Shuffler::load_blocks(const std::filesystem::path &filename, const bool equal_sizes) {
   index_array_type data = File::Matrix::load_vector<index_type>(filename).array();
-  if (index_type(data.size()) != rows)
-    throw Exception("Number of entries in file \"" + filename + "\" (" + str(data.size()) +
-                    ") does not match number of inputs (" + str(rows) + ")");
+  if (static_cast<index_type>(data.size()) != rows)
+    throw Exception("Number of entries in file \"" + filename.string() + "\" (" + str(data.size()) + ")" + //
+                    " does not match number of inputs (" + str(rows) + ")");                               //
   const index_type min_coeff = data.minCoeff();
   index_type max_coeff = data.maxCoeff();
   if (min_coeff > 1)
-    throw Exception("Minimum index in file \"" + filename + "\" must be either 0 or 1");
+    throw Exception("Minimum index in file \"" + filename.string() + "\" must be either 0 or 1");
   if (min_coeff) {
     data.array() -= 1;
     max_coeff--;
   }
   std::vector<index_type> counts(max_coeff + 1, 0);
-  for (index_type i = 0; i != index_type(data.size()); ++i)
+  for (Eigen::Index i = 0; i != data.size(); ++i)
     counts[data[i]]++;
-  for (index_type i = 0; i <= max_coeff; ++i) {
+  for (Eigen::Index i = 0; i <= max_coeff; ++i) {
     if (counts[i] < 2)
-      throw Exception("Sequential indices in file \"" + filename + "\" must contain at least two entries each");
+      throw Exception("Sequential indices in file \"" + filename.string() + "\"" + //
+                      " must contain at least two entries each");                  //
   }
   if (equal_sizes) {
-    for (index_type i = 1; i <= max_coeff; ++i) {
+    for (Eigen::Index i = 1; i <= max_coeff; ++i) {
       if (counts[i] != counts[0])
-        throw Exception("Indices in file \"" + filename + "\" do not contain the same number of elements each");
+        throw Exception("Indices in file \"" + filename.string() + "\"" +    //
+                        " do not contain the same number of elements each"); //
     }
   }
   return data;
@@ -573,10 +560,10 @@ void Shuffler::generate_all_permutations(const index_type num_rows,
     write(indices);
 }
 
-void Shuffler::load_permutations(const std::string &filename) {
+void Shuffler::load_permutations(const std::filesystem::path &filename) {
   std::vector<std::vector<index_type>> temp = File::Matrix::load_matrix_2D_vector<index_type>(filename);
   if (temp.empty())
-    throw Exception("no data found in permutations file: " + str(filename));
+    throw Exception("no data found in permutations file: " + filename.string());
 
   const index_type min_value = *std::min_element(std::begin(temp[0]), std::end(temp[0]));
   if (min_value > 1)
@@ -590,9 +577,10 @@ void Shuffler::load_permutations(const std::string &filename) {
   }
 }
 
-bool Shuffler::is_duplicate(const BitSet &sign) const {
+bool Shuffler::is_duplicate(const FlipSigns &sign) const {
   for (const auto &s : signflips) {
-    if (sign == s)
+    // No array equivalence operator in Eigen
+    if (sign.isApprox(s))
       return true;
   }
   return false;
@@ -607,7 +595,7 @@ void Shuffler::generate_random_signflips(const index_type num_signflips,
   signflips.reserve(num_signflips);
   index_type s = 0;
   if (include_default) {
-    BitSet default_labelling(num_rows, false);
+    const FlipSigns default_labelling(FlipSigns::Zero(num_rows));
     signflips.push_back(default_labelling);
     ++s;
   }
@@ -615,7 +603,7 @@ void Shuffler::generate_random_signflips(const index_type num_signflips,
   std::mt19937 generator(rd());
   std::uniform_int_distribution<> distribution(0, 1);
 
-  BitSet rows_to_flip(num_rows);
+  FlipSigns rows_to_flip(FlipSigns::Zero(num_rows));
 
   // Whole-block sign-flipping
   if (block_indices.size()) {
@@ -651,8 +639,8 @@ void Shuffler::generate_all_signflips(const index_type num_rows, const index_arr
   if (block_indices.size()) {
     const auto blocks = indices2blocks(block_indices);
 
-    auto write = [&](const BitSet &data) {
-      BitSet temp(num_rows);
+    auto write = [&](const FlipSigns &data) {
+      FlipSigns temp(FlipSigns::Zero(num_rows));
       for (index_type ib = 0; ib != blocks.size(); ++ib) {
         if (data[ib]) {
           for (const auto i : blocks[ib])
@@ -662,7 +650,7 @@ void Shuffler::generate_all_signflips(const index_type num_rows, const index_arr
       signflips.push_back(std::move(temp));
     };
 
-    BitSet temp(blocks.size());
+    FlipSigns temp(FlipSigns::Zero(blocks.size()));
     write(temp);
     do {
       index_type ib = 0;
@@ -679,9 +667,9 @@ void Shuffler::generate_all_signflips(const index_type num_rows, const index_arr
 
   // Unrestricted sign-flipping
   signflips.reserve(size_t(1) << num_rows);
-  BitSet temp(num_rows, false);
+  FlipSigns temp(FlipSigns::Zero(num_rows));
   signflips.push_back(temp);
-  while (!temp.full()) {
+  while (!temp.all()) {
     index_type last_zero_index;
     for (last_zero_index = num_rows - 1; temp[last_zero_index]; --last_zero_index)
       ;

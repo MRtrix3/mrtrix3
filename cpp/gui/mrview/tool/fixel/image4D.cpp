@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,14 +22,14 @@ void Image4D::load_image_buffer() {
   size_t ndim = fixel_data->ndim();
 
   if (ndim < 4)
-    throw InvalidImageException("Vector image " + filename + " should contain 4 dimensions. Instead " + str(ndim) +
-                                " found.");
+    throw InvalidImageException("Vector image " + filepath.string() + " should contain 4 dimensions;" + //
+                                " instead " + str(ndim) + " found.");                                   //
 
   const size_t dim4_len = fixel_data->size(3);
 
   if (dim4_len % 3)
-    throw InvalidImageException("Expecting 4th-dimension size of vector image " + filename +
-                                " to be a multiple of 3. Instead " + str(dim4_len) + " entries found.");
+    throw InvalidImageException("Expecting 4th-dimension size of vector image " + filepath.string() +
+                                " to be a multiple of 3; instead " + str(dim4_len) + " entries found");
 
   for (size_t axis = 0; axis < 3; ++axis) {
     slice_fixel_indices[axis].resize(fixel_data->size(axis));
@@ -49,6 +49,7 @@ void Image4D::reload_image_buffer() {
   pos_buffer_store.clear();
   dir_buffer_store.clear();
   fixel_val_store.clear();
+  element_indices_dirty = true;
 
   for (size_t axis = 0; axis < 3; ++axis) {
     std::fill(slice_fixel_indices[axis].begin(), slice_fixel_indices[axis].end(), std::vector<GLint>());
@@ -58,10 +59,13 @@ void Image4D::reload_image_buffer() {
 
   for (auto l = Loop(*fixel_data, 0, 3)(*fixel_data); l; ++l) {
 
-    const std::array<int, 3> voxel{{int(fixel_data->index(0)), int(fixel_data->index(1)), int(fixel_data->index(2))}};
-
-    Eigen::Vector3f pos{float(voxel[0]), float(voxel[1]), float(voxel[2])};
-    pos = transform.voxel2scanner.cast<float>() * pos;
+    const std::array<int, 3> voxel{static_cast<int>(fixel_data->index(0)),
+                                   static_cast<int>(fixel_data->index(1)),
+                                   static_cast<int>(fixel_data->index(2))};
+    const Eigen::Vector3f pos =
+        (transform.voxel2scanner *
+         Eigen::Vector3d(static_cast<double>(voxel[0]), static_cast<double>(voxel[1]), static_cast<double>(voxel[2])))
+            .cast<float>();
 
     for (size_t f = 0; f < n_fixels; ++f) {
 

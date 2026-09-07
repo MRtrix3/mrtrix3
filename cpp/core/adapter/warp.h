@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -69,12 +69,12 @@ public:
   bool valid() const { return interp.valid(); }
   int size(size_t axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
   default_type spacing(size_t axis) const { return axis < 3 ? vox[axis] : interp.spacing(axis); }
-  const std::string &name() const { return interp.name(); }
+  std::string name() const { return interp.name(); }
 
   ssize_t stride(size_t axis) const { return interp.stride(axis); }
 
   void reset() {
-    x[0] = x[1] = x[2] = 0;
+    x = {0, 0, 0};
     for (size_t n = 3; n < interp.ndim(); ++n)
       interp.index(n) = 0;
   }
@@ -90,7 +90,7 @@ public:
         jacobian_adapter.index(dim) = x[dim];
       val *= jacobian_adapter.value().template cast<default_type>().determinant();
     }
-    return (value_type)val;
+    return static_cast<value_type>(val);
   }
 
   ssize_t get_index(size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
@@ -103,18 +103,15 @@ public:
 
 private:
   Eigen::Vector3d get_position() {
-    warp.index(0) = x[0];
-    warp.index(1) = x[1];
-    warp.index(2) = x[2];
-
+    assign_pos_of(x).to(warp);
     return warp.row(3);
   }
 
   Interpolator<ImageType> interp;
   WarpType warp;
-  ssize_t x[3];
-  const ssize_t dim[3];
-  const default_type vox[3];
+  std::array<ssize_t, 3> x;
+  const std::array<ssize_t, 3> dim;
+  const std::array<default_type, 3> vox;
   const value_type value_when_out_of_bounds;
   const bool jac_modulate;
   Adapter::Jacobian<Image<default_type>> jacobian_adapter;

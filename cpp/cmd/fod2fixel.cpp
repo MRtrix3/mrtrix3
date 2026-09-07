@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
 #include <memory>
 
 #include "command.h"
@@ -76,7 +77,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("fod", "the input fod image.").type_image_in ()
-  + Argument ("fixel_directory", "the output fixel directory").type_directory_out();
+  + Argument ("fixel_directory", "the output fixel directory").type_directory_out(DirOutMode::MustNotExist);
 
 
   OPTIONS
@@ -111,13 +112,13 @@ public:
 
   void commit();
 
-  void set_fixel_directory_output(const std::string &path) { fixel_directory_path = path; }
-  void set_index_output(const std::string &path) { index_path = path; }
-  void set_directions_output(const std::string &path) { dir_path = path; }
-  void set_afd_output(const std::string &path) { afd_path = path; }
-  void set_peak_amp_output(const std::string &path) { peak_amp_path = path; }
-  void set_disp_output(const std::string &path) { disp_path = path; }
-  void set_skew_output(const std::string &path) { skew_path = path; }
+  void set_fixel_directory_output(const std::filesystem::path &path) { fixel_directory_path = path; }
+  void set_index_output(const std::filesystem::path &path) { index_path = path; }
+  void set_directions_output(const std::filesystem::path &path) { dir_path = path; }
+  void set_afd_output(const std::filesystem::path &path) { afd_path = path; }
+  void set_peak_amp_output(const std::filesystem::path &path) { peak_amp_path = path; }
+  void set_disp_output(const std::filesystem::path &path) { disp_path = path; }
+  void set_skew_output(const std::filesystem::path &path) { skew_path = path; }
 
   bool operator()(const FOD_lobes &);
 
@@ -134,20 +135,20 @@ private:
   class Primitive_FOD_lobes : public std::vector<Primitive_FOD_lobe> {
   public:
     Primitive_FOD_lobes(const FOD_lobes &in, const index_type maxcount, bool dir_from_peak) : vox(in.vox) {
-      const index_type N = maxcount ? std::min(index_type(in.size()), maxcount) : in.size();
+      const index_type N = maxcount ? std::min(static_cast<index_type>(in.size()), maxcount) : in.size();
       for (index_type i = 0; i != N; ++i) {
         const FOD_lobe &lobe(in[i]);
         this->emplace_back(dir_from_peak ? lobe.get_peak_dir(0).cast<float>() : lobe.get_mean_dir().cast<float>(),
                            lobe.get_integral(),
                            lobe.get_max_peak_value(),
-                           std::acos(abs(lobe.get_peak_dir(0).dot(lobe.get_mean_dir()))));
+                           std::acos(std::fabs(lobe.get_peak_dir(0).dot(lobe.get_mean_dir()))));
       }
     }
     Eigen::Array3i vox;
   };
 
   Header H;
-  std::string fixel_directory_path, index_path, dir_path, afd_path, peak_amp_path, disp_path, skew_path;
+  std::filesystem::path fixel_directory_path, index_path, dir_path, afd_path, peak_amp_path, disp_path, skew_path;
   std::vector<Primitive_FOD_lobes> lobes;
   index_type fixel_count;
   index_type max_per_voxel;
@@ -169,7 +170,7 @@ void Segmented_FOD_receiver::commit() {
   using DataImage = Image<float>;
   using IndexImage = Image<index_type>;
 
-  const auto index_filepath = Path::join(fixel_directory_path, index_path);
+  const auto index_filepath = (fixel_directory_path / index_path);
 
   std::unique_ptr<IndexImage> index_image;
   std::unique_ptr<DataImage> dir_image;
@@ -199,26 +200,25 @@ void Segmented_FOD_receiver::commit() {
   if (!dir_path.empty()) {
     auto dir_header(fixel_data_header);
     dir_header.size(1) = 3;
-    dir_image = std::make_unique<DataImage>(DataImage::create(Path::join(fixel_directory_path, dir_path), dir_header));
+    dir_image = std::make_unique<DataImage>(DataImage::create(fixel_directory_path / dir_path, dir_header));
     dir_image->index(1) = 0;
-    Fixel::check_fixel_size(*index_image, *dir_image);
   }
 
   if (!afd_path.empty())
     afd_image = std::make_unique<DataImage>(DataImage::create( //
-        Path::join(fixel_directory_path, afd_path),            //
+        fixel_directory_path / afd_path,                       //
         fixel_data_header));                                   //
   if (!peak_amp_path.empty())
     peak_amp_image = std::make_unique<DataImage>(DataImage::create( //
-        Path::join(fixel_directory_path, peak_amp_path),            //
+        fixel_directory_path / peak_amp_path,                       //
         fixel_data_header));                                        //
   if (!disp_path.empty())
     disp_image = std::make_unique<DataImage>(DataImage::create( //
-        Path::join(fixel_directory_path, disp_path),            //
+        fixel_directory_path / disp_path,                       //
         fixel_data_header));                                    //
   if (!skew_path.empty())
     skew_image = std::make_unique<DataImage>(DataImage::create( //
-        Path::join(fixel_directory_path, skew_path),            //
+        fixel_directory_path / skew_path,                       //
         fixel_data_header));                                    //
 
   size_t offset(0);
@@ -275,6 +275,8 @@ void Segmented_FOD_receiver::commit() {
 }
 
 void run() {
+  const std::filesystem::path output_directory{argument[1]};
+
   Header H = Header::open(argument[0]);
   Math::SH::check(H);
   auto fod_data = H.get_image<float>();
@@ -284,8 +286,7 @@ void run() {
 
   Segmented_FOD_receiver receiver(H, maxnum, dir_as_peak);
 
-  auto &fixel_directory_path = argument[1];
-  receiver.set_fixel_directory_output(fixel_directory_path);
+  receiver.set_fixel_directory_output(output_directory);
 
   std::string file_extension(".mif");
   if (!get_options("nii").empty())
@@ -312,12 +313,12 @@ void run() {
   opt = get_options("mask");
   Image<float> mask;
   if (!opt.empty()) {
-    mask = Image<float>::open(std::string(opt[0][0]));
-    if (!dimensions_match(fod_data, mask, 0, 3))
+    mask = Image<float>::open(opt[0][0]);
+    if (!dimensions_match(H, mask, 0, 3))
       throw Exception("Cannot use image \"" + str(opt[0][0]) + "\" as mask image; dimensions do not match FOD image");
   }
 
-  Fixel::check_fixel_directory(fixel_directory_path, true, true);
+  Fixel::check_fixel_directory(output_directory, true, true);
 
   FMLS::FODQueueWriter writer(fod_data, mask);
 

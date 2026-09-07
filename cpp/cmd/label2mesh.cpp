@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,6 +26,7 @@
 #include "algo/loop.h"
 
 #include "connectome/connectome.h"
+#include "connectome/validate.h"
 
 #include "surface/algo/image2mesh.h"
 #include "surface/mesh.h"
@@ -54,11 +55,21 @@ void usage() {
 // clang-format on
 
 void run() {
-
   Header labels_header = Header::open(argument[0]);
-  Connectome::check(labels_header);
+  Connectome::validate_label_header(labels_header);
   check_3D_nonunity(labels_header);
   auto labels = labels_header.get_image<uint32_t>();
+  auto lv = Connectome::validate_label_image(labels);
+  if (!lv.indices_contiguous) {
+    WARN("Image \"" + argument[0] + "\" does not contain contiguous indices;" + //
+         " output mesh file will contain empty objects");                       //
+  }
+  if (lv.disconnected_components > 0) {
+    WARN("Image \"" + argument[0] + "\" contains " +                                                 //
+         str(lv.disconnected_components) + "parcel" + (lv.disconnected_components > 0 ? "s" : "0") + //
+         " that are not spatially contiguous;" +                                                     //
+         " this may yield erroneous surfaces");                                                      //
+  }
 
   using voxel_corner_t = Eigen::Array<int, 3, 1>;
 
@@ -74,8 +85,8 @@ void run() {
         }
 
         for (size_t axis = 0; axis != 3; ++axis) {
-          lower_corners[index][axis] = std::min(lower_corners[index][axis], int(labels.index(axis)));
-          upper_corners[index][axis] = std::max(upper_corners[index][axis], int(labels.index(axis)));
+          lower_corners[index][axis] = std::min(lower_corners[index][axis], static_cast<int>(labels.index(axis)));
+          upper_corners[index][axis] = std::max(upper_corners[index][axis], static_cast<int>(labels.index(axis)));
         }
       }
     }

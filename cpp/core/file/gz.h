@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,9 +17,12 @@
 #pragma once
 
 #include <cassert>
+#include <cerrno>
 #include <cstdio>
 #include <cstring>
 #include <fcntl.h>
+#include <filesystem>
+#include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <zlib.h>
@@ -34,36 +37,35 @@ namespace MR::File {
 
 class GZ {
 public:
-  GZ() : gz(NULL) {}
-  GZ(const std::string &fname, const char *mode) : gz(NULL) { open(fname, mode); }
+  GZ() : gz(nullptr) {}
+  GZ(const std::filesystem::path &fname, std::string_view mode) : gz(nullptr) { open(fname, mode); }
   ~GZ() {
     try {
       close();
     } catch (...) {
-      FAIL("error closing GZ file \"" + filename + "\": " + error());
+      FAIL("error closing GZ file \"" + filepath.string() + "\": " + error());
       App::exit_error_code = 1;
     }
   }
 
-  const std::string &name() const { return filename; }
-
-  void open(const std::string &fname, const char *mode) {
+  const std::filesystem::path &name() const { return filepath; }
+  void open(const std::filesystem::path &fname, std::string_view mode) {
     close();
-    filename = fname;
-    if (!MR::Path::exists(filename))
-      throw Exception("cannot access file \"" + filename + "\": No such file or directory");
+    filepath = fname;
+    if (!std::filesystem::exists(filepath))
+      throw Exception("cannot access file \"" + filepath.string() + "\": No such file or directory");
 
-    gz = gzopen(filename.c_str(), mode);
+    gz = gzopen(filepath.string().c_str(), std::string(mode).c_str());
     if (!gz)
-      throw Exception("error opening file \"" + filename + "\": " + strerror(errno));
+      throw Exception("error opening file \"" + filepath.string() + "\": " + error());
   }
 
   void close() {
     if (gz) {
       if (gzclose(gz))
-        throw Exception("error closing GZ file \"" + filename + "\": " + error());
-      filename.clear();
-      gz = NULL;
+        throw Exception("error closing GZ file \"" + filepath.string() + "\": " + error());
+      filepath.clear();
+      gz = nullptr;
     }
   }
 
@@ -82,27 +84,27 @@ public:
     assert(gz);
     z_off_t pos = gzseek(gz, offset, SEEK_SET);
     if (pos < 0)
-      throw Exception("error seeking in GZ file \"" + filename + "\": " + error());
+      throw Exception("error seeking in GZ file \"" + filepath.string() + "\": " + error());
   }
 
-  int read(char *s, size_t n) {
+  int read(void *const s, size_t n) {
     assert(gz);
     int n_read = gzread(gz, s, n);
     if (n_read < 0)
-      throw Exception("error uncompressing GZ file \"" + filename + "\": " + error());
+      throw Exception("error uncompressing GZ file \"" + filepath.string() + "\": " + error());
     return n_read;
   }
 
-  void write(const char *s, size_t n) {
+  void write(const void *const s, size_t n) {
     assert(gz);
     if (gzwrite(gz, s, n) <= 0)
-      throw Exception("error writing to GZ file \"" + filename + "\": " + error());
+      throw Exception("error writing to GZ file \"" + filepath.string() + "\": " + error());
   }
 
-  void write(const std::string &s) {
+  void write(std::string_view s) {
     assert(gz);
-    if (gzputs(gz, s.c_str()) < 0)
-      throw Exception("error writing to GZ file \"" + filename + "\": " + error());
+    if (gzputs(gz, std::string(s).c_str()) < 0)
+      throw Exception("error writing to GZ file \"" + filepath.string() + "\": " + error());
   }
 
   std::string getline() {
@@ -114,7 +116,7 @@ public:
       if (c < 0) {
         if (eof())
           break;
-        throw Exception("error uncompressing GZ file \"" + filename + "\": " + error());
+        throw Exception("error uncompressing GZ file \"" + filepath.string() + "\": " + error());
       }
       string += char(c);
     } while (c != '\n');
@@ -126,7 +128,7 @@ public:
   template <typename T> T get() {
     T val;
     if (read(&val, sizeof(T)) != sizeof(T))
-      throw Exception("error uncompressing GZ file \"" + filename + "\": " + error());
+      throw Exception("error uncompressing GZ file \"" + filepath.string() + "\": " + error());
     return val;
   }
 
@@ -137,7 +139,7 @@ public:
 
   template <typename T> T *get(T *buf, size_t n) {
     if (read(buf, n * sizeof(T)) != n * sizeof(T))
-      throw Exception("error uncompressing GZ file \"" + filename + "\": " + error());
+      throw Exception("error uncompressing GZ file \"" + filepath.string() + "\": " + error());
     return buf;
   }
 
@@ -148,14 +150,14 @@ public:
 
 protected:
   gzFile gz;
-  std::string filename;
+  std::filesystem::path filepath;
 
-  const char *error() {
+  const std::string error() {
     int error_number;
-    const char *s = gzerror(gz, &error_number);
+    const char *const s = gzerror(gz, &error_number); // check_syntax off
     if (error_number == Z_ERRNO)
-      s = strerror(errno);
-    return s;
+      return MR::C_strerror(errno);
+    return std::string(s);
   }
 };
 

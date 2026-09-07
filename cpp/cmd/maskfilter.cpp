@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "filter/base.h"
 #include "filter/connected_components.h"
 #include "filter/dilate.h"
@@ -24,12 +25,14 @@
 #include "filter/median.h"
 #include "image.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
 constexpr ssize_t default_clean_scale = 2;
 
-const std::vector<std::string> filters = {"clean", "connect", "dilate", "erode", "fill", "median"};
+enum class FilterType { CLEAN, CONNECT, DILATE, ERODE, FILL, MEDIAN };
 
 // clang-format off
 const OptionGroup CleanOption =
@@ -97,7 +100,7 @@ void usage() {
   ARGUMENTS
   + Argument("input", "the input mask.").type_image_in()
   + Argument("filter", "the name of the filter to be applied;"
-                       " options are: " + join(filters, ", ")).type_choice(filters)
+                       " options are: " + MR::Enum::join<FilterType>() + ".").type_choice<FilterType>()
   + Argument("output", "the output mask.").type_image_out();
 
   OPTIONS
@@ -115,29 +118,32 @@ void usage() {
 using value_type = bool;
 
 void run() {
+  const std::filesystem::path input_image_path{argument[0]};
+  const std::filesystem::path output_image_path{argument[2]};
 
-  auto input_image = Image<value_type>::open(argument[0]);
+  auto input_image = Image<value_type>::open(input_image_path);
 
-  int filter_index = argument[1];
+  const FilterType filter_index = MR::Enum::from_name<FilterType>(argument[1]);
 
-  if (filter_index == 0) { // Mask clean
-    Filter::MaskClean filter(input_image,
-                             std::string("applying mask cleaning filter to image ") + Path::basename(argument[0]));
+  switch (filter_index) {
+  case FilterType::CLEAN: {
+    Filter::MaskClean filter(
+        input_image, std::string("applying mask cleaning filter to image ") + input_image_path.filename().string());
     filter.set_scale(get_option_value("scale", default_clean_scale));
-
     Stride::set_from_command_line(filter);
 
-    auto output_image = Image<value_type>::create(argument[2], filter);
+    auto output_image = Image<value_type>::create(output_image_path, filter);
     filter(input_image, output_image);
     return;
   }
 
-  if (filter_index == 1) { // Connected components
-    Filter::ConnectedComponents filter(
-        input_image, std::string("applying connected-component filter to image ") + Path::basename(argument[0]));
+  case FilterType::CONNECT: {
+    Filter::ConnectedComponents filter(input_image,
+                                       std::string("applying connected-component filter to image ") +
+                                           input_image_path.filename().string());
     auto opt = get_options("axes");
     if (!opt.empty()) {
-      const std::vector<int> axes = opt[0][0];
+      const std::vector<int> axes = MR::container_cast<std::vector<int>>(opt[0][0].as_sequence_int());
       filter.set_axes(axes);
     }
     bool largest_only = false;
@@ -157,72 +163,76 @@ void run() {
 
     if (largest_only) {
       filter.datatype() = DataType::UInt8;
-      auto output_image = Image<value_type>::create(argument[2], filter);
+      auto output_image = Image<value_type>::create(output_image_path, filter);
       filter(input_image, output_image);
     } else {
       filter.datatype() = DataType::UInt32;
       filter.datatype().set_byte_order_native();
-      auto output_image = Image<uint32_t>::create(argument[2], filter);
+      auto output_image = Image<uint32_t>::create(output_image_path, filter);
       filter(input_image, output_image);
     }
     return;
   }
 
-  if (filter_index == 2) { // Dilate
-    Filter::Dilate filter(input_image, std::string("applying dilate filter to image ") + Path::basename(argument[0]));
+  case FilterType::DILATE: {
+    Filter::Dilate filter(input_image,
+                          std::string("applying dilate filter to image ") + input_image_path.filename().string());
     auto opt = get_options("npass");
     if (!opt.empty())
-      filter.set_npass(int(opt[0][0]));
+      filter.set_npass(static_cast<unsigned int>(opt[0][0]));
 
     Stride::set_from_command_line(filter);
     filter.datatype() = DataType::Bit;
 
-    auto output_image = Image<value_type>::create(argument[2], filter);
+    auto output_image = Image<value_type>::create(output_image_path, filter);
     filter(input_image, output_image);
     return;
   }
 
-  if (filter_index == 3) { // Erode
-    Filter::Erode filter(input_image, std::string("applying erode filter to image ") + Path::basename(argument[0]));
+  case FilterType::ERODE: {
+    Filter::Erode filter(input_image, std::string("applying erode filter to image ") + input_image_path.string());
     auto opt = get_options("npass");
     if (!opt.empty())
-      filter.set_npass(int(opt[0][0]));
+      filter.set_npass(static_cast<unsigned int>(opt[0][0]));
 
     Stride::set_from_command_line(filter);
     filter.datatype() = DataType::Bit;
 
-    auto output_image = Image<value_type>::create(argument[2], filter);
+    auto output_image = Image<value_type>::create(output_image_path, filter);
     filter(input_image, output_image);
     return;
   }
 
-  if (filter_index == 4) { // Fill
-    Filter::Fill filter(input_image, std::string("filling interior of image ") + Path::basename(argument[0]));
+  case FilterType::FILL: {
+    Filter::Fill filter(input_image, std::string("filling interior of image ") + input_image_path.string());
     auto opt = get_options("axes");
     if (!opt.empty()) {
-      const std::vector<int> axes = opt[0][0];
+      const std::vector<int> axes = MR::container_cast<std::vector<int>>(opt[0][0].as_sequence_int());
       filter.set_axes(axes);
     }
     opt = get_options("connectivity");
     if (!opt.empty())
       filter.set_26_connectivity(true);
     Stride::set_from_command_line(filter);
-    auto output_image = Image<value_type>::create(argument[2], filter);
+    auto output_image = Image<value_type>::create(output_image_path, filter);
     filter(input_image, output_image);
     return;
   }
 
-  if (filter_index == 5) { // Median
-    Filter::Median filter(input_image, std::string("applying median filter to image ") + Path::basename(argument[0]));
+  case FilterType::MEDIAN: {
+    Filter::Median filter(input_image, std::string("applying median filter to image ") + input_image_path.string());
     auto opt = get_options("extent");
     if (!opt.empty())
-      filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
+      filter.set_extent(MR::container_cast<std::vector<uint32_t>>(opt[0][0].as_sequence_uint()));
 
     Stride::set_from_command_line(filter);
     filter.datatype() = DataType::Bit;
 
-    auto output_image = Image<value_type>::create(argument[2], filter);
+    auto output_image = Image<value_type>::create(output_image_path, filter);
     filter(input_image, output_image);
     return;
+  }
+  default:
+    throw Exception("Unsupported mask filter");
   }
 }

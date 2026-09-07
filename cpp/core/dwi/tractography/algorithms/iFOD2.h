@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,7 +17,10 @@
 #pragma once
 
 #include <algorithm>
+#include <filesystem>
+#include <optional>
 
+#include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/algorithms/calibrator.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/tracking/method.h"
@@ -38,12 +41,14 @@ class iFOD2 : public MethodBase {
 public:
   class Shared : public SharedBase {
   public:
-    Shared(const std::string &diff_path, DWI::Tractography::Properties &property_set)
-        : SharedBase(diff_path, property_set),
+    Shared(const std::filesystem::path &diff_path, DWI::Tractography::Properties &property_set)
+        : SharedBase(diff_path,
+                     property_set,
+                     {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite}),
           lmax(Math::SH::LforN(source.size(3))),
           num_samples(Defaults::ifod2_nsamples),
           max_trials(Defaults::max_trials_per_step),
-          sin_max_angle_ho(NaN),
+          sin_max_angle_ho(NaNF),
           mean_samples(0.0),
           mean_truncations(0.0),
           max_max_truncation(0.0),
@@ -64,6 +69,9 @@ public:
                          curvature_constraint_t::LIMITED_SEARCH);
       sin_max_angle_ho = std::sin(max_angle_ho);
       set_cutoff(Defaults::cutoff_fod * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
+
+      if (is_act())
+        act().set_default_sgm_trunc(ACT::sgm_trunc_t::ROULETTE);
 
       properties["method"] = "iFOD2";
       properties.set(lmax, "lmax");
@@ -91,15 +99,16 @@ public:
       //   variables need to be calculated accordingly:
       //   - The arc angle subtended by two sequential vertices on a circle of minimal radius
       //     (prior to downsampling)
-      const float angle_minradius_preds = 2.0 * std::asin(step_size / (2.0 * min_radius)) / float(num_samples);
+      const float angle_minradius_preds =
+          2.0 * std::asin(step_size / (2.0 * min_radius)) / static_cast<float>(num_samples);
       //   - The maximal possible distance between vertices after downsampling
-      const float max_step_postds = downsample_factor * step_size / float(num_samples);
+      const float max_step_postds = downsample_factor * step_size / static_cast<float>(num_samples);
       set_num_points(angle_minradius_preds, max_step_postds);
     }
 
     ~Shared() {
-      mean_samples /= double(num_proc);
-      mean_truncations /= double(num_proc);
+      mean_samples /= static_cast<double>(num_proc);
+      mean_truncations /= static_cast<double>(num_proc);
       INFO("mean number of samples per step = " + str(mean_samples));
       if (mean_truncations) {
         INFO("mean number of steps between rejection sampling truncations = " + str(1.0 / mean_truncations));
@@ -117,7 +126,7 @@ public:
       ++num_proc;
     }
 
-    float internal_step_size() const override { return step_size / float(num_samples); }
+    float internal_step_size() const override { return step_size / static_cast<float>(num_samples); }
 
     size_t lmax, num_samples, max_trials;
     float sin_max_angle_ho, fod_power;
@@ -131,15 +140,15 @@ public:
   iFOD2(const Shared &shared)
       : MethodBase(shared),
         S(shared),
-        source(S.source),
         mean_sample_num(0),
         num_sample_runs(0),
         num_truncations(0),
         max_truncation(0.0),
-        positions(S.num_samples),
         calib_positions(S.num_samples),
-        tangents(S.num_samples),
         calib_tangents(S.num_samples),
+        source(S.source, S.source_mask),
+        positions(S.num_samples),
+        tangents(S.num_samples),
         sample_idx(S.num_samples) {
     calibrate(*this);
   }
@@ -147,23 +156,24 @@ public:
   iFOD2(const iFOD2 &that)
       : MethodBase(that.S),
         S(that.S),
-        source(S.source),
         calibrate_ratio(that.calibrate_ratio),
         mean_sample_num(0),
         num_sample_runs(0),
         num_truncations(0),
         max_truncation(0.0),
         calibrate_list(that.calibrate_list),
-        positions(S.num_samples),
         calib_positions(S.num_samples),
-        tangents(S.num_samples),
         calib_tangents(S.num_samples),
+        source(S.source, S.source_mask),
+        positions(S.num_samples),
+        tangents(S.num_samples),
         sample_idx(S.num_samples) {}
 
   ~iFOD2() {
     if (num_sample_runs)
-      S.update_stats(calibrate_list.size() + float(mean_sample_num) / float(num_sample_runs),
-                     float(num_truncations) / float(num_sample_runs),
+      S.update_stats(calibrate_list.size() +
+                         (static_cast<double>(mean_sample_num) / static_cast<double>(num_sample_runs)),
+                     static_cast<double>(num_truncations) / static_cast<double>(num_sample_runs),
                      max_truncation);
   }
 
@@ -198,12 +208,12 @@ public:
     return true;
   }
 
-  term_t next() override {
+  std::optional<term_t> next() override {
 
     if (++sample_idx < S.num_samples) {
       pos = positions[sample_idx];
       dir = tangents[sample_idx];
-      return term_t::CONTINUE;
+      return std::nullopt;
     }
 
     Eigen::Vector3f next_pos, next_dir;
@@ -235,13 +245,13 @@ public:
           max_truncation = val / max_val;
       }
 
-      if (uniform(rng) < val / max_val) {
+      if (uniform(rng()) < val / max_val) {
         mean_sample_num += n;
         half_log_prob0 = last_half_log_probN;
         pos = positions[0];
         dir = tangents[0];
         sample_idx = 0;
-        return term_t::CONTINUE;
+        return std::nullopt;
       }
     }
 
@@ -271,21 +281,29 @@ public:
     const size_t points_to_remove = sample_idx_at_full_length + ((revert_step - 1) * S.num_samples);
     if (tck.get_seed_index() + points_to_remove >= tck.size()) {
       tck.clear();
-      pos.setConstant(std::numeric_limits<float>::quiet_NaN());
-      dir.setConstant(std::numeric_limits<float>::quiet_NaN());
+      pos.setConstant(NaNF);
+      dir.setConstant(NaNF);
       return;
     }
     const size_t new_size = length_to_revert_from - points_to_remove;
-    if (tck.size() == 2 || new_size == 1)
-      dir = (tck[1] - tck[0]).normalized();
-    else if (new_size != tck.size())
-      dir = (tck[new_size] - tck[new_size - 2]).normalized();
+    dir = Tractography::tangent(tck, new_size);
     tck.resize(new_size);
 
     // Need to get the path probability contribution from the FOD at this point
+    // If FOD amplitude sample is non-positive
+    //   (possible even if the streamline passed through this vertex previously
+    //   since the tangent direction may not be exactly the same),
+    //   can't re-track from this point as the path probability will not be finite
     pos = tck.back();
     get_data(source);
-    half_log_prob0 = 0.5 * std::log(FOD(dir));
+    const float fod_amp = FOD(dir);
+    if (fod_amp <= 0.0F) {
+      tck.clear();
+      pos.setConstant(NaNF);
+      dir.setConstant(NaNF);
+      return;
+    }
+    half_log_prob0 = 0.5F * std::log(fod_amp);
 
     // Make sure that arc is re-calculated when next() is called
     sample_idx = S.num_samples;
@@ -297,27 +315,31 @@ public:
 
 private:
   const Shared &S;
-  Interpolator<Image<float>>::type source;
+
   float calibrate_ratio, half_log_prob0, last_half_log_probN, half_log_prob0_seed;
   size_t mean_sample_num, num_sample_runs, num_truncations;
   float max_truncation;
   std::vector<Eigen::Vector3f> calibrate_list;
+  std::vector<Eigen::Vector3f> calib_positions;
+  std::vector<Eigen::Vector3f> calib_tangents;
 
+protected:
+  Interpolator<Image<float>>::type source;
   // Store list of points in the currently-calculated arc
-  std::vector<Eigen::Vector3f> positions, calib_positions;
-  std::vector<Eigen::Vector3f> tangents, calib_tangents;
-
+  std::vector<Eigen::Vector3f> positions;
+  std::vector<Eigen::Vector3f> tangents;
   // Generate an arc only when required, and on the majority of next() calls, simply return the next point
   //   in the arc - more dense structural image sampling
   size_t sample_idx;
 
+private:
   FORCE_INLINE float FOD(const Eigen::Vector3f &direction) const {
     return (S.precomputer ? S.precomputer.value(values, direction) : Math::SH::value(values, direction, S.lmax));
   }
 
   FORCE_INLINE float FOD(const Eigen::Vector3f &position, const Eigen::Vector3f &direction) {
     if (!get_data(source, position))
-      return NaN;
+      return NaNF;
     return FOD(direction);
   }
 
@@ -331,7 +353,7 @@ private:
     // Early exit for ACT when path is not sensible
     if (S.is_act()) {
       if (!act().fetch_tissue_data(positions[S.num_samples - 1]))
-        return (NaN);
+        return (NaNF);
       if (act().tissues().get_csf() >= 0.5)
         return 0.0;
     }
@@ -341,7 +363,7 @@ private:
 
       float fod_amp = FOD(positions[i], tangents[i]);
       if (std::isnan(fod_amp))
-        return NaN;
+        return NaNF;
       if (fod_amp < S.threshold)
         return 0.0;
       fod_amp = std::log(fod_amp);
@@ -361,7 +383,7 @@ protected:
                 std::vector<Eigen::Vector3f> &tangents,
                 const Eigen::Vector3f &end_dir) const {
     float cos_theta = end_dir.dot(dir);
-    cos_theta = std::min(cos_theta, float(1.0));
+    cos_theta = std::min(cos_theta, 1.0F);
     float theta = std::acos(cos_theta);
 
     if (theta) {
@@ -374,10 +396,10 @@ protected:
         float a = (theta * (i + 1)) / S.num_samples;
         float cos_a = std::cos(a);
         float sin_a = std::sin(a);
-        positions[i] = pos + R * (sin_a * dir + (float(1.0) - cos_a) * curv);
+        positions[i] = pos + R * (sin_a * dir + (1.0F - cos_a) * curv);
         tangents[i] = cos_a * dir + sin_a * curv;
       }
-      positions[S.num_samples - 1] = pos + R * (std::sin(theta) * dir + (float(1.0) - cos_theta) * curv);
+      positions[S.num_samples - 1] = pos + R * (std::sin(theta) * dir + (1.0F - cos_theta) * curv);
       tangents[S.num_samples - 1] = end_dir;
 
     } else { // straight on:

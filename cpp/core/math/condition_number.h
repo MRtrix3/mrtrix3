@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "eigen_plugins/eigen_plugins.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <Eigen/SVD>
@@ -23,8 +24,7 @@
 
 #include "types.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 template <class M> default_type condition_number(const M &data) {
   assert(data.rows() && data.cols());
@@ -36,5 +36,4 @@ template <class M> default_type condition_number(const M &data) {
 extern template default_type
 condition_number<Eigen::Matrix<default_type, -1, -1>>(const Eigen::Matrix<default_type, -1, -1> &data);
 
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,8 +21,8 @@ namespace MR::DWI::Tractography::Tracking {
 void MethodBase::truncate_track(GeneratedTrack &tck, const size_t length_to_revert_from, const size_t revert_step) {
   if (tck.get_seed_index() + revert_step >= length_to_revert_from) {
     tck.clear();
-    pos.setConstant(std::numeric_limits<float>::quiet_NaN());
-    dir.setConstant(std::numeric_limits<float>::quiet_NaN());
+    pos.setConstant(NaNF);
+    dir.setConstant(NaNF);
     return;
   }
   if (tck.size() + revert_step == length_to_revert_from)
@@ -44,7 +44,7 @@ bool MethodBase::check_seed() {
 
   if ((S.properties.mask.size() && !S.properties.mask.contains(pos)) || (S.properties.exclude.contains(pos)) ||
       (S.is_act() && !act().check_seed(pos))) {
-    pos = {NaN, NaN, NaN};
+    pos.fill(NaNF);
     return false;
   }
 
@@ -54,20 +54,20 @@ bool MethodBase::check_seed() {
 Eigen::Vector3f MethodBase::random_direction() {
   Eigen::Vector3f d;
   do {
-    d[0] = 2.0 * uniform(rng) - 1.0;
-    d[1] = 2.0 * uniform(rng) - 1.0;
-    d[2] = 2.0 * uniform(rng) - 1.0;
+    d[0] = 2.0 * uniform(rng()) - 1.0;
+    d[1] = 2.0 * uniform(rng()) - 1.0;
+    d[2] = 2.0 * uniform(rng()) - 1.0;
   } while (d.squaredNorm() > 1.0);
   d.normalize();
   return d;
 }
 
 Eigen::Vector3f MethodBase::random_direction(const float max_angle, const float sin_max_angle) {
-  float phi = 2.0 * Math::pi * uniform(rng);
+  float phi = 2.0 * Math::pi * uniform(rng());
   float theta;
   do {
-    theta = max_angle * uniform(rng);
-  } while (sin_max_angle * uniform(rng) > sin(theta));
+    theta = max_angle * uniform(rng());
+  } while (sin_max_angle * uniform(rng()) > sin(theta));
   return Eigen::Vector3f(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
 }
 

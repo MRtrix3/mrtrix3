@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,16 +34,16 @@ public:
            const size_t length,
            const NodePair &nodes,
            const std::pair<point_type, point_type> &COMs)
-      : Tractography::Streamline<float>(length, {0.0f, 0.0f, 0.0f}),
+      : Tractography::Streamline<float>(length, {0.0F, 0.0F, 0.0F}),
         nodes(nodes),
         node_COMs(COMs),
         is_finalized(false) {
     set_index(exemplar_index);
-    weight = 0.0f;
+    weight = 0.0F;
   }
 
   Exemplar(Exemplar &&that)
-      : Tractography::Streamline<float>(std::move(that)),
+      : Tractography::Streamline<float>(std::move(static_cast<Tractography::Streamline<float> &&>(that))),
         mutex(),
         nodes(that.nodes),
         node_COMs(that.node_COMs),

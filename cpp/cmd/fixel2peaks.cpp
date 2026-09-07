@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,6 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <cstddef>
+#include <cstdint>
+
 #include "command.h"
 #include "image.h"
 #include "progressbar.h"
@@ -24,6 +27,9 @@
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "fixel/loop.h"
+#include "fixel/validate.h"
+
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -61,17 +67,21 @@ void usage() {
 
 void run() {
   Header index_header, directions_header, data_header;
+  const std::filesystem::path input_path(argument[0]);
+  const auto input_dirpath = input_path.parent_path();
+  const std::filesystem::path output_path(argument[1]);
+
   try {
-    Header input_header = Header::open(argument[0]);
+    Header input_header = Header::open(input_path);
     if (Fixel::is_index_image(input_header)) {
       index_header = std::move(input_header);
-      directions_header = Fixel::find_directions_header(Path::dirname(argument[0]));
+      directions_header = Fixel::find_directions_header(input_dirpath);
     } else if (Fixel::is_directions_file(input_header)) {
-      index_header = Fixel::find_index_header(Path::dirname(argument[0]));
+      index_header = Fixel::find_index_header(input_dirpath);
       directions_header = std::move(input_header);
     } else if (Fixel::is_data_file(input_header)) {
-      index_header = Fixel::find_index_header(Path::dirname(argument[0]));
-      directions_header = Fixel::find_directions_header(Path::dirname(argument[0]));
+      index_header = Fixel::find_index_header(input_dirpath);
+      directions_header = Fixel::find_directions_header(input_dirpath);
       data_header = std::move(input_header);
       Fixel::check_fixel_size(index_header, data_header);
     } else {
@@ -79,12 +89,12 @@ void run() {
     }
   } catch (Exception &e_asimage) {
     try {
-      if (!Path::is_dir(argument[0]))
+      if (!std::filesystem::is_directory(input_path))
         throw Exception("Input path is not a directory");
-      index_header = Fixel::find_index_header(argument[0]);
-      directions_header = Fixel::find_directions_header(argument[0]);
+      index_header = Fixel::find_index_header(input_path);
+      directions_header = Fixel::find_directions_header(input_path);
     } catch (Exception &e_asdir) {
-      Exception e("Could not locate fixel data based on input string \"" + argument[0] + "\"");
+      Exception e("Could not locate fixel data based on input string \"" + argument[0].as_text() + "\"");
       e.push_back("Error when interpreting as image: ");
       for (size_t i = 0; i != e_asimage.num(); ++i)
         e.push_back("  " + e_asimage[i]);
@@ -96,6 +106,7 @@ void run() {
   }
 
   Image<index_type> index_image(index_header.get_image<index_type>());
+  Fixel::debug_validate_index_image(index_image);
   Image<float> directions_image(directions_header.get_image<float>());
   Image<float> data_image;
   if (data_header.valid())
@@ -107,18 +118,18 @@ void run() {
     max_fixel_count = opt[0][0];
   } else {
     for (auto l = Loop(index_image, 0, 3)(index_image); l; ++l)
-      max_fixel_count = std::max(max_fixel_count, index_type(index_image.value()));
+      max_fixel_count = std::max(max_fixel_count, static_cast<index_type>(index_image.value()));
     INFO("Maximum number of fixels in any given voxel: " + str(max_fixel_count));
   }
 
   Header out_header(index_header);
   out_header.datatype() = DataType::Float32;
   out_header.datatype().set_byte_order_native();
-  out_header.size(3) = 3 * max_fixel_count;
-  out_header.name() = std::string(argument[1]);
-  Image<float> out_image(Image<float>::create(argument[1], out_header));
+  out_header.size(3) = 3 * static_cast<ssize_t>(max_fixel_count);
+  out_header.path() = output_path;
+  Image<float> out_image(Image<float>::create(output_path, out_header));
 
-  const float fill = !get_options("nan").empty() ? NaN : 0.0F;
+  const float fill = !get_options("nan").empty() ? NaNF : 0.0F;
 
   if (data_image.valid()) {
     for (auto l = Loop("converting fixel data file to peaks image", index_image, 0, 3)(index_image, out_image); l;

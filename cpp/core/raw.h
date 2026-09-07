@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,36 +35,34 @@
 #define TO_BE(v) swap(v)
 #endif
 
-namespace MR {
-
 /** \addtogroup Binary
  * @{ */
 
-namespace ByteOrder {
+namespace MR::ByteOrder {
 
 template <typename ValueType>
-inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(ValueType) == 1, ValueType>::type
+inline typename std::enable_if<MR::is_fundamental<ValueType>::value && sizeof(ValueType) == 1, ValueType>::type
 swap(ValueType v) {
   return v;
 }
 
 template <typename ValueType>
-inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(ValueType) == 2, ValueType>::type
+inline typename std::enable_if<MR::is_fundamental<ValueType>::value && sizeof(ValueType) == 2, ValueType>::type
 swap(ValueType v) {
   union {
     ValueType v;
-    uint8_t i[2];
+    uint8_t i[2]; // check_syntax off
   } val = {v};
   std::swap(val.i[0], val.i[1]);
   return val.v;
 }
 
 template <typename ValueType>
-inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(ValueType) == 4, ValueType>::type
+inline typename std::enable_if<MR::is_fundamental<ValueType>::value && sizeof(ValueType) == 4, ValueType>::type
 swap(ValueType v) {
   union {
     ValueType v;
-    uint8_t i[4];
+    uint8_t i[4]; // check_syntax off
   } val = {v};
   std::swap(val.i[0], val.i[3]);
   std::swap(val.i[1], val.i[2]);
@@ -72,11 +70,11 @@ swap(ValueType v) {
 }
 
 template <typename ValueType>
-inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(ValueType) == 8, ValueType>::type
+inline typename std::enable_if<MR::is_fundamental<ValueType>::value && sizeof(ValueType) == 8, ValueType>::type
 swap(ValueType v) {
   union {
     ValueType v;
-    uint8_t i[8];
+    uint8_t i[8]; // check_syntax off
   } val = {v};
   std::swap(val.i[0], val.i[7]);
   std::swap(val.i[1], val.i[6]);
@@ -98,9 +96,9 @@ template <typename ValueType> inline ValueType swap(const ValueType value, bool 
   return is_big_endian ? BE(value) : LE(value);
 }
 
-} // namespace ByteOrder
+} // namespace MR::ByteOrder
 
-namespace Raw {
+namespace MR::Raw {
 
 namespace {
 template <typename ValueType> ValueType *as(void *p) { return reinterpret_cast<ValueType *>(p); }
@@ -120,7 +118,7 @@ template <typename ValueType> inline ValueType fetch_(const void *address, bool 
   return ByteOrder::swap(*as<ValueType>(address), is_big_endian);
 }
 
-template <typename ValueType> inline ValueType fetch__native(const void *address) { return *as<ValueType>(address); }
+template <typename ValueType> inline ValueType fetch_native(const void *address) { return *as<ValueType>(address); }
 
 // PUT at pointer:
 template <typename ValueType> inline void store_LE(const ValueType value, void *address) {
@@ -209,8 +207,6 @@ template <> inline void store<bool>(const bool value, void *data, size_t i, bool
 }
 
 //! \endcond
-} // namespace Raw
-
 /** @} */
 
-} // namespace MR
+} // namespace MR::Raw

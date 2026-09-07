@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
  */
 
 #pragma once
+
+#include <optional>
 
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
@@ -35,7 +37,10 @@ class ACT_Method_additions {
 
 public:
   ACT_Method_additions(const SharedBase &shared)
-      : sgm_depth(0), seed_in_sgm(false), sgm_seed_to_wm(false), act_image(shared.act().voxel) {}
+      : sgm_depth(0),
+        seed_in_sgm(false),
+        sgm_seed_to_wm(false),
+        act_image(shared.act().voxel, shared.act().voxel_mask) {}
 
   ACT_Method_additions(const ACT_Method_additions &that)
       : sgm_depth(0), seed_in_sgm(false), sgm_seed_to_wm(false), act_image(that.act_image) {}
@@ -44,7 +49,7 @@ public:
 
   const Tissues &tissues() const { return tissue_values; }
 
-  term_t check_structural(const Eigen::Vector3f &pos) {
+  std::optional<term_t> check_structural(const Eigen::Vector3f &pos) {
     if (!fetch_tissue_data(pos))
       return term_t::EXIT_IMAGE;
 
@@ -59,12 +64,12 @@ public:
       if (seed_in_sgm && !sgm_seed_to_wm) {
         sgm_seed_to_wm = true;
         sgm_depth = 0;
-        return term_t::CONTINUE;
+        return std::nullopt;
       }
       return term_t::EXIT_SGM;
     }
 
-    return term_t::CONTINUE;
+    return std::nullopt;
   }
 
   bool check_seed(const Eigen::Vector3f &pos) {
@@ -81,7 +86,7 @@ public:
 
     seed_in_sgm = false;
 
-    if (tissues().is_csf() > 0.0F || tissues().get_wm() == 0.0F ||
+    if (tissues().is_csf() || tissues().get_wm() == 0.0F ||
         ((tissues().get_gm() - tissues().get_wm()) >= gmwmi_accuracy))
       return false;
 

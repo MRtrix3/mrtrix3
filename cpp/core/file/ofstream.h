@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,8 +16,8 @@
 
 #pragma once
 
+#include <filesystem>
 #include <fstream>
-#include <string>
 
 #include "types.h"
 
@@ -32,11 +32,13 @@ namespace MR::File {
 class OFStream : public std::ofstream {
 public:
   OFStream() {}
-  OFStream(const std::string &path, const std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary) {
+  OFStream(const std::filesystem::path &path,
+           const std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary) {
     open(path, mode);
   }
 
-  void open(const std::string &path, const std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary);
+  void open(const std::filesystem::path &path,
+            const std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary);
 };
 
 } // namespace MR::File

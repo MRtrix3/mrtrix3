@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,9 +20,8 @@
 #include "registration/metric/linear_base.h"
 #include "registration/metric/robust_estimators.h"
 
-namespace MR {
-namespace Registration {
-namespace Metric {
+namespace MR::Registration::Metric {
+
 template <class Estimator = L2> class DifferenceRobust : public LinearBase {
 public:
   DifferenceRobust() = delete;
@@ -43,14 +42,14 @@ public:
     Eigen::Matrix<typename Params::Im2ValueType, 1, 3> im2_grad;
 
     params.im1_image_interp->value_and_gradient_wrt_scanner(im1_value, im1_grad);
-    if (std::isnan(default_type(im1_value)))
+    if (std::isnan(im1_value))
       return 0.0;
     params.im2_image_interp->value_and_gradient_wrt_scanner(im2_value, im2_grad);
-    if (std::isnan(default_type(im2_value)))
+    if (std::isnan(im2_value))
       return 0.0;
 
     default_type residual, grad;
-    estimator((default_type)im1_value - (default_type)im2_value, residual, grad);
+    estimator(static_cast<default_type>(im1_value) - static_cast<default_type>(im2_value), residual, grad);
     const auto jacobian_vec = params.transformation.get_jacobian_vector_wrt_params(midway_point);
     const Eigen::Vector3d g = grad * (im1_grad + im2_grad);
     gradient.segment<4>(0) += g(0) * jacobian_vec;
@@ -128,7 +127,7 @@ public:
       gradient.segment<4>(8) += g(2) * jacobian_vec;
     }
 
-    return residuals.sum() / (default_type)volumes;
+    return residuals.sum() / static_cast<default_type>(volumes);
   }
 
 private:
@@ -140,6 +139,5 @@ private:
   Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 1> im1_values, diff_values;
   Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 1> im2_values;
 };
-} // namespace Metric
-} // namespace Registration
-} // namespace MR
+
+} // namespace MR::Registration::Metric

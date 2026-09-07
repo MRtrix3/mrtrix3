@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,8 +23,10 @@
 #include <utility>
 #include <vector>
 
+#include "enum.h"
 #include "mrtrix.h"
 #include "types.h"
+
 #include <variant>
 
 namespace MR::App {
@@ -80,16 +82,25 @@ private:
 //! \endcond
 
 namespace {
-template <typename T> typename std::enable_if<std::is_integral<T>::value, T>::type void_rangemax() {
+template <typename T> typename std::enable_if<MR::is_integral<T>::value, T>::type void_rangemax() {
   return std::numeric_limits<T>::max();
 }
-template <typename T> typename std::enable_if<std::is_floating_point<T>::value, T>::type void_rangemax() {
+template <typename T> typename std::enable_if<MR::is_floating_point<T>::value, T>::type void_rangemax() {
   return std::numeric_limits<T>::infinity();
 }
 } // namespace
 
 //! \addtogroup CmdParse
 // @{
+
+//! Specifies how a directory output argument should be validated with respect to pre-existence
+/*! Used as the parameter to Argument::type_directory_out() to control what parse-time check
+ *  is applied when the specified path already exists. */
+enum class DirOutMode {
+  MustNotExist,  //!< Directory must not already exist; -force overrides
+  EmptyOrAbsent, //!< Directory must not exist, or exist but be empty; -force does not override
+  MayExist,      //!< No pre-existence check; the command is responsible for creation and access
+};
 
 //! A class to specify a command-line argument
 /*! Command-line arguments that are accepted by a particular command are
@@ -139,6 +150,8 @@ public:
   ArgModifierFlags flags;
 
   std::vector<std::string> choices;
+  //! for DirectoryOut arguments, specifies behaviour with respect to pre-existing directories
+  DirOutMode dir_out_mode = DirOutMode::MustNotExist;
 
   template <typename T> class ScalarRange {
   public:
@@ -229,20 +242,26 @@ public:
     return *this;
   }
 
-  //! specifies that the argument should be selected from a predefined list
-  /*! The list of allowed values must be specified as a vector of strings.
+  //! specifies that the argument should be selected from a predefined list of enum values
+  /*! The list of allowed values is automatically generated from the enum type provided as template parameter.
    * Here is an example usage:
    * \code
-   * const std::vector<std::string> mode_list = { "standard", "pedantic", "approx" };
+   * enum class Mode { Standard, Pedantic, Approx };
    *
    * ARGUMENTS
    *   + Argument ("mode", "the mode of operation")
-   *     .type_choice (mode_list);
+   *     .type_choice<Mode>();
    * \endcode
-   * \note Each string in the list must be supplied in \b lowercase. */
-  Argument &type_choice(const std::vector<std::string> &c) {
+   * Enumerators that are meaningful internally but should not be user-selectable can be
+   * omitted from the presented set by excluding them from the enum's magic_enum reflection
+   * (a magic_enum::customize::enum_name specialization returning invalid_tag, declared at the
+   * enum definition); such values are then absent from the choices here, and are rejected by
+   * MR::Enum::from_name() / App::get_option_choice() when supplied on the command-line.
+   * \note Each enum value in the list must be supplied in \b lowercase. */
+  template <typename Enum> Argument &type_choice() {
+    static_assert(std::is_enum_v<Enum>, "Template parameter must be an enum type");
     types.set(ArgTypeFlags::Choice);
-    choices = c;
+    choices = MR::Enum::lower_case_names<Enum>();
     return *this;
   }
 
@@ -265,8 +284,10 @@ public:
   }
 
   //! specifies that the argument should be an output directory
-  Argument &type_directory_out() {
+  /*! \param mode controls how pre-existence of the path is handled at parse time. */
+  Argument &type_directory_out(DirOutMode mode) {
     types.set(ArgTypeFlags::DirectoryOut);
+    dir_out_mode = mode;
     return *this;
   }
 
@@ -381,7 +402,7 @@ public:
     return *this;
   }
 
-  bool is(const std::string &name) const { return name == id; }
+  bool is(std::string_view name) const { return name == id; }
 
   std::string syntax(const bool format) const;
   std::string usage() const;

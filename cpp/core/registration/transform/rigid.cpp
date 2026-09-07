@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,13 +15,17 @@
  */
 
 #include "registration/transform/rigid.h"
+
+#include "eigen_plugins/eigen_plugins.h"
+#include <algorithm> // std::min_element
+#include <deque>
+#include <iterator>
+#include <unsupported/Eigen/MatrixFunctions>
+
 #include "debug.h"
 #include "math/gradient_descent.h"
 #include "math/math.h"
 #include "math/median.h"
-#include <algorithm> // std::min_element
-#include <deque>
-#include <iterator>
 
 namespace MR {
 using namespace MR::Math;

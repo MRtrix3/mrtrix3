@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,6 +27,8 @@
 #include "metadata/phase_encoding.h"
 #include "transform.h"
 #include "types.h"
+
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -220,6 +222,9 @@ void usage() {
             "remove the specified key from the image header altogether.").allow_multiple()
   + Argument ("key").type_text()
 
+  + Option ("clear_properties",
+            "remove all pre-existing key-value entries from the image header")
+
   + Option ("set_property",
             "set the value of the specified key in the image header.").allow_multiple()
   + Argument ("key").type_text()
@@ -232,15 +237,15 @@ void usage() {
   + Argument ("value").type_text()
 
   + Option ("copy_properties",
-            "clear all generic properties"
-            " and replace with the properties from the image / file specified.")
+            "copy all properties from the image / JSON file specified into the output image header"
+            " (combine with -clear_properties to keep *only* the properties from this image / file)")
   + Argument ("source").type_image_in().type_file_in()
 
   + Stride::Options
 
   + DataType::options()
 
-  + DWI::GradImportOptions ()
+  + DWI::GradImportOptions()
   + DWI::bvalue_scaling_option
   + DWI::GradExportOptions()
 
@@ -262,8 +267,8 @@ void permute_DW_scheme(Header &H, const std::vector<int> &axes) {
   const Eigen::Matrix3d R = T.scanner2voxel.rotation() * permute * T.voxel2scanner.rotation();
 
   Eigen::MatrixXd out(in.rows(), in.cols());
-  out.block(0, 3, out.rows(), out.cols() - 3) =
-      in.block(0, 3, in.rows(), in.cols() - 3); // Copy b-values (and anything else stored in dw_scheme)
+  // Copy b-values (and anything else stored in dw_scheme)
+  out.block(0, 3, out.rows(), out.cols() - 3) = in.block(0, 3, in.rows(), in.cols() - 3);
   for (int row = 0; row != in.rows(); ++row)
     out.block<1, 3>(row, 0) = in.block<1, 3>(row, 0) * R;
 
@@ -280,8 +285,8 @@ void permute_PE_scheme(Header &H, const std::vector<int> &axes) {
     permute(axes[axis], axis) = 1.0;
 
   Eigen::MatrixXd out(in.rows(), in.cols());
-  out.block(0, 3, out.rows(), out.cols() - 3) =
-      in.block(0, 3, in.rows(), in.cols() - 3); // Copy total readout times (and anything else stored in pe_scheme)
+  // Copy total readout times (and anything else stored in pe_scheme)
+  out.block(0, 3, out.rows(), out.cols() - 3) = in.block(0, 3, in.rows(), in.cols() - 3);
   for (int row = 0; row != in.rows(); ++row)
     out.block<1, 3>(row, 0) = in.block<1, 3>(row, 0) * permute;
 
@@ -359,9 +364,9 @@ template <class ImageType> inline std::vector<int> set_header(Header &header, co
 }
 
 template <typename T, class InputType>
-void copy_permute(const InputType &in, Header &header_out, const std::string &output_filename) {
+void copy_permute(const InputType &in, Header &header_out, const std::filesystem::path &output_filepath) {
   const auto axes = set_header(header_out, in);
-  auto out = Image<T>::create(output_filename, header_out, add_to_command_history);
+  auto out = Image<T>::create(output_filepath, header_out, add_to_command_history);
   DWI::export_grad_commandline(out);
   Metadata::PhaseEncoding::export_commandline(out);
   auto perm = Adapter::make<Adapter::PermuteAxes>(in, axes);
@@ -372,13 +377,13 @@ template <typename T>
 void extract(Header &header_in,
              Header &header_out,
              const std::vector<std::vector<uint32_t>> &pos,
-             const std::string &output_filename) {
+             const std::filesystem::path &output_filepath) {
   auto in = header_in.get_image<T>();
   if (pos.empty()) {
-    copy_permute<T, decltype(in)>(in, header_out, output_filename);
+    copy_permute<T, decltype(in)>(in, header_out, output_filepath);
   } else {
     auto extract = Adapter::make<Adapter::Extract>(in, pos);
-    copy_permute<T, decltype(extract)>(extract, header_out, output_filename);
+    copy_permute<T, decltype(extract)>(extract, header_out, output_filepath);
   }
 }
 
@@ -405,19 +410,20 @@ void run() {
   if (header_in.datatype().is_complex() && !header_out.datatype().is_complex())
     WARN("requested datatype is real but input datatype is complex - imaginary component will be ignored");
 
+  opt = get_options("clear_properties");
+  if (!opt.empty())
+    header_out.keyval().clear();
+
   opt = get_options("copy_properties");
   if (!opt.empty()) {
-    header_out.keyval().clear();
-    if (str(opt[0][0]) != "NULL") {
+    try {
+      const Header source = Header::open(opt[0][0]);
+      header_out.keyval().insert(source.keyval().begin(), source.keyval().end());
+    } catch (...) {
       try {
-        const Header source = Header::open(opt[0][0]);
-        header_out.keyval() = source.keyval();
+        File::JSON::load(header_out, std::filesystem::path(opt[0][0]));
       } catch (...) {
-        try {
-          File::JSON::load(header_out, opt[0][0]);
-        } catch (...) {
-          throw Exception("Unable to obtain header key-value entries from spec \"" + str(opt[0][0]) + "\"");
-        }
+        throw Exception("Unable to obtain header key-value entries from spec \"" + opt[0][0].as_text() + "\"");
       }
     }
   }
@@ -429,7 +435,7 @@ void run() {
     auto entry = header_out.keyval().find(opt[n][0]);
     if (entry == header_out.keyval().end()) {
       if (std::string(opt[n][0]) != "command_history") {
-        WARN("No header key/value entry \"" + opt[n][0] + "\" found; ignored");
+        WARN("No header key/value entry \"" + std::string(opt[n][0]) + "\" found; ignored");
       }
     } else {
       header_out.keyval().erase(entry);
@@ -440,14 +446,14 @@ void run() {
   for (size_t n = 0; n < opt.size(); ++n) {
     if (str(opt[n][0]) == "command_history")
       add_to_command_history = false;
-    header_out.keyval()[opt[n][0].as_text()] = opt[n][1].as_text();
+    header_out.keyval()[std::string(opt[n][0])] = std::string(opt[n][1]);
   }
 
   opt = get_options("append_property");
   for (size_t n = 0; n < opt.size(); ++n) {
     if (str(opt[n][0]) == "command_history")
       add_to_command_history = false;
-    add_line(header_out.keyval()[opt[n][0].as_text()], opt[n][1].as_text());
+    add_line(header_out.keyval()[std::string(opt[n][0])], std::string(opt[n][1]));
   }
 
   opt = get_options("coord");
@@ -475,7 +481,7 @@ void run() {
       if (axis == 3) {
         const auto grad = DWI::parse_DW_scheme(header_out);
         if (grad.rows()) {
-          if ((ssize_t)grad.rows() != header_in.size(3)) {
+          if (static_cast<ssize_t>(grad.rows()) != header_in.size(3)) {
             WARN("Diffusion encoding of input file does not match number of image volumes;" //
                  " omitting gradient information from output image");                       //
             DWI::clear_DW_scheme(header_out);
@@ -506,8 +512,8 @@ void run() {
     for (size_t n = 0; n < header_in.ndim(); ++n) {
       if (pos[n].empty()) {
         pos[n].resize(header_in.size(n));
-        for (uint32_t i = 0; i < uint32_t(pos[n].size()); i++)
-          pos[n][i] = i;
+        for (size_t i = 0; i < pos[n].size(); i++)
+          pos[n][i] = static_cast<uint32_t>(i);
       }
     }
   }
@@ -524,6 +530,8 @@ void run() {
       WARN("-scaling option has no effect for floating-point or binary images");
   }
 
+  const std::filesystem::path output_path{argument[1]};
+
   if (header_out.intensity_offset() == 0.0 && header_out.intensity_scale() == 1.0 &&
       !header_out.datatype().is_floating_point()) {
     switch (header_out.datatype()() & DataType::Type) {
@@ -532,28 +540,29 @@ void run() {
     case DataType::UInt16:
     case DataType::UInt32:
       if (header_out.datatype().is_signed())
-        extract<int32_t>(header_in, header_out, pos, argument[1]);
+        extract<int32_t>(header_in, header_out, pos, output_path);
       else
-        extract<uint32_t>(header_in, header_out, pos, argument[1]);
+        extract<uint32_t>(header_in, header_out, pos, output_path);
       break;
     case DataType::UInt64:
       if (header_out.datatype().is_signed())
-        extract<int64_t>(header_in, header_out, pos, argument[1]);
+        extract<int64_t>(header_in, header_out, pos, output_path);
       else
-        extract<uint64_t>(header_in, header_out, pos, argument[1]);
+        extract<uint64_t>(header_in, header_out, pos, output_path);
       break;
     case DataType::Undefined:
+    default:
       throw Exception("invalid output image data type");
       break;
     }
   } else {
     if (header_out.datatype().is_complex())
-      extract<cdouble>(header_in, header_out, pos, argument[1]);
+      extract<cdouble>(header_in, header_out, pos, output_path);
     else
-      extract<double>(header_in, header_out, pos, argument[1]);
+      extract<double>(header_in, header_out, pos, output_path);
   }
 
   opt = get_options("json_export");
   if (!opt.empty())
-    File::JSON::save(header_out, opt[0][0], argument[1]);
+    File::JSON::save(header_out, opt[0][0], output_path);
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,7 +16,9 @@
 
 #include "mrview/tool/fixel/fixel.h"
 
+#include "app.h"
 #include "dialog/file.h"
+#include "fixel/validate.h"
 #include "math/rng.h"
 #include "mrtrix.h"
 #include "mrview/qthelpers.h"
@@ -33,24 +35,36 @@ class Fixel::Model : public ListModelBase {
 public:
   Model(QObject *parent) : ListModelBase(parent) {}
 
-  void add_items(std::vector<std::string> &filenames, Fixel &fixel_tool) {
+  void add_items(const std::vector<std::filesystem::path> &paths, Fixel &fixel_tool) {
 
     size_t old_size = items.size();
-    for (size_t i = 0, N = filenames.size(); i < N; ++i) {
+    for (size_t i = 0, N = paths.size(); i < N; ++i) {
       BaseFixel *fixel_image(nullptr);
       try {
-        fixel_image = new Directory(filenames[i], fixel_tool);
-      } catch (InvalidFixelDirectoryException &error) {
-        error.push_back("Couldn't open \"" + filenames[i] + "\" as a Directory fixel dataset");
+        MR::Fixel::debug_validate_directory(paths[i]);
+        fixel_image = new Directory(paths[i], fixel_tool);
+      } catch (MR::Fixel::InvalidDirectoryException &error) {
+        error.push_back("Couldn't open \"" + paths[i].string() + "\" as a Directory fixel dataset");
         try {
-          fixel_image = new Image4D(filenames[i], fixel_tool);
+          fixel_image = new Directory(paths[i], fixel_tool);
+        } catch (MR::Fixel::InvalidDirectoryException &error) {
+          error.push_back("Couldn't open \"" + paths[i].string() + "\" as a Directory fixel dataset");
+          try {
+            fixel_image = new Image4D(paths[i], fixel_tool);
+          } catch (InvalidImageException &e) {
+            error.push_back(e);
+            error.push_back("Couldn't open \"" + paths[i].string() + "\" as a 4D vector image");
+            throw error;
+          }
+          if (MR::App::log_level >= 3)
+            MR::Peaks::debug_validate_image(MR::Image<float>::open(paths[i]));
         } catch (InvalidImageException &e) {
           error.push_back(e);
-          error.push_back("Couldn't open \"" + filenames[i] + "\" as a 4D vector image");
+          error.push_back("Couldn't open \"" + paths[i].string() + "\" as a 4D vector image");
           throw error;
         }
       } catch (Exception &e) {
-        e.push_back("Error loading \"" + filenames[i] + "\" as a fixel dataset");
+        e.push_back("Error loading \"" + paths[i].string() + "\" as a fixel dataset");
         e.display();
         continue;
       }
@@ -286,24 +300,26 @@ void Fixel::render_fixel_colourbar(const Tool::BaseFixel &fixel) {
 
   float max_value = fixel.use_discard_upper() ? fixel.scaling_max_thresholded() : fixel.scaling_max();
 
-  window().colourbar_renderer.render(
-      fixel.colourmap,
-      fixel.scale_inverted(),
-      min_value,
-      max_value,
-      fixel.scaling_min(),
-      fixel.display_range,
-      Eigen::Array3f{fixel.colour[0] / 255.0f, fixel.colour[1] / 255.0f, fixel.colour[2] / 255.0f});
+  window()
+      .annotation_colourbar(window().supersample())
+      .render(fixel.colourmap,
+              fixel.scale_inverted(),
+              min_value,
+              max_value,
+              fixel.scaling_min(),
+              fixel.display_range,
+              Eigen::Array3f{fixel.colour[0] / 255.0F, fixel.colour[1] / 255.0F, fixel.colour[2] / 255.0F});
   GL::assert_context_is_current();
 }
 
 void Fixel::fixel_open_slot() {
-  std::vector<std::string> list = Dialog::File::get_files(
-      this, "Select fixel images to open", GUI::Dialog::File::image_filter_string, &current_folder);
-  add_images(list);
+  auto load_paths = Dialog::File::input_filepaths(
+      this, "Select fixel images to open", GUI::Dialog::File::image_filter_string, current_folder);
+  current_folder = load_paths.last_directory;
+  add_images(load_paths.multi_selection);
 }
 
-void Fixel::add_images(std::vector<std::string> &list) {
+void Fixel::add_images(const std::vector<std::filesystem::path> &list) {
   if (list.empty())
     return;
   size_t previous_size = fixel_list_model->rowCount();
@@ -326,10 +342,10 @@ void Fixel::dropEvent(QDropEvent *event) {
 
   const QMimeData *mimeData = event->mimeData();
   if (mimeData->hasUrls()) {
-    std::vector<std::string> list;
+    std::vector<std::filesystem::path> list;
     QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < max_files; ++i) {
-      list.push_back(QtHelpers::url_to_std_string(urlList.at(i)));
+      list.push_back(QtHelpers::url_to_fspath(urlList.at(i)));
     }
     try {
       add_images(list);
@@ -383,9 +399,9 @@ void Fixel::update_gui_colour_controls(bool reload_colour_types) {
   min_value->setEnabled(n_images);
 
   if (!n_images) {
-    max_value->setValue(NAN);
-    min_value->setValue(NAN);
-    length_multiplier->setValue(NAN);
+    max_value->setValue(NaNF);
+    min_value->setValue(NaNF);
+    length_multiplier->setValue(NaNF);
     return;
   }
 
@@ -428,12 +444,12 @@ void Fixel::update_gui_colour_controls(bool reload_colour_types) {
   const FixelColourType colour_type = first_fixel->get_colour_type();
 
   colour_combobox->setCurrentIndex(first_fixel->get_colour_type_index());
-  colourmap_option_group->setEnabled(colour_type == CValue);
+  colourmap_option_group->setEnabled(colour_type == FixelColourType::Value);
 
-  max_value->setEnabled(colour_type == CValue);
-  min_value->setEnabled(colour_type == CValue);
+  max_value->setEnabled(colour_type == FixelColourType::Value);
+  min_value->setEnabled(colour_type == FixelColourType::Value);
 
-  if (colour_type == CValue) {
+  if (colour_type == FixelColourType::Value) {
     min_value->setRate(first_fixel->scaling_rate());
     max_value->setRate(first_fixel->scaling_rate());
     min_value->setValue(first_fixel->scaling_min());
@@ -449,7 +465,7 @@ void Fixel::update_gui_scaling_controls(bool reload_scaling_types) {
   length_combobox->setEnabled(n_images == 1);
 
   if (!n_images) {
-    length_multiplier->setValue(NAN);
+    length_multiplier->setValue(NaNF);
     return;
   }
 
@@ -476,8 +492,8 @@ void Fixel::update_gui_threshold_controls(bool reload_threshold_types) {
   threshold_combobox->setEnabled(n_images == 1);
 
   if (!n_images) {
-    threshold_lower->setValue(NAN);
-    threshold_upper->setValue(NAN);
+    threshold_lower->setValue(NaNF);
+    threshold_upper->setValue(NaNF);
     return;
   }
 
@@ -737,7 +753,7 @@ void Fixel::add_commandline_options(MR::App::OptionList &options) {
 
 bool Fixel::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("fixel.load")) {
-    std::vector<std::string> list(1, std::string(opt[0]));
+    std::vector<std::filesystem::path> list(1, opt[0]);
     try {
       fixel_list_model->add_items(list, *this);
     } catch (Exception &E) {

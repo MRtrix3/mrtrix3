@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
  */
 
 #pragma once
+
+#include <string_view>
 
 #include "debug.h"
 #include "mrtrix.h"
@@ -75,9 +77,9 @@ using Format = QSurfaceFormat;
 void init();
 void set_default_context();
 
-const char *ErrorString(GLenum errorcode);
+std::string ErrorString(GLenum errorcode);
 
-inline void check_error(const char *filename, int line) {
+inline void check_error(const char *filename, int line) { // check_syntax off (input is __FILE__)
   GLenum err = gl::GetError();
   while (err) {
     FAIL(std::string("[") + filename + ": " + str(line) + "] OpenGL error: " + ErrorString(err));
@@ -86,8 +88,8 @@ inline void check_error(const char *filename, int line) {
 }
 
 #ifndef NDEBUG
-void __assert_context_is_current(QWidget *glarea);
-inline void assert_context_is_current(QWidget *glarea = nullptr) { __assert_context_is_current(glarea); }
+void _assert_context_is_current(QWidget *glarea);
+inline void assert_context_is_current(QWidget *glarea = nullptr) { _assert_context_is_current(glarea); }
 #else
 inline void assert_context_is_current(QWidget * = nullptr) {}
 #endif
@@ -325,6 +327,56 @@ protected:
   GLuint id;
 };
 
+class RenderBuffer {
+public:
+  RenderBuffer() : id(0) {}
+  ~RenderBuffer() { clear(); }
+  RenderBuffer(const RenderBuffer & /*unused*/) : id(0) {}
+  RenderBuffer(RenderBuffer &&t) noexcept : id(t.id) { t.id = 0; }
+  RenderBuffer &operator=(RenderBuffer &&t) noexcept {
+    clear();
+    id = t.id;
+    t.id = 0;
+    return *this;
+  }
+  operator GLuint() const { return id; }
+  void gen() {
+    if (id == 0u) {
+      check_context.set();
+      gl::GenRenderbuffers(1, &id);
+      GL_DEBUG("created OpenGL renderbuffer ID " + str(id));
+    }
+  }
+  void clear() {
+    if (id != 0u) {
+      check_context();
+      GL_DEBUG("deleting OpenGL renderbuffer ID " + str(id));
+      gl::DeleteRenderbuffers(1, &id);
+    }
+    id = 0;
+  }
+  void bind() const {
+    assert(id);
+    check_context();
+    GL_DEBUG("binding OpenGL renderbuffer ID " + str(id));
+    gl::BindRenderbuffer(gl::RENDERBUFFER, id);
+  }
+  //! allocate single-sample storage
+  void set_storage(GLenum internalformat, GLsizei width, GLsizei height) const {
+    bind();
+    gl::RenderbufferStorage(gl::RENDERBUFFER, internalformat, width, height);
+  }
+  //! allocate multi-sample storage (for future multi-sample anti-aliased capture)
+  void set_storage_multisample(GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height) const {
+    bind();
+    gl::RenderbufferStorageMultisample(gl::RENDERBUFFER, samples, internalformat, width, height);
+  }
+
+protected:
+  Context::Checker check_context;
+  GLuint id;
+};
+
 class FrameBuffer {
 public:
   FrameBuffer() : id(0) {}
@@ -360,6 +412,16 @@ public:
     GL_DEBUG("binding OpenGL framebuffer ID " + str(id));
     gl::BindFramebuffer(gl::FRAMEBUFFER, id);
   }
+  void bind_read() const {
+    assert(id);
+    check_context();
+    gl::BindFramebuffer(gl::READ_FRAMEBUFFER, id);
+  }
+  void bind_draw() const {
+    assert(id);
+    check_context();
+    gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, id);
+  }
   void unbind() const {
     check_context();
     GL_DEBUG("binding default OpenGL framebuffer");
@@ -371,17 +433,37 @@ public:
     bind();
     GL_DEBUG("texture ID " + str(tex) + " attached to framebuffer ID " + str(id) + " at color attachement " +
              str(attachment));
-    gl::FramebufferTexture(gl::FRAMEBUFFER, GLenum(size_t(gl::COLOR_ATTACHMENT0) + attachment), tex, 0);
+    gl::FramebufferTexture(gl::FRAMEBUFFER, GLenum(static_cast<size_t>(gl::COLOR_ATTACHMENT0) + attachment), tex, 0);
   }
+
+  //! attach a renderbuffer as a colour attachment (for future multi-sample anti-aliased capture)
+  void attach_color(RenderBuffer &buffer, size_t attachment) const {
+    assert(buffer);
+    bind();
+    GL_DEBUG("renderbuffer ID " + str(buffer) + " attached to framebuffer ID " + str(id) + " at color attachement " +
+             str(attachment));
+    gl::FramebufferRenderbuffer(
+        gl::FRAMEBUFFER, GLenum(static_cast<size_t>(gl::COLOR_ATTACHMENT0) + attachment), gl::RENDERBUFFER, buffer);
+  }
+
+  //! attach a renderbuffer as the depth attachment
+  void attach_depth(RenderBuffer &buffer) const {
+    assert(buffer);
+    bind();
+    GL_DEBUG("renderbuffer ID " + str(buffer) + " attached to framebuffer ID " + str(id) + " as depth attachment");
+    gl::FramebufferRenderbuffer(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::RENDERBUFFER, buffer);
+  }
+
   void draw_buffers(size_t first) const {
     check_context();
-    GLenum list[1] = {GLenum(size_t(gl::COLOR_ATTACHMENT0) + first)};
-    gl::DrawBuffers(1, list);
+    const std::array<GLenum, 1> list = {GLenum(static_cast<size_t>(gl::COLOR_ATTACHMENT0) + first)};
+    gl::DrawBuffers(1, list.data());
   }
   void draw_buffers(size_t first, size_t second) const {
     check_context();
-    GLenum list[2] = {GLenum(size_t(gl::COLOR_ATTACHMENT0) + first), GLenum(size_t(gl::COLOR_ATTACHMENT0) + second)};
-    gl::DrawBuffers(2, list);
+    const std::array<GLenum, 2> list = {GLenum(static_cast<size_t>(gl::COLOR_ATTACHMENT0) + first),
+                                        GLenum(static_cast<size_t>(gl::COLOR_ATTACHMENT0) + second)};
+    gl::DrawBuffers(2, list.data());
   }
 
   void check() const {

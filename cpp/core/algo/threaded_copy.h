@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,7 +23,7 @@ namespace MR {
 //! \cond skip
 namespace {
 
-struct __copy_func {
+struct _copy_func {
   template <class InputImageType, class OutputImageType>
   FORCE_INLINE void operator()(InputImageType &in, OutputImageType &out) const {
     out.value() = in.value();
@@ -39,7 +39,7 @@ inline void threaded_copy(InputImageType &source,
                           OutputImageType &destination,
                           const std::vector<size_t> &axes,
                           size_t num_axes_in_thread = 1) {
-  ThreadedLoop(source, axes, num_axes_in_thread).run(__copy_func(), source, destination);
+  ThreadedLoop(source, axes, num_axes_in_thread).run(_copy_func(), source, destination);
 }
 
 template <class InputImageType, class OutputImageType>
@@ -48,26 +48,26 @@ inline void threaded_copy(InputImageType &source,
                           size_t from_axis = 0,
                           size_t to_axis = std::numeric_limits<size_t>::max(),
                           size_t num_axes_in_thread = 1) {
-  ThreadedLoop(source, from_axis, to_axis, num_axes_in_thread).run(__copy_func(), source, destination);
+  ThreadedLoop(source, from_axis, to_axis, num_axes_in_thread).run(_copy_func(), source, destination);
 }
 
 template <class InputImageType, class OutputImageType>
-inline void threaded_copy_with_progress_message(const std::string &message,
+inline void threaded_copy_with_progress_message(std::string_view message,
                                                 InputImageType &source,
                                                 OutputImageType &destination,
                                                 const std::vector<size_t> &axes,
                                                 size_t num_axes_in_thread = 1) {
-  ThreadedLoop(message, source, axes, num_axes_in_thread).run(__copy_func(), source, destination);
+  ThreadedLoop(message, source, axes, num_axes_in_thread).run(_copy_func(), source, destination);
 }
 
 template <class InputImageType, class OutputImageType>
-inline void threaded_copy_with_progress_message(const std::string &message,
+inline void threaded_copy_with_progress_message(std::string_view message,
                                                 InputImageType &source,
                                                 OutputImageType &destination,
                                                 size_t from_axis = 0,
                                                 size_t to_axis = std::numeric_limits<size_t>::max(),
                                                 size_t num_axes_in_thread = 1) {
-  ThreadedLoop(message, source, from_axis, to_axis, num_axes_in_thread).run(__copy_func(), source, destination);
+  ThreadedLoop(message, source, from_axis, to_axis, num_axes_in_thread).run(_copy_func(), source, destination);
 }
 
 template <class InputImageType, class OutputImageType>

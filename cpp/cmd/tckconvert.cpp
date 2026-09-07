@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,6 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <array>
+#include <cstdio>
+#include <filesystem>
+#include <sstream>
+
 #include "command.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -21,8 +26,6 @@
 #include "file/name_parser.h"
 #include "file/ofstream.h"
 #include "raw.h"
-#include <cstdio>
-#include <sstream>
 
 using namespace MR;
 using namespace App;
@@ -115,8 +118,8 @@ void usage() {
 
 class VTKWriter : public WriterInterface<float> {
 public:
-  VTKWriter(const std::string &file, bool write_ascii = true)
-      : VTKout(file, std::ios::binary), write_ascii(write_ascii) {
+  VTKWriter(const std::filesystem::path &path, bool write_ascii = true)
+      : VTKout(path, std::ios::binary), write_ascii(write_ascii) {
     // create and write header of VTK output file:
     VTKout << "# vtk DataFile Version 3.0\n"
               "Data values for Tracks\n";
@@ -142,11 +145,11 @@ public:
         VTKout << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
       }
     } else {
-      float p[3];
+      std::array<float, 3> p{};
       for (const auto &pos : tck) {
         for (auto i = 0; i < 3; ++i)
-          Raw::store_BE(pos[i], p, i);
-        VTKout.write((char *)p, 3 * sizeof(float));
+          Raw::store_BE(pos[i], p.data(), i);
+        VTKout.write(reinterpret_cast<char *>(p.data()), sizeof(p));
       }
     }
     return true;
@@ -169,14 +172,14 @@ public:
         } else {
           int32_t buffer;
           buffer = ByteOrder::BE<int32_t>(track.second - track.first);
-          VTKout.write((char *)&buffer, 1 * sizeof(int32_t));
+          VTKout.write(reinterpret_cast<char *>(&buffer), sizeof(int32_t));
 
           buffer = ByteOrder::BE<int32_t>(track.first);
-          VTKout.write((char *)&buffer, 1 * sizeof(int32_t));
+          VTKout.write(reinterpret_cast<char *>(&buffer), sizeof(int32_t));
 
           for (size_t i = track.first + 1; i < track.second; ++i) {
             buffer = ByteOrder::BE<int32_t>(i);
-            VTKout.write((char *)&buffer, 1 * sizeof(int32_t));
+            VTKout.write(reinterpret_cast<char *>(&buffer), sizeof(int32_t));
           }
         }
       }
@@ -208,17 +211,17 @@ private:
 
 template <class T> void loadLines(std::vector<int64_t> &lines, std::ifstream &input, int number_of_line_indices) {
   std::vector<T> buffer(number_of_line_indices);
-  input.read((char *)&buffer[0], number_of_line_indices * sizeof(T));
+  input.read(reinterpret_cast<char *>(buffer.data()), number_of_line_indices * sizeof(T));
   lines.resize(number_of_line_indices);
   // swap from big endian
   for (int i = 0; i < number_of_line_indices; i++)
-    lines[i] = int64_t(ByteOrder::BE(buffer[i]));
+    lines[i] = static_cast<int64_t>(ByteOrder::BE(buffer[i]));
 }
 
 class VTKReader : public ReaderInterface<float> {
 public:
-  VTKReader(const std::string &file) {
-    std::ifstream input(file, std::ios::binary);
+  VTKReader(const std::filesystem::path &path) {
+    std::ifstream input(path, std::ios::binary);
     std::string line;
     int number_of_points = 0;
     number_of_lines = 0;
@@ -229,8 +232,9 @@ public:
         throw Exception("VTK Reader only supports BINARY input");
 
       if (sscanf(line.c_str(), "POINTS %d float", &number_of_points) == 1) {
-        points.resize(3 * number_of_points);
-        input.read((char *)points.data(), 3 * number_of_points * sizeof(float));
+        points.resize(3 * static_cast<size_t>(number_of_points));
+        input.read(reinterpret_cast<char *>(points.data()),
+                   3UL * static_cast<unsigned long>(number_of_points) * sizeof(float));
 
         // swap
         for (int i = 0; i < 3 * number_of_points; i++)
@@ -260,7 +264,9 @@ public:
       lineIdx++;
       for (int i = 0; i < count; i++) {
         int idx = lines[lineIdx];
-        Eigen::Vector3f f(points[idx * 3], points[idx * 3 + 1], points[idx * 3 + 2]);
+        Eigen::Vector3f f(points[static_cast<size_t>(idx) * 3],
+                          points[static_cast<size_t>(idx) * 3 + 1],
+                          points[static_cast<size_t>(idx) * 3 + 2]);
         tck.push_back(f);
         lineIdx++;
       }
@@ -279,13 +285,13 @@ private:
 
 class ASCIIReader : public ReaderInterface<float> {
 public:
-  ASCIIReader(const std::string &file) { auto num = list.parse_scan_check(file); }
+  ASCIIReader(std::string_view file) { auto num = list.parse_scan_check(file); }
 
   bool operator()(Streamline<float> &tck) {
     tck.clear();
     if (item < list.size()) {
       auto t = File::Matrix::load_matrix<float>(list[item].name());
-      for (size_t i = 0; i < size_t(t.rows()); i++)
+      for (decltype(t)::Index i = 0; i < t.rows(); i++)
         tck.push_back(Eigen::Vector3f(t.row(i)));
       item++;
       return true;
@@ -302,7 +308,7 @@ private:
 
 class ASCIIWriter : public WriterInterface<float> {
 public:
-  ASCIIWriter(const std::string &file) {
+  ASCIIWriter(std::string_view file) {
     count.push_back(0);
     parser.parse(file);
     if (parser.ndim() != 1)
@@ -311,8 +317,7 @@ public:
   }
 
   bool operator()(const Streamline<float> &tck) {
-    std::string name = parser.name(count);
-    File::OFStream out(name);
+    File::OFStream out(parser.name(count));
     for (auto i = tck.begin(); i != tck.end(); ++i)
       out << (*i)[0] << " " << (*i)[1] << " " << (*i)[2] << "\n";
     out.close();
@@ -329,16 +334,16 @@ private:
 
 class PLYWriter : public WriterInterface<float> {
 public:
-  PLYWriter(const std::string &file,
+  PLYWriter(const std::filesystem::path &path,
             int increment = default_ply_increment,
             float radius = default_ply_radius,
             int sides = default_ply_sides)
-      : out(file), increment(increment), radius(radius), sides(sides) {
-    vertexFilename = File::create_tempfile(0, "vertex");
-    faceFilename = File::create_tempfile(0, "face");
+      : out(path), increment(increment), radius(radius), sides(sides) {
+    vertexFilepath = File::create_tempfile(0, ".vertex");
+    faceFilepath = File::create_tempfile(0, ".face");
 
-    vertexOF.open(vertexFilename);
-    faceOF.open(faceFilename);
+    vertexOF.open(vertexFilepath);
+    faceOF.open(faceFilepath);
     num_faces = 0;
     num_vertices = 0;
   }
@@ -425,17 +430,17 @@ public:
 
   bool operator()(const Streamline<float> &intck) {
     // Need at least 5 points, silently ignore...
-    if (intck.size() < size_t(increment * 3)) {
+    if (intck.size() < static_cast<size_t>(increment) * 3) {
       return true;
     }
 
     auto nSides = sides;
     Eigen::MatrixXf coords(nSides, 2);
     Eigen::MatrixXi faces(nSides, 6);
-    auto theta = 2.0 * Math::pi / float(nSides);
+    auto theta = 2.0 * Math::pi / static_cast<default_type>(nSides);
     for (auto i = 0; i < nSides; i++) {
-      coords(i, 0) = cos((double)i * theta);
-      coords(i, 1) = sin((double)i * theta);
+      coords(i, 0) = cos(static_cast<default_type>(i) * theta);
+      coords(i, 1) = sin(static_cast<default_type>(i) * theta);
       // Face offsets
       faces(i, 0) = i;
       faces(i, 1) = (i + 1) % nSides;
@@ -554,15 +559,15 @@ public:
              "property list uint8 int32 vertex_indices\n"
              "end_header\n";
 
-      std::ifstream vertexIF(vertexFilename);
+      std::ifstream vertexIF(vertexFilepath);
       out << vertexIF.rdbuf();
       vertexIF.close();
-      File::remove(vertexFilename);
+      std::filesystem::remove(vertexFilepath);
 
-      std::ifstream faceIF(faceFilename);
+      std::ifstream faceIF(faceFilepath);
       out << faceIF.rdbuf();
       faceIF.close();
-      File::remove(faceFilename);
+      std::filesystem::remove(faceFilepath);
 
       out.close();
     } catch (Exception &e) {
@@ -572,8 +577,8 @@ public:
   }
 
 private:
-  std::string vertexFilename;
-  std::string faceFilename;
+  std::filesystem::path vertexFilepath;
+  std::filesystem::path faceFilepath;
   File::OFStream out;
   File::OFStream vertexOF;
   File::OFStream faceOF;
@@ -586,13 +591,13 @@ private:
 
 class RibWriter : public WriterInterface<float> {
 public:
-  RibWriter(const std::string &file, float radius = 0.1, bool dec = false)
-      : out(file), writeDEC(dec), radius(radius), hasPoints(false), wroteHeader(false) {
-    pointsFilename = File::create_tempfile(0, "points");
-    pointsOF.open(pointsFilename);
+  RibWriter(const std::filesystem::path &path, float radius = 0.1, bool dec = false)
+      : out(path), writeDEC(dec), radius(radius), hasPoints(false), wroteHeader(false) {
+    pointsFilepath = File::create_tempfile(0, ".points");
+    pointsOF.open(pointsFilepath);
     pointsOF << "\"P\" [";
-    decFilename = File::create_tempfile(0, "dec");
-    decOF.open(decFilename);
+    decFilepath = File::create_tempfile(0, ".dec");
+    decOF.open(decFilepath);
     decOF << "\"varying color dec\" [";
     // Header
     out << "##RenderMan RIB\n"
@@ -642,11 +647,11 @@ public:
       if (hasPoints) {
         out << "] \"nonperiodic\" ";
 
-        std::ifstream pointsIF(pointsFilename);
+        std::ifstream pointsIF(pointsFilepath);
         out << pointsIF.rdbuf();
 
         if (writeDEC) {
-          std::ifstream decIF(decFilename);
+          std::ifstream decIF(decFilepath);
           out << decIF.rdbuf();
           decIF.close();
         }
@@ -656,8 +661,8 @@ public:
 
       out.close();
 
-      File::remove(pointsFilename);
-      File::remove(decFilename);
+      std::filesystem::remove(pointsFilepath);
+      std::filesystem::remove(decFilepath);
 
     } catch (Exception &e) {
       e.display();
@@ -666,8 +671,8 @@ public:
   }
 
 private:
-  std::string pointsFilename;
-  std::string decFilename;
+  std::filesystem::path pointsFilepath;
+  std::filesystem::path decFilepath;
   File::OFStream out;
   File::OFStream pointsOF;
   File::OFStream decOF;
@@ -678,35 +683,37 @@ private:
 };
 
 void run() {
+  std::filesystem::path input_path{argument[0]};
+  std::filesystem::path output_path{argument[1]};
   // Reader
   Properties properties;
   std::unique_ptr<ReaderInterface<float>> reader;
-  if (Path::has_suffix(argument[0], ".tck")) {
-    reader.reset(new Reader<float>(argument[0], properties));
-  } else if (Path::has_suffix(argument[0], ".txt")) {
-    reader.reset(new ASCIIReader(argument[0]));
-  } else if (Path::has_suffix(argument[0], ".vtk")) {
-    reader.reset(new VTKReader(argument[0]));
+  if (input_path.extension() == ".tck") {
+    reader.reset(new Reader<float>(input_path, properties));
+  } else if (input_path.extension() == ".txt") {
+    reader.reset(new ASCIIReader(input_path.string()));
+  } else if (input_path.extension() == ".vtk") {
+    reader.reset(new VTKReader(input_path));
   } else {
     throw Exception("Unsupported input file type.");
   }
 
   // Writer
   std::unique_ptr<WriterInterface<float>> writer;
-  if (Path::has_suffix(argument[1], ".tck")) {
-    writer.reset(new Writer<float>(argument[1], properties));
-  } else if (Path::has_suffix(argument[1], ".vtk")) {
+  if (output_path.extension() == ".tck") {
+    writer.reset(new Writer<float>(output_path, properties));
+  } else if (output_path.extension() == ".vtk") {
     auto write_ascii = get_options("ascii").size();
-    writer.reset(new VTKWriter(argument[1], write_ascii));
-  } else if (Path::has_suffix(argument[1], ".ply")) {
+    writer.reset(new VTKWriter(output_path, write_ascii));
+  } else if (output_path.extension() == ".ply") {
     const int increment = get_option_value("increment", default_ply_increment);
     const float radius = get_option_value("radius", default_ply_radius);
     const int sides = get_option_value("sides", default_ply_sides);
-    writer.reset(new PLYWriter(argument[1], increment, radius, sides));
-  } else if (Path::has_suffix(argument[1], ".rib")) {
-    writer.reset(new RibWriter(argument[1]));
-  } else if (Path::has_suffix(argument[1], ".txt")) {
-    writer.reset(new ASCIIWriter(argument[1]));
+    writer.reset(new PLYWriter(output_path, increment, radius, sides));
+  } else if (output_path.extension() == ".rib") {
+    writer.reset(new RibWriter(output_path));
+  } else if (output_path.extension() == ".txt") {
+    writer.reset(new ASCIIWriter(output_path.string()));
   } else {
     throw Exception("Unsupported output file type.");
   }

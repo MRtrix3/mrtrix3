@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,31 +15,37 @@
  */
 
 #include "dwi/tractography/tracking/shared.h"
+#include "algo/implicit_mask.h"
 
 namespace MR::DWI::Tractography::Tracking {
 
-SharedBase::SharedBase(const std::string &diff_path, Properties &property_set)
+SharedBase::SharedBase(const std::filesystem::path &diff_path,
+                       Properties &property_set,
+                       ImplicitMaskConfig source_mask_config)
     : source_header(Header::open(diff_path)),
-      source(source_header.get_image<float>().with_direct_io(3)),
+      source(source_header.get_image<float>(DirectIO{3})),
+      source_mask(make_implicit_mask(source, source_mask_config)),
       properties(property_set),
       init_dir(Eigen::Vector3f::Constant(NaN)),
       min_num_points_preds(0),
       max_num_points_preds(0),
       min_num_points_postds(0),
       max_num_points_postds(0),
-      min_dist(NaN),
-      max_dist(NaN),
-      max_angle_1o(NaN),
-      max_angle_ho(NaN),
-      cos_max_angle_1o(NaN),
-      cos_max_angle_ho(NaN),
-      step_size(NaN),
-      min_radius(NaN),
-      threshold(NaN),
+      min_dist(NaNF),
+      max_dist(NaNF),
+      max_angle_1o(NaNF),
+      max_angle_ho(NaNF),
+      cos_max_angle_1o(NaNF),
+      cos_max_angle_ho(NaNF),
+      step_size(NaNF),
+      min_radius(NaNF),
+      threshold(NaNF),
+      init_threshold(NaNF),
       unidirectional(false),
       rk4(false),
       stop_on_all_include(false),
       implicit_max_num_seeds(properties.find("max_num_seeds") == properties.end()),
+      curvature_constraint(curvature_constraint_t::POSTHOC_THRESHOLD),
       downsampler(1)
 #ifdef DEBUG_TERMINATIONS
       ,
@@ -47,11 +53,6 @@ SharedBase::SharedBase(const std::string &diff_path, Properties &property_set)
       transform(debug_header)
 #endif
 {
-  for (size_t i = 0; i != termination_reason_count; ++i)
-    std::atomic_init(&terminations[i], 0);
-  for (size_t i = 0; i != rejection_reason_count; ++i)
-    std::atomic_init(&rejections[i], 0);
-
   if (properties.find("max_num_tracks") == properties.end())
     max_num_tracks = (properties.find("max_num_seeds") == properties.end()) ? Defaults::num_selected_tracks : 0;
   properties.set(max_num_tracks, "max_num_tracks");
@@ -60,12 +61,12 @@ SharedBase::SharedBase(const std::string &diff_path, Properties &property_set)
   properties.set(rk4, "rk4");
   properties.set(stop_on_all_include, "stop_on_all_include");
 
-  properties["source"] = source_header.name();
+  properties["source"] = diff_path.string();
 
   max_num_seeds = Defaults::seed_to_select_ratio * max_num_tracks;
   properties.set(max_num_seeds, "max_num_seeds");
 
-  assert(properties.seeds.num_seeds());
+  assert(!properties.seeds.empty());
   max_seed_attempts = properties.seeds[0]->get_max_attempts();
   properties.set(max_seed_attempts, "max_seed_attempts");
 
@@ -88,35 +89,36 @@ SharedBase::SharedBase(const std::string &diff_path, Properties &property_set)
   if (properties.find("downsample_factor") != properties.end())
     downsampler.set_ratio(to<int>(properties["downsample_factor"]));
 
-  for (size_t i = 0; i != termination_reason_count; ++i)
-    std::atomic_init(&terminations[i], 0);
-  for (size_t i = 0; i != rejection_reason_count; ++i)
-    std::atomic_init(&rejections[i], 0);
 #ifdef DEBUG_TERMINATIONS
   debug_header.ndim() = 3;
   debug_header.datatype() = DataType::UInt32;
-  for (const auto &i : termination_info)
-    debug_images.emplace_back(
-        new Image<uint32_t>(Image<uint32_t>::create("terms_" + i.second.name + ".mif", debug_header)));
+  for (const auto &i : termination_info) {
+    if (termination_relevant(i.first))
+      debug_images.emplace_back(
+          Image<uint32_t>::create("terms_" + Enum::lowercase_name(i.first) + ".mif", debug_header));
+    else
+      debug_images.emplace_back(Image<uint32_t>());
+  }
 #endif
 }
 
 SharedBase::~SharedBase() {
-  size_t sum_terminations = 0;
-  for (const auto &i : terminations)
-    sum_terminations += i;
+  const size_t sum_terminations = terminations.total();
   INFO("Total number of track terminations: " + str(sum_terminations));
   INFO("Termination reason probabilities:");
   for (const auto &i : termination_info) {
     if (termination_relevant(i.first))
       INFO("  " + i.second.description + ": " +
-           str(100.0 * terminations[static_cast<ssize_t>(i.first)] / (double)sum_terminations, 3) + "\%");
+           str(100.0 * static_cast<default_type>(terminations.get(i.first)) /
+                   static_cast<default_type>(sum_terminations),
+               3) +
+           "\%");
   }
 
   INFO("Track rejection counts:");
   for (const auto &i : rejection_strings) {
     if (rejection_relevant(i.first))
-      INFO("  " + i.second + ": " + str(rejections[static_cast<ssize_t>(i.first)]));
+      INFO("  " + i.second + ": " + str(rejections.get(i.first)));
   }
 }
 
@@ -156,7 +158,7 @@ void SharedBase::set_step_and_angle(const float voxel_frac,
     cos_max_angle_ho = cos_max_angle_1o;
     // Clear these variables so that the next() function of the underlying method
     //   does not enforce curvature constraints; rely on e.g. RK4 to do it
-    max_angle_1o = float(Math::pi);
+    max_angle_1o = static_cast<float>(Math::pi);
     cos_max_angle_1o = 0.0f;
   }
 
@@ -165,6 +167,12 @@ void SharedBase::set_step_and_angle(const float voxel_frac,
   //   then it is impossible for a streamline to be terminated specifically due to a curvature constraint;
   //   this should therefore be omitted from reporting of termination statistics
   curvature_constraint = curvature_constraint_type;
+#ifdef DEBUG_TERMINATIONS
+  if (curvature_constraint == curvature_constraint_t::POSTHOC_THRESHOLD) {
+    debug_images[*magic_enum::enum_index(term_t::HIGH_CURVATURE)] =
+        Image<uint32_t>::create("terms_" + Enum::lowercase_name(term_t::HIGH_CURVATURE) + ".mif", debug_header);
+  }
+#endif
 }
 
 void SharedBase::set_num_points() {
@@ -180,9 +188,9 @@ void SharedBase::set_num_points(const float angle_minradius_preds, const float m
   // Maximal angle around this minimum radius traversed after downsampling
   const float angle_minradius_postds = downsampler.get_ratio() * angle_minradius_preds;
   // Minimum chord length after streamline has been downsampled
-  const float min_step_postds = (angle_minradius_postds > float(2.0 * Math::pi))
-                                    ? 0.0f
-                                    : (2.0f * min_radius * std::sin(0.5f * angle_minradius_postds));
+  const float min_step_postds = (angle_minradius_postds > static_cast<float>(2.0 * Math::pi))
+                                    ? 0.0F
+                                    : (2.0F * min_radius * std::sin(0.5F * angle_minradius_postds));
 
   // What we need:
   //   - Before downsampling:
@@ -190,14 +198,15 @@ void SharedBase::set_num_points(const float angle_minradius_preds, const float m
   //         streamline may exceed the minimum length after downsampling?
   //       (If a streamline doesn't reach this number of vertices, there's no point in
   //         even attempting any further processing of it; it will always be rejected)
-  min_num_points_preds = 1 + std::ceil(min_dist / step_size);
+  min_num_points_preds = 1 + static_cast<size_t>(std::ceil(min_dist / step_size));
   //     - How many points before it is no longer feasible to become shorter than the
   //         maximum length, even after down-sampling?
   //       (There is no point in continuing streamlines propagation after this point;
   //         it will invariably be either truncated or rejected, no matter what
   //         happens during downsampling)
-  max_num_points_preds = min_step_postds ? (3 + std::ceil(downsampler.get_ratio() * max_dist / min_step_postds))
-                                         : std::numeric_limits<size_t>::max();
+  max_num_points_preds =
+      min_step_postds ? (3 + static_cast<size_t>(std::ceil(downsampler.get_ratio() * max_dist / min_step_postds)))
+                      : std::numeric_limits<size_t>::max();
   //   - After downsampling:
   //     - How many vertices must a streamline have (after downsampling) for it to be
   //         guaranteed to exceed the minimum length?
@@ -232,21 +241,21 @@ void SharedBase::set_cutoff(float cutoff) {
 
 #ifdef DEBUG_TERMINATIONS
 void SharedBase::add_termination(const term_t i, const Eigen::Vector3f &p) const {
-  terminations[i].fetch_add(1, std::memory_order_relaxed);
-  Image<uint32_t> image(*debug_images[i]);
-  const auto pv = transform.scanner2voxel * p.cast<default_type>();
-  image.index(0) = ssize_t(std::round(pv[0]));
-  image.index(1) = ssize_t(std::round(pv[1]));
-  image.index(2) = ssize_t(std::round(pv[2]));
+  terminations.add(i);
+  assert(debug_images[*magic_enum::enum_index(i)].valid());
+  Image<uint32_t> image(debug_images[*magic_enum::enum_index(i)]);
+  const auto pv = (transform.scanner2voxel * p.cast<default_type>()).array().round().cast<ssize_t>();
+  image.index(0) = pv[0];
+  image.index(1) = pv[1];
+  image.index(2) = pv[2];
   if (!is_out_of_bounds(image))
     image.value() += 1;
 }
 #endif
 
 bool SharedBase::termination_relevant(const term_t i) const {
+  // NOLINTBEGIN(bugprone-branch-clone)
   switch (i) {
-  case term_t::CONTINUE:
-    return false;
   case term_t::ENTER_CGM:
     return is_act();
   case term_t::CALIBRATOR:
@@ -272,10 +281,12 @@ bool SharedBase::termination_relevant(const term_t i) const {
   case term_t::TRAVERSE_ALL_INCLUDE:
     return stop_on_all_include;
   }
+  // NOLINTEND(bugprone-branch-clone)
   return false;
 }
 
 bool SharedBase::rejection_relevant(const reject_t i) const {
+  // NOLINTBEGIN(bugprone-branch-clone)
   switch (i) {
   case reject_t::INVALID_SEED:
     return true;
@@ -294,6 +305,7 @@ bool SharedBase::rejection_relevant(const reject_t i) const {
   case reject_t::ACT_FAILED_WM_REQUIREMENT:
     return is_act();
   }
+  // NOLINTEND(bugprone-branch-clone)
   return false;
 }
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,8 +16,11 @@
 
 #pragma once
 
-#include "app.h"
-#include "header.h"
+#include "types.h"
+
+namespace MR {
+class Header;
+} // namespace MR
 
 namespace MR::App {
 class OptionGroup;
@@ -28,6 +31,8 @@ class Properties;
 } // namespace MR::DWI::Tractography
 
 namespace MR::DWI::Tractography::ACT {
+
+enum class sgm_trunc_t { DEFAULT, ENTRY, EXIT, MINIMUM, RANDOM, ROULETTE };
 
 // If the sum of tissue probabilities is below this threshold, the image is being exited, so a boolean flag is thrown
 // The values will however still be accessible
@@ -47,7 +52,5 @@ constexpr ssize_t backtrack_attempts = 3;
 extern const App::OptionGroup ACTOption;
 
 void load_act_properties(Properties &properties);
-
-void verify_5TT_image(const Header &);
 
 } // namespace MR::DWI::Tractography::ACT

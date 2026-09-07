@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -44,7 +44,7 @@ void usage() {
 // clang-format on
 
 void run() {
-  std::vector<int> dim = argument[0];
+  const auto dim = argument[0].as_sequence_uint();
 
   Header header;
 

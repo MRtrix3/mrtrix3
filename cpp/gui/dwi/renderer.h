@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Eigenvalues>
 #include <QOpenGLWidget>
 
@@ -67,14 +68,7 @@ public:
              bool orthographic = false,
              const GL::mat4 *colour_relative_to_projection = nullptr);
 
-  void draw(const Eigen::Vector3f &origin, int buffer_ID = 0) const {
-    (void)buffer_ID; // to silence unused-parameter warnings
-    gl::Uniform3fv(origin_ID, 1, origin.data());
-    gl::Uniform1i(reverse_ID, 0);
-    half_draw();
-    gl::Uniform1i(reverse_ID, 1);
-    half_draw();
-  }
+  void draw(const Eigen::Vector3f &origin, int buffer_ID = 0) const;
 
   void stop() const { shader.stop(); }
 
@@ -90,7 +84,7 @@ public:
 
 protected:
   mode_t mode;
-  float object_color[3];
+  Eigen::Array3f object_color;
   mutable GLuint reverse_ID, origin_ID;
 
   class Shader : public GL::Shader::Program {
@@ -119,7 +113,7 @@ protected:
   void half_draw() const {
     const GLuint num_indices =
         (mode == mode_t::SH ? sh.num_indices() : (mode == mode_t::TENSOR ? tensor.num_indices() : dixel.num_indices()));
-    gl::DrawElements(gl::TRIANGLES, num_indices, gl::UNSIGNED_INT, (void *)0);
+    gl::DrawElements(gl::TRIANGLES, num_indices, gl::UNSIGNED_INT, nullptr);
   }
 
 private:

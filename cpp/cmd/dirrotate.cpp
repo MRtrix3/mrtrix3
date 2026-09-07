@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,8 +18,10 @@
 
 #include "command.h"
 #include "dwi/directions/file.h"
-#include "file/utils.h"
+#include "dwi/directions/validate.h"
+#include "file/matrix.h"
 #include "math/rng.h"
+#include "math/sphere.h"
 #include "mutexprotected.h"
 #include "progressbar.h"
 #include "thread.h"
@@ -159,7 +161,10 @@ protected:
 };
 
 void run() {
-  const auto directions = std::make_shared<const cartesian_matrix_type>(DWI::Directions::load_cartesian(argument[0]));
+  auto directions_in = File::Matrix::load_matrix(argument[0]);
+  DWI::Directions::validate(directions_in, argument[0], false);
+  const auto directions = std::make_shared<const cartesian_matrix_type>(
+      Eigen::Ref<const cartesian_matrix_type>(Math::Sphere::as_cartesian(directions_in)));
 
   const size_t total_num_rotations = get_option_value<size_t>("number", default_number);
 

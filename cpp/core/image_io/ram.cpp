@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,10 +24,10 @@
 namespace MR::ImageIO {
 
 void RAM::load(const Header &header, size_t) {
-  DEBUG("allocating RAM buffer for image \"" + header.name() + "\"...");
+  DEBUG("allocating RAM buffer for image \"" + header.path().string() + "\"...");
   int64_t bytes_per_segment = (header.datatype().bits() * segsize + 7) / 8;
   addresses.resize(1);
-  addresses[0].reset(new uint8_t[bytes_per_segment]);
+  addresses[0].reset(new std::byte[bytes_per_segment]);
 }
 
 } // namespace MR::ImageIO

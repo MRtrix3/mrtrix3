@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -220,7 +220,6 @@ public:
 };
 
 void run() {
-
   auto fod_hdr = Header::open(argument[0]);
   Math::SH::check(fod_hdr);
 
@@ -231,7 +230,7 @@ void run() {
     check_dimensions(mask_hdr, fod_hdr, 0, 3);
   }
 
-  float thresh = get_option_value("threshold", NAN);
+  float thresh = get_option_value("threshold", NaNF);
 
   bool needtolum = false;
   Eigen::Array<value_type, 3, 1> coefs(1.0, 1.0, 1.0);
@@ -274,7 +273,7 @@ void run() {
     auto dec_img = Image<value_type>();
 
     {
-      auto fod_img = fod_hdr.get_image<value_type>().with_direct_io(3);
+      auto fod_img = fod_hdr.get_image<value_type>(DirectIO{3});
 
       auto dec_hdr = Header(fod_img);
       dec_hdr.ndim() = 4;

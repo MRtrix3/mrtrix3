@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,8 +15,11 @@
  */
 
 #pragma once
-namespace MR {
-namespace Math {
+
+#include "math/math.h"
+
+namespace MR::Math {
+
 enum SplineProcessingType { Value = 1, Derivative = 2, ValueAndDerivative = Value | Derivative };
 
 template <typename T> class CubicSpline {
@@ -115,5 +118,4 @@ template <typename T>
 const typename UniformBSpline<T>::BasisMatrix UniformBSpline<T>::uniform_bspline_derivative_basis_mtrx(
     CubicSpline<T>::cubic_poly_derivative_operator *uniform_bspline_basis_mtrx);
 
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math

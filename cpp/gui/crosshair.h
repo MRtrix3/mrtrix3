@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,7 +28,9 @@ class ModelViewProjection;
 class Crosshair {
 public:
   Crosshair() {}
-  void render(const Eigen::Vector3f &focus, const ModelViewProjection &MVP) const;
+  //! \a thickness scales the on-screen line width in pixels, so the focus point retains the same
+  //! proportions when rendered into a super-resolution image
+  void render(const Eigen::Vector3f &focus, const ModelViewProjection &MVP, float thickness = 1.0f) const;
 
 protected:
   mutable GL::VertexBuffer VB;

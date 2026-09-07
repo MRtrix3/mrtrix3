@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cmath>
+#include <filesystem>
 
 #include "adapter/replicate.h"
 #include "algo/loop.h"
@@ -38,22 +39,22 @@ public:
         ignore_zero(ignorezero) {}
 
   template <typename value_type>
-  typename std::enable_if<std::is_arithmetic<value_type>::value, bool>::type operator()(const value_type val) {
+  typename std::enable_if<MR::is_arithmetic<value_type>::value, bool>::type operator()(const value_type val) {
     if (std::isfinite(val) && !(ignore_zero && val == 0.0)) {
-      min = std::min(min, default_type(val));
-      max = std::max(max, default_type(val));
+      min = std::min(min, static_cast<default_type>(val));
+      max = std::max(max, static_cast<default_type>(val));
       if (!num_bins)
-        data.push_back(default_type(val));
+        data.push_back(static_cast<default_type>(val));
     }
     return true;
   }
 
   template <class T>
-  FORCE_INLINE typename std::enable_if<!std::is_arithmetic<T>::value, bool>::type operator()(const T &val) {
-    return (*this)(typename T::value_type(val));
+  FORCE_INLINE typename std::enable_if<!MR::is_arithmetic<T>::value, bool>::type operator()(const T &val) {
+    return (*this)(static_cast<typename T::value_type>(val));
   }
 
-  void from_file(const std::string &);
+  void from_file(const std::filesystem::path &);
 
   void finalize(const size_t num_volumes, const bool is_integer);
 
@@ -87,21 +88,21 @@ public:
   template <typename value_type> bool operator()(const value_type val) {
     if (std::isfinite(val) && !(info.get_ignore_zero() && val == 0.0)) {
       const size_t pos = bin(val);
-      if (pos != size_t(list.size()))
+      if (pos != static_cast<size_t>(list.size()))
         ++list[pos];
     }
     return true;
   }
 
   template <typename value_type> size_t bin(const value_type val) const {
-    size_t pos = std::floor((val - info.get_min()) / info.get_bin_width());
-    if (pos > size_t(list.size()))
+    size_t pos = static_cast<size_t>(std::floor((val - info.get_min()) / info.get_bin_width()));
+    if (pos > static_cast<size_t>(list.size()))
       return size();
     return pos;
   }
 
   size_t operator[](const size_t index) const {
-    assert(index < size_t(list.size()));
+    assert(index < static_cast<size_t>(list.size()));
     return list[index];
   }
   size_t size() const { return list.size(); }
@@ -124,7 +125,7 @@ protected:
 template <class ImageType> void calibrate(Calibrator &result, ImageType &image) {
   for (auto l = Loop(image)(image); l; ++l)
     result(image.value());
-  result.finalize(image.ndim() > 3 ? image.size(3) : 1, std::is_integral<typename ImageType::value_type>::value);
+  result.finalize(image.ndim() > 3 ? image.size(3) : 1, MR::is_integral<typename ImageType::value_type>::value);
 }
 
 template <class ImageType, class MaskType> void calibrate(Calibrator &result, ImageType &image, MaskType &mask) {
@@ -139,7 +140,7 @@ template <class ImageType, class MaskType> void calibrate(Calibrator &result, Im
     if (mask_replicate.value())
       result(image.value());
   }
-  result.finalize(image.ndim() > 3 ? image.size(3) : 1, std::is_integral<typename ImageType::value_type>::value);
+  result.finalize(image.ndim() > 3 ? image.size(3) : 1, MR::is_integral<typename ImageType::value_type>::value);
 }
 
 template <class ImageType> Data generate(ImageType &image, const size_t num_bins, const bool ignore_zero = false) {
@@ -158,7 +159,7 @@ Data generate(ImageType &image, MaskType &mask, const size_t num_bins, const boo
 template <class ImageType> Data generate(const Calibrator &calibrator, ImageType &image) {
   Data result(calibrator);
   for (auto l = Loop(image)(image); l; ++l)
-    result(typename ImageType::value_type(image.value()));
+    result(static_cast<typename ImageType::value_type>(image.value()));
   return result;
 }
 
@@ -172,7 +173,7 @@ Data generate(const Calibrator &calibrator, ImageType &image, MaskType &mask) {
   Adapter::Replicate<MaskType> mask_replicate(mask, image);
   for (auto l = Loop(image)(image, mask_replicate); l; ++l) {
     if (mask_replicate.value())
-      result(typename ImageType::value_type(image.value()));
+      result(static_cast<typename ImageType::value_type>(image.value()));
   }
   return result;
 }

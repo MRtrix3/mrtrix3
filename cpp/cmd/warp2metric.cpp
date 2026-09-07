@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,6 +22,9 @@
 #include "fixel/loop.h"
 #include "image.h"
 #include "registration/warp/helpers.h"
+#include "registration/warp/validate.h"
+
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -37,7 +40,8 @@ void usage() {
   + Fixel::format_description;
 
   REFERENCES
-  + "Raffelt, D.; Tournier, JD/; Smith, RE.; Vaughan, DN.; Jackson, G.; Ridgway, GR. Connelly, A. " // Internal
+  + "* If using the -fc option: \n" // Internal
+    "Raffelt, D.; Tournier, JD/; Smith, RE.; Vaughan, DN.; Jackson, G.; Ridgway, GR. Connelly, A. "
     "Investigating White Matter Fibre Density and Morphology using Fixel-Based Analysis. "
     "Neuroimage, 2017, 144, 58-73. "
     "doi: 10.1016/j.neuroimage.2016.09.029";
@@ -49,7 +53,7 @@ void usage() {
   + Option ("fc", "use an input template fixel image to define fibre orientations"
                   " and output a fixel image describing the change in fibre cross-section (FC)"
                   " in the perpendicular plane to the fixel orientation.")
-    + Argument ("template_fixel_directory").type_image_in()
+    + Argument ("template_fixel_directory").type_directory_in()
     + Argument ("output_fixel_directory").type_text()
     + Argument ("output_fixel_data").type_text()
 
@@ -68,8 +72,13 @@ void usage() {
 using value_type = float;
 
 void run() {
-  auto input = Image<value_type>::open(argument[0]).with_direct_io(3);
-  Registration::Warp::check_warp(input);
+  Header H = Header::open(argument[0]);
+  auto format = Registration::Warp::validate_header(H);
+  if (format != Registration::Warp::WarpFormat::Simple)
+    throw Exception("Command only operates on 4D deformation fields,"
+                    " not the 5D \"full\" warp field format");
+  auto input = H.get_image<value_type>(DirectIO{3});
+  Registration::Warp::debug_validate_image(input);
 
   Image<value_type> jmatrix_output;
   Image<value_type> jdeterminant_output;
@@ -80,18 +89,19 @@ void run() {
 
   auto opt = get_options("fc");
   if (!opt.empty()) {
-    std::string template_fixel_directory(opt[0][0]);
+    const std::filesystem::path template_fixel_directory(opt[0][0]);
     fixel_template_index = Fixel::find_index_header(template_fixel_directory).get_image<uint32_t>();
     fixel_template_directions =
-        Fixel::find_directions_header(template_fixel_directory).get_image<value_type>().with_direct_io();
+        Fixel::find_directions_header(template_fixel_directory).get_image<value_type>(DirectIO(1));
 
-    std::string output_fixel_directory(opt[0][1]);
+    // TODO Remove explicit cast if interface is changed to make output path a single argument
+    std::filesystem::path output_fixel_directory(opt[0][1].as_text());
     if (template_fixel_directory != output_fixel_directory) {
       Fixel::copy_index_file(template_fixel_directory, output_fixel_directory);
       Fixel::copy_directions_file(template_fixel_directory, output_fixel_directory);
     }
 
-    fc_output_data = Image<value_type>::create(Path::join(output_fixel_directory, opt[0][2]),
+    fc_output_data = Image<value_type>::create(output_fixel_directory / opt[0][2].as_text(),
                                                Fixel::data_header_from_index(fixel_template_index));
   }
 

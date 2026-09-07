@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify the -dump option of "tckstats",
+#   which writes the per-streamline lengths to a text file.
+# The number of values written must equal the streamline count reported by -output count.
+
+rm -f tmp_lengths.txt
+tckstats tracks.tck -dump tmp_lengths.txt
+streamline_count=$(tckstats tracks.tck -output count | tr -d '[:space:]')
+length_count=$(tail -n1 tmp_lengths.txt | wc -w)
+(( length_count == streamline_count ))

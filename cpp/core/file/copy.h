@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,17 +16,20 @@
 
 #pragma once
 
+#include <filesystem>
+
 #include "exception.h"
 #include "file/mmap.h"
-#include "file/utils.h"
+#include "file/ofstream.h"
 
 namespace MR::File {
 
-inline void copy(const std::string &source, const std::string &destination) {
+inline void copy(const std::filesystem::path &source, const std::filesystem::path &destination) {
   {
-    DEBUG("copying file \"" + source + "\" to \"" + destination + "\"...");
+    DEBUG("copying file \"" + source.string() + "\" to \"" + destination.string() + "\"...");
     MMap input(source);
-    create(destination, input.size());
+    { File::OFStream out(destination); }
+    std::filesystem::resize_file(destination, input.size());
     MMap output(destination, true);
     ::memcpy(output.address(), input.address(), input.size());
   }

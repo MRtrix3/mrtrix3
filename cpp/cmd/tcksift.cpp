@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,6 +13,9 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+
+#include <filesystem>
+#include <optional>
 
 #include "command.h"
 #include "image.h"
@@ -77,29 +80,32 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path input_tracks_path{argument[0]};
+  const std::filesystem::path input_fod_path{argument[1]};
+  const std::filesystem::path output_tracks_path{argument[2]};
 
-  const std::string debug_path = get_option_value<std::string>("output_debug", "");
+  auto debug_path = get_optional<std::filesystem::path>("output_debug");
 
-  auto in_dwi = Image<float>::open(argument[1]);
+  auto in_dwi = Image<float>::open(input_fod_path);
   Math::SH::check(in_dwi);
   DWI::Directions::FastLookupSet dirs(1281);
 
   SIFTer sifter(in_dwi, dirs);
 
-  if (!debug_path.empty()) {
-    sifter.initialise_debug_image_output(debug_path);
-    sifter.output_proc_mask(Path::join(debug_path, "proc_mask.mif"));
+  if (debug_path.has_value()) {
+    sifter.initialise_debug_image_output(debug_path.value());
+    sifter.output_proc_mask(debug_path.value() / "proc_mask.mif");
     if (!get_options("act").empty())
-      sifter.output_5tt_image(Path::join(debug_path, "5tt.mif"));
+      sifter.output_5tt_image(debug_path.value() / "5tt.mif");
   }
 
   sifter.perform_FOD_segmentation(in_dwi);
   sifter.scale_FDs_by_GM();
 
-  sifter.map_streamlines(argument[0]);
+  sifter.map_streamlines(input_tracks_path);
 
-  if (!debug_path.empty())
-    sifter.output_all_debug_images(debug_path, "before");
+  if (debug_path.has_value())
+    sifter.output_all_debug_images(debug_path.value(), "before");
 
   sifter.remove_excluded_fixels();
 
@@ -107,13 +113,13 @@ void run() {
 
     auto opt = get_options("term_number");
     if (!opt.empty())
-      sifter.set_term_number(int(opt[0][0]));
+      sifter.set_term_number(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0]));
     opt = get_options("term_ratio");
     if (!opt.empty())
-      sifter.set_term_ratio(float(opt[0][0]));
+      sifter.set_term_ratio(static_cast<float>(opt[0][0]));
     opt = get_options("term_mu");
     if (!opt.empty())
-      sifter.set_term_mu(float(opt[0][0]));
+      sifter.set_term_mu(static_cast<float>(opt[0][0]));
     opt = get_options("csv");
     if (!opt.empty())
       sifter.set_csv_path(opt[0][0]);
@@ -125,10 +131,10 @@ void run() {
 
     sifter.perform_filtering();
 
-    if (!debug_path.empty())
-      sifter.output_all_debug_images(debug_path, "after");
+    if (debug_path.has_value())
+      sifter.output_all_debug_images(debug_path.value(), "after");
 
-    sifter.output_filtered_tracks(argument[0], argument[2]);
+    sifter.output_filtered_tracks(input_tracks_path, output_tracks_path);
 
     opt = get_options("out_selection");
     if (!opt.empty())

@@ -1,0 +1,16 @@
+#!/bin/bash
+# Verify round-trip operation on warp field
+# TODO The imprecision on this operation is quite large;
+#   this can likely be improved through use of cubic rather than linear interpolation,
+#   but this first requires development work
+#   on interpolation near edges of the valid deformation region
+
+# Deformation field as-is
+warpinvert warp.mif - | \
+warpinvert - - | \
+testing_diff_image - warp.mif -abs 4.0
+
+# As a displacement field
+warpinvert warpconvert/displacement.mif -displacement - | \
+warpinvert - -displacement - | \
+testing_diff_image - warpconvert/displacement.mif -abs 4.0

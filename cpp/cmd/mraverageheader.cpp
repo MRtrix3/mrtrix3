@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,12 +15,16 @@
  */
 
 #include "algo/loop.h"
+#include "app.h"
 #include "command.h"
 #include "debug.h"
+#include "enum.h"
 #include "image.h"
 #include "interp/nearest.h"
 #include "math/average_space.h"
 #include "registration/transform/initialiser_helpers.h"
+
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -60,9 +64,9 @@ void usage() {
             "Method for determination of voxel spacings based on"
             " the set of input images and the average header axes"
             " (see Description)."
-            " Valid options are: " + join(avgspace_voxspacing_choices, ",") + ";"
+            " Valid options are: " + MR::Enum::join<avgspace_voxspacing_t>(",") + ";"
             " default = " + SPACING_DEFAULT_STRING)
-    + Argument("type").type_choice(avgspace_voxspacing_choices)
+    + Argument("type").type_choice<avgspace_voxspacing_t>()
   + Option ("fill", "set the intensity in the first volume of the average space to 1")
   + DataType::options();
 
@@ -70,24 +74,28 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path first_input_path(argument[0]);
+  const std::filesystem::path output_path{argument.back()};
 
   const size_t num_inputs = argument.size() - 1;
 
   const default_type p = get_option_value("padding", PADDING_DEFAULT);
   auto padding = Eigen::Matrix<default_type, 4, 1>(p, p, p, 1.0);
   INFO("padding in template voxels: " + str(padding.transpose().head<3>()));
-  auto opt = get_options("spacing");
-  const avgspace_voxspacing_t spacing = opt.empty() ? SPACING_DEFAULT_VALUE : avgspace_voxspacing_t(int(opt[0][0]));
+  const avgspace_voxspacing_t spacing = get_option_choice<avgspace_voxspacing_t>("spacing", SPACING_DEFAULT_VALUE);
   const bool fill = !get_options("fill").empty();
 
   std::vector<Header> headers_in;
-  size_t dim(Header::open(argument[0]).ndim());
+  Header first_header(Header::open(first_input_path));
+  const size_t dim(first_header.ndim());
   if (dim < 3 or dim > 4)
     throw Exception("Please provide 3D or 4D images");
-  ssize_t volumes(dim == 3 ? 1 : Header::open(argument[0]).size(3));
+  const ssize_t volumes(dim == 3 ? 1 : first_header.size(3));
 
-  for (size_t i = 0; i != num_inputs; ++i) {
-    headers_in.push_back(Header::open(argument[i]));
+  headers_in.push_back(std::move(first_header));
+  for (size_t i = 1; i != num_inputs; ++i) {
+    const std::filesystem::path input_path(argument[i]);
+    headers_in.push_back(Header::open(input_path));
     if (fill) {
       if (headers_in.back().ndim() != dim)
         throw Exception("Images do not have the same dimensionality");
@@ -104,7 +112,7 @@ void run() {
     if (dim == 4)
       H.size(3) = headers_in.back().size(3);
   }
-  auto out = Image<bool>::create(argument[argument.size() - 1], H);
+  auto out = Image<bool>::create(output_path, H);
   if (fill) {
     for (auto l = Loop(0, 3)(out); l; ++l)
       out.value() = 1;

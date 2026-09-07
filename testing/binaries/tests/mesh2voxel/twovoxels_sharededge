@@ -1,0 +1,16 @@
+#!/bin/bash
+# Regression test for degenerate surfaces that occupy only a couple of voxels.
+# Here the two seed voxels share a face; after Marching Cubes and surface smoothing
+#   the resulting mesh is sub-voxel-thin, so its voxelised representation does not
+#   form a closed shell separating interior from exterior on the template grid.
+# Prior to the fix, the interior-fill logic in MR::Surface::Algo::mesh2image() merged
+#   the interior and exterior into a single flood-fill region and a unanimous-but-wrong
+#   normal-based vote labelled the entire field of view as inside the surface.
+# Reproduce the 5ttgen hsvs pipeline (voxel2mesh -> meshfilter smooth -> mesh2voxel),
+#   then assert that no voxel is (near-)fully classified as inside the surface.
+voxel2mesh mesh2voxel/twovoxels_sharededge.mif -threshold 0.5 tmp-init.vtk -force
+meshfilter tmp-init.vtk smooth tmp-smooth.vtk -force
+mesh2voxel tmp-smooth.vtk mesh2voxel/twovoxels_sharededge.mif tmp-pvf.mif -force
+mrcalc tmp-pvf.mif 0.9 -ge tmp-saturated.mif -force
+mrcalc tmp-pvf.mif 0 -mult tmp-zero.mif -force
+testing_diff_image tmp-saturated.mif tmp-zero.mif -abs 0.5

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,20 +16,28 @@
 
 #include "file/ofstream.h"
 
+#include <cerrno>
+#include <filesystem>
+
+#include "app.h"
 #include "exception.h"
-#include "file/utils.h"
+#include "file/temp.h"
 
 namespace MR::File {
 
-void OFStream::open(const std::string &path, const std::ios_base::openmode mode) {
-  if (!(mode & std::ios_base::app) && !(mode & std::ios_base::ate) && !(mode & std::ios_base::in)) {
-    if (!File::is_tempfile(path))
-      File::create(path);
+void OFStream::open(const std::filesystem::path &path, const std::ios_base::openmode mode) {
+  if ((mode & std::ios_base::app) == 0 && (mode & std::ios_base::ate) == 0 && (mode & std::ios_base::in) == 0) {
+    if (!File::is_tempfile(path)) {
+      if (std::filesystem::exists(path)) {
+        App::check_overwrite(path);
+        std::filesystem::remove(path);
+      }
+    }
   }
 
-  std::ofstream::open(path.c_str(), mode);
+  std::ofstream::open(path, mode);
   if (std::ofstream::operator!())
-    throw Exception("error opening output file \"" + path + "\": " + std::strerror(errno));
+    throw Exception("error opening output file \"" + path.string() + "\": " + MR::C_strerror(errno));
 }
 
 } // namespace MR::File

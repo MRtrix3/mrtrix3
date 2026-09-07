@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -58,8 +58,9 @@ void run() {
   for (size_t row = 0; row != locations.size(); ++row)
     prettyprint.row(row) = std::move(locations[row]);
   INFO("Printing locations of " + str(prettyprint.rows()) + " non-zero voxels");
-  if (argument.size() == 2)
-    File::Matrix::save_matrix(prettyprint, argument[1]);
-  else
+  if (argument.size() == 2) {
+    const std::filesystem::path output_path{argument[1]};
+    File::Matrix::save_matrix(prettyprint, output_path);
+  } else
     std::cout << prettyprint;
 }

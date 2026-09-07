@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,13 +16,15 @@
 
 #include "command.h"
 #include "dwi/directions/file.h"
-#include "file/utils.h"
+#include "dwi/directions/validate.h"
+#include "file/matrix.h"
 #include "math/SH.h"
 #include "math/rng.h"
+#include "math/sphere.h"
 #include "progressbar.h"
 #include "thread.h"
 
-constexpr size_t default_number = 1e8;
+constexpr size_t default_permutations = 1e8;
 
 using namespace MR;
 using namespace App;
@@ -48,7 +50,7 @@ void usage() {
 
   OPTIONS
     + Option ("number", "number of shuffles to try"
-                        " (default: " + str(default_number) + ")")
+                        " (default: " + str(default_permutations) + ")")
       + Argument ("num").type_integer (1)
 
     + Option ("preserve", "preserve the sign of some number of directions at the start of the set")
@@ -143,9 +145,11 @@ protected:
 };
 
 void run() {
-  auto directions = DWI::Directions::load_cartesian(argument[0]);
+  auto directions = File::Matrix::load_matrix<value_type>(argument[0]);
+  DWI::Directions::validate(directions, argument[0], false);
+  directions = Math::Sphere::as_cartesian(directions);
 
-  const size_t num_shuffles = get_option_value<size_t>("number", default_number);
+  const size_t num_shuffles = get_option_value<size_t>("number", default_permutations);
   const size_t preserve = get_option_value<size_t>("preserve", 0);
 
   std::vector<int> signs;

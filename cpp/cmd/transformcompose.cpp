@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,6 +19,9 @@
 #include "file/matrix.h"
 #include "image.h"
 #include "interp/linear.h"
+#include "registration/warp/validate.h"
+
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -104,30 +107,27 @@ void usage() {
 using value_type = float;
 
 void run() {
+  const std::filesystem::path output_path{argument.back()};
+
   std::vector<std::unique_ptr<TransformBase>> transform_list;
   std::unique_ptr<Header> template_header;
 
   for (size_t i = 0; i < argument.size() - 1; ++i) {
     try {
       template_header.reset(new Header(Header::open(argument[i])));
-      auto image = Image<default_type>::open(argument[i]);
-
-      if (image.ndim() != 4)
-        throw Exception("input warp is not a 4D image");
-
-      if (image.size(3) != 3)
-        throw Exception("input warp should have 3 volumes in the 4th dimension");
-
-      std::unique_ptr<TransformBase> transform(new Warp(image));
-      transform_list.push_back(std::move(transform));
-
+      auto warp_format = Registration::Warp::validate_header(*template_header);
+      if (warp_format != Registration::Warp::WarpFormat::Simple)
+        throw Exception("Input non-linear warp field images must be simple 4D deformation fields,"
+                        " not the 5D \"full\" warp series format");
+      auto image = template_header->get_image<default_type>();
+      Registration::Warp::debug_validate_image(image);
+      transform_list.emplace_back(std::make_unique<Warp>(image));
     } catch (Exception &E) {
       try {
-        std::unique_ptr<TransformBase> transform(new Linear(File::Matrix::load_transform(argument[i])));
-        transform_list.push_back(std::move(transform));
+        transform_list.emplace_back(std::make_unique<Linear>(File::Matrix::load_transform(argument[i])));
       } catch (Exception &E) {
-        throw Exception("error reading input file: " + str(argument[i]) +
-                        ". Does not appear to be a 4D warp image or 4x4 linear transform.");
+        throw Exception("error reading input file: " + argument[i].as_text() + ":" +       //
+                        " does not appear to be a 4D warp image or 4x4 linear transform"); //
       }
     }
   }
@@ -139,8 +139,9 @@ void run() {
   } else if (template_header) {
     if (!dynamic_cast<Warp *>(transform_list[transform_list.size() - 1].get()))
       throw Exception(
-          "Output deformation field grid not defined. When composing warps either use the -template "
-          "option to define the output deformation field grid, or ensure the last input transformation is a warp.");
+          "Output deformation field grid not defined;"
+          " when composing warps either use the -template option to define the output deformation field grid,"
+          " or ensure the last input transformation is a warp.");
   }
 
   // all inputs are linear so compose and output as text file
@@ -155,20 +156,22 @@ void run() {
       index--;
       progress++;
     }
-    File::Matrix::save_transform(composed, argument[argument.size() - 1]);
+    File::Matrix::save_transform(composed, output_path);
 
   } else {
     Header output_header(*template_header);
     output_header.ndim() = 4;
     output_header.size(3) = 3;
     output_header.datatype() = DataType::Float32;
+    output_header.datatype().set_byte_order_native();
 
-    Image<float> output = Image<value_type>::create(argument[argument.size() - 1], output_header);
+    Image<float> output = Image<value_type>::create(output_path, output_header);
 
     Transform template_transform(output);
     for (auto i = Loop("composing transformations", output, 0, 3)(output); i; ++i) {
-      Eigen::Vector3d voxel(
-          (default_type)output.index(0), (default_type)output.index(1), (default_type)output.index(2));
+      Eigen::Vector3d voxel(static_cast<double>(output.index(0)),
+                            static_cast<double>(output.index(1)),
+                            static_cast<double>(output.index(2)));
 
       Eigen::Vector3d position = template_transform.voxel2scanner * voxel;
       ssize_t index = transform_list.size() - 1;

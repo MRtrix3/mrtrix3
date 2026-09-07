@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,13 +16,16 @@
 
 #pragma once
 
+#include <filesystem>
 #include <functional>
 #include <map>
+#include <optional>
 
 #include "app.h"
 #include "axes.h"
 #include "datatype.h"
 #include "debug.h"
+#include "directio.h"
 #include "file/mmap.h"
 #include "image_helpers.h"
 #include "image_io/base.h"
@@ -41,6 +44,7 @@ namespace MR {
 //! functions and classes related to image data input/output
 
 template <typename ValueType> class Image;
+class DirectIO;
 
 class Header {
 public:
@@ -55,7 +59,6 @@ public:
 
   Header()
       : transform_(Eigen::Matrix<default_type, 3, 4>::Constant(NaN)), //
-        format_(nullptr),                                             //
         offset_(0.0),                                                 //
         scale_(1.0) {}                                                //
 
@@ -63,6 +66,7 @@ public:
       : axes_(std::move(H.axes_)),
         transform_(std::move(H.transform_)),
         name_(std::move(H.name_)),
+        path_(std::move(H.path_)),
         keyval_(std::move(H.keyval_)),
         format_(H.format_),
         io(std::move(H.io)),
@@ -75,6 +79,7 @@ public:
     axes_ = std::move(H.axes_);
     transform_ = std::move(H.transform_);
     name_ = std::move(H.name_);
+    path_ = std::move(H.path_);
     keyval_ = std::move(H.keyval_);
     format_ = H.format_;
     io = std::move(H.io);
@@ -92,11 +97,12 @@ public:
       : axes_(H.axes_),
         transform_(H.transform_),
         name_(H.name_),
+        path_(H.path_),
         keyval_(H.keyval_),
         format_(H.format_),
         datatype_(H.datatype_),
-        offset_(datatype().is_integer() ? H.offset_ : 0.0),
-        scale_(datatype().is_integer() ? H.scale_ : 1.0),
+        offset_(H.datatype_.is_integer() ? H.offset_ : 0.0),
+        scale_(H.datatype_.is_integer() ? H.scale_ : 1.0),
         realignment_(H.realignment_) {}
 
   //! copy constructor from type of class derived from Header
@@ -115,7 +121,6 @@ public:
       : transform_(original.transform()),
         name_(original.name()),
         keyval_(original.keyval()),
-        format_(nullptr),
         datatype_(DataType::from<typename HeaderType::value_type>()),
         offset_(0.0),
         scale_(1.0) {
@@ -134,6 +139,7 @@ public:
     axes_ = H.axes_;
     transform_ = H.transform_;
     name_ = H.name_;
+    path_ = H.path_;
     keyval_ = H.keyval_;
     format_ = H.format_;
     datatype_ = H.datatype_;
@@ -165,8 +171,9 @@ public:
     }
     transform_ = original.transform();
     name_ = original.name();
+    path_.clear();
     keyval_ = original.keyval();
-    format_ = nullptr;
+    format_.clear();
     datatype_ = DataType::from<typename HeaderType::value_type>();
     offset_ = 0.0;
     scale_ = 1.0;
@@ -189,12 +196,12 @@ public:
   bool operator!() const { return !valid(); }
 
   //! get the name of the image
-  const std::string &name() const { return name_; }
+  std::string name() const { return name_; }
   //! get/set the name of the image
   std::string &name() { return name_; }
 
   //! return the format of the image
-  const char *format() const { return format_; }
+  std::string format() const { return format_; }
 
   //! get the 4x4 affine transformation matrix mapping image to world coordinates
   const transform_type &transform() const { return transform_; }
@@ -204,15 +211,36 @@ public:
   // Class to store all information relating to internal transform realignment
   class Realignment {
   public:
+    //! state of axis realignment for an image header
+    /*! Used to distinguish:
+     *  - Unknown: the Realignment object was default-constructed
+     *    (e.g. for a scratch image or for a Header copy-constructed
+     *    from a non-Header source); realign_transform() was never run,
+     *    so orig_* members carry no meaningful "on-disk" view.
+     *  - Disabled: realign_transform() ran but Header::do_realign_transform
+     *    was false (e.g. RealignTransform: false in the configuration
+     *    file, or -config RealignTransform false on the command line);
+     *    the live header values *are* the on-disk values.
+     *  - Identity: realign_transform() ran and the computed shuffle was
+     *    identity (image was already approximately RAS); the live
+     *    header values match the on-disk values.
+     *  - Applied: realign_transform() ran and a non-identity shuffle was
+     *    applied; the live header diverges from the on-disk view, and
+     *    orig_* members capture the latter.
+     */
+    enum class State : uint8_t { Unknown, Disabled, Identity, Applied };
     // From one image space to another image space;
     //   linear component is permutations & flips only,
     //   transformation is in voxel count,
     //   therefore can store as integer
     using applied_transform_type = Eigen::Matrix<int, 3, 3>;
     Realignment();
-    Realignment(Header &);
-    bool is_identity() const { return shuffle_.is_identity(); }
-    bool valid() const { return shuffle_.valid(); }
+    State state() const { return state_; }
+    bool applied() const { return state_ == State::Applied; }
+    bool valid() const {
+      assert((state_ != State::Unknown) == shuffle_.valid());
+      return state_ != State::Unknown;
+    }
     const Axes::permutations_type &permutations() const { return shuffle_.permutations; }
     size_t permutation(const size_t axis) const {
       assert(axis < 3);
@@ -224,10 +252,17 @@ public:
       return shuffle_.flips[axis];
     }
     const transform_type &orig_transform() const { return orig_transform_; }
+    const Stride::List &orig_strides() const { return orig_strides_; }
     const applied_transform_type &applied_transform() const { return applied_transform_; }
     KeyValues &orig_keyval() { return orig_keyval_; }
+    const KeyValues &orig_keyval() const { return orig_keyval_; }
+
+    //! Human-readable per-output-axis enumeration of the shuffle.
+    //!  Returns 3 lines (~R, ~A, ~S); empty if is_identity().
+    std::vector<std::string> describe_axis_mapping() const;
 
   private:
+    State state_{State::Unknown};
     Axes::Shuffle shuffle_;
     transform_type orig_transform_;
     Stride::List orig_strides_;
@@ -237,6 +272,10 @@ public:
   };
   //! get information on how the transform was modified on image load
   const Realignment &realignment() const { return realignment_; }
+  //! non-const accessor; used by external metadata importers (JSON, etc.)
+  //!   to populate Realignment::orig_keyval() with the pre-transformation
+  //!   view of axis-dependent fields.
+  Realignment &realignment() { return realignment_; }
 
   class NDimProxy {
   public:
@@ -264,6 +303,36 @@ public:
   size_t ndim() const { return axes_.size(); }
   //! set the number of dimensions (axes) of image
   NDimProxy ndim() { return {axes_}; }
+
+  class PathProxy {
+  public:
+    PathProxy(std::string &name, std::filesystem::path &path) : name(name), path(path) {}
+    PathProxy(PathProxy &&) = default;
+    PathProxy(const PathProxy &) = delete;
+    PathProxy &operator=(PathProxy &&) = delete;
+    PathProxy &operator=(const PathProxy &) = delete;
+
+    operator const std::filesystem::path &() const { return path; }
+    const std::filesystem::path &operator=(const std::filesystem::path &new_path) {
+      path = new_path;
+      name = path.filename().string();
+      return path;
+    }
+
+    void clear() { path.clear(); }
+    bool empty() const { return path.string().empty(); }
+    std::filesystem::path filename() const { return path.filename(); }
+    std::string string() const { return empty() ? name : path.string(); }
+
+  private:
+    std::string &name;
+    std::filesystem::path &path;
+  };
+
+  //! get the path of the image
+  const std::filesystem::path &path() const { return path_; }
+  //! get/set the path of the image
+  PathProxy path() { return {name_, path_}; }
 
   //! get the number of voxels across axis
   const ssize_t &size(size_t axis) const;
@@ -378,7 +447,8 @@ public:
    * to access the data, and any mismatch in the information may cause
    * problems.
    */
-  template <typename ValueType> Image<ValueType> get_image(bool read_write_if_existing = false);
+  template <typename ValueType>
+  Image<ValueType> get_image(std::optional<DirectIO> direct_io = std::nullopt, bool read_write_if_existing = false);
 
   //! get generic key/value text attributes
   const KeyValues &keyval() const { return keyval_; }
@@ -387,10 +457,11 @@ public:
   //! merge key/value entries from another dictionary
   void merge_keyval(const KeyValues &);
 
-  static Header open(const std::string &image_name);
-  static Header
-  create(const std::string &image_name, const Header &template_header, bool add_to_command_history = true);
-  static Header scratch(const Header &template_header, const std::string &label = "scratch image");
+  static Header open(const std::filesystem::path &image_path);
+  static Header create(const std::filesystem::path &image_name, //
+                       const Header &template_header,           //
+                       bool add_to_command_history = true);     //
+  static Header scratch(const Header &template_header, std::string_view label = "scratch image");
 
   /*! use to prevent automatic realignment of transform matrix into
    * near-standard (RAS) coordinate system. */
@@ -405,8 +476,9 @@ protected:
   std::vector<Axis> axes_;
   transform_type transform_;
   std::string name_;
+  std::filesystem::path path_;
   KeyValues keyval_;
-  const char *format_;
+  std::string format_;
 
   //! additional information relevant for images stored on file
   std::unique_ptr<ImageIO::Base> io;

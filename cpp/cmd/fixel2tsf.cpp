@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,6 +21,7 @@
 
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
+#include "fixel/validate.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"
@@ -29,6 +30,8 @@
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/mapping.h"
+
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -67,23 +70,25 @@ void usage() {
 using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
 
 void run() {
-  auto in_data_image = Fixel::open_fixel_data_file<float>(argument[0]);
+  const std::filesystem::path input_fixel_path{argument[0]};
+  const std::filesystem::path input_tracks_path{argument[1]};
+  const std::filesystem::path output_tsf_path{argument[2]};
+
+  auto in_data_image = Fixel::open_fixel_data_file<float>(input_fixel_path);
   if (in_data_image.size(2) != 1)
     throw Exception("Only a single scalar value for each fixel can be output as a track scalar file, "
                     "therefore the input fixel data file must have dimension Nx1x1");
-
-  Header in_index_header = Fixel::find_index_header(Fixel::get_fixel_directory(argument[0]));
+  const std::filesystem::path input_fixel_directory = Fixel::get_fixel_directory(argument[0]);
+  Header in_index_header = Fixel::find_index_header(input_fixel_directory);
+  Fixel::check_fixel_size(in_index_header, in_data_image);
   auto in_index_image = in_index_header.get_image<index_type>();
-  auto in_directions_image =
-      Fixel::find_directions_header(Fixel::get_fixel_directory(argument[0])).get_image<float>().with_direct_io();
+  Fixel::debug_validate_index_image(in_index_image);
+  auto in_directions_image = Fixel::find_directions_header(input_fixel_directory).get_image<float>(DirectIO(1));
 
   DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader<float> reader(argument[1], properties);
-  properties.comments.push_back("Created using fixel2tsf");
-  properties.comments.push_back("Source fixel image: " + Path::basename(argument[0]));
-  properties.comments.push_back("Source track file: " + Path::basename(argument[1]));
+  DWI::Tractography::Reader<float> reader(input_tracks_path, properties);
 
-  DWI::Tractography::ScalarWriter<float> tsf_writer(argument[2], properties);
+  DWI::Tractography::ScalarWriter<float> tsf_writer(output_tsf_path, properties);
 
   const float angular_threshold = get_option_value("angle", DWI::Tractography::Mapping::default_streamline2fixel_angle);
   const float angular_threshold_dp = cos(angular_threshold * (Math::pi / 180.0));
@@ -98,7 +103,8 @@ void run() {
   DWI::Tractography::TrackScalar<float> scalars;
 
   const Transform transform(in_index_image);
-  Eigen::Vector3d voxel_pos;
+  Eigen::Vector3d voxel_pos_float;
+  Eigen::Vector3i voxel_pos_int;
 
   while (reader(tck)) {
     SetVoxelDir dixels;
@@ -107,13 +113,14 @@ void run() {
     scalars.set_index(tck.get_index());
     scalars.resize(tck.size(), 0.0f);
     for (size_t p = 0; p < tck.size(); ++p) {
-      voxel_pos = transform.scanner2voxel * tck[p].cast<default_type>();
-      for (SetVoxelDir::const_iterator d = dixels.begin(); d != dixels.end(); ++d) {
-        if ((int)round(voxel_pos[0]) == (*d)[0] && (int)round(voxel_pos[1]) == (*d)[1] &&
-            (int)round(voxel_pos[2]) == (*d)[2]) {
-          assign_pos_of(*d).to(in_index_image);
-          Eigen::Vector3f dir = d->get_dir().cast<float>();
-          dir.normalize();
+      voxel_pos_float = transform.scanner2voxel * tck[p].cast<default_type>();
+      voxel_pos_int = voxel_pos_float.array().round().cast<int>();
+      for (const auto &d : dixels) {
+        // Invokes Mapping::Voxel::operator==();
+        //   ie. only checks 3D voxel indices, not direction within voxel
+        if (voxel_pos_int == d) {
+          assign_pos_of(d).to(in_index_image);
+          const Eigen::Vector3f dir = d.get_dir().cast<float>().normalized();
           float largest_dp = 0.0f;
           int32_t closest_fixel_index = -1;
 
@@ -124,7 +131,7 @@ void run() {
 
           for (size_t fixel = 0; fixel < num_fixels_in_voxel; ++fixel) {
             in_directions_image.index(0) = offset + fixel;
-            const float dp = abs(dir.dot(Eigen::Vector3f(in_directions_image.row(1))));
+            const float dp = std::fabs(dir.dot(Eigen::Vector3f(in_directions_image.row(1))));
             if (dp > largest_dp) {
               largest_dp = dp;
               closest_fixel_index = fixel;

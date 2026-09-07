@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,9 +16,10 @@
 
 #pragma once
 
-#include "types.h"
+#include <array>
 
 #include "dwi/shells.h"
+#include "types.h"
 
 namespace MR::DWI {
 
@@ -88,14 +89,16 @@ inline void dwi2tensor(VectorTypeOut &dt, const MatrixType &binv, VectorTypeIn &
 }
 
 template <class VectorType> inline typename VectorType::Scalar tensor2ADC(const VectorType &dt) {
+  assert(dt.size() == 6);
   using T = typename VectorType::Scalar;
   return (dt[0] + dt[1] + dt[2]) / T(3.0);
 }
 
 template <class VectorType> inline typename VectorType::Scalar tensor2FA(const VectorType &dt) {
+  assert(dt.size() == 6);
   using T = typename VectorType::Scalar;
   T trace = tensor2ADC(dt);
-  T a[] = {dt[0] - trace, dt[1] - trace, dt[2] - trace};
+  const std::array<T, 3> a = {dt[0] - trace, dt[1] - trace, dt[2] - trace};
   trace = dt[0] * dt[0] + dt[1] * dt[1] + dt[2] * dt[2] + T(2.0) * (dt[3] * dt[3] + dt[4] * dt[4] + dt[5] * dt[5]);
   return trace ? std::sqrt(T(1.5) *
                            (a[0] * a[0] + a[1] * a[1] + a[2] * a[2] +
@@ -105,14 +108,26 @@ template <class VectorType> inline typename VectorType::Scalar tensor2FA(const V
 }
 
 template <class VectorType> inline typename VectorType::Scalar tensor2RA(const VectorType &dt) {
+  assert(dt.size() == 6);
   using T = typename VectorType::Scalar;
   T trace = tensor2ADC(dt);
-  T a[] = {dt[0] - trace, dt[1] - trace, dt[2] - trace};
+  const std::array<T, 3> a = {dt[0] - trace, dt[1] - trace, dt[2] - trace};
   return trace ? sqrt((a[0] * a[0] + a[1] * a[1] + a[2] * a[2] +
                        T(2.0) * (dt[3] * dt[3] + dt[4] * dt[4] + dt[5] * dt[5])) /
                       T(3.0)) /
                      trace
                : T(0.0);
+}
+
+template <class VectorType> inline typename VectorType::Scalar eigen2MO(const VectorType &eig) {
+  assert(eig.size() == 3);
+  const Eigen::Matrix<typename VectorType::Scalar, 3, 1> eigval_minus_md = (eig.array() - eig.mean()).matrix();
+  return 3.0 * std::sqrt(6.0) * eigval_minus_md.prod() / Math::pow3(eigval_minus_md.norm());
+}
+
+template <class VectorType> inline typename VectorType::Scalar eigen2NA(const VectorType &eig) {
+  assert(eig.size() == 3);
+  return (eig.array() - eig.mean()).matrix().norm();
 }
 
 } // namespace MR::DWI

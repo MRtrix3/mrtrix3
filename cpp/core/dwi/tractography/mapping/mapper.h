@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
  */
 
 #pragma once
+
+#include <filesystem>
 
 #include "image.h"
 #include "thread_queue.h"
@@ -314,12 +316,12 @@ public:
       image_plugin.reset(that.image_plugin->clone());
   }
 
-  void add_scalar_image(const std::string &);
+  void add_scalar_image(const std::filesystem::path &);
   void set_backtrack();
-  void add_fod_image(const std::string &);
+  void add_fod_image(const std::filesystem::path &);
   void add_twdfc_static_image(Image<float> &);
   void add_twdfc_dynamic_image(Image<float> &, const std::vector<float> &, const ssize_t);
-  void add_vector_data(const std::string &);
+  void add_vector_data(const std::filesystem::path &);
 
 protected:
   const contrast_t contrast;

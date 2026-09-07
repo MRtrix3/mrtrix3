@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <filesystem>
+#include <optional>
+
 #include "dwi/bootstrap.h"
 #include "dwi/tractography/algorithms/tensor_det.h"
 #include "dwi/tractography/rng.h"
@@ -28,11 +31,14 @@ class Tensor_Prob : public Tensor_Det {
 public:
   class Shared : public Tensor_Det::Shared {
   public:
-    Shared(const std::string &diff_path, DWI::Tractography::Properties &property_set)
+    Shared(const std::filesystem::path &diff_path, DWI::Tractography::Properties &property_set)
         : Tensor_Det::Shared(diff_path, property_set) {
 
-      if (is_act() && act().backtrack())
-        throw Exception("Sorry, backtracking not currently enabled for TensorProb algorithm");
+      if (is_act()) {
+        if (act().backtrack())
+          throw Exception("Sorry, backtracking not currently enabled for TensorProb algorithm");
+        act().set_default_sgm_trunc(ACT::sgm_trunc_t::ROULETTE);
+      }
 
       properties["method"] = "TensorProb";
 
@@ -43,10 +49,14 @@ public:
   };
 
   Tensor_Prob(const Shared &shared)
-      : Tensor_Det(shared), S(shared), source(Bootstrap<Image<float>, WildBootstrap>(S.source, WildBootstrap(S.Hat))) {}
+      : Tensor_Det(shared),
+        S(shared),
+        source(Bootstrap<Image<float>, WildBootstrap>(S.source, WildBootstrap(S.Hat)), S.source_mask) {}
 
   Tensor_Prob(const Tensor_Prob &F)
-      : Tensor_Det(F.S), S(F.S), source(Bootstrap<Image<float>, WildBootstrap>(S.source, WildBootstrap(S.Hat))) {}
+      : Tensor_Det(F.S),
+        S(F.S),
+        source(Bootstrap<Image<float>, WildBootstrap>(S.source, WildBootstrap(S.Hat)), S.source_mask) {}
 
   bool init() override {
     source.clear();
@@ -55,7 +65,7 @@ public:
     return Tensor_Det::do_init();
   }
 
-  term_t next() override {
+  std::optional<term_t> next() override {
     if (!source.get(pos, values))
       return term_t::EXIT_IMAGE;
     return Tensor_Det::do_next();
@@ -79,7 +89,7 @@ protected:
 
       for (ssize_t i = 0; i < residuals.size(); ++i) {
         residuals[i] = residuals[i] ? (data[i] - std::exp(-residuals[i])) : float(0.0);
-        data[i] += uniform_int(rng) ? residuals[i] : -residuals[i];
+        data[i] += uniform_int(rng()) ? residuals[i] : -residuals[i];
       }
     }
 
@@ -91,8 +101,8 @@ protected:
 
   class Interp : public Interpolator<Bootstrap<Image<float>, WildBootstrap>>::type {
   public:
-    Interp(const Bootstrap<Image<float>, WildBootstrap> &bootstrap_vox)
-        : Interpolator<Bootstrap<Image<float>, WildBootstrap>>::type(bootstrap_vox) {
+    Interp(const Bootstrap<Image<float>, WildBootstrap> &bootstrap_vox, Image<bool> mask)
+        : Interpolator<Bootstrap<Image<float>, WildBootstrap>>::type(bootstrap_vox, std::move(mask)) {
       for (size_t i = 0; i < 8; ++i)
         raw_signals.push_back(Eigen::VectorXf(size(3)));
     }
@@ -101,7 +111,7 @@ protected:
 
     bool get(const Eigen::Vector3f &pos, Eigen::VectorXf &data) {
       if (!scanner(pos)) {
-        data.fill(NaN);
+        data.fill(NaNF);
         return false;
       }
 

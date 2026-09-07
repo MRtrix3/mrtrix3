@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify the -voxelspace option of "mrcentroid",
+#   which reports the centre of mass in voxel index space rather than scanner space.
+# Output is compared against reference data generated using a prior software version.
+
+rm -f tmp.txt
+mrcentroid mask.mif -voxelspace > tmp.txt
+testing_diff_matrix tmp.txt mrcentroid/voxelspace.txt -frac 1e-4

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,6 +13,9 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+
+#include <filesystem>
+#include <optional>
 
 #include "command.h"
 #include "dwi/fmls.h"
@@ -76,7 +79,7 @@ void usage() {
   REFERENCES
   + "Smith, R. E.; Raffelt, D.; Tournier, J.-D.; Connelly, A. " // Internal
     "Quantitative Streamlines Tractography: Methods and Inter-Subject Normalisation. "
-    "Open Science Framework, https://doi.org/10.31219/osf.io/c67kn.";
+    "OHBM Aperture, 10.52294/ApertureNeuro.2022.2.NEOD9565.";
 
 
   ARGUMENTS
@@ -128,16 +131,16 @@ class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<AFDConnFixel> 
 public:
   AFDConnectivity(Image<value_type> &fod_buffer,
                   const DWI::Directions::FastLookupSet &dirs,
-                  const std::string &tck_path,
-                  const std::string &wbft_path)
+                  const std::filesystem::path &tck_path,
+                  const std::optional<std::filesystem::path> &wbft_path)
       : DWI::Tractography::SIFT::ModelBase<AFDConnFixel>(fod_buffer, dirs),
-        have_wbft(!wbft_path.empty()),
+        have_wbft(wbft_path.has_value()),
         all_fixels(false),
         mapper(fod_buffer, dirs),
         v_fod(fod_buffer) {
     if (have_wbft) {
       perform_FOD_segmentation(fod_buffer);
-      map_streamlines(wbft_path);
+      map_streamlines(wbft_path.value());
     } else {
       fmls.reset(new DWI::FMLS::Segmenter(dirs, Math::SH::LforN(fod_buffer.size(3))));
     }
@@ -147,8 +150,8 @@ public:
 
   void set_all_fixels(const bool i) { all_fixels = i; }
 
-  value_type get(const std::string &path);
-  void save(const std::string &path);
+  value_type get(const std::filesystem::path &path);
+  void save(const std::filesystem::path &path);
 
 private:
   const bool have_wbft;
@@ -160,7 +163,7 @@ private:
   using Fixel_map<AFDConnFixel>::accessor;
 };
 
-value_type AFDConnectivity::get(const std::string &path) {
+value_type AFDConnectivity::get(const std::filesystem::path &path) {
 
   Tractography::Properties properties;
   Tractography::Reader<value_type> reader(path, properties);
@@ -255,14 +258,14 @@ value_type AFDConnectivity::get(const std::string &path) {
 
     // sum_contributions currently stores sum of streamline lengths;
     //   turn into a mean length, then combine with volume to get a connectivity value
-    const double mean_length = sum_contributions / double(count);
+    const double mean_length = sum_contributions / static_cast<double>(count);
     sum_contributions = sum_volumes / mean_length;
   }
 
   return sum_contributions;
 }
 
-void AFDConnectivity::save(const std::string &path) {
+void AFDConnectivity::save(const std::filesystem::path &path) {
   auto out = Image<value_type>::create(path, Fixel_map<AFDConnFixel>::header());
   VoxelAccessor v(accessor());
   for (auto l = Loop(v)(v, out); l; ++l) {
@@ -287,23 +290,25 @@ void AFDConnectivity::save(const std::string &path) {
 }
 
 void run() {
-  const std::string wbft_path = get_option_value<std::string>("wbft", "");
+  const std::filesystem::path input_image_path{argument[0]};
+  const std::filesystem::path input_tracks_path{argument[1]};
+  auto wbft_path = get_optional<std::filesystem::path>("wbft");
 
   DWI::Directions::FastLookupSet dirs(1281);
-  auto fod = Image<value_type>::open(argument[0]);
+  auto fod = Image<value_type>::open(input_image_path);
   Math::SH::check(fod);
   check_3D_nonunity(fod);
-  AFDConnectivity model(fod, dirs, argument[1], wbft_path);
+  AFDConnectivity model(fod, dirs, input_tracks_path, wbft_path);
 
   auto opt = get_options("all_fixels");
   model.set_all_fixels(!opt.empty());
 
-  const value_type connectivity_value = model.get(argument[1]);
+  const value_type connectivity_value = model.get(input_tracks_path);
 
   // output the AFD sum using std::cout. This enables output to be redirected to a file without the console output.
   std::cout << connectivity_value << std::endl;
 
   opt = get_options("afd_map");
   if (!opt.empty())
-    model.save(opt[0][0]);
+    model.save(std::filesystem::path(opt[0][0]));
 }

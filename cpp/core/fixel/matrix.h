@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -122,7 +122,7 @@ class InitFixelUnweighted : public InitFixelBase<InitElementUnweighted> {
 public:
   using BaseType = InitFixelBase<InitElementUnweighted>;
   InitFixelUnweighted() : track_count(0) {}
-  default_type norm_factor() const override { return 1.0 / default_type(track_count); }
+  default_type norm_factor() const override { return 1.0 / static_cast<default_type>(track_count); }
 
 private:
   count_type track_count;
@@ -183,12 +183,12 @@ public:
 };
 
 // Generate a fixel-fixel connectivity matrix
-InitMatrixUnweighted generate_unweighted(const std::string &track_filename,
+InitMatrixUnweighted generate_unweighted(const std::filesystem::path &track_filepath,
                                          Image<fixel_index_type> &index_image,
                                          Image<bool> &fixel_mask,
                                          const float angular_threshold);
 
-InitMatrixWeighted generate_weighted(const std::string &track_filename,
+InitMatrixWeighted generate_weighted(const std::filesystem::path &track_filepath,
                                      Image<fixel_index_type> &index_image,
                                      Image<bool> &fixel_mask,
                                      const float angular_threshold);
@@ -197,9 +197,9 @@ template <class MatrixType> class Writer {
 public:
   Writer(MatrixType &matrix, const connectivity_value_type threshold) : matrix(matrix), threshold(threshold) {}
   void set_keyvals(KeyValues &kv) { keyvals = kv; }
-  void set_count_path(const std::string &path);
-  void set_extent_path(const std::string &path);
-  void save(const std::string &path) const;
+  void set_count_path(const std::filesystem::path &path);
+  void set_extent_path(const std::filesystem::path &path);
+  void save(const std::filesystem::path &path) const;
 
 private:
   MatrixType &matrix;
@@ -213,8 +213,8 @@ private:
 class Reader {
 
 public:
-  Reader(const std::string &path, const Image<bool> &mask);
-  Reader(const std::string &path);
+  Reader(const std::filesystem::path &path, const Image<bool> &mask);
+  Reader(const std::filesystem::path &path);
 
   // TODO Entirely feasible to construct this thing using scratch storage;
   //   would need two passes over the pre-normalised data in order to calculate
@@ -238,7 +238,7 @@ public:
   size_t size(const size_t) const;
 
 protected:
-  const std::string directory;
+  const std::filesystem::path directory;
   // Not to be manipulated directly; need to copy in order to ensure thread-safety
   Image<index_image_type> index_image;
   Image<fixel_index_type> fixel_image;

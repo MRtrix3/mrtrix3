@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,8 +30,8 @@ ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
 
   TreeItem *root = model->rootItem;
 
-  root->appendChild(new TreeItem("File", H.name(), root));
-  assert(H.format());
+  root->appendChild(new TreeItem("File", H.path().string(), root));
+  assert(!H.format().empty());
   root->appendChild(new TreeItem("Format", H.format(), root));
 
   if (!H.keyval().empty()) {
@@ -90,7 +90,7 @@ ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
     } else {
       TreeItem *scheme = new TreeItem("Diffusion scheme", std::string(), root);
       root->appendChild(scheme);
-      for (size_t n = 0; n < size_t(DW_scheme.rows()); ++n) {
+      for (Eigen::Index n = 0; n < DW_scheme.rows(); ++n) {
         std::stringstream ss;
         ss << DW_scheme.row(n).format(Fmt);
         scheme->appendChild(new TreeItem(std::string(), ss.str(), scheme));
@@ -148,9 +148,9 @@ void ImageProperties::context_menu(const QPoint &point) {
 
 void ImageProperties::write_to_file() {
   assert(save_data.rows());
-  std::string name = File::get_save_name(this, "Save as...", "dwgrad.txt");
-  if (!name.empty())
-    MR::File::Matrix::save_matrix(save_data, name);
+  auto save_paths = File::output_filepath(this, "Save as...", "dwgrad.txt");
+  if (!save_paths.single_selection.empty())
+    MR::File::Matrix::save_matrix(save_data, save_paths.single_selection);
 }
 
 } // namespace MR::GUI::Dialog

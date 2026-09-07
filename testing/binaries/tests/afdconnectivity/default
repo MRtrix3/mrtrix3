@@ -1,0 +1,21 @@
+#!/bin/bash
+# Test default operation of afdconnectivity:
+#   compute AFD connectivity for the SIFT_phantom track bundle
+#   using the SIFT_phantom FOD image, without whole-brain fibre-tracking.
+# The output is a scalar value printed to stdout.
+#
+# The bundle has a cross-section of 9 voxels,
+#   each with an AFD of around 1.0;
+#   the bundle is 12 x 2mm voxels long.
+# Total AFD is 9 x 12 = 108; mean length = 24mm; afdconnectivity = 108/24 = 4.5.
+#
+# REFERENCE DATA NOTE: No reference output value exists for this test.
+#   To generate a reference value, run:
+#     afdconnectivity SIFT_phantom/fods.mif SIFT_phantom/tracks.tck
+#   and store the result for future regression testing.
+result=$(afdconnectivity SIFT_phantom/fods.mif SIFT_phantom/tracks.tck -quiet)
+
+echo "${result} > 4.3 && ${result} < 4.7" | bc
+[[ $? ]]
+echo "${result} > 4.49 && ${result} < 4.51" | bc
+[[ $? ]]

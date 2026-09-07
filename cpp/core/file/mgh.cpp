@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,7 +30,7 @@ std::string tag_ID_to_string(const tag_type tag) {
   }
 }
 
-tag_type string_to_tag_ID(const std::string &key) {
+tag_type string_to_tag_ID(std::string_view key) {
   if (key.compare(0, 8, "MGH_TAG_") != 0)
     return 0;
 

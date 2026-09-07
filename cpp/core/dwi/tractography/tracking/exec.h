@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,10 @@
 
 #pragma once
 
+#include <deque>
+#include <filesystem>
+#include <optional>
+
 #include "dwi/directions/set.h"
 #include "dwi/tractography/rng.h"
 #include "dwi/tractography/roi.h"
@@ -26,6 +30,8 @@
 #include "dwi/tractography/tracking/write_kernel.h"
 #include "thread.h"
 #include "thread_queue.h"
+
+#include "dwi/tractography/ACT/act.h"
 
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/mapping.h"
@@ -43,8 +49,9 @@ constexpr ssize_t streamline_generation_batch_size = 10;
 template <class Method> class Exec {
 
 public:
-  static void
-  run(const std::string &diff_path, const std::string &destination, DWI::Tractography::Properties &properties) {
+  static void run(const std::filesystem::path &diff_path,
+                  const std::filesystem::path &destination,
+                  DWI::Tractography::Properties &properties) {
 
     if (properties.find("seed_dynamic") == properties.end()) {
 
@@ -56,7 +63,7 @@ public:
 
     } else {
 
-      const std::string &fod_path(properties["seed_dynamic"]);
+      const std::string fod_path(properties["seed_dynamic"]);
       const std::string max_num_tracks = properties["max_num_tracks"];
       if (max_num_tracks.empty())
         throw Exception("Dynamic seeding requires setting the desired number of tracks using the -select option");
@@ -130,15 +137,15 @@ private:
   bool track_excluded;
   IncludeROIVisitation include_visitation;
 
-  term_t iterate() {
-    const term_t method_term = (S.rk4 ? next_rk4() : method.next());
+  std::optional<term_t> iterate() {
+    const std::optional<term_t> method_term = S.rk4 ? next_rk4() : method.next();
 
-    if (method_term != term_t::CONTINUE)
+    if (method_term.has_value())
       return (S.is_act() && method.act().sgm_depth) ? term_t::TERM_IN_SGM : method_term;
 
     if (S.is_act()) {
-      const term_t structural_term = method.act().check_structural(method.pos);
-      if (structural_term != term_t::CONTINUE)
+      const std::optional<term_t> structural_term = method.act().check_structural(method.pos);
+      if (structural_term.has_value())
         return structural_term;
     }
 
@@ -156,14 +163,14 @@ private:
     if (S.stop_on_all_include && bool(include_visitation))
       return term_t::TRAVERSE_ALL_INCLUDE;
 
-    return term_t::CONTINUE;
+    return std::nullopt;
   }
 
   bool seed_track(GeneratedTrack &tck) {
     tck.clear();
     track_excluded = false;
     include_visitation.reset();
-    method.dir.setConstant(NaN);
+    method.dir.setConstant(NaNF);
 
     if (S.properties.seeds.is_finite()) {
 
@@ -215,7 +222,7 @@ private:
   }
 
   void gen_track_unidir(GeneratedTrack &tck) {
-    term_t termination = term_t::CONTINUE;
+    std::optional<term_t> termination;
 
     if (S.is_act() && S.act().backtrack()) {
 
@@ -225,11 +232,11 @@ private:
 
       do {
         termination = iterate();
-        if (termination_info.at(termination).add_term_to_tck)
+        if (!termination.has_value() || termination_info.at(termination.value()).add_term_to_tck)
           tck.push_back(method.pos);
-        if (termination != term_t::CONTINUE) {
+        if (termination.has_value()) {
           apply_priors(termination);
-          if (track_excluded && termination != term_t::ENTER_EXCLUDE) {
+          if (track_excluded && termination.value() != term_t::ENTER_EXCLUDE) {
             if (tck.size() > max_size_at_backtrack) {
               max_size_at_backtrack = tck.size();
               revert_step = 1;
@@ -243,23 +250,23 @@ private:
             method.truncate_track(tck, max_size_at_backtrack, revert_step);
             if (method.pos.allFinite()) {
               track_excluded = false;
-              termination = term_t::CONTINUE;
+              termination.reset();
             }
           }
         } else if (tck.size() >= S.max_num_points_preds) {
-          termination = term_t::LENGTH_EXCEED;
+          termination.emplace(term_t::LENGTH_EXCEED);
         }
-      } while (termination == term_t::CONTINUE);
+      } while (!termination.has_value());
 
     } else {
 
       do {
         termination = iterate();
-        if (termination_info.at(termination).add_term_to_tck)
+        if (!termination.has_value() || termination_info.at(termination.value()).add_term_to_tck)
           tck.push_back(method.pos);
-        if (termination == term_t::CONTINUE && tck.size() >= S.max_num_points_preds)
-          termination = term_t::LENGTH_EXCEED;
-      } while (termination == term_t::CONTINUE);
+        if (!termination.has_value() && tck.size() >= S.max_num_points_preds)
+          termination.emplace(term_t::LENGTH_EXCEED);
+      } while (!termination.has_value());
     }
 
     apply_priors(termination);
@@ -270,7 +277,8 @@ private:
     }
 
     if (track_excluded) {
-      switch (termination) {
+      assert(termination.has_value());
+      switch (termination.value()) {
       case term_t::CALIBRATOR:
       case term_t::ENTER_CSF:
       case term_t::MODEL:
@@ -284,28 +292,26 @@ private:
         S.add_rejection(reject_t::ENTER_EXCLUDE_REGION);
         break;
       default:
-        throw Exception("\nFIXME: Unidirectional track excluded but termination is good!\n");
+        assert(false);
       }
     }
 
-    if (S.is_act() && (termination == term_t::ENTER_CGM) && S.act().crop_at_gmwmi())
+    if (S.is_act() && (termination.value() == term_t::ENTER_CGM) && S.act().crop_at_gmwmi())
       S.act().crop_at_gmwmi(tck);
 
 #ifdef DEBUG_TERMINATIONS
-    S.add_termination(termination, method.pos);
+    S.add_termination(termination.value(), method.pos);
 #else
-    S.add_termination(termination);
+    S.add_termination(termination.value());
 #endif
   }
 
-  void apply_priors(term_t &termination) {
+  void apply_priors(std::optional<term_t> &termination) {
+    assert(termination.has_value());
 
     if (S.is_act()) {
 
-      switch (termination) {
-
-      case term_t::CONTINUE:
-        throw Exception("\nFIXME: undefined termination of track in apply_priors()\n");
+      switch (termination.value()) {
 
       case term_t::ENTER_CGM:
       case term_t::EXIT_IMAGE:
@@ -333,10 +339,7 @@ private:
 
     } else {
 
-      switch (termination) {
-
-      case term_t::CONTINUE:
-        throw Exception("\nFIXME: undefined termination of track in apply_priors()\n");
+      switch (termination.value()) {
 
       case term_t::ENTER_CGM:
       case term_t::ENTER_CSF:
@@ -414,8 +417,8 @@ private:
       if (method.act().fetch_tissue_data(i)) {
         const float wm = method.act().tissues().get_wm();
         max_value = std::max(max_value, wm);
-        if (((integral += (Math::pow2(wm) * S.internal_step_size())) > ACT::wm_pathintegral_threshold) &&
-            (max_value > ACT::wm_maxabs_threshold))
+        integral += Math::pow2(wm) * S.internal_step_size();
+        if ((integral > ACT::wm_pathintegral_threshold) && (max_value > ACT::wm_maxabs_threshold))
           return true;
       }
     }
@@ -423,19 +426,80 @@ private:
   }
 
   void truncate_exit_sgm(std::vector<Eigen::Vector3f> &tck) {
-    const size_t sgm_start = tck.size() - method.act().sgm_depth;
-    assert(sgm_start >= 0 && sgm_start < tck.size());
-    size_t best_termination = tck.size() - 1;
-    float min_value = std::numeric_limits<float>::infinity();
-    for (size_t i = sgm_start; i != tck.size(); ++i) {
-      const Eigen::Vector3f direction = (tck[i] - tck[i - 1]).normalized();
-      const float this_value = method.get_metric(tck[i], direction);
-      if (this_value < min_value) {
-        min_value = this_value;
-        best_termination = i;
+    assert(S.is_act());
+    assert(method.act().sgm_depth <= tck.size());
+    switch (S.act().sgm_trunc()) {
+    case ACT::sgm_trunc_t::DEFAULT:
+      throw Exception("FIXME: Algorithm failed to set default SGM truncation method");
+    case ACT::sgm_trunc_t::ENTRY:
+      tck.resize(tck.size() - method.act().sgm_depth);
+      return;
+    case ACT::sgm_trunc_t::EXIT:
+      // Do nothing
+      return;
+    case ACT::sgm_trunc_t::MINIMUM: {
+      const size_t sgm_start = tck.size() - method.act().sgm_depth;
+      assert(sgm_start >= 0 && sgm_start < tck.size());
+      size_t best_termination = tck.size() - 1;
+      float min_value = std::numeric_limits<float>::infinity();
+      for (size_t i = sgm_start; i != tck.size(); ++i) {
+        const Eigen::Vector3f direction = Tractography::tangent(tck, i);
+        const float this_value = method.get_metric(tck[i], direction);
+        if (this_value < min_value) {
+          min_value = this_value;
+          best_termination = i;
+        }
+      }
+      tck.resize(best_termination + 1);
+    }
+      return;
+    case ACT::sgm_trunc_t::RANDOM:
+      tck.resize(tck.size() - static_cast<size_t>(std::round(method.act().sgm_depth * method.uniform(rng()))));
+      return;
+    case ACT::sgm_trunc_t::ROULETTE: {
+      const size_t sgm_start = tck.size() - method.act().sgm_depth;
+      class IndexAndValue {
+      public:
+        IndexAndValue(const size_t index, const float value) : i(index), v(value) {}
+        size_t index() const { return i; }
+        float value() const { return v; }
+
+      private:
+        const size_t i;
+        const float v;
+      };
+      std::deque<IndexAndValue> valid_vertices;
+      std::vector<size_t> invalid_vertices;
+      default_type total_sum = 0.0;
+      for (size_t i = sgm_start; i != tck.size(); ++i) {
+        const Eigen::Vector3f direction = Tractography::tangent(tck, i);
+        const float this_metric = method.get_metric(tck[i], direction);
+        if (this_metric > 0.0F) {
+          const float this_probability = std::exp((method.get_threshold() - this_metric) / method.get_threshold());
+          total_sum += this_probability;
+          valid_vertices.emplace_back(IndexAndValue(i, this_probability));
+        } else {
+          invalid_vertices.push_back(i);
+        }
+      }
+      if (invalid_vertices.empty()) {
+        const default_type sample = method.uniform(rng()) * total_sum;
+        default_type cumulative_sum = 0.0;
+        while (valid_vertices.size() > 1) {
+          cumulative_sum += valid_vertices.front().value();
+          if (cumulative_sum > sample)
+            break;
+          valid_vertices.pop_front();
+        }
+        tck.resize(valid_vertices.front().index() + 1);
+      } else {
+        const default_type sample = method.uniform(rng()) * static_cast<default_type>(invalid_vertices.size());
+        const size_t truncation_vertex = invalid_vertices[std::trunc(sample)];
+        tck.resize(truncation_vertex + 1);
       }
     }
-    tck.erase(tck.begin() + best_termination + 1, tck.end());
+      return;
+    }
   }
 
   void check_downsampled_length(GeneratedTrack &tck) {
@@ -504,39 +568,44 @@ private:
     tck[index] = tck[index - 1] + ((tck[index] - tck[index - 1]).normalized() * (S.max_dist - length_sum));
   }
 
-  term_t next_rk4() {
-    term_t termination = term_t::CONTINUE;
+  std::optional<term_t> next_rk4() {
+    std::optional<term_t> termination;
     const Eigen::Vector3f init_pos(method.pos);
     const Eigen::Vector3f init_dir(method.dir);
-    if ((termination = method.next()) != term_t::CONTINUE)
+    termination = method.next();
+    if (termination.has_value())
       return termination;
     const Eigen::Vector3f dir_rk1(method.dir);
     method.pos = init_pos + (dir_rk1 * (0.5 * S.step_size));
     method.dir = init_dir;
-    if ((termination = method.next()) != term_t::CONTINUE)
+    termination = method.next();
+    if (termination.has_value())
       return termination;
     const Eigen::Vector3f dir_rk2(method.dir);
     method.pos = init_pos + (dir_rk2 * (0.5 * S.step_size));
     method.dir = init_dir;
-    if ((termination = method.next()) != term_t::CONTINUE)
+    termination = method.next();
+    if (termination.has_value())
       return termination;
     const Eigen::Vector3f dir_rk3(method.dir);
     method.pos = init_pos + (dir_rk3 * S.step_size);
     method.dir = (dir_rk2 + dir_rk3).normalized();
-    if ((termination = method.next()) != term_t::CONTINUE)
+    termination = method.next();
+    if (termination.has_value())
       return termination;
     const Eigen::Vector3f dir_rk4(method.dir);
     method.dir = (dir_rk1 + (dir_rk2 * 2.0) + (dir_rk3 * 2.0) + dir_rk4).normalized();
     method.pos = init_pos + (method.dir * S.step_size);
     const Eigen::Vector3f final_pos(method.pos);
     const Eigen::Vector3f final_dir(method.dir);
-    if ((termination = method.next()) != term_t::CONTINUE)
+    termination = method.next();
+    if (termination.has_value())
       return termination;
     if (dir_rk1.dot(method.dir) < S.cos_max_angle_ho)
       return term_t::HIGH_CURVATURE;
     method.pos = final_pos;
     method.dir = final_dir;
-    return term_t::CONTINUE;
+    return std::nullopt;
   }
 };
 

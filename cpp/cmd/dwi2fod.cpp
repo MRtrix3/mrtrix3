@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,6 +18,7 @@
 #include "command.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "enum.h"
 #include "header.h"
 #include "image.h"
 #include "math/SH.h"
@@ -26,10 +27,12 @@
 #include "dwi/sdeconv/csd.h"
 #include "dwi/sdeconv/msmt_csd.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> algorithms = {"csd", "msmt_csd"};
+enum class Algorithm { CSD, MSMT_CSD };
 
 // clang-format off
 const OptionGroup CommonOptions = OptionGroup ("Options common to more than one algorithm")
@@ -113,7 +116,7 @@ void usage() {
 
   ARGUMENTS
     + Argument ("algorithm", "the algorithm to use for FOD estimation. "
-                             "(options are: " + join(algorithms, ",") + ")").type_choice (algorithms)
+                             "(options are: " + MR::Enum::join<Algorithm>() + ")").type_choice<Algorithm>()
     + Argument ("dwi", "the input diffusion-weighted image").type_image_in()
     + Argument ("response odf", "pairs of input tissue response and output ODF images").type_file_in().type_image_out().allow_multiple();
 
@@ -249,8 +252,9 @@ private:
 };
 
 void run() {
+  const std::filesystem::path input_path{argument[1]};
+  auto header_in = Header::open(input_path);
 
-  auto header_in = Header::open(argument[1]);
   Header header_out(header_in);
   header_out.ndim() = 4;
   header_out.datatype() = DataType::Float32;
@@ -269,9 +273,9 @@ void run() {
   if (opt.size())
     dwi_modelled = Image<float>::create(opt[0][0], header_out);
 
-  int algorithm = argument[0];
-  if (algorithm == 0) {
-
+  const Algorithm algorithm = MR::Enum::from_name<Algorithm>(argument[0]);
+  switch (algorithm) {
+  case Algorithm::CSD: {
     if (argument.size() != 4)
       throw Exception("CSD algorithm expects a single input response function and single output FOD image");
 
@@ -292,11 +296,11 @@ void run() {
     auto fod = Image<float>::create(argument[3], header_out);
 
     CSD_Processor processor(shared, mask, dwi_modelled);
-    auto dwi = header_in.get_image<float>().with_direct_io(3);
+    auto dwi = header_in.get_image<float>(DirectIO{3});
     ThreadedLoop("performing constrained spherical deconvolution", dwi, 0, 3).run(processor, dwi, fod);
-
-  } else if (algorithm == 1) {
-
+    break;
+  }
+  case Algorithm::MSMT_CSD: {
     if (argument.size() % 2)
       throw Exception(
           "MSMT_CSD algorithm expects pairs of (input response function & output FOD image) to be provided");
@@ -305,8 +309,8 @@ void run() {
     shared.parse_cmdline_options();
 
     const size_t num_tissues = (argument.size() - 2) / 2;
-    std::vector<std::string> response_paths;
-    std::vector<std::string> odf_paths;
+    std::vector<std::filesystem::path> response_paths;
+    std::vector<std::filesystem::path> odf_paths;
     for (size_t i = 0; i < num_tissues; ++i) {
       response_paths.push_back(argument[i * 2 + 2]);
       odf_paths.push_back(argument[i * 2 + 3]);
@@ -330,15 +334,16 @@ void run() {
     }
 
     MSMT_Processor processor(shared, mask, odfs, dwi_modelled);
-    auto dwi = header_in.get_image<float>().with_direct_io(3);
+    auto dwi = header_in.get_image<float>(DirectIO{3});
     ThreadedLoop("performing MSMT CSD (" + str(shared.num_shells()) + " shell" + (shared.num_shells() > 1 ? "s" : "") +
                      ", " + str(num_tissues) + " tissue" + (num_tissues > 1 ? "s" : "") + ")",
                  dwi,
                  0,
                  3)
         .run(processor, dwi);
-
-  } else {
-    assert(0);
+    break;
+  }
+  default:
+    throw Exception("Unsupported deconvolution algorithm");
   }
 }

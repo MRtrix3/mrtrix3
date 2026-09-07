@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+
+#include "app.h"
 #include "command.h"
+#include "enum.h"
 #include "exception.h"
 #include "header.h"
 #include "image.h"
@@ -39,7 +43,7 @@ using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Mapping;
 
-const std::vector<std::string> windows = {"rectangle", "triangle", "cosine", "hann", "hamming", "lanczos"};
+enum class WindowShape { RECTANGLE, TRIANGLE, COSINE, HANN, HAMMING, LANCZOS };
 
 constexpr default_type maximum_ratio_stepsize_voxelsize = 1.0 / 3.0;
 
@@ -98,7 +102,7 @@ void usage () {
   + Option ("dynamic", "generate a \"dynamic\" (4D) output image;"
                        " must additionally provide the shape and width (in volumes)"
                        " of the sliding window.")
-    + Argument ("shape").type_choice(windows)
+    + Argument ("shape").type_choice<WindowShape>()
     + Argument ("width").type_integer(3)
 
   + OptionGroup ("Options for setting the properties of the output image")
@@ -117,9 +121,9 @@ void usage () {
       "define the statistic for choosing the final voxel intensities"
       " for a given contrast type given the individual values"
       " from the tracks passing through each voxel;"
-      " options are: " + join(voxel_statistics, ", ") +
+      " options are: " + MR::Enum::join<vox_stat_t>() +
       " (default: mean)")
-    + Argument ("type").type_choice(voxel_statistics)
+    + Argument ("type").type_choice<vox_stat_t>()
 
   + OptionGroup ("Other options for affecting the streamline sampling & mapping behaviour")
 
@@ -150,10 +154,10 @@ class Receiver {
 public:
   Receiver(const Header &header, const vox_stat_t stat_vox)
       : buffer(Image<float>::scratch(header, "TW-dFC scratch buffer")), vox_stat(stat_vox) {
-    if (vox_stat == V_MIN) {
+    if (vox_stat == vox_stat_t::MIN) {
       for (auto l = Loop(buffer)(buffer); l; ++l)
         buffer.value() = std::numeric_limits<float>::infinity();
-    } else if (vox_stat == V_MAX) {
+    } else if (vox_stat == vox_stat_t::MAX) {
       for (auto l = Loop(buffer)(buffer); l; ++l)
         buffer.value() = -std::numeric_limits<float>::infinity();
     }
@@ -173,16 +177,16 @@ bool Receiver::operator()(const Mapping::SetVoxel &in) {
   for (const auto &i : in) {
     assign_pos_of(i, 0, 3).to(buffer);
     switch (vox_stat) {
-    case V_SUM:
+    case vox_stat_t::SUM:
       buffer.value() += factor;
       break;
-    case V_MIN:
-      buffer.value() = std::min(float(buffer.value()), factor);
+    case vox_stat_t::MIN:
+      buffer.value() = std::min(static_cast<float>(buffer.value()), factor);
       break;
-    case V_MAX:
-      buffer.value() = std::max(float(buffer.value()), factor);
+    case vox_stat_t::MAX:
+      buffer.value() = std::max(static_cast<float>(buffer.value()), factor);
       break;
-    case V_MEAN:
+    case vox_stat_t::MEAN:
       buffer.value() += factor;
       break;
       // Unlike Mapping::MapWriter, don't need to deal with counts here
@@ -195,7 +199,7 @@ void Receiver::scale_by_count(Image<uint32_t> &counts) {
   assert(dimensions_match(buffer, counts, 0, 3));
   for (auto l = Loop(buffer)(buffer, counts); l; ++l) {
     if (counts.value())
-      buffer.value() /= float(counts.value());
+      buffer.value() /= static_cast<float>(counts.value());
     else
       buffer.value() = 0.0f;
   }
@@ -223,6 +227,10 @@ private:
 };
 
 void run() {
+  const std::filesystem::path input_tracks_path{argument[0]};
+  const std::filesystem::path input_fmri_path{argument[1]};
+  const std::filesystem::path output_path{argument[2]};
+
   const bool is_static = !get_options("static").empty();
   std::vector<float> window;
 
@@ -232,7 +240,7 @@ void run() {
       throw Exception("Do not specify both -static and -dynamic options");
 
     // Generate the window filter
-    const int window_shape = opt[0][0];
+    const WindowShape window_shape = MR::Enum::from_name<WindowShape>(opt[0][0]);
     const ssize_t window_width = opt[0][1];
     if (!(window_width % 2))
       throw Exception("Width of sliding time window must be an odd integer");
@@ -243,33 +251,33 @@ void run() {
 
     switch (window_shape) {
 
-    case 0: // rectangular
+    case WindowShape::RECTANGLE:
       window.assign(window_width, 1.0);
       break;
 
-    case 1: // triangle
+    case WindowShape::TRIANGLE:
       for (ssize_t i = 0; i != window_width; ++i)
-        window[i] = 1.0 - (abs(i - centre) / default_type(halfwidth));
+        window[i] = 1.0 - (std::fabs(i - centre) / static_cast<default_type>(halfwidth));
       break;
 
-    case 2: // cosine
+    case WindowShape::COSINE:
       for (ssize_t i = 0; i != window_width; ++i)
-        window[i] = std::sin(i * Math::pi / default_type(window_width - 1));
+        window[i] = std::sin(i * Math::pi / static_cast<default_type>(window_width - 1));
       break;
 
-    case 3: // hann
+    case WindowShape::HANN:
       for (ssize_t i = 0; i != window_width; ++i)
-        window[i] = 0.5 * (1.0 - std::cos(2.0 * Math::pi * i / default_type(window_width - 1)));
+        window[i] = 0.5 * (1.0 - std::cos(2.0 * Math::pi * i / static_cast<default_type>(window_width - 1)));
       break;
 
-    case 4: // hamming
+    case WindowShape::HAMMING:
       for (ssize_t i = 0; i != window_width; ++i)
-        window[i] = 0.53836 - (0.46164 * std::cos(2.0 * Math::pi * i / default_type(window_width - 1)));
+        window[i] = 0.53836 - (0.46164 * std::cos(2.0 * Math::pi * i / static_cast<default_type>(window_width - 1)));
       break;
 
-    case 5: // lanczos
+    case WindowShape::LANCZOS:
       for (ssize_t i = 0; i != window_width; ++i) {
-        const default_type v = 2.0 * Math::pi * abs(i - centre) / default_type(window_width - 1);
+        const default_type v = 2.0 * Math::pi * std::fabs(i - centre) / static_cast<default_type>(window_width - 1);
         window[i] = v ? std::max(0.0, (std::sin(v) / v)) : 1.0;
       }
       break;
@@ -282,16 +290,15 @@ void run() {
     throw Exception("Either the -static or -dynamic option must be provided");
   }
 
-  const std::string tck_path = argument[0];
   Tractography::Properties properties;
   {
     // Just get the properties for now; will re-instantiate the reader multiple times later
     // TODO Constructor for properties using the file path?
-    Tractography::Reader<float> tck_file(tck_path, properties);
+    Tractography::Reader<float> tck_file(input_tracks_path, properties);
   }
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t>(properties["count"]);
 
-  Image<float> fmri_image(Image<float>::open(argument[1]).with_direct_io(3));
+  Image<float> fmri_image(Image<float>::open(input_fmri_path, DirectIO{3}));
 
   std::vector<default_type> voxel_size;
   opt = get_options("vox");
@@ -318,7 +325,7 @@ void run() {
     if (voxel_size.empty())
       throw Exception("please specify either a template image using the -template option, or the desired voxel size "
                       "using the -vox option");
-    Mapping::generate_header(header, argument[0], voxel_size);
+    Mapping::generate_header(header, input_tracks_path, voxel_size);
   }
 
   header.datatype() = DataType::Float32;
@@ -347,20 +354,19 @@ void run() {
     }
   }
 
-  opt = get_options("stat_vox");
-  const vox_stat_t stat_vox = !opt.empty() ? vox_stat_t(int(opt[0][0])) : V_MEAN;
+  const vox_stat_t stat_vox = get_option_choice<vox_stat_t>("stat_vox", vox_stat_t::MEAN);
 
   Header H_3D(header);
   H_3D.ndim() = 3;
 
   if (is_static) {
 
-    Tractography::Reader<float> tck_file(tck_path, properties);
+    Tractography::Reader<float> tck_file(input_tracks_path, properties);
     Mapping::TrackLoader loader(tck_file, num_tracks, "Generating (static) TW-dFC image");
-    Mapping::TrackMapperTWI mapper(H_3D, SCALAR_MAP, ENDS_CORR);
+    Mapping::TrackMapperTWI mapper(H_3D, contrast_t::SCALAR_MAP, tck_stat_t::ENDS_CORR);
     mapper.set_upsample_ratio(upsample_ratio);
     mapper.add_twdfc_static_image(fmri_image);
-    Mapping::MapWriter<float> writer(header, argument[2], stat_vox);
+    Mapping::MapWriter<float> writer(header, output_path, stat_vox);
     Thread::run_queue(loader,
                       Thread::batch(Tractography::Streamline<>()),
                       Thread::multi(mapper),
@@ -371,9 +377,9 @@ void run() {
   } else {
 
     Image<uint32_t> counts;
-    if (stat_vox == V_MEAN) {
+    if (stat_vox == vox_stat_t::MEAN) {
       counts = Image<uint32_t>::scratch(H_3D, "Track count scratch buffer");
-      Tractography::Reader<float> tck_file(tck_path, properties);
+      Tractography::Reader<float> tck_file(input_tracks_path, properties);
       Mapping::TrackLoader loader(tck_file, num_tracks, "Calculating initial TDI");
       Mapping::TrackMapperBase mapper(H_3D);
       mapper.set_upsample_ratio(upsample_ratio);
@@ -385,15 +391,15 @@ void run() {
                         receiver);
     }
 
-    Image<float> out_image(Image<float>::create(argument[2], header));
+    Image<float> out_image(Image<float>::create(output_path, header));
     ProgressBar progress("Generating TW-dFC image", header.size(3));
     for (ssize_t timepoint = 0; timepoint != header.size(3); ++timepoint) {
 
       {
         LogLevelLatch latch(0);
-        Tractography::Reader<float> tck_file(tck_path, properties);
+        Tractography::Reader<float> tck_file(input_tracks_path, properties);
         Mapping::TrackLoader loader(tck_file);
-        Mapping::TrackMapperTWI mapper(H_3D, SCALAR_MAP, ENDS_CORR);
+        Mapping::TrackMapperTWI mapper(H_3D, contrast_t::SCALAR_MAP, tck_stat_t::ENDS_CORR);
         mapper.set_upsample_ratio(upsample_ratio);
         mapper.add_twdfc_dynamic_image(fmri_image, window, timepoint);
         Receiver receiver(H_3D, stat_vox);
@@ -403,7 +409,7 @@ void run() {
                           Thread::batch(Mapping::SetVoxel()),
                           receiver);
 
-        if (stat_vox == V_MEAN)
+        if (stat_vox == vox_stat_t::MEAN)
           receiver.scale_by_count(counts);
 
         out_image.index(3) = timepoint;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,6 +13,15 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+
+#include <QDebug>
+#include <QImage>
+#include <algorithm>
+#include <memory>
+#include <qopenglwidget.h>
+#include <string>
+#include <unordered_map>
+
 #include "algo/copy.h"
 #include "app.h"
 #include "dialog/dialog.h"
@@ -22,6 +31,7 @@
 #include "dialog/progress.h"
 #include "file/config.h"
 #include "header.h"
+#include "mrtrix.h"
 #include "mrview/mode/base.h"
 #include "mrview/mode/list.h"
 #include "mrview/qthelpers.h"
@@ -30,7 +40,6 @@
 #include "opengl/glutils.h"
 #include "opengl/lighting.h"
 #include "timer.h"
-#include <QDebug>
 
 namespace MR::GUI::MRView {
 using namespace App;
@@ -61,11 +70,11 @@ template <> inline QPoint position(QWheelEvent *event) {
 #endif
 }
 
-Qt::KeyboardModifiers get_modifier(const char *key, Qt::KeyboardModifiers default_key) {
-  std::string value = lowercase(MR::File::Config::get(key));
-  if (value.empty())
+Qt::KeyboardModifiers get_modifier(std::string_view key, Qt::KeyboardModifiers default_key) {
+  const auto from_config = MR::File::Config::get(key);
+  if (!from_config.has_value())
     return default_key;
-
+  const std::string value = lowercase(from_config.value());
   if (value == "shift")
     return Qt::ShiftModifier;
   if (value == "alt")
@@ -136,10 +145,10 @@ QSize Window::GLArea::sizeHint() const {
   // CONF option: MRViewInitWindowSize
   // CONF Initial window size of MRView in pixels.
   // CONF default: 512,512
-  std::string init_size_string = lowercase(MR::File::Config::get("MRViewInitWindowSize"));
+  const auto from_config = MR::File::Config::get("MRViewInitWindowSize");
   std::vector<uint32_t> init_window_size;
-  if (init_size_string.length())
-    init_window_size = parse_ints<uint32_t>(init_size_string);
+  if (from_config.has_value())
+    init_window_size = parse_ints<uint32_t>(from_config.value());
   if (init_window_size.size() == 2)
     return QSize(init_window_size[0], init_window_size[1]);
   else
@@ -155,9 +164,7 @@ void Window::GLArea::dropEvent(QDropEvent *event) {
     QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < 32; ++i) {
       try {
-        const auto &url = urlList.at(i);
-        const auto filePath = QtHelpers::url_to_std_string(url);
-        list.push_back(std::make_unique<MR::Header>(MR::Header::open(filePath)));
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(QtHelpers::url_to_fspath(urlList.at(i)))));
       } catch (Exception &e) {
         e.display();
       }
@@ -178,7 +185,7 @@ void Window::GLArea::wheelEvent(QWheelEvent *event) { main->wheelEventGL(event);
 bool Window::GLArea::event(QEvent *event) {
   if (event->type() == QEvent::Gesture)
     return main->gestureEventGL(static_cast<QGestureEvent *>(event));
-  return QWidget::event(event);
+  return QOpenGLWidget::event(event);
 }
 
 // CONF option: MRViewFocusModifierKey
@@ -213,8 +220,8 @@ Window::Window()
       MoveModifier(get_modifier("MRViewMoveModifierKey", Qt::ShiftModifier)),
       RotateModifier(get_modifier("MRViewRotateModifierKey", Qt::ControlModifier)),
       mouse_action(NoAction),
-      focal_point{NAN, NAN, NAN},
-      camera_target{NAN, NAN, NAN},
+      focal_point(Eigen::Vector3f::Constant(NaNF)),
+      camera_target(Eigen::Vector3f::Constant(NaNF)),
       orient(NaN, NaN, NaN, NaN),
       field_of_view(100.0),
       anatomical_plane(2),
@@ -223,7 +230,7 @@ Window::Window()
       snap_to_image_axes_and_voxel(true),
       camera_interactor(nullptr),
       tool_has_focus(nullptr),
-      best_FPS(NAN),
+      best_FPS(NaN),
       show_FPS(false),
       current_option(0) {
   main = this;
@@ -264,8 +271,9 @@ Window::Window()
   // CONF top, bottom, left, right.
   Qt::ToolBarArea toolbar_position = Qt::TopToolBarArea;
   {
-    std::string toolbar_pos_spec = lowercase(MR::File::Config::get("InitialToolBarPosition"));
-    if (!toolbar_pos_spec.empty()) {
+    const auto from_config = MR::File::Config::get("InitialToolBarPosition");
+    if (from_config.has_value()) {
+      const std::string toolbar_pos_spec = lowercase(from_config.value());
       if (toolbar_pos_spec == "bottom")
         toolbar_position = Qt::BottomToolBarArea;
       else if (toolbar_pos_spec == "left")
@@ -590,7 +598,6 @@ Window::Window()
   mode_action_group->setExclusive(true);
   connect(mode_action_group, SIGNAL(triggered(QAction *)), this, SLOT(select_mouse_mode_slot(QAction *)));
 
-  std::string modifier;
   action = toolbar->addAction(QIcon(":/select_contrast.svg"), tr("Change focus / contrast"));
   action->setToolTip(qstr("Left-click: set focus\n"
                           "Right-click: change brightness/constrast\n\n"
@@ -727,8 +734,8 @@ void Window::parse_arguments() {
       const auto last_arg_pos = MR::App::argument.back().index();
 
       const auto is_non_standard_option = [](const MR::App::ParsedOption &option) {
-        return std::none_of(MR::App::__standard_options.begin(),
-                            MR::App::__standard_options.end(),
+        return std::none_of(MR::App::_standard_options.begin(),
+                            MR::App::_standard_options.end(),
                             [&option](const auto &standard_option) { return option.opt == &standard_option; });
       };
 
@@ -746,8 +753,9 @@ void Window::parse_arguments() {
       try {
         list.push_back(std::make_unique<MR::Header>(MR::Header::open(MR::App::argument[n])));
       } catch (CancelException &e) {
-        for (const auto &msg : e.description)
+        for (const auto &msg : e.description) {
           CONSOLE(msg);
+        }
       } catch (Exception &e) {
         e.display();
       }
@@ -758,20 +766,18 @@ void Window::parse_arguments() {
   QTimer::singleShot(10, this, SLOT(process_commandline_option_slot()));
 }
 
-ColourBars::Position Window::parse_colourmap_position_str(const std::string &position_str) {
-
-  ColourBars::Position pos(ColourBars::Position::None);
-
-  if (position_str == "bottomleft")
-    pos = ColourBars::Position::BottomLeft;
-  else if (position_str == "bottomright")
-    pos = ColourBars::Position::BottomRight;
-  else if (position_str == "topleft")
-    pos = ColourBars::Position::TopLeft;
-  else if (position_str == "topright")
-    pos = ColourBars::Position::TopRight;
-
-  return pos;
+namespace {
+const std::unordered_map<std::string, ColourBars::Position> str2pos{{"bottomleft", ColourBars::Position::BottomLeft},
+                                                                    {"bottomright", ColourBars::Position::BottomRight},
+                                                                    {"topleft", ColourBars::Position::TopLeft},
+                                                                    {"topright", ColourBars::Position::TopRight}};
+}
+ColourBars::Position Window::parse_colourmap_position_str(std::string_view position_str) {
+  try {
+    return str2pos.at(std::string(position_str));
+  } catch (std::out_of_range) {
+    return ColourBars::Position::None;
+  }
 }
 
 Window::~Window() {
@@ -788,14 +794,14 @@ Window::~Window() {
 void Window::sync_slot() { emit syncChanged(); }
 
 void Window::image_open_slot() {
-  std::vector<std::string> image_list = Dialog::File::get_images(this, "Select images to open", &current_folder);
-  if (image_list.empty())
+  auto load_paths = Dialog::File::input_imagepaths(this, "Select images to open", current_folder);
+  if (load_paths.empty())
     return;
-
+  current_folder = load_paths.last_directory;
   std::vector<std::unique_ptr<MR::Header>> list;
-  for (size_t n = 0; n < image_list.size(); ++n) {
+  for (const auto &path : load_paths.multi_selection) {
     try {
-      list.push_back(std::make_unique<MR::Header>(MR::Header::open(image_list[n])));
+      list.push_back(std::make_unique<MR::Header>(MR::Header::open(path)));
     } catch (Exception &E) {
       E.display();
     }
@@ -804,13 +810,13 @@ void Window::image_open_slot() {
 }
 
 void Window::image_import_DICOM_slot() {
-  std::string folder = Dialog::File::get_folder(this, "Select DICOM folder to import", &current_folder);
-  if (folder.empty())
+  auto load_paths = Dialog::File::input_dirpath(this, "Select DICOM folder to import", current_folder);
+  if (load_paths.empty())
     return;
-
+  current_folder = load_paths.last_directory;
   try {
     std::vector<std::unique_ptr<MR::Header>> list;
-    list.push_back(std::make_unique<MR::Header>(MR::Header::open(folder)));
+    list.push_back(std::make_unique<MR::Header>(MR::Header::open(load_paths.single_selection)));
     add_images(list);
   } catch (CancelException &E) {
     E.display(-1);
@@ -862,12 +868,12 @@ void Window::add_images(std::vector<std::unique_ptr<MR::Header>> &list) {
 }
 
 void Window::image_save_slot() {
-  std::string image_name = Dialog::File::get_save_image_name(this, "Select image destination", "", &current_folder);
-  if (image_name.empty())
+  auto save_paths = Dialog::File::output_imagepath(this, "Select image destination", "", current_folder);
+  if (save_paths.empty())
     return;
-
+  current_folder = save_paths.last_directory;
   try {
-    auto dest = MR::Image<cfloat>::create(image_name, image()->header());
+    auto dest = MR::Image<cfloat>::create(save_paths.single_selection, image()->header());
     MR::copy_with_progress(image()->image, dest);
   } catch (Exception &E) {
     E.display();
@@ -899,7 +905,7 @@ void Window::image_properties_slot() {
 
 void Window::select_mode_slot(QAction *action) {
   glarea->makeCurrent();
-  mode.reset(dynamic_cast<GUI::MRView::Mode::__Action__ *>(action)->create());
+  mode.reset(dynamic_cast<GUI::MRView::Mode::ActionWrapper *>(action)->create());
   mode->set_visible(!image_hide_action->isChecked());
   set_mode_features();
   emit modeChanged();
@@ -915,7 +921,7 @@ void Window::select_mouse_mode_slot(QAction *action) {
 }
 
 void Window::select_tool_slot(QAction *action) {
-  Tool::Dock *tool = dynamic_cast<Tool::__Action__ *>(action)->dock;
+  Tool::Dock *tool = dynamic_cast<Tool::ActionWrapper *>(action)->dock;
   if (!tool) {
     create_tool(action, true);
     return;
@@ -931,16 +937,16 @@ void Window::select_tool_slot(QAction *action) {
 }
 
 void Window::create_tool(QAction *action, bool show) {
-  if (dynamic_cast<Tool::__Action__ *>(action)->dock)
+  if (dynamic_cast<Tool::ActionWrapper *>(action)->dock != nullptr)
     return;
 
-  Tool::Dock *tool = dynamic_cast<Tool::__Action__ *>(action)->create(tools_floating);
+  Tool::Dock *tool = dynamic_cast<Tool::ActionWrapper *>(action)->create(tools_floating);
   connect(tool, SIGNAL(visibilityChanged(bool)), action, SLOT(visibility_slot(bool)));
 
   if (!tools_floating) {
 
     for (int i = 0; i < tool_group->actions().size(); ++i) {
-      Tool::Dock *other_tool = dynamic_cast<Tool::__Action__ *>(tool_group->actions()[i])->dock;
+      Tool::Dock *other_tool = dynamic_cast<Tool::ActionWrapper *>(tool_group->actions()[i])->dock;
       if (other_tool && other_tool != tool) {
         QList<QDockWidget *> list = QMainWindow::tabifiedDockWidgets(other_tool);
         if (!list.empty())
@@ -1048,7 +1054,7 @@ void Window::reset_view_slot() {
     mode->reset_event();
     QList<QAction *> tools = tool_group->actions();
     for (QAction *action : tools) {
-      Tool::Dock *dock = dynamic_cast<Tool::__Action__ *>(action)->dock;
+      Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(action)->dock;
       if (dock)
         dock->tool->reset_event();
     }
@@ -1383,12 +1389,12 @@ void Window::paintGL() {
     render_times.push_back(Timer::current_time());
     while (render_times.size() > 10)
       render_times.erase(render_times.begin());
-    double FPS = NAN;
+    double FPS = NaN;
     std::string FPS_string = "-";
     std::string FPS_best_string = "-";
 
     if (render_times.back() - best_FPS_time > 3.0)
-      best_FPS = NAN;
+      best_FPS = NaN;
 
     if (render_times.size() == 10) {
       FPS = (render_times.size() - 1.0) / (render_times.back() - render_times.front());
@@ -1398,7 +1404,7 @@ void Window::paintGL() {
         best_FPS_time = render_times.back();
       }
     } else
-      best_FPS = NAN;
+      best_FPS = NaN;
 
     if (std::isfinite(best_FPS))
       FPS_best_string = str(best_FPS, 4);
@@ -1408,13 +1414,60 @@ void Window::paintGL() {
     mode->projection.done_render_text();
   }
 
-  // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
-  // otherwise we get transparent windows...
+  // Force the alpha channel to opaque. With QOpenGLWidget (Qt >= 5.4) this prevents transparent windows
+  // on-screen; it is equally required for off-screen capture, because opaque triangulated geometry is
+  // drawn by shaders that declare "out vec4 color" but write only color.rgb, leaving color.a at zero.
+  // Without this flatten such geometry would be transparent in the captured RGBA image.
   gl::ColorMask(false, false, false, true);
   gl::Clear(gl::COLOR_BUFFER_BIT);
   glColorMask(true, true, true, true);
   GL_CHECK_ERROR;
   GL::assert_context_is_current();
+}
+
+GL::Font &Window::annotation_font(int ratio) {
+  if (ratio <= 1)
+    return font;
+  std::unique_ptr<GL::Font> &cached = supersample_fonts[ratio];
+  if (!cached) {
+    QFont scaled(font.get_qfont());
+    if (scaled.pointSizeF() > 0.0)
+      scaled.setPointSizeF(scaled.pointSizeF() * ratio);
+    else if (scaled.pixelSize() > 0)
+      scaled.setPixelSize(scaled.pixelSize() * ratio);
+    cached = std::make_unique<GL::Font>(scaled);
+    cached->initGL();
+  }
+  return *cached;
+}
+
+ColourBars &Window::annotation_colourbar(int ratio) {
+  if (ratio <= 1)
+    return colourbar_renderer;
+  std::unique_ptr<ColourBars> &cached = supersample_colourbars[ratio];
+  if (!cached)
+    cached = std::make_unique<ColourBars>(ratio);
+  return *cached;
+}
+
+Window::OffscreenScope::OffscreenScope(Window &window, int supersample)
+    : window(window),
+      previous_font(window.mode ? &window.mode->projection.get_font() : nullptr),
+      previous_supersample(window.supersample_) {
+  window.supersample_ = supersample;
+  if (window.mode)
+    window.mode->projection.set_font(window.annotation_font(supersample));
+}
+
+Window::OffscreenScope::~OffscreenScope() {
+  if (window.mode && previous_font != nullptr)
+    window.mode->projection.set_font(*previous_font);
+  window.supersample_ = previous_supersample;
+}
+
+void Window::renderOffscreenGL(int supersample) {
+  const OffscreenScope scope(*this, supersample);
+  paintGL();
 }
 
 void Window::initGL() {
@@ -1426,9 +1479,9 @@ void Window::initGL() {
   // CONF option: MRViewImageBackgroundColour
   // CONF default: 0,0,0 (black)
   // CONF The default image background colour in the main MRView window.
-  File::Config::get_RGB("MRViewImageBackgroundColour", background_colour, 0.0f, 0.0f, 0.0f);
+  background_colour = File::Config::get_RGB("MRViewImageBackgroundColour", {0.0F, 0.0F, 0.0F});
   gl::ClearColor(background_colour[0], background_colour[1], background_colour[2], 1.0);
-  mode.reset(dynamic_cast<Mode::__Action__ *>(mode_group->actions()[0])->create());
+  mode.reset(dynamic_cast<Mode::ActionWrapper *>(mode_group->actions()[0])->create());
   set_mode_features();
 
   GL::assert_context_is_current();
@@ -1653,7 +1706,8 @@ void Window::process_commandline_option() {
   stub = lowercase(#classname ".");                                                                                    \
   if (stub.compare(0, stub.size(), std::string(opt.opt->id), 0, stub.size()) == 0) {                                   \
     create_tool(tool_group->actions()[tool_id], false);                                                                \
-    if (dynamic_cast<Tool::__Action__ *>(tool_group->actions()[tool_id])->dock->tool->process_commandline_option(opt)) \
+    if (dynamic_cast<Tool::ActionWrapper *>(tool_group->actions()[tool_id])                                            \
+            ->dock->tool->process_commandline_option(opt))                                                             \
       return;                                                                                                          \
   }                                                                                                                    \
   ++tool_id;
@@ -1703,7 +1757,7 @@ void Window::process_commandline_option() {
         auto pos = parse_floats(opt[0]);
         if (pos.size() != 3)
           throw Exception("-focus option expects a comma-separated list of 3 floating-point values");
-        set_focus(Eigen::Vector3f{float(pos[0]), float(pos[1]), float(pos[2])});
+        set_focus(Eigen::Vector3f{static_cast<float>(pos[0]), static_cast<float>(pos[1]), static_cast<float>(pos[2])});
       } catch (Exception &E) {
         try {
           show_crosshairs_action->setChecked(to<bool>(opt[0]));
@@ -1720,7 +1774,7 @@ void Window::process_commandline_option() {
         std::vector<default_type> pos = parse_floats(opt[0]);
         if (pos.size() != 3)
           throw Exception("-target option expects a comma-separated list of 3 floating-point values");
-        set_target(Eigen::Vector3f{float(pos[0]), float(pos[1]), float(pos[2])});
+        set_target(Eigen::Vector3f{static_cast<float>(pos[0]), static_cast<float>(pos[1]), static_cast<float>(pos[2])});
         glarea->update();
       }
       return;
@@ -1731,7 +1785,10 @@ void Window::process_commandline_option() {
         std::vector<default_type> pos = parse_floats(opt[0]);
         if (pos.size() != 4)
           throw Exception("-orientation option expects a comma-separated list of 4 floating-point values");
-        set_orientation({float(pos[0]), float(pos[1]), float(pos[2]), float(pos[3])});
+        set_orientation({static_cast<float>(pos[0]),
+                         static_cast<float>(pos[1]),
+                         static_cast<float>(pos[2]),
+                         static_cast<float>(pos[3])});
         glarea->update();
       }
       return;
@@ -1742,7 +1799,8 @@ void Window::process_commandline_option() {
         std::vector<default_type> pos = parse_floats(opt[0]);
         if (pos.size() != 3)
           throw Exception("-voxel option expects a comma-separated list of 3 floating-point values");
-        set_focus(image()->voxel2scanner() * Eigen::Vector3f{float(pos[0]), float(pos[1]), float(pos[2])});
+        set_focus(image()->voxel2scanner() *
+                  Eigen::Vector3f{static_cast<float>(pos[0]), static_cast<float>(pos[1]), static_cast<float>(pos[2])});
         glarea->update();
       }
       return;

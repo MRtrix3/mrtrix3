@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
  */
 
 #pragma once
+
+#include <optional>
 
 #include "dwi/tractography/ACT/method.h"
 #include "dwi/tractography/rng.h"
@@ -39,7 +41,6 @@ public:
         dir(0.0, 0.0, 1.0),
         S(that.S),
         act_method_additions(S.is_act() ? new ACT::ACT_Method_additions(that.act()) : nullptr),
-        uniform(that.uniform),
         values(that.values.size()) {}
 
   template <class InterpolatorType>
@@ -56,8 +57,9 @@ public:
   }
 
   virtual bool init() = 0;
-  virtual term_t next() = 0;
+  virtual std::optional<term_t> next() = 0;
   virtual float get_metric(const Eigen::Vector3f &position, const Eigen::Vector3f &direction) = 0;
+  float get_threshold() const { return S.threshold; }
 
   virtual void reverse_track() {
     if (act_method_additions)
@@ -70,13 +72,13 @@ public:
   ACT::ACT_Method_additions &act() const { return *act_method_additions; }
 
   Eigen::Vector3f pos, dir;
+  std::uniform_real_distribution<float> uniform;
 
 private:
   const SharedBase &S;
   std::unique_ptr<ACT::ACT_Method_additions> act_method_additions;
 
 protected:
-  std::uniform_real_distribution<float> uniform;
   Eigen::VectorXf values;
 
   Eigen::Vector3f random_direction();

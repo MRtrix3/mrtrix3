@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,15 +16,23 @@
 
 #pragma once
 
-#include "file/config.h"
-#include "header.h"
-#include "raw.h"
-#include "types.h"
+#include <filesystem>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "image_io/base.h"
 
 namespace MR {
 class Header;
+} // namespace MR
 
-namespace File::NIfTI {
+namespace MR::Axes {
+class Shuffle;
+class permutations_type;
+} // namespace MR::Axes
+
+namespace MR::File::NIfTI {
 extern bool right_left_warning_issued;
 
 Axes::Shuffle axes_on_write(const Header &H);
@@ -39,8 +47,6 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H);
 template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H);
 
 int version(Header &H);
-std::string get_json_path(const std::string &nifti_path);
+std::filesystem::path get_json_path(const std::filesystem::path &nifti_path);
 
-} // namespace File::NIfTI
-
-} // namespace MR
+} // namespace MR::File::NIfTI

@@ -1,0 +1,21 @@
+#!/bin/bash
+# Verify that mredit applies editing options in command-line order:
+#   where two stencils overlap, the one specified later takes precedence.
+# oblique.mif is a 16x16x16 grid of 2mm isotropic voxels (see the mredit cube test),
+#   everywhere zero, so each edit can be read back by value.
+
+# -sphere (value 5) followed by -voxel (value 9) at the same centre:
+#   the shared centre must end up 9 (the later -voxel wins),
+#   while another voxel inside the sphere must remain 5 (untouched by the -voxel).
+mredit mredit/oblique.mif.gz -sphere 8,8,8 4 5 -voxel 8,8,8 9 tmp_order_a.mif -force
+centre_a=$(mrconvert tmp_order_a.mif -coord 0 8 -coord 1 8 -coord 2 8 - | mrstats - -output max)
+inside_a=$(mrconvert tmp_order_a.mif -coord 0 8 -coord 1 8 -coord 2 9 - | mrstats - -output max)
+awk -v c="$centre_a" -v n="$inside_a" \
+  'BEGIN { if (c + 0 != 9 || n + 0 != 5) { print "ERROR: later -voxel did not take precedence over -sphere"; exit 1 } }'
+
+# Reversing the order, -voxel (value 9) followed by -sphere (value 5) at the same centre:
+#   the shared centre must instead end up 5 (the later -sphere overwrites the -voxel).
+mredit mredit/oblique.mif.gz -voxel 8,8,8 9 -sphere 8,8,8 4 5 tmp_order_b.mif -force
+centre_b=$(mrconvert tmp_order_b.mif -coord 0 8 -coord 1 8 -coord 2 8 - | mrstats - -output max)
+awk -v c="$centre_b" \
+  'BEGIN { if (c + 0 != 5) { print "ERROR: later -sphere did not take precedence over -voxel"; exit 1 } }'

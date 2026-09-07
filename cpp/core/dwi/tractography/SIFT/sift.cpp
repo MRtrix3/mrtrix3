@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -62,7 +62,7 @@ const OptionGroup SIFTOutputOption =
       + Argument("file").type_file_out()
     + Option("output_debug",
              "write to a directory various output images for assessing & debugging performance etc.")
-      + Argument("dirpath").type_directory_out();
+      + Argument("dirpath").type_directory_out(DirOutMode::MustNotExist);
 
 const OptionGroup SIFTTermOption =
     OptionGroup("Options to control when SIFT terminates filtering")

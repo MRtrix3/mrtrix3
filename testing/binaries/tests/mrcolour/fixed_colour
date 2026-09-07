@@ -1,0 +1,40 @@
+#!/bin/bash
+# Verify the "colour" colourmap, which applies a fixed RGB colour to a greyscale image.
+# When using the 'colour' colourmap, the -colour option must specify three RGB values.
+# The output is a 4D image with 3 volumes where each voxel's RGB values are
+#   proportional to the input intensity and the specified target colour.
+# Validation:
+#   1. The command completes without error
+#   2. The output has 3 volumes
+#   3. The ratio of volume means matches the ratio of the specified RGB values
+
+mrcolour dwi_mean.mif colour -colour 0.2,0.6,1.0 tmp_colour.mif -force
+
+# Output must have exactly 3 volumes
+NVOLS=$(mrinfo tmp_colour.mif -size | awk '{print $4}')
+[ "$NVOLS" -eq 3 ] || { echo "ERROR: expected 3 output volumes, got $NVOLS"; exit 1; }
+
+# The mean of each volume must reflect the specified RGB ratio (0.2 : 0.6 : 1.0)
+# i.e. MEAN_R / MEAN_G ≈ 0.2/0.6 and MEAN_G / MEAN_B ≈ 0.6/1.0
+MEAN_R=$(mrconvert tmp_colour.mif -coord 3 0 - | mrstats - -output mean)
+MEAN_G=$(mrconvert tmp_colour.mif -coord 3 1 - | mrstats - -output mean)
+MEAN_B=$(mrconvert tmp_colour.mif -coord 3 2 - | mrstats - -output mean)
+
+awk -v r="$MEAN_R" -v g="$MEAN_G" -v b="$MEAN_B" \
+  'BEGIN {
+    ratio_rg = r / g;
+    ratio_gb = g / b;
+    expected_rg = 0.2 / 0.6;
+    expected_gb = 0.6 / 1.0;
+    tol = 1e-5;
+    err_rg = ratio_rg - expected_rg;
+    if (err_rg < 0) err_rg = -err_rg;
+    err_gb = ratio_gb - expected_gb;
+    if (err_gb < 0) err_gb = -err_gb;
+    if (err_rg > tol || err_gb > tol) {
+      print "ERROR: RGB channel means do not match expected ratio 0.2:0.6:1.0";
+      print "  R/G ratio: " ratio_rg " (expected " expected_rg ")";
+      print "  G/B ratio: " ratio_gb " (expected " expected_gb ")";
+      exit 1
+    }
+  }'

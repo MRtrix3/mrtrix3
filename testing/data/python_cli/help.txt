@@ -137,7 +137,7 @@ SSttaannddaarrdd  ooppttiioonnss
      empty string.
 
   _-_d_e_b_u_g
-     display debugging messages.
+     display debugging messages & debug input data.
 
   _-_f_o_r_c_e
      force overwrite of output files.
@@ -159,7 +159,7 @@ AAUUTTHHOORR
      Robert E. Smith (robert.smith@florey.edu.au)
 
 CCOOPPYYRRIIGGHHTT
-     Copyright (c) 2008-2025 the MRtrix3 contributors.  This Source Code Form is
+     Copyright (c) 2008-2026 the MRtrix3 contributors.  This Source Code Form is
      subject to the terms of the Mozilla Public License, v. 2.0. If a copy of
      the MPL was not distributed with this file, You can obtain one at
      http://mozilla.org/MPL/2.0/.  Covered Software is provided under this

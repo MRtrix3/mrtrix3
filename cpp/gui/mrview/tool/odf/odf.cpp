@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -211,7 +211,7 @@ ODF::ODF(Dock *parent) : Base(parent), preview(nullptr), renderer(nullptr), ligh
 
   connect(lighting, SIGNAL(changed()), this, SLOT(updateGL()));
 
-  renderer = new DWI::Renderer((QOpenGLWidget *)Window::main->glarea);
+  renderer = new DWI::Renderer(static_cast<QOpenGLWidget *>(Window::main->glarea));
   renderer->initGL();
   colour_button->setColor(renderer->get_colour());
 
@@ -332,7 +332,7 @@ void ODF::draw(const Projection &projection, bool is_3D, int, int) {
 
     for (int y = -ny; y <= ny; ++y) {
       for (int x = -nx; x <= nx; ++x) {
-        Eigen::Vector3f p = pos + float(x) * x_dir + float(y) * y_dir;
+        const Eigen::Vector3f p = pos + static_cast<float>(x) * x_dir + static_cast<float>(y) * y_dir;
 
         // values gets shrunk by the previous get_values() call
         if (settings->odf_type == odf_type_t::DIXEL &&
@@ -387,7 +387,8 @@ void ODF::get_values(Eigen::VectorXf &values, ODF_Item &item, const Eigen::Vecto
   if (interp) {
     auto linear_interp = Interp::make_linear(image.image);
     if (linear_interp.scanner(pos)) {
-      for (linear_interp.index(3) = 0; linear_interp.index(3) < std::min(ssize_t(values.size()), linear_interp.size(3));
+      for (linear_interp.index(3) = 0;
+           linear_interp.index(3) < std::min(static_cast<ssize_t>(values.size()), linear_interp.size(3));
            ++linear_interp.index(3))
         values[linear_interp.index(3)] = linear_interp.value().real();
     }
@@ -395,7 +396,7 @@ void ODF::get_values(Eigen::VectorXf &values, ODF_Item &item, const Eigen::Vecto
     auto nearest_interp = Interp::make_nearest(image.image);
     if (nearest_interp.scanner(pos)) {
       for (nearest_interp.index(3) = 0;
-           nearest_interp.index(3) < std::min(ssize_t(values.size()), nearest_interp.size(3));
+           nearest_interp.index(3) < std::min(static_cast<ssize_t>(values.size()), nearest_interp.size(3));
            ++nearest_interp.index(3))
         values[nearest_interp.index(3)] = nearest_interp.value().real();
     }
@@ -428,7 +429,8 @@ void ODF::setup_ODFtype_UI(const ODF_Item *image) {
   if (image->odf_type == odf_type_t::DIXEL && image->dixel->shells) {
     for (size_t i = 0; i != image->dixel->shells->count(); ++i) {
       if (!(*image->dixel->shells)[i].is_bzero())
-        shell_selector->addItem(QString::fromStdString(str(int(std::round((*image->dixel->shells)[i].get_mean())))));
+        shell_selector->addItem(
+            QString::fromStdString(str(static_cast<size_t>(std::round((*image->dixel->shells)[i].get_mean())))));
     }
     if (shell_selector->count() && image->dixel->dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME)
       shell_selector->setCurrentIndex(image->dixel->shell_index -
@@ -442,7 +444,7 @@ void ODF::setup_ODFtype_UI(const ODF_Item *image) {
     preview->set_lod_enabled(image->odf_type != odf_type_t::DIXEL);
 }
 
-void ODF::add_images(std::vector<std::string> &list, const odf_type_t mode) {
+void ODF::add_images(std::vector<std::filesystem::path> &list, const odf_type_t mode) {
   size_t previous_size = image_list_model->rowCount();
   if (!image_list_model->add_items(
           list, mode, colour_by_direction_box->isChecked(), hide_negative_values_box->isChecked(), scale->value()))
@@ -465,29 +467,27 @@ void ODF::closeEvent(QCloseEvent *) { window().disconnect(this); }
 void ODF::onPreviewClosed() { show_preview_button->setChecked(false); }
 
 void ODF::sh_open_slot() {
-  std::vector<std::string> list =
-      Dialog::File::get_images(&window(), "Select SH-based ODF images to open", &current_folder);
-  if (list.empty())
+  auto load_paths = Dialog::File::input_imagepaths(&window(), "Select SH-based ODF images to open", current_folder);
+  if (load_paths.empty())
     return;
-
-  add_images(list, odf_type_t::SH);
+  current_folder = load_paths.last_directory;
+  add_images(load_paths.multi_selection, odf_type_t::SH);
 }
 
 void ODF::tensor_open_slot() {
-  std::vector<std::string> list = Dialog::File::get_images(&window(), "Select tensor images to open", &current_folder);
-  if (list.empty())
+  auto load_paths = Dialog::File::input_imagepaths(&window(), "Select tensor images to open", current_folder);
+  if (load_paths.empty())
     return;
-
-  add_images(list, odf_type_t::TENSOR);
+  current_folder = load_paths.last_directory;
+  add_images(load_paths.multi_selection, odf_type_t::TENSOR);
 }
 
 void ODF::dixel_open_slot() {
-  std::vector<std::string> list =
-      Dialog::File::get_images(&window(), "Select dixel-based ODF images to open", &current_folder);
-  if (list.empty())
+  auto load_paths = Dialog::File::input_imagepaths(&window(), "Select dixel-based ODF images to open", current_folder);
+  if (load_paths.empty())
     return;
-
-  add_images(list, odf_type_t::DIXEL);
+  current_folder = load_paths.last_directory;
+  add_images(load_paths.multi_selection, odf_type_t::DIXEL);
 }
 
 void ODF::image_close_slot() {
@@ -603,15 +603,19 @@ void ODF::dirs_slot() {
       if (preview)
         preview->render_frame->clear_dixels();
       break;
-    case 4: // From file
-      const std::string path =
-          Dialog::File::get_file(this, "Select directions file", "Text files (*.txt)", &current_folder);
-      if (path.empty()) {
+    case 4: { // From file
+      auto load_paths =
+          Dialog::File::input_filepath(this, "Select directions file", "Text files (*.txt)", current_folder);
+      if (load_paths.empty()) {
         dirs_selector->setCurrentIndex(settings->dixel->dir_type);
         return;
       }
-      settings->dixel->set_from_file(path);
-      break;
+      settings->dixel->set_from_file(load_paths.single_selection);
+      current_folder = load_paths.last_directory;
+    } break;
+    default:
+      assert(false);
+      return;
     }
     shell_selector->setEnabled(dir_type == 0 && settings->dixel->shells && settings->dixel->shells->count() > 1);
     if (dir_type == 3) {
@@ -782,7 +786,7 @@ void ODF::add_commandline_options(MR::App::OptionList &options) {
 bool ODF::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("odf.load_sh")) {
     try {
-      std::vector<std::string> list(1, opt[0]);
+      std::vector<std::filesystem::path> list(1, opt[0]);
       add_images(list, odf_type_t::SH);
     } catch (Exception &e) {
       e.display();
@@ -792,7 +796,7 @@ bool ODF::process_commandline_option(const MR::App::ParsedOption &opt) {
 
   if (opt.opt->is("odf.load_tensor")) {
     try {
-      std::vector<std::string> list(1, opt[0]);
+      std::vector<std::filesystem::path> list(1, opt[0]);
       add_images(list, odf_type_t::TENSOR);
     } catch (Exception &e) {
       e.display();
@@ -802,7 +806,7 @@ bool ODF::process_commandline_option(const MR::App::ParsedOption &opt) {
 
   if (opt.opt->is("odf.load_dixel")) {
     try {
-      std::vector<std::string> list(1, opt[0]);
+      std::vector<std::filesystem::path> list(1, opt[0]);
       add_images(list, odf_type_t::DIXEL);
     } catch (Exception &e) {
       e.display();

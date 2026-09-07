@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,8 +16,8 @@
 
 #include "file/gz.h"
 #include "file/mgh.h"
+#include "file/ofstream.h"
 #include "file/path.h"
-#include "file/utils.h"
 #include "formats/list.h"
 #include "header.h"
 #include "image_io/gz.h"
@@ -26,11 +26,11 @@
 namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> MGZ::read(Header &H) const {
-  if (!Path::has_suffix(H.name(), ".mgh.gz") && !Path::has_suffix(H.name(), ".mgz"))
+  if (!Path::has_suffix(H.path(), ".mgh.gz") && !Path::has_suffix(H.path(), ".mgz"))
     return std::unique_ptr<ImageIO::Base>();
 
   std::string mgh_header(File::MGH::data_offset, '\0');
-  File::GZ in(H.name(), "rb");
+  File::GZ in(H.path(), "rb");
   in.read(reinterpret_cast<char *>(&mgh_header[0]), File::MGH::data_offset);
   std::istringstream s(mgh_header);
   File::MGH::read_header(H, s);
@@ -51,13 +51,13 @@ std::unique_ptr<ImageIO::Base> MGZ::read(Header &H) const {
   memcpy(gz_handler->tailer(), mgh_tailer.str().c_str(), mgh_tailer.str().size());
 
   std::unique_ptr<ImageIO::Base> io_handler(gz_handler);
-  io_handler->files.push_back(File::Entry(H.name(), File::MGH::data_offset));
+  io_handler->files.push_back(File::Entry(H.path(), File::MGH::data_offset));
 
   return io_handler;
 }
 
 bool MGZ::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(H.name(), ".mgh.gz") && !Path::has_suffix(H.name(), ".mgz"))
+  if (!Path::has_suffix(H.path(), ".mgh.gz") && !Path::has_suffix(H.path(), ".mgz"))
     return false;
   return File::MGH::check(H, num_axes);
 }
@@ -67,7 +67,8 @@ std::unique_ptr<ImageIO::Base> MGZ::create(Header &H) const {
   File::MGH::write_header(H, mgh_header);
   File::MGH::write_other(H, mgh_tailer);
 
-  File::create(H.name());
+  File::OFStream out_dat(H.path());
+  out_dat.close();
   auto gz_handler = new ImageIO::GZ(H, File::MGH::data_offset, mgh_tailer.str().size());
 
   memset(gz_handler->header(), 0, File::MGH::data_offset);
@@ -75,7 +76,7 @@ std::unique_ptr<ImageIO::Base> MGZ::create(Header &H) const {
   memcpy(gz_handler->tailer(), mgh_tailer.str().c_str(), mgh_tailer.str().size());
 
   std::unique_ptr<ImageIO::Base> io_handler(gz_handler);
-  io_handler->files.push_back(File::Entry(H.name(), File::MGH::data_offset));
+  io_handler->files.push_back(File::Entry(H.path(), File::MGH::data_offset));
 
   return io_handler;
 }

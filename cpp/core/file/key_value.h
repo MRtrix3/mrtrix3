@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,9 +16,12 @@
 
 #pragma once
 
+#include <filesystem>
+#include <fstream>
+#include <string>
+
 #include "mrtrix.h"
 #include "types.h"
-#include <fstream>
 
 namespace MR::File {
 
@@ -29,24 +32,25 @@ namespace KeyValue {
 class Reader {
 public:
   Reader() {}
-  Reader(const std::string &file, const char *first_line = nullptr) { open(file, first_line); }
+  Reader(const std::filesystem::path &file, std::string_view first_line = "") { open(file, first_line); }
+  void open(const std::filesystem::path &file, std::string_view first_line = "");
 
-  void open(const std::string &file, const char *first_line = nullptr);
   bool next();
   void close() { in.close(); }
 
-  const std::string &key() const throw() { return (K); }
-  const std::string &value() const throw() { return (V); }
-  const std::string &name() const throw() { return (filename); }
+  std::string key() const throw() { return (K); }
+  std::string value() const throw() { return (V); }
+  const std::filesystem::path &path() const throw() { return (filepath); }
 
 protected:
-  std::string K, V, filename;
+  std::string K, V;
+  std::filesystem::path filepath;
   std::ifstream in;
 };
 
 void write(File::OFStream &out,
            const KeyValues &keyvals,
-           const std::string &prefix,
+           std::string_view prefix,
            const bool add_to_command_history = true);
 
 } // namespace KeyValue

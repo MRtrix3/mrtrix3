@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2025 the MRtrix3 contributors.
+# Copyright (c) 2008-2026 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -142,9 +142,7 @@ def execute(): #pylint: disable=unused-variable
   progress.done()
 
   app.console('Exporting template images to user locations')
-  run.command(['mrconvert', 'template_wm_mask.mif', app.ARGS.wm_mask],
-              mrconvert_keyval='NULL',
+  run.command(['mrconvert', 'template_wm_mask.mif', app.ARGS.wm_mask, '-clear_properties'],
               force=app.FORCE_OVERWRITE)
-  run.command(['mrconvert', 'fa_template.mif', app.ARGS.fa_template],
-              mrconvert_keyval='NULL',
+  run.command(['mrconvert', 'fa_template.mif', app.ARGS.fa_template, '-clear_properties'],
               force=app.FORCE_OVERWRITE)

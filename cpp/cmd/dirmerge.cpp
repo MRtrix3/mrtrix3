@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,12 +16,16 @@
 
 #include "command.h"
 #include "dwi/directions/file.h"
+#include "dwi/directions/validate.h"
+#include "file/matrix.h"
 #include "file/ofstream.h"
 #include "math/rng.h"
+#include "math/sphere.h"
 #include "progressbar.h"
 
 #include <algorithm>
 #include <array>
+#include <filesystem>
 #include <random>
 
 using namespace MR;
@@ -37,7 +41,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("subsets", "the number of subsets (eg. phase encoding directions) per b-value").type_integer(1,10000)
-  + Argument ("bvalue files", "the b-value and sets of corresponding files, in order").type_text().allow_multiple()
+  + Argument ("bvalue files", "the b-value and sets of corresponding files, in order").type_integer().type_file_out().allow_multiple()
   + Argument ("out", "the output directions file,"
                      " with each row listing the X Y Z gradient directions,"
                      " the b-value,"
@@ -72,7 +76,9 @@ inline std::ostream &operator<<(std::ostream &stream, const OutDir &d) {
 }
 
 void run() {
-  size_t num_subsets = argument[0];
+  const std::filesystem::path output_path{argument.back()};
+
+  const size_t num_subsets = argument[0];
   value_type unipolar_weight = App::get_option_value("unipolar_weight", 0.2);
   value_type bipolar_weight = 1.0 - unipolar_weight;
 
@@ -88,7 +94,10 @@ void run() {
     bvalue[nb] = to<value_type>(argument[current++]);
     std::vector<DirectionSet> d;
     for (size_t i = 0; i < num_subsets; ++i) {
-      auto m = DWI::Directions::load_cartesian(argument[current++]);
+      auto path = static_cast<std::filesystem::path>(argument[current++]);
+      auto m = File::Matrix::load_matrix(path);
+      DWI::Directions::validate(m, path, false);
+      m = Math::Sphere::as_cartesian(m);
       DirectionSet set;
       for (ssize_t r = 0; r < m.rows(); ++r)
         set.push_back(Direction(m(r, 0), m(r, 1), m(r, 2)));
@@ -208,7 +217,7 @@ void run() {
     size_t n = 0;
     for (auto &m : d)
       n += m.size();
-    fraction.push_back(float(n) / float(total));
+    fraction.push_back(static_cast<float>(n) / static_cast<float>(total));
   };
 
   auto num_for_b = [&](size_t b) {
@@ -230,7 +239,7 @@ void run() {
     size_t b = 0, n;
     value_type fraction_diff = std::numeric_limits<value_type>::max();
     for (n = 0; n < bvalue.size(); ++n) {
-      value_type f_diff = float(num_for_b(n)) / float(merged.size()) - fraction[n];
+      value_type f_diff = static_cast<float>(num_for_b(n)) / static_cast<float>(merged.size()) - fraction[n];
       if (f_diff < fraction_diff && !dirs[n][nPE].empty()) {
         fraction_diff = f_diff;
         b = n;
@@ -254,12 +263,12 @@ void run() {
 
   // write-out:
 
-  File::OFStream out(argument[argument.size() - 1]);
+  File::OFStream out(output_path);
   for (auto &d : merged)
     out << MR::printf(num_subsets > 1 ? "%#20.15f %#20.15f %#20.15f %5d %3d\n" : "%#20.15f %#20.15f %#20.15f %5d\n",
                       d.d[0],
                       d.d[1],
                       d.d[2],
-                      int(bvalue[d.b]),
-                      int(d.pe + 1));
+                      static_cast<int>(bvalue[d.b]),
+                      d.pe + 1);
 }

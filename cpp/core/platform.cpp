@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -80,14 +80,14 @@ std::filesystem::path get_executable_path() {
   }
 #elif defined(MRTRIX_FREEBSD)
   // See https://github.com/chromium/chromium/blob/db87c489ae756af10467897d653518f321db2f4d/base/base_paths_posix.cc
-  int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
+  std::array<int, 4> mib = {CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
   size_t size = 0;
-  if (sysctl(mib, 4, nullptr, &size, nullptr, 0) == -1)
+  if (sysctl(mib.data(), 4, nullptr, &size, nullptr, 0) == -1)
     throw std::system_error(std::error_code(errno, std::system_category()),
                             "sysctl(KERN_PROC_PATHNAME) failed to get size");
   std::string buffer;
   buffer.resize(size);
-  if (sysctl(mib, 4, buffer.data(), &size, nullptr, 0) == -1)
+  if (sysctl(mib.data(), 4, buffer.data(), &size, nullptr, 0) == -1)
     throw std::system_error(std::error_code(errno, std::system_category()),
                             "sysctl(KERN_PROC_PATHNAME) failed to get path");
   // Ensure we use the null-terminated string

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -70,9 +70,10 @@ void load_rois(Properties &properties) {
     properties.mask.add(ROI(opt[i][0]));
 }
 
-Image<bool> Mask::__get_mask(const std::string &name) {
-  auto data = Image<bool>::open(name);
-  std::vector<size_t> bottom(3, 0), top(3, 0);
+Image<bool> Mask::get_mask(const std::filesystem::path &path) {
+  auto data = Image<bool>::open(path);
+  std::vector<size_t> bottom(3, 0);
+  std::vector<size_t> top(3, 0);
   std::fill_n(bottom.begin(), 3, std::numeric_limits<size_t>::max());
 
   size_t sum = 0;
@@ -80,23 +81,23 @@ Image<bool> Mask::__get_mask(const std::string &name) {
   for (auto l = Loop(0, 3)(data); l; ++l) {
     if (data.value()) {
       ++sum;
-      if (size_t(data.index(0)) < bottom[0])
+      if (static_cast<size_t>(data.index(0)) < bottom[0])
         bottom[0] = data.index(0);
-      if (size_t(data.index(0)) > top[0])
+      if (static_cast<size_t>(data.index(0)) > top[0])
         top[0] = data.index(0);
-      if (size_t(data.index(1)) < bottom[1])
+      if (static_cast<size_t>(data.index(1)) < bottom[1])
         bottom[1] = data.index(1);
-      if (size_t(data.index(1)) > top[1])
+      if (static_cast<size_t>(data.index(1)) > top[1])
         top[1] = data.index(1);
-      if (size_t(data.index(2)) < bottom[2])
+      if (static_cast<size_t>(data.index(2)) < bottom[2])
         bottom[2] = data.index(2);
-      if (size_t(data.index(2)) > top[2])
+      if (static_cast<size_t>(data.index(2)) > top[2])
         top[2] = data.index(2);
     }
   }
 
   if (!sum)
-    throw Exception("Cannot use image " + name + " as ROI - image is empty");
+    throw Exception("Cannot use image " + path.string() + " as ROI - image is empty");
 
   if (bottom[0])
     --bottom[0];
@@ -105,9 +106,9 @@ Image<bool> Mask::__get_mask(const std::string &name) {
   if (bottom[2])
     --bottom[2];
 
-  top[0] = std::min(size_t(data.size(0) - bottom[0]), top[0] + 2 - bottom[0]);
-  top[1] = std::min(size_t(data.size(1) - bottom[1]), top[1] + 2 - bottom[1]);
-  top[2] = std::min(size_t(data.size(2) - bottom[2]), top[2] + 2 - bottom[2]);
+  top[0] = std::min(static_cast<size_t>(data.size(0)) - bottom[0], top[0] + 2 - bottom[0]);
+  top[1] = std::min(static_cast<size_t>(data.size(1)) - bottom[1], top[1] + 2 - bottom[1]);
+  top[2] = std::min(static_cast<size_t>(data.size(2)) - bottom[2], top[2] + 2 - bottom[2]);
 
   auto sub = Adapter::make<Adapter::Subset>(data, bottom, top);
   Header mask_header(sub);

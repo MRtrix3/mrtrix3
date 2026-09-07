@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,10 @@
 
 #pragma once
 
+#include <filesystem>
+#include <optional>
+
+#include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/tractography.h"
@@ -30,8 +34,11 @@ class SDStream : public MethodBase {
 public:
   class Shared : public SharedBase {
   public:
-    Shared(const std::string &diff_path, DWI::Tractography::Properties &property_set)
-        : SharedBase(diff_path, property_set), lmax(Math::SH::LforN(source.size(3))) {
+    Shared(const std::filesystem::path &diff_path, DWI::Tractography::Properties &property_set)
+        : SharedBase(diff_path,
+                     property_set,
+                     {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite}),
+          lmax(static_cast<int>(Math::SH::LforN(static_cast<int>(source.size(3))))) {
       try {
         Math::SH::check(source);
       } catch (Exception &e) {
@@ -39,8 +46,11 @@ public:
         throw Exception("Algorithm SD_STREAM expects as input a spherical harmonic (SH) image");
       }
 
-      if (is_act() && act().backtrack())
-        throw Exception("Backtracking not valid for deterministic algorithms");
+      if (is_act()) {
+        if (act().backtrack())
+          throw Exception("Backtracking not valid for deterministic algorithms");
+        act().set_default_sgm_trunc(ACT::sgm_trunc_t::MINIMUM);
+      }
 
       set_step_and_angle(rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
                          Defaults::angle_deterministic,
@@ -68,9 +78,9 @@ public:
     Math::SH::PrecomputedAL<float> *precomputer;
   };
 
-  SDStream(const Shared &shared) : MethodBase(shared), S(shared), source(S.source) {}
+  SDStream(const Shared &shared) : MethodBase(shared), S(shared), source(S.source, S.source_mask) {}
 
-  SDStream(const SDStream &that) : MethodBase(that.S), S(that.S), source(S.source) {}
+  SDStream(const SDStream &that) : MethodBase(that.S), S(that.S), source(S.source, S.source_mask) {}
 
   ~SDStream() {}
 
@@ -91,7 +101,7 @@ public:
     return true;
   }
 
-  term_t next() override {
+  std::optional<term_t> next() override {
     if (!get_data(source))
       return term_t::EXIT_IMAGE;
 
@@ -104,7 +114,7 @@ public:
       return term_t::HIGH_CURVATURE;
 
     pos += dir * S.step_size;
-    return term_t::CONTINUE;
+    return std::nullopt;
   }
 
   float get_metric(const Eigen::Vector3f &position, const Eigen::Vector3f &direction) override {

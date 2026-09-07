@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,29 +22,31 @@ namespace MR::GUI::GL {
 
 namespace {
 
-const char *vertex_shader_source = "layout(location = 0) in vec2 pos;\n"
-                                   "layout(location = 1) in vec2 font_pos;\n"
-                                   "uniform float scale_x;\n"
-                                   "uniform float scale_y;\n"
-                                   "out vec2 tex_coord;\n"
-                                   "void main () {\n"
-                                   "  gl_Position = vec4 (pos[0]*scale_x-1.0, pos[1]*scale_y-1.0, 0.0, 1.0);\n"
-                                   "  tex_coord = font_pos;\n"
-                                   "}\n";
+const std::string vertex_shader_source = "layout(location = 0) in vec2 pos;\n"
+                                         "layout(location = 1) in vec2 font_pos;\n"
+                                         "uniform float scale_x;\n"
+                                         "uniform float scale_y;\n"
+                                         "out vec2 tex_coord;\n"
+                                         "void main () {\n"
+                                         "  gl_Position = vec4 (pos[0]*scale_x-1.0, pos[1]*scale_y-1.0, 0.0, 1.0);\n"
+                                         "  tex_coord = font_pos;\n"
+                                         "}\n";
 
-const char *fragment_shader_source = "in vec2 tex_coord;\n"
-                                     "uniform sampler2D sampler;\n"
-                                     "uniform float red, green, blue;\n"
-                                     "out vec4 color;\n"
-                                     "void main () {\n"
-                                     "  color.ra = texture (sampler, tex_coord).rg;\n"
-                                     "  color.rgb = color.r * vec3 (red, green, blue);\n"
-                                     "}\n";
+const std::string fragment_shader_source = "in vec2 tex_coord;\n"
+                                           "uniform sampler2D sampler;\n"
+                                           "uniform float red, green, blue;\n"
+                                           "out vec4 color;\n"
+                                           "void main () {\n"
+                                           "  color.ra = texture (sampler, tex_coord).rg;\n"
+                                           "  color.rgb = color.r * vec3 (red, green, blue);\n"
+                                           "}\n";
 
 } // namespace
 
 void Font::initGL(bool with_shadow) {
-  const int first_char = ' ', last_char = '~', default_char = '?';
+  const int first_char = ' ';
+  const int last_char = '~';
+  const int default_char = '?';
   DEBUG("loading font into OpenGL texture...");
 
   font_height = metric.height() + 2;
@@ -73,7 +75,7 @@ void Font::initGL(bool with_shadow) {
   painter.setPen(Qt::white);
 
   for (size_t n = 0; n < 256; ++n)
-    font_tex_pos[n] = NAN;
+    font_tex_pos[n] = NaNF;
 
   int current_x = 0;
   for (int c = first_char; c <= last_char; ++c) {
@@ -132,8 +134,8 @@ void Font::initGL(bool with_shadow) {
   }
 
   for (int n = first_char; n <= last_char; ++n) {
-    font_tex_pos[n] /= float(current_x);
-    font_tex_width[n] /= float(current_x);
+    font_tex_pos[n] /= static_cast<float>(current_x);
+    font_tex_width[n] /= static_cast<float>(current_x);
   }
 
   for (int n = 0; n < 256; ++n) {
@@ -154,14 +156,14 @@ void Font::initGL(bool with_shadow) {
 
   vertex_buffer[0].bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE_, 0, (void *)0);
+  gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
   vertex_buffer[1].bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(1);
-  gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE_, 0, (void *)0);
+  gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
-  GL::Shader::Vertex vertex_shader(vertex_shader_source);
-  GL::Shader::Fragment fragment_shader(fragment_shader_source);
+  GL::Shader::Vertex vertex_shader(vertex_shader_source.c_str());
+  GL::Shader::Fragment fragment_shader(fragment_shader_source.c_str());
 
   program.attach(vertex_shader);
   program.attach(fragment_shader);
@@ -170,7 +172,7 @@ void Font::initGL(bool with_shadow) {
   DEBUG("font loaded");
 }
 
-void Font::render(const std::string &text, int x, int y) const {
+void Font::render(std::string_view text, int x, int y) const {
   assert(tex);
   assert(vertex_buffer[0]);
   assert(vertex_buffer[1]);
@@ -187,7 +189,7 @@ void Font::render(const std::string &text, int x, int y) const {
   for (size_t n = 0; n < text.size(); ++n) {
     starts[n] = 4 * n;
     counts[n] = 4;
-    const int c = text[n];
+    const size_t c = static_cast<size_t>(static_cast<unsigned char>(text[n]));
     GLfloat *pos = &screen_pos[8 * n];
     pos[0] = x;
     pos[1] = y;

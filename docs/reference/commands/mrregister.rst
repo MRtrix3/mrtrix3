@@ -120,15 +120,15 @@ Advanced linear transformation initialisation options
 Advanced linear registration stage options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-linstage.iterations value(s)** number of iterations for each registration stage. Not to be confused with -rigid_niter or -affine_niter. This can be used to generate intermediate diagnostics images (-linstage.diagnostics.prefix) or to change the cost function optimiser during registration (without the need to repeatedly resize the images). (Default: 1 == no repetition)
+-  **-linstage.iterations value(s)** number of iterations for each registration stage. Not to be confused with -rigid_niter or -affine_niter. This can be used to generate intermediate diagnostics images (-linstage.diagnostics.dir) or to change the cost function optimiser during registration (without the need to repeatedly resize the images). (Default: 1 == no repetition)
 
--  **-linstage.optimiser.first algorithm** Cost function optimisation algorithm to use at first iteration of all stages. Valid choices: bbgd (Barzilai-Borwein gradient descent); gd (simple gradient descent). (Default: bbgd)
+-  **-linstage.optimiser.first algorithm** Cost function optimisation algorithm to use at first iteration of all stages. Valid choices: BBGD (Barzilai-Borwein gradient descent); GD (simple gradient descent). (Default: BBGD)
 
--  **-linstage.optimiser.last algorithm** Cost function optimisation algorithm to use at last iteration of all stages (if there are more than one). Valid choices: bbgd (Barzilai-Borwein gradient descent); gd (simple gradient descent). (Default: bbgd)
+-  **-linstage.optimiser.last algorithm** Cost function optimisation algorithm to use at last iteration of all stages (if there are more than one). Valid choices: BBGD (Barzilai-Borwein gradient descent); GD (simple gradient descent). (Default: BBGD)
 
--  **-linstage.optimiser.default algorithm** Cost function optimisation algorithm to use at any stage iteration other than first or last iteration. Valid choices: bbgd (Barzilai-Borwein gradient descent); gd (simple gradient descent). (Default: bbgd)
+-  **-linstage.optimiser.default algorithm** Cost function optimisation algorithm to use at any stage iteration other than first or last iteration. Valid choices: BBGD (Barzilai-Borwein gradient descent); GD (simple gradient descent). (Default: BBGD)
 
--  **-linstage.diagnostics.prefix prefix** generate diagnostics images after every registration stage
+-  **-linstage.diagnostics.dir dir** generate diagnostics images after every registration stage
 
 Non-linear registration options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -151,7 +151,7 @@ Non-linear registration options
 
 -  **-nl_lmax num** explicitly set the lmax to be used per scale factor in non-linear FOD registration. By default, FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
 
--  **-diagnostics_image path** write intermediate images for diagnostics purposes
+-  **-nl_diagnostics_dir dir** write intermediate images for diagnostics purposes
 
 FOD registration options
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -177,7 +177,7 @@ Standard options
 
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
--  **-debug** display debugging messages.
+-  **-debug** display debugging messages & debug input data.
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
@@ -205,7 +205,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au) and Max Pietsch (maximilian.pietsch@kcl.ac.uk)
 
-**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

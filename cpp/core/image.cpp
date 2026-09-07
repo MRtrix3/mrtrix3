@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,18 +16,18 @@
 #include "image.h"
 
 namespace MR {
-template Image<bool>::~Image();
-template Image<int8_t>::~Image();
-template Image<uint8_t>::~Image();
-template Image<int16_t>::~Image();
-template Image<uint16_t>::~Image();
-template Image<int32_t>::~Image();
-template Image<uint32_t>::~Image();
-template Image<int64_t>::~Image();
-template Image<uint64_t>::~Image();
-template Image<Eigen::half>::~Image();
-template Image<float>::~Image();
-template Image<double>::~Image();
-template Image<cfloat>::~Image();
-template Image<cdouble>::~Image();
+template Image<bool>::Buffer::~Buffer();
+template Image<int8_t>::Buffer::~Buffer();
+template Image<uint8_t>::Buffer::~Buffer();
+template Image<int16_t>::Buffer::~Buffer();
+template Image<uint16_t>::Buffer::~Buffer();
+template Image<int32_t>::Buffer::~Buffer();
+template Image<uint32_t>::Buffer::~Buffer();
+template Image<int64_t>::Buffer::~Buffer();
+template Image<uint64_t>::Buffer::~Buffer();
+template Image<Eigen::half>::Buffer::~Buffer();
+template Image<float>::Buffer::~Buffer();
+template Image<double>::Buffer::~Buffer();
+template Image<cfloat>::Buffer::~Buffer();
+template Image<cdouble>::Buffer::~Buffer();
 } // namespace MR

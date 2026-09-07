@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,12 +16,15 @@
 
 #pragma once
 
-namespace MR {
-namespace GUI {
-namespace MRView {
-namespace Tool {
-enum FixelColourType { Direction, CValue };
-enum FixelScaleType { Unity, Value };
+#include <algorithm>
+#include <cstdint>
+#include <limits>
+#include <vector>
+
+namespace MR::GUI::MRView::Tool {
+
+enum class FixelColourType : uint8_t { Direction, Value };
+enum class FixelScaleType : uint8_t { Unity, Value };
 
 struct FixelValue {
   bool loaded = false;
@@ -84,7 +87,4 @@ struct FixelValue {
   }
 };
 
-} // namespace Tool
-} // namespace MRView
-} // namespace GUI
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,30 +16,19 @@
 
 #pragma once
 
-namespace MR {
-namespace Registration {
+#include <string>
+#include <string_view>
 
-namespace Warp {
+#include "exception.h"
+#include "mrtrix.h"
+#include "types.h"
 
-template <class HeaderType> inline void check_warp(const HeaderType &warp_header) {
-  if (warp_header.ndim() != 4)
-    throw Exception("input warp is not a 4D image");
-  if (warp_header.size(3) != 3)
-    throw Exception("input warp should have 3 volumes in the 4th dimension");
-}
+namespace MR::Registration::Warp {
 
-template <class HeaderType> inline void check_warp_full(const HeaderType &warp_header) {
-  if (warp_header.ndim() != 5)
-    throw Exception("the input warp image must be a 5D file.");
-  if (warp_header.size(3) != 3)
-    throw Exception("the input warp image must have 3 volumes (x,y,z) in the 4th dimension.");
-  if (warp_header.size(4) != 4)
-    throw Exception("the input warp image must have 4 volumes in the 5th dimension.");
-}
-
-template <class InputWarpType> transform_type parse_linear_transform(InputWarpType &input_warps, std::string name) {
+template <class InputWarpType>
+transform_type parse_linear_transform(InputWarpType &input_warps, std::string_view name) {
   transform_type linear;
-  const auto it = input_warps.keyval().find(name);
+  const auto it = input_warps.keyval().find(std::string(name));
   if (it != input_warps.keyval().end()) {
     const auto lines = split_lines(it->second);
     if (lines.size() != 3)
@@ -58,6 +47,4 @@ template <class InputWarpType> transform_type parse_linear_transform(InputWarpTy
   return linear;
 }
 
-} // namespace Warp
-} // namespace Registration
-} // namespace MR
+} // namespace MR::Registration::Warp

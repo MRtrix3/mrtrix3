@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,16 +23,15 @@
 #include "mrview/tool/tractography/track_scalar_file.h"
 #include "projection.h"
 
-namespace MR::GUI {
-namespace GL {
+namespace MR::GUI::GL {
 class Lighting;
-}
+} // namespace MR::GUI::GL
 
+namespace MR::GUI {
 class LightingDock;
+} // namespace MR::GUI
 
-namespace MRView::Tool {
-
-extern const std::vector<std::string> tractogram_geometry_types;
+namespace MR::GUI::MRView::Tool {
 
 class Tractography : public Base {
   Q_OBJECT
@@ -109,12 +108,11 @@ protected:
 
   void dropEvent(QDropEvent *event) override;
   void update_scalar_options();
-  void add_tractogram(std::vector<std::string> &list);
+  void add_tractogram(const std::vector<std::filesystem::path> &list);
   void select_last_added_tractogram();
   bool process_commandline_option_tsf_check_tracto_loaded();
   bool process_commandline_option_tsf_option(const MR::App::ParsedOption &, uint, std::vector<default_type> &range);
   void update_geometry_type_gui();
 };
-} // namespace MRView::Tool
 
-} // namespace MR::GUI
+} // namespace MR::GUI::MRView::Tool

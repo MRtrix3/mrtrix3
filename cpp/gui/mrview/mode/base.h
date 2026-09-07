@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -102,8 +102,10 @@ public:
     return window().orientation();
   }
 
-  int width() const { return glarea()->width(); }
-  int height() const { return glarea()->height(); }
+  // Scaled by the active super-sampling ratio (unity except during off-screen super-resolution capture),
+  // so the entire render path (viewport, projection extent, panel layout) follows a single factor.
+  int width() const { return glarea()->width() * window().supersample(); }
+  int height() const { return glarea()->height() * window().supersample(); }
   bool snap_to_image() const { return window().snap_to_image(); }
 
   Image *image() { return window().image(); }
@@ -147,7 +149,7 @@ public:
   void render_tools(const Projection &projection, bool is_3D = false, int axis = 0, int slice = 0) {
     QList<QAction *> tools = window().tools()->actions();
     for (int i = 0; i < tools.size(); ++i) {
-      Tool::Dock *dock = dynamic_cast<Tool::__Action__ *>(tools[i])->dock;
+      Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tools[i])->dock;
       if (dock) {
         GL::assert_context_is_current();
         dock->tool->draw(projection, is_3D, axis, slice);
@@ -165,14 +167,14 @@ public:
 
   Eigen::Vector3f voxel_at(const Eigen::Vector3f &pos) const {
     if (!image())
-      return Eigen::Vector3f{NAN, NAN, NAN};
+      return Eigen::Vector3f::Constant(NaNF);
     const Eigen::Vector3f result = image()->scanner2voxel().cast<float>() * pos;
     return result;
   }
 
   void draw_crosshairs(const Projection &with_projection) const {
     if (window().show_crosshairs())
-      with_projection.render_crosshairs(focus());
+      with_projection.render_crosshairs(focus(), static_cast<float>(window().supersample()));
   }
 
   void draw_orientation_labels(const Projection &with_projection) const {
@@ -202,9 +204,12 @@ protected:
 };
 
 //! \cond skip
-class __Action__ : public QAction {
+class ActionWrapper : public QAction {
 public:
-  __Action__(QActionGroup *parent, const char *const name, const char *const description, int index)
+  ActionWrapper(QActionGroup *parent,
+                const char *const name,        // check_syntax off
+                const char *const description, // check_syntax off
+                int index)
       : QAction(name, parent) {
     setCheckable(true);
     setShortcut(tr(std::string("F" + str(index)).c_str()));
@@ -215,10 +220,10 @@ public:
 };
 //! \endcond
 
-template <class T> class Action : public __Action__ {
+template <class T> class Action : public ActionWrapper {
 public:
-  Action(QActionGroup *parent, const char *const name, const char *const description, int index)
-      : __Action__(parent, name, description, index) {}
+  Action(QActionGroup *parent, const char *const name, const char *const description, int index) // check_syntax off
+      : ActionWrapper(parent, name, description, index) {}
 
   virtual Base *create() const { return new T; }
 };

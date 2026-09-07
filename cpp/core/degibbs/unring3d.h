@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
  */
 
 #pragma once
+
+#include <cassert>
 
 #include "algo/threaded_loop.h"
 #include "axes.h"
@@ -146,11 +148,11 @@ protected:
 
       // calculating oscillation measure within given window
       for (int k = minW; k <= maxW; ++k) {
-        sum_left += abs(ifft[f][wraparound(n - k, lsize)].real() - ifft[f][wraparound(n - k - 1, lsize)].real());
-        sum_left += abs(ifft[f][wraparound(n - k, lsize)].imag() - ifft[f][wraparound(n - k - 1, lsize)].imag());
+        sum_left += std::fabs(ifft[f][wraparound(n - k, lsize)].real() - ifft[f][wraparound(n - k - 1, lsize)].real());
+        sum_left += std::fabs(ifft[f][wraparound(n - k, lsize)].imag() - ifft[f][wraparound(n - k - 1, lsize)].imag());
 
-        sum_right += abs(ifft[f][wraparound(n + k, lsize)].real() - ifft[f][wraparound(n + k + 1, lsize)].real());
-        sum_right += abs(ifft[f][wraparound(n + k, lsize)].imag() - ifft[f][wraparound(n + k + 1, lsize)].imag());
+        sum_right += std::fabs(ifft[f][wraparound(n + k, lsize)].real() - ifft[f][wraparound(n + k + 1, lsize)].real());
+        sum_right += std::fabs(ifft[f][wraparound(n + k, lsize)].imag() - ifft[f][wraparound(n + k + 1, lsize)].imag());
       }
 
       const real_type tot_var = std::min(sum_left, sum_right);
@@ -173,8 +175,10 @@ inline std::vector<size_t> strides_for_axis(int axis) {
     return {1, 2, 0};
   case 2:
     return {2, 0, 1};
+  default:
+    assert(false);
+    return {};
   }
-  return {};
 }
 
 } // namespace

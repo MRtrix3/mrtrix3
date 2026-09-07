@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include "eigen_plugins/eigen_plugins.h"
+#include <Eigen/Geometry>
+#include <array>
 #include <cinttypes>
 #include <complex>
 #include <cstddef>
@@ -34,41 +37,6 @@
 #else
 #define PRI_SIZET "zu" // check_syntax off
 #endif
-
-namespace MR {
-
-#ifdef MRTRIX_MAX_ALIGN_T_NOT_DEFINED
-#ifdef MRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED
-// needed for clang 3.4:
-using __max_align_t = struct {
-  long long __clang_max_align_nonce1 __attribute__((__aligned__(__alignof__(long long))));
-  long double __clang_max_align_nonce2 __attribute__((__aligned__(__alignof__(long double))));
-};
-constexpr size_t malloc_align = alignof(__max_align_t);
-#else
-constexpr size_t malloc_align = alignof(std::max_align_t);
-#endif
-#else
-constexpr size_t malloc_align = alignof(::max_align_t);
-#endif
-
-namespace Helper {
-template <class ImageType> class ConstRow;
-template <class ImageType> class Row;
-} // namespace Helper
-} // namespace MR
-
-#ifdef EIGEN_HAS_OPENMP
-#undef EIGEN_HAS_OPENMP
-#endif
-
-#define EIGEN_DENSEBASE_PLUGIN "eigen_plugins/dense_base.h"  // check_syntax off
-#define EIGEN_MATRIXBASE_PLUGIN "eigen_plugins/dense_base.h" // check_syntax off
-#define EIGEN_ARRAYBASE_PLUGIN "eigen_plugins/dense_base.h"  // check_syntax off
-#define EIGEN_MATRIX_PLUGIN "eigen_plugins/matrix.h"         // check_syntax off
-#define EIGEN_ARRAY_PLUGIN "eigen_plugins/array.h"           // check_syntax off
-
-#include <Eigen/Geometry>
 
 /*! \defgroup VLA Variable-length array macros
  *
@@ -148,6 +116,21 @@ template <class ImageType> class Row;
 
 namespace MR {
 
+#ifdef MRTRIX_MAX_ALIGN_T_NOT_DEFINED
+#ifdef MRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED
+// needed for clang 3.4:
+using __max_align_t = struct {
+  long long __clang_max_align_nonce1 __attribute__((__aligned__(__alignof__(long long))));
+  long double __clang_max_align_nonce2 __attribute__((__aligned__(__alignof__(long double))));
+};
+constexpr size_t malloc_align = alignof(__max_align_t);
+#else
+constexpr size_t malloc_align = alignof(std::max_align_t);
+#endif
+#else
+constexpr size_t malloc_align = alignof(::max_align_t);
+#endif
+
 using float32 = float;
 using float64 = double;
 using cdouble = std::complex<double>;
@@ -161,7 +144,9 @@ template <typename T> struct container_cast : public T {
 using default_type = double;
 
 constexpr default_type NaN = std::numeric_limits<default_type>::quiet_NaN();
+constexpr float NaNF = std::numeric_limits<float>::quiet_NaN();
 constexpr default_type Inf = std::numeric_limits<default_type>::infinity();
+constexpr float InfF = std::numeric_limits<float>::infinity();
 
 //! the type for the affine transform of an image:
 using transform_type = Eigen::Transform<default_type, 3, Eigen::AffineCompact>;
@@ -173,23 +158,50 @@ using KeyValues = std::map<std::string, std::string>;
 template <class ValueType> struct is_complex : std::false_type {};
 template <class ValueType> struct is_complex<std::complex<ValueType>> : std::true_type {};
 
+//! Required for any SFINAE involving data types that may include Eigen::half
+template <typename X> struct is_floating_point : std::is_floating_point<X> {};
+template <> struct is_floating_point<Eigen::half> : std::true_type {};
+template <typename T> inline constexpr bool is_floating_point_v = is_floating_point<T>::value;
+template <typename X> struct is_fundamental : std::is_fundamental<X> {};
+template <> struct is_fundamental<Eigen::half> : std::true_type {};
+template <typename T> inline constexpr bool is_fundamental_v = is_fundamental<T>::value;
+template <typename X> struct is_arithmetic : std::is_arithmetic<X> {};
+template <> struct is_arithmetic<Eigen::half> : std::true_type {};
+template <typename T> inline constexpr bool is_arithmetic_v = is_arithmetic<T>::value;
+template <typename X> struct is_integral : std::is_integral<X> {};
+template <> struct is_integral<Eigen::half> : std::false_type {};
+template <typename T> inline constexpr bool is_integral_v = is_integral<T>::value;
+template <typename X> struct is_unsigned : std::is_unsigned<X> {};
+template <> struct is_unsigned<Eigen::half> : std::false_type {};
+template <typename T> inline constexpr bool is_unsigned_v = is_unsigned<T>::value;
+
 //! check whether type is compatible with MRtrix3's file IO backend:
 template <class ValueType>
 struct is_data_type
-    : std::integral_constant<bool, std::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> {};
+    : std::integral_constant<bool, MR::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> {};
 
 // required to allow use of abs() call on unsigned integers in template
 // functions, etc, since the standard labels such calls ill-formed:
 // http://en.cppreference.com/w/cpp/numeric/math/abs
 template <typename X>
-inline constexpr typename std::enable_if<std::is_arithmetic<X>::value && std::is_unsigned<X>::value, X>::type abs(X x) {
+inline constexpr typename std::enable_if<MR::is_arithmetic<X>::value && std::is_unsigned<X>::value, X>::type abs(X x) {
   return x;
 }
 template <typename X>
-inline constexpr typename std::enable_if<std::is_arithmetic<X>::value && !std::is_unsigned<X>::value, X>::type
-abs(X x) {
+inline constexpr typename std::enable_if<MR::is_floating_point<X>::value, X>::type abs(const std::complex<X> &x) {
   return std::abs(x);
 }
+template <typename X>
+inline constexpr typename std::enable_if<MR::is_arithmetic<X>::value && !std::is_unsigned<X>::value, X>::type abs(X x) {
+  return std::abs(x);
+}
+
+template <class ValueType> struct is_string_type : std::false_type {};
+template <> struct is_string_type<std::string> : std::true_type {};
+template <> struct is_string_type<std::string_view> : std::true_type {};
+template <> struct is_string_type<const char *const> : std::true_type {}; // check_syntax off
+template <> struct is_string_type<const char *> : std::true_type {};      // check_syntax off
+
 } // namespace MR
 
 namespace std {

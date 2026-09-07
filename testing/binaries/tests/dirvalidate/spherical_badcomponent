@@ -1,0 +1,27 @@
+#!/bin/bash
+# Ensure that presence of a single erroneous spherical component leads to an error
+
+###############################
+# Test 1: Add 2xpi to azimuth #
+###############################
+
+rm -f tmp_sphericalbadaz.txt
+sed "1s/.*/8.385095142,   0.5787523099/" dirvalidate/spherical.txt > tmp_sphericalbadaz.txt
+
+rm -f tmp.txt
+! ( dirvalidate tmp_sphericalbadaz.txt > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "azimuth value .+ is outside the permitted range" tmp.txt
+
+##################################################################
+# Test 2: Add pi to inclination, subtract pi from azimuth        #
+# (effectively same direction, but inclination is impermissible) #
+##################################################################
+
+rm -f tmp_sphericalbadinc.txt
+sed "1s/.*/-1.039682819,   3.720344963/" dirvalidate/spherical.txt > tmp_sphericalbadinc.txt
+
+rm -f tmp.txt
+! ( dirvalidate tmp_sphericalbadinc.txt > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "inclination value .+ is outside the permitted range" tmp.txt

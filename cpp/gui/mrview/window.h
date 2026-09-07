@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <filesystem>
+#include <map>
+
 #include "cursor.h"
 #include "gui.h"
 #include "image.h"
@@ -25,22 +28,21 @@
 #include "mrview/gui_image.h"
 #include "opengl/font.h"
 
-namespace MR::GUI {
-namespace GL {
+namespace MR::GUI::GL {
 class Lighting;
-}
+} // namespace MR::GUI::GL
 
-namespace MRView {
-
-namespace Mode {
+namespace MR::GUI::MRView::Mode {
 class Base;
-class __Entry__;
-} // namespace Mode
-namespace Tool {
+} // namespace MR::GUI::MRView::Mode
+
+namespace MR::GUI::MRView::Tool {
 class Base;
 class ODF;
 class CameraInteractor;
-} // namespace Tool
+} // namespace MR::GUI::MRView::Tool
+
+namespace MR::GUI::MRView {
 
 class Window : public QMainWindow, ColourMapButtonObserver {
   Q_OBJECT
@@ -156,10 +158,19 @@ public:
 
   bool sync_focus_on() const { return sync_focus_action->isChecked(); }
 
-  void captureGL(std::string filename) {
-    QImage image(glarea->grabFramebuffer());
-    image.save(qstr(filename));
-  }
+  //! Render the current visualisation into the off-screen framebuffer already bound by the caller.
+  /*! Used by the screen-capture tool to render into its own off-screen buffer at \a supersample times
+   *  the display resolution: this only performs the scene render itself (scaling screen-space
+   *  annotations to match), leaving buffer allocation, anti-aliasing and read-back to the caller. */
+  void renderOffscreenGL(int supersample);
+
+  //! The super-sampling ratio currently driving the render path (unity unless an off-screen capture is in progress).
+  int supersample() const { return supersample_; }
+
+  //! Text-rendering font for the given super-sampling ratio; size-scaled instances are generated on demand.
+  GL::Font &annotation_font(int ratio);
+  //! Colourbar renderer for the given super-sampling ratio; scaled instances are generated on demand.
+  ColourBars &annotation_colourbar(int ratio);
 
   GL::Area *glwidget() const { return glarea; }
   GL::Lighting &lighting() { return *lighting_; }
@@ -247,6 +258,28 @@ private:
   GL::Lighting *lighting_;
   GL::Font font;
 
+  // Off-screen super-resolution screen capture (see renderOffscreenGL()):
+  int supersample_ = 1;
+  std::map<int, std::unique_ptr<GL::Font>> supersample_fonts;
+  std::map<int, std::unique_ptr<ColourBars>> supersample_colourbars;
+
+  //! RAII guard establishing the off-screen capture state (super-sampling ratio, scaled annotation
+  //! font) for the duration of a single off-screen render, restoring the prior state on destruction.
+  class OffscreenScope {
+  public:
+    OffscreenScope(Window &window, int supersample);
+    ~OffscreenScope();
+    OffscreenScope(const OffscreenScope &) = delete;
+    OffscreenScope &operator=(const OffscreenScope &) = delete;
+    OffscreenScope(OffscreenScope &&) = delete;
+    OffscreenScope &operator=(OffscreenScope &&) = delete;
+
+  private:
+    Window &window;
+    const GL::Font *previous_font;
+    int previous_supersample;
+  };
+
   const Qt::KeyboardModifiers FocusModifier, MoveModifier, RotateModifier;
   MouseAction mouse_action;
 
@@ -256,9 +289,9 @@ private:
   int anatomical_plane, annotations;
   ColourBars::Position colourbar_position, tools_colourbar_position;
   bool snap_to_image_axes_and_voxel;
-  std::string current_folder;
+  std::filesystem::path current_folder;
 
-  float background_colour[3];
+  Eigen::Array3f background_colour;
 
   Tool::CameraInteractor *camera_interactor;
 
@@ -285,7 +318,7 @@ private:
 
       *OpenGL_action, *about_action, *aboutQt_action;
 
-  static ColourBars::Position parse_colourmap_position_str(const std::string &position_str);
+  static ColourBars::Position parse_colourmap_position_str(std::string_view position_str);
 
   void paintGL();
   void initGL();
@@ -326,5 +359,4 @@ private:
   friend class GrabContext;
 };
 
-} // namespace MRView
-} // namespace MR::GUI
+} // namespace MR::GUI::MRView

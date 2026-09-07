@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,6 +23,8 @@
 #include "memory.h"
 #include "progressbar.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -46,9 +48,6 @@ void usage() {
       " with the SH coefficients of the signal in each shell stored"
       " at different indices along the 5th dimension."
     + Math::SH::encoding_description;
-
-  DESCRIPTION
-  + Math::SH::encoding_description;
 
   ARGUMENTS
     + Argument ("odf response", "pairs of input ODF image and corresponding responses").type_image_in().type_file_in().allow_multiple()
@@ -90,7 +89,7 @@ protected:
 };
 
 void run() {
-  if (!(argument.size() & size_t(1U)))
+  if (!(argument.size() & size_t(1)))
     throw Exception("unexpected number of arguments");
 
   std::vector<Image<value_type>> inputs((argument.size() - 1) / 2);
@@ -128,7 +127,7 @@ void run() {
   Stride::set_from_command_line(header, Stride::contiguous_along_axis(3, header));
   header.datatype() = DataType::from_command_line(DataType::Float32);
 
-  auto output = Image<value_type>::create(argument[argument.size() - 1], header);
+  auto output = Image<value_type>::create(argument.back(), header);
 
   SConvFunctor sconv(responses, inputs);
   ThreadedLoop("performing spherical convolution", inputs[0], 0, 3).run(sconv, output);

@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2025 the MRtrix3 contributors.
+# Copyright (c) 2008-2026 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,7 @@
 # For more details, see http://www.mrtrix.org/.
 
 
-import os, re, sys, threading
+import os, re, stat, sys, threading
 
 
 
@@ -202,6 +202,13 @@ KEYLIST = [ 'IN', 'NAME', 'PRE', 'UNI' ]
 def execute(): #pylint: disable=unused-variable
   from mrtrix3 import ANSI, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
   from mrtrix3 import app, run #pylint: disable=no-name-in-module, import-outside-toplevel
+
+  mode = os.fstat(sys.stdout.fileno()).st_mode
+  if stat.S_ISFIFO(mode):
+    app.warn('for_each command output is connected to a pipe;'
+             ' if the command you intend for_each to execute itself includes piping,'
+             ' make sure that pipe symbols are quote-escaped'
+             ' (see example usages)')
 
   inputs = app.ARGS.inputs
   app.debug(f'All inputs: {inputs}')

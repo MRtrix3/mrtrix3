@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,6 +13,9 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+
+#include <filesystem>
+#include <optional>
 
 #include "command.h"
 #include "exception.h"
@@ -120,7 +123,7 @@ void usage() {
     "Smith, RE; Raffelt, D; Tournier, J-D; Connelly, A. " // Internal
     "Quantitative Streamlines Tractography:"
     " Methods and Inter-Subject Normalisation. "
-    "Open Science Framework, https://doi.org/10.31219/osf.io/c67kn.";
+    "OHBM Aperture, 10.52294/ApertureNeuro.2022.2.NEOD9565.";
 
   ARGUMENTS
   + Argument ("in_tracks", "the input track file").type_tracks_in()
@@ -143,16 +146,19 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path input_tracks_path{argument[0]};
+  const std::filesystem::path input_fod_path{argument[1]};
+  const std::filesystem::path output_weights_path{argument[2]};
 
   if (!get_options("min_factor").empty() && !get_options("min_coeff").empty())
     throw Exception("Options -min_factor and -min_coeff are mutually exclusive");
   if (!get_options("max_factor").empty() && !get_options("max_coeff").empty())
     throw Exception("Options -max_factor and -max_coeff are mutually exclusive");
 
-  if (Path::has_suffix(argument[2], ".tck"))
+  if (output_weights_path.extension() == ".tck")
     throw Exception("Output of tcksift2 command should be a text file, not a tracks file");
 
-  auto in_dwi = Image<float>::open(argument[1]);
+  auto in_dwi = Image<float>::open(input_fod_path);
 
   DWI::Directions::FastLookupSet dirs(1281);
 
@@ -161,20 +167,20 @@ void run() {
   tckfactor.perform_FOD_segmentation(in_dwi);
   tckfactor.scale_FDs_by_GM();
 
-  std::string debug_path = get_option_value<std::string>("output_debug", "");
-  if (!debug_path.empty()) {
-    tckfactor.initialise_debug_image_output(debug_path);
-    tckfactor.output_proc_mask(Path::join(debug_path, "proc_mask.mif"));
+  auto debug_path = get_optional<std::filesystem::path>("output_debug");
+  if (debug_path.has_value()) {
+    tckfactor.initialise_debug_image_output(debug_path.value());
+    tckfactor.output_proc_mask(debug_path.value() / "proc_mask.mif");
   }
 
-  tckfactor.map_streamlines(argument[0]);
+  tckfactor.map_streamlines(input_tracks_path);
   tckfactor.store_orig_TDs();
 
   tckfactor.remove_excluded_fixels(get_option_value("min_td_frac", SIFT2::default_minimum_td_fraction));
 
-  if (!debug_path.empty()) {
-    tckfactor.output_TD_images(debug_path, "origTD_fixel.mif", "trackcount_fixel.mif");
-    tckfactor.output_all_debug_images(debug_path, "before");
+  if (debug_path.has_value()) {
+    tckfactor.output_TD_images(debug_path.value(), "origTD_fixel.mif", "trackcount_fixel.mif");
+    tckfactor.output_all_debug_images(debug_path.value(), "before");
   }
 
   if (!get_options("linear").empty()) {
@@ -194,46 +200,46 @@ void run() {
 
     opt = get_options("min_iters");
     if (!opt.empty())
-      tckfactor.set_min_iters(int(opt[0][0]));
+      tckfactor.set_min_iters(static_cast<int>(opt[0][0]));
     opt = get_options("max_iters");
     if (!opt.empty())
-      tckfactor.set_max_iters(int(opt[0][0]));
+      tckfactor.set_max_iters(static_cast<int>(opt[0][0]));
     opt = get_options("min_factor");
     if (!opt.empty())
-      tckfactor.set_min_factor(float(opt[0][0]));
+      tckfactor.set_min_factor(static_cast<float>(opt[0][0]));
     opt = get_options("min_coeff");
     if (!opt.empty())
-      tckfactor.set_min_coeff(float(opt[0][0]));
+      tckfactor.set_min_coeff(static_cast<float>(opt[0][0]));
     opt = get_options("max_factor");
     if (!opt.empty())
-      tckfactor.set_max_factor(float(opt[0][0]));
+      tckfactor.set_max_factor(static_cast<float>(opt[0][0]));
     opt = get_options("max_coeff");
     if (!opt.empty())
-      tckfactor.set_max_coeff(float(opt[0][0]));
+      tckfactor.set_max_coeff(static_cast<float>(opt[0][0]));
     opt = get_options("max_coeff_step");
     if (!opt.empty())
-      tckfactor.set_max_coeff_step(float(opt[0][0]));
+      tckfactor.set_max_coeff_step(static_cast<float>(opt[0][0]));
     opt = get_options("min_cf_decrease");
     if (!opt.empty())
-      tckfactor.set_min_cf_decrease(float(opt[0][0]));
+      tckfactor.set_min_cf_decrease(static_cast<float>(opt[0][0]));
 
     tckfactor.estimate_factors();
   }
 
   tckfactor.report_entropy();
 
-  tckfactor.output_factors(argument[2]);
+  tckfactor.output_factors(output_weights_path);
 
   auto opt = get_options("out_coeffs");
   if (!opt.empty())
     tckfactor.output_coefficients(opt[0][0]);
 
-  if (!debug_path.empty())
-    tckfactor.output_all_debug_images(debug_path, "after");
+  if (debug_path.has_value())
+    tckfactor.output_all_debug_images(debug_path.value(), "after");
 
   opt = get_options("out_mu");
   if (!opt.empty()) {
-    File::OFStream out_mu(opt[0][0]);
+    File::OFStream out_mu{opt[0][0]};
     out_mu << tckfactor.mu();
   }
 }

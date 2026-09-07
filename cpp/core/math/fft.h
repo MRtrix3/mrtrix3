@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -95,7 +95,8 @@ inline void FFT(ImageTypeIn &in, ImageTypeOut &out, size_t axis, int direction, 
     void operator()(const Iterator &pos) {
       assign_pos_of(pos).to(in, out);
       for (auto l = Loop(axis, axis + 1)(in); l; ++l)
-        fft[shift(in.index(axis), in.size(axis), centre_FFT, direction == FFTW_FORWARD)] = cdouble(in.value());
+        fft[shift(in.index(axis), in.size(axis), centre_FFT, direction == FFTW_FORWARD)] =
+            static_cast<cdouble>(in.value());
       fft.run();
       for (auto l = Loop(axis, axis + 1)(out); l; ++l)
         out.value() = fft[shift(out.index(axis), out.size(axis), centre_FFT, direction == FFTW_BACKWARD)];

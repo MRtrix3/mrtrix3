@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -54,7 +54,7 @@ void run() {
   GUI::DWI::Window window(!get_options("response").empty());
 
   if (!argument.empty())
-    window.set_values(std::string(argument[0]));
+    window.set_values(static_cast<std::filesystem::path>(argument[0]));
 
   window.show();
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,7 +20,7 @@
 
 namespace MR::File::NPY {
 
-DataType descr2datatype(const std::string &s) {
+DataType descr2datatype(std::string_view s) {
   size_t type_offset = 0;
   bool is_little_endian = true;
   bool expect_one_byte_width = false;
@@ -272,18 +272,16 @@ KeyValues parse_dict(std::string s) {
   return keyval;
 }
 
-ReadInfo read_header(const std::string &path) {
+ReadInfo read_header(const std::filesystem::path &path) {
   ReadInfo info;
   std::ifstream in(path, std::ios_base::in | std::ios_base::binary);
   if (!in)
-    throw Exception("Unable to load file \"" + path + "\"");
+    throw Exception("Unable to load file \"" + path.string() + "\"");
 
-  unsigned char magic[7];
-  in.read(reinterpret_cast<char *>(magic), 6);
-  if (memcmp(magic, magic_string, 6)) {
-    magic[6] = 0;
-    throw Exception("Invalid magic string in NPY binary file \"" + path + "\": " + str(magic));
-  }
+  std::array<char, 6> magic;
+  in.read(magic.data(), 6);
+  if (magic != magic_string)
+    throw Exception("Invalid magic string in NPY binary file \"" + path.string() + "\": " + str(magic));
   uint8_t major_version, minor_version;
   in.read(reinterpret_cast<char *>(&major_version), 1);
   in.read(reinterpret_cast<char *>(&minor_version), 1);
@@ -293,7 +291,7 @@ ReadInfo read_header(const std::string &path) {
     uint16_t header_len_short;
     in.read(reinterpret_cast<char *>(&header_len_short), 2);
     // header length always stored on filesystem as little-endian
-    header_len = uint32_t(ByteOrder::LE(header_len_short));
+    header_len = static_cast<uint32_t>(ByteOrder::LE(header_len_short));
     break;
   case 2:
     in.read(reinterpret_cast<char *>(&header_len), 4);
@@ -301,7 +299,8 @@ ReadInfo read_header(const std::string &path) {
     header_len = ByteOrder::LE(header_len);
     break;
   default:
-    throw Exception("Incompatible major version (" + str(major_version) + ") detected in NumPy file \"" + path + "\"");
+    throw Exception("Incompatible major version (" + str(major_version) + ") detected in NumPy file \"" +
+                    path.string() + "\"");
   }
   std::unique_ptr<char[]> header_cstr(new char[header_len + 1]);
   in.read(header_cstr.get(), header_len);
@@ -312,55 +311,60 @@ ReadInfo read_header(const std::string &path) {
   try {
     info.keyval = parse_dict(std::string(header_cstr.get()));
   } catch (Exception &e) {
-    throw Exception(e, "Error parsing header of NumPy file \"" + path + "\"");
+    throw Exception(e, "Error parsing header of NumPy file \"" + path.string() + "\"");
   }
   const auto descr_ptr = info.keyval.find("descr");
   if (descr_ptr == info.keyval.end())
-    throw Exception("Error parsing header of NumPy file \"" + path + "\": \"descr\" key absent");
+    throw Exception("Error parsing header of NumPy file \"" + path.string() + "\": \"descr\" key absent");
   const std::string descr = descr_ptr->second;
   info.keyval.erase(descr_ptr);
   try {
     info.data_type = descr2datatype(descr);
   } catch (Exception &e) {
-    throw Exception(e, "Error parsing header of NumPy file \"" + path + "\"");
+    throw Exception(e, "Error parsing header of NumPy file \"" + path.string() + "\"");
   }
   const auto fortran_order_ptr = info.keyval.find("fortran_order");
   if (fortran_order_ptr == info.keyval.end())
-    throw Exception("Error parsing header of NumPy file \"" + path + "\": \"fortran_order\" key absent");
+    throw Exception("Error parsing header of NumPy file \"" + path.string() + "\": \"fortran_order\" key absent");
   info.column_major = to<bool>(fortran_order_ptr->second);
   info.keyval.erase(fortran_order_ptr);
   const auto shape_ptr = info.keyval.find("shape");
   if (shape_ptr == info.keyval.end())
-    throw Exception("Error parsing header of NumPy file \"" + path + "\": \"shape\" key absent");
+    throw Exception("Error parsing header of NumPy file \"" + path.string() + "\": \"shape\" key absent");
   const std::string shape_str = shape_ptr->second;
   info.keyval.erase(shape_ptr);
   // Strip the brackets and split by commas
   auto shape_split_str = split(strip(strip(shape_str, "(", true, false), ")", false, true), ",", true);
   if (shape_split_str.size() > 2)
-    throw Exception("NumPy file \"" + path + "\" contains more than two dimensions: " + shape_str);
+    throw Exception("NumPy file \"" + path.string() + "\" contains more than two dimensions: " + shape_str);
   for (const auto &s : shape_split_str)
     info.shape.push_back(to<ssize_t>(s));
 
   // Make sure that the size of the file matches expectations given the offset to the data, the shape, and the data type
-  struct stat sbuf;
-  if (stat(path.c_str(), &sbuf))
-    throw Exception("Cannot query size of NumPy file \"" + path + "\": " + strerror(errno));
-  const size_t file_size = sbuf.st_size;
+  size_t file_size;
+  try {
+    file_size = std::filesystem::file_size(path);
+  } catch (const std::exception &e) {
+    throw Exception("Cannot query size of NumPy file \"" + path.string() + "\": " + e.what());
+  }
   size_t num_elements = info.shape[0];
   if (info.shape.size() == 2)
     num_elements *= info.shape[1];
   const size_t predicted_data_size = num_elements * info.data_type.bytes();
   if (info.data_offset + predicted_data_size != file_size)
-    throw Exception("Size of NumPy file \"" + path + "\" (" + str(file_size) + ") does not meet expectations given " +
-                    "total header size (" + str(info.data_offset) + ") " + "and predicted data size (" + "(" +
-                    str(info.shape[0]) + (info.shape.size() == 2 ? "x" + str(info.shape[1]) : "") + " = " +
-                    str(num_elements) + ") " + "values x " + str(info.data_type.bytes()) +
-                    " bytes per value = " + str(num_elements * info.data_type.bytes()) + " bytes)");
+    throw Exception(                                                                                   //
+        "Size of NumPy file \"" + path.string() + "\" (" + str(file_size) + ")" +                      //
+        " does not meet expectations given total header size (" + str(info.data_offset) + ")" +        //
+        " and predicted data size (" +                                                                 //
+        "(" + str(info.shape[0]) + (info.shape.size() == 2 ? "x" + str(info.shape[1]) : "") +          //
+        " = " + str(num_elements) + ") values x " + str(info.data_type.bytes()) + " bytes per value" + //
+        " = " + str(num_elements * info.data_type.bytes()) + " bytes)");                               //
 
   return info;
 }
 
-WriteInfo prepare_ND_write(const std::string &path, const DataType data_type, const std::vector<size_t> &shape) {
+WriteInfo
+prepare_ND_write(const std::filesystem::path &path, const DataType data_type, const std::vector<size_t> &shape) {
   assert(shape.size() == 1 || shape.size() == 2);
   WriteInfo info;
   info.data_type = data_type;
@@ -369,7 +373,7 @@ WriteInfo prepare_ND_write(const std::string &path, const DataType data_type, co
       throw Exception("Complex data types not yet supported with NPY format");
     const size_t max_precision = float_max_save_precision();
     if (max_precision < info.data_type.bits()) {
-      INFO("Precision of floating-point NumPy file \"" + path + "\" decreased from native " +
+      INFO("Precision of floating-point NumPy file \"" + path.string() + "\" decreased from native " +
            str(info.data_type.bits()) + " bits to " + str(max_precision));
       if (max_precision == 16)
         info.data_type = DataType::native(DataType::Float16);
@@ -384,21 +388,20 @@ WriteInfo prepare_ND_write(const std::string &path, const DataType data_type, co
                      "," + (shape.size() == 2 ? (" " + str(shape[1])) : "") + "), }");
   // Pad with spaces so that, for version 1, upon adding a newline at the end, the file size (i.e. eventual offset to
   // the data) is a multiple of alignment (16)
-  uint32_t space_count =
-      alignment -
-      ((header.size() + 11) % alignment); // 11 = 6 magic number + 2 version + 2 header length + 1 newline for header
+  // 11 = 6 magic number + 2 version + 2 header length + 1 newline for header
+  uint32_t space_count = alignment - ((header.size() + 11) % alignment);
   uint32_t padded_header_length = header.size() + space_count + 1;
   File::OFStream out(path, std::ios_base::out | std::ios_base::binary);
   if (!out)
-    throw Exception("Unable to create NumPy file \"" + path + "\"");
-  out.write(reinterpret_cast<const char *>(magic_string), 6);
+    throw Exception("Unable to create NumPy file \"" + path.string() + "\"");
+  out.write(reinterpret_cast<const char *>(magic_string.data()), 6);
   const unsigned char minor_version = '\x00';
   if (10 + padded_header_length > std::numeric_limits<uint16_t>::max()) {
     const unsigned char major_version = '\x02';
     out.write(reinterpret_cast<const char *>(&major_version), 1);
     out.write(reinterpret_cast<const char *>(&minor_version), 1);
-    space_count = alignment - ((header.size() + 13) %
-                               alignment); // 13 = 6 magic number + 2 version + 4 header length + 1 newline for header
+    // 13 = 6 magic number + 2 version + 4 header length + 1 newline for header
+    space_count = alignment - ((header.size() + 13) % alignment);
     padded_header_length = header.size() + space_count + 1;
     padded_header_length = ByteOrder::LE(padded_header_length);
     out.write(reinterpret_cast<const char *>(&padded_header_length), 4);
@@ -406,7 +409,7 @@ WriteInfo prepare_ND_write(const std::string &path, const DataType data_type, co
     const unsigned char major_version = '\x01';
     out.write(reinterpret_cast<const char *>(&major_version), 1);
     out.write(reinterpret_cast<const char *>(&minor_version), 1);
-    uint16_t padded_header_length_short = ByteOrder::LE(uint16_t(padded_header_length));
+    uint16_t padded_header_length_short = ByteOrder::LE(static_cast<uint16_t>(padded_header_length));
     out.write(reinterpret_cast<const char *>(&padded_header_length_short), 2);
   }
   for (size_t i = 0; i != space_count; ++i)
@@ -418,7 +421,7 @@ WriteInfo prepare_ND_write(const std::string &path, const DataType data_type, co
   out.close();
   const size_t num_elements = shape[0] * (shape.size() == 2 ? shape[1] : 1);
   const size_t data_size = num_elements * info.data_type.bytes();
-  File::resize(path, leadin_size + data_size);
+  std::filesystem::resize_file(path, leadin_size + data_size);
   info.mmap.reset(new File::MMap({path, leadin_size}, true, false));
   return info;
 }

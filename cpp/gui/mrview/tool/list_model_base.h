@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "gui.h"
 #include "mrview/displayable.h"
 
 namespace MR::GUI::MRView::Tool {
@@ -34,19 +35,15 @@ public:
     }
     if (role != Qt::DisplayRole && role != Qt::ToolTipRole)
       return QVariant();
-    return items[index.row()] ? qstr(items[index.row()]->get_filename()) : QString();
+    return items[index.row()] ? qstr(items[index.row()]->get_filepath().string()) : QString();
   }
 
   bool setData(const QModelIndex &idx, const QVariant &value, int role) override {
     if (role == Qt::CheckStateRole) {
       Qt::KeyboardModifiers keyMod = QApplication::keyboardModifiers();
       if (keyMod.testFlag(Qt::ShiftModifier)) {
-        for (int i = 0; i < (int)items.size(); ++i) {
-          if (i == idx.row())
-            items[i]->show = true;
-          else
-            items[i]->show = false;
-        }
+        for (size_t i = 0; i < items.size(); ++i)
+          items[i]->show = (i == idx.row());
         emit dataChanged(index(0, 0), index(items.size(), 0));
       } else {
         items[idx.row()]->show = (value == Qt::Checked);
@@ -121,12 +118,12 @@ public:
   QModelIndex parent(const QModelIndex &) const override { return QModelIndex(); }
 
   int rowCount(const QModelIndex &parent = QModelIndex()) const override {
-    (void)parent; // to suppress warnings about unused parameters
+    (void)parent;
     return items.size();
   }
 
   int columnCount(const QModelIndex &parent = QModelIndex()) const override {
-    (void)parent; // to suppress warnings about unused parameters
+    (void)parent;
     return 1;
   }
 

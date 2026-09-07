@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,7 +30,7 @@ class LocalSocketReader : public QObject {
   Q_OBJECT
 
 public:
-  LocalSocketReader(QLocalSocket *mySocket);
+  LocalSocketReader(QLocalSocket *mySocket, QObject *parent = nullptr);
 
 signals:
   void DataReceived(std::vector<std::shared_ptr<QByteArray>> dat); // emits every message currently available

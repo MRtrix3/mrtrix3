@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,20 +14,24 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "eigen_plugins/eigen_plugins.h"
+#include <algorithm>
+#include <filesystem>
+#include <unsupported/Eigen/MatrixFunctions>
+
 #include "axes.h"
 #include "command.h"
+#include "enum.h"
 #include "file/key_value.h"
 #include "file/matrix.h"
 #include "file/nifti_utils.h"
 #include "image.h"
 #include "transform.h"
-#include <algorithm>
-#include <unsupported/Eigen/MatrixFunctions>
 
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> operations = {"flirt_import", "itk_import"};
+enum class Operation { FLIRT_IMPORT, ITK_IMPORT };
 
 // clang-format off
 void usage() {
@@ -58,7 +62,7 @@ void usage() {
   ARGUMENTS
   + Argument ("input", "the input(s) for the specified operation").type_file_in().type_image_in().allow_multiple()
   + Argument ("operation", "the operation to perform;"
-                           " one of: " + join(operations, ", ")).type_choice (operations)
+                           " one of: " + MR::Enum::join<Operation>()).type_choice<Operation>()
   + Argument ("output", "the output transformation matrix.").type_file_out ();
 
 }
@@ -82,7 +86,7 @@ transform_type get_flirt_transform(const Header &header) {
 
 // //! read matrix data into a 2D vector \a filename
 // template <class ValueType = default_type>
-//   transform_type parse_surfer_transform (const std::string& filename) {
+//   transform_type parse_surfer_transform (const std::string filename) {
 //     std::ifstream stream (filename, std::ios_base::in | std::ios_base::binary);
 //     std::vector<std::vector<ValueType>> V;
 //     std::string sbuf;
@@ -130,7 +134,7 @@ transform_type get_flirt_transform(const Header &header) {
 // }
 
 template <typename TransformationType>
-void parse_itk_trafo(const std::string &itk_file,
+void parse_itk_trafo(const std::filesystem::path &itk_path,
                      TransformationType &transformation,
                      Eigen::Vector3d &centre_of_rotation) {
   const std::string first_line = "#Insight Transform File V1.0";
@@ -143,7 +147,7 @@ void parse_itk_trafo(const std::string &itk_file,
   // QuaternionRigidTransform_double_3_3?
   // QuaternionRigidTransform_float_3_3?
 
-  File::KeyValue::Reader file(itk_file, first_line.c_str());
+  File::KeyValue::Reader file(itk_path, first_line.c_str());
   std::string line;
   size_t invalid(2);
   while (file.next()) {
@@ -176,21 +180,22 @@ void parse_itk_trafo(const std::string &itk_file,
 }
 
 void run() {
+  const std::filesystem::path output_path{argument.back()};
   const size_t num_inputs = argument.size() - 2;
-  const int op = argument[num_inputs];
-  const std::string &output_path = argument.back();
+  const Operation op = MR::Enum::from_name<Operation>(argument[num_inputs]);
 
   switch (op) {
-  case 0: { // flirt_import
+  case Operation::FLIRT_IMPORT: {
     if (num_inputs != 3)
       throw Exception("flirt_import requires 3 inputs");
+
     transform_type transform = File::Matrix::load_transform(argument[0]);
     auto src_header = Header::open(argument[1]);  // -in
     auto dest_header = Header::open(argument[2]); // -ref
 
-    if (transform.matrix().topLeftCorner<3, 3>().determinant() == float(0.0))
+    if (transform.matrix().topLeftCorner<3, 3>().determinant() == 0.0)
       WARN("Transformation matrix determinant is zero.");
-    if (transform.matrix().topLeftCorner<3, 3>().determinant() < 0)
+    if (transform.matrix().topLeftCorner<3, 3>().determinant() < 0.0)
       INFO("Transformation matrix determinant is negative.");
 
     transform_type src_flirt_to_scanner = get_flirt_transform(src_header);
@@ -202,10 +207,9 @@ void run() {
     File::Matrix::save_transform(forward_transform.inverse(), output_path);
     break;
   }
-  case 1: { // ITK import
+  case Operation::ITK_IMPORT: {
     if (num_inputs != 1)
       throw Exception("itk_import requires 1 input, " + str(num_inputs) + " provided.");
-
     transform_type transform;
     Eigen::Vector3d centre_of_rotation(3);
     parse_itk_trafo(argument[0], transform, centre_of_rotation);

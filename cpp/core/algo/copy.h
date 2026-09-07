@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -44,7 +44,7 @@ void copy_with_progress(InputImageType &&source,
 }
 
 template <class InputImageType, class OutputImageType>
-void copy_with_progress_message(const std::string &message,
+void copy_with_progress_message(std::string_view message,
                                 InputImageType &&source,
                                 OutputImageType &&destination,
                                 size_t from_axis = 0,

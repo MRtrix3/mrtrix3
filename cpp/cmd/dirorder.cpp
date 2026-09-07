@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,10 +16,12 @@
 
 #include "command.h"
 #include "dwi/directions/file.h"
+#include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
 #include "file/matrix.h"
 #include "math/SH.h"
 #include "math/rng.h"
+#include "math/sphere.h"
 #include "progressbar.h"
 
 #include <functional>
@@ -69,7 +71,7 @@ optimise(const Eigen::MatrixXd &directions, const index_type preserve, const siz
   indices.push_back(first_volume);
   std::vector<index_type> remaining;
   remaining.reserve(directions.rows() - preserve);
-  for (index_type n = preserve; n < index_type(directions.rows()); ++n)
+  for (index_type n = preserve; n < static_cast<index_type>(directions.rows()); ++n)
     if (n != first_volume)
       remaining.push_back(n);
 
@@ -120,12 +122,14 @@ value_type calc_cost(const Eigen::MatrixXd &directions, const std::vector<index_
 }
 
 void run() {
-  auto directions = DWI::Directions::load_cartesian(argument[0]);
+  auto directions = File::Matrix::load_matrix(argument[0]);
+  DWI::Directions::validate(directions, argument[0], false);
+  directions = Math::Sphere::as_cartesian(directions);
 
   const index_type preserve = get_option_value<index_type>("preserve", 0);
 
-  index_type last_candidate_first_volume = index_type(directions.rows());
-  if (size_t(directions.rows()) <= Math::SH::NforL(2)) {
+  index_type last_candidate_first_volume = static_cast<index_type>(directions.rows());
+  if (static_cast<size_t>(directions.rows()) <= Math::SH::NforL(2)) {
     // clang-format off
     WARN("Very few directions in input (" + str(directions.rows()) + ";" +
          " selection of first direction cannot be optimised" +

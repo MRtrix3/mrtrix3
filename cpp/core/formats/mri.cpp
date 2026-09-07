@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,11 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <cstddef>
+#include <cstring>
+#include <limits>
+
 #include "file/config.h"
 #include "file/mmap.h"
 #include "file/ofstream.h"
 #include "file/path.h"
-#include "file/utils.h"
 #include "formats/list.h"
 #include "header.h"
 #include "image_io/default.h"
@@ -75,8 +78,9 @@ inline size_t char2order(char item, bool &forward) {
   case 'E':
     forward = false;
     return (3);
+  default:
+    return (std::numeric_limits<size_t>::max());
   }
-  return (std::numeric_limits<size_t>::max());
 }
 
 inline char order2char(size_t axis, bool forward) {
@@ -101,28 +105,29 @@ inline char order2char(size_t axis, bool forward) {
       return ('B');
     else
       return ('E');
+  default:
+    return ('\0');
   }
-  return ('\0');
 }
 
-inline uint32_t type(const uint8_t *pos, bool is_BE) { return Raw::fetch_<uint32_t>(pos, is_BE); }
-inline size_t size(const uint8_t *pos, bool is_BE) { return (Raw::fetch_<uint32_t>(pos + sizeof(uint32_t), is_BE)); }
-inline const uint8_t *data(const uint8_t *pos) { return (pos + 2 * sizeof(uint32_t)); }
+inline uint32_t type(const std::byte *pos, bool is_BE) { return Raw::fetch_<uint32_t>(pos, is_BE); }
+inline size_t size(const std::byte *pos, bool is_BE) { return (Raw::fetch_<uint32_t>(pos + sizeof(uint32_t), is_BE)); }
+inline const std::byte *data(const std::byte *pos) { return (pos + 2 * sizeof(uint32_t)); }
 
-inline const uint8_t *next(const uint8_t *current_pos, bool is_BE) {
+inline const std::byte *next(const std::byte *current_pos, bool is_BE) {
   return (current_pos + 2 * sizeof(uint32_t) + size(current_pos, is_BE));
 }
 
 inline void write_tag(std::ostream &out, uint32_t Type, uint32_t Size, bool is_BE) {
   Type = ByteOrder::swap<uint32_t>(static_cast<uint32_t>(Type), is_BE);
-  out.write((const char *)&Type, sizeof(uint32_t));
+  out.write(reinterpret_cast<const char *>(&Type), sizeof(uint32_t));
   Size = ByteOrder::swap<uint32_t>(Size, is_BE);
-  out.write((const char *)&Size, sizeof(uint32_t));
+  out.write(reinterpret_cast<const char *>(&Size), sizeof(uint32_t));
 }
 
 template <typename T> inline void write(std::ostream &out, T val, bool is_BE) {
   val = ByteOrder::swap<T>(val, is_BE);
-  out.write((const char *)&val, sizeof(T));
+  out.write(reinterpret_cast<const char *>(&val), sizeof(T));
 }
 
 // needed to get around changes in hard-coded enum types in datatype.h:
@@ -131,7 +136,7 @@ DataType fetch_datatype(uint8_t c) {
   uint8_t t = c & ~(0x07U);
   if (d >= 0x05U)
     ++d;
-  return {uint8_t(d | t)};
+  return DataType(d | t);
 }
 
 uint8_t store_datatype(const DataType &dt) {
@@ -145,32 +150,31 @@ uint8_t store_datatype(const DataType &dt) {
 } // namespace
 
 std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
-  if (!Path::has_suffix(H.name(), ".mri"))
+  if (const_cast<const Header &>(H).path().extension() != ".mri")
     return std::unique_ptr<ImageIO::Base>();
 
-  File::MMap fmap(H.name());
+  File::MMap fmap(const_cast<const Header &>(H).path());
 
-  if (memcmp(fmap.address(), "MRI#", 4))
-    throw Exception("file \"" + H.name() + "\" is not in MRI format (unrecognised magic number)");
+  if (memcmp(fmap.address(), "MRI#", 4) != 0)
+    throw Exception("file \"" + H.path().string() + "\" is not in MRI format (unrecognised magic number)");
 
   bool is_BE = false;
   if (Raw::fetch_<uint16_t>(fmap.address() + sizeof(int32_t), is_BE) == 0x0100U)
     is_BE = true;
   else if (Raw::fetch_<uint16_t>(fmap.address() + sizeof(uint32_t), is_BE) != 0x0001U)
-    throw Exception("MRI file \"" + H.name() + "\" is badly formed (invalid byte order specifier)");
+    throw Exception("MRI file \"" + H.path().string() + "\" is badly formed (invalid byte order specifier)");
 
   H.ndim() = 4;
 
   size_t data_offset = 0;
-  char *c;
-  const uint8_t *current = fmap.address() + sizeof(int32_t) + sizeof(uint16_t);
-  const uint8_t *last = fmap.address() + fmap.size() - 2 * sizeof(uint32_t);
+  const std::byte *current = fmap.address() + sizeof(int32_t) + sizeof(uint16_t);
+  const std::byte *last = fmap.address() + fmap.size() - 2 * sizeof(uint32_t);
 
   while (current <= last) {
     switch (type(current, is_BE)) {
     case mriformat_index_data:
-      H.datatype() = fetch_datatype(data(current)[-4]);
-      data_offset = current + 5 - (uint8_t *)fmap.address();
+      H.datatype() = fetch_datatype(std::to_integer<uint8_t>(data(current)[-4]));
+      data_offset = current + 5 - fmap.address();
       break;
     case mriformat_index_dimensions:
       H.size(0) = Raw::fetch_<uint32_t>(data(current), is_BE);
@@ -179,12 +183,11 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
       H.size(3) = Raw::fetch_<uint32_t>(data(current) + 3 * sizeof(uint32_t), is_BE);
       break;
     case mriformat_index_order:
-      c = (char *)data(current);
       for (size_t n = 0; n < 4; n++) {
         bool forward = true;
-        size_t ax = char2order(c[n], forward);
+        const size_t ax = char2order(*(reinterpret_cast<const char *>(data(current) + n)), forward);
         if (ax == std::numeric_limits<size_t>::max())
-          throw Exception("invalid order specifier in MRI image \"" + H.name() + "\"");
+          throw Exception("invalid order specifier in MRI image \"" + H.path().string() + "\"");
         H.stride(ax) = n + 1;
         if (!forward)
           H.stride(ax) = -H.stride(ax);
@@ -217,7 +220,7 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
     default:
       WARN("unknown header entity (" + str(static_cast<uint32_t>(type(current, is_BE))) + "," + //
            " offset " + str(current - fmap.address()) + ")" +                                   //
-           " in image \"" + H.name() + "\" - ignored");                                         //
+           " in image \"" + H.path().string() + "\" - ignored");                                //
       break;
     }
 
@@ -228,16 +231,16 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
   }
 
   if (!data_offset)
-    throw Exception("no data field found in MRI image \"" + H.name() + "\"");
+    throw Exception("no data field found in MRI image \"" + H.path().string() + "\"");
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(H.name(), data_offset));
+  io_handler->files.push_back(File::Entry(H.path(), data_offset));
 
   return io_handler;
 }
 
 bool MRI::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(H.name(), ".mri"))
+  if (const_cast<const Header &>(H).path().extension() != ".mri")
     return false;
 
   if (H.ndim() > num_axes && num_axes != 4)
@@ -249,7 +252,8 @@ bool MRI::check(Header &H, size_t num_axes) const {
 }
 
 std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
-  File::OFStream out(H.name());
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  File::OFStream out(hpath);
 
 #ifdef MRTRIX_BYTE_ORDER_BIG_ENDIAN
   bool is_BE = true;
@@ -268,12 +272,12 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
 
   write_tag(out, mriformat_index_order, 4 * sizeof(uint8_t), is_BE);
   size_t n;
-  char order[4];
+  std::array<char, 4> order;
   for (n = 0; n < H.ndim(); ++n)
-    order[abs(H.stride(n)) - 1] = order2char(n, H.stride(n) > 0);
+    order[MR::abs(H.stride(n)) - 1] = order2char(n, H.stride(n) > 0);
   for (; n < 4; ++n)
     order[n] = order2char(n, true);
-  out.write(order, 4);
+  out.write(order.data(), 4);
 
   write_tag(out, mriformat_index_voxelsize, 3 * sizeof(float32), is_BE);
   write<float>(out, H.spacing(0), is_BE);
@@ -312,12 +316,12 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
   write_tag(out, mriformat_index_data, 1, is_BE);
   out.put(store_datatype(H.datatype()));
 
-  size_t data_offset = int64_t(out.tellp());
+  size_t data_offset = static_cast<size_t>(out.tellp());
   out.close();
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  File::resize(H.name(), data_offset + footprint(H));
-  io_handler->files.push_back(File::Entry(H.name(), data_offset));
+  std::filesystem::resize_file(hpath, data_offset + footprint(H));
+  io_handler->files.push_back(File::Entry(hpath, data_offset));
 
   return io_handler;
 }

@@ -181,8 +181,6 @@ Table of Contents
    fixel_based_analysis/st_fibre_density_cross-section
    fixel_based_analysis/mt_fibre_density_cross-section
    fixel_based_analysis/fixel_directory_format
-   fixel_based_analysis/mitigating_brain_cropping
-   fixel_based_analysis/computing_effect_size_wrt_controls
    fixel_based_analysis/displaying_results_with_streamlines
 
 .. toctree::
@@ -199,8 +197,17 @@ Table of Contents
 
 .. toctree::
    :maxdepth: 1
+   :caption: Statistical inference
+
+   statistical_inference/computing_effect_size_wrt_controls
+   statistical_inference/mitigating_brain_cropping
+   statistical_inference/posthoc_testing
+
+.. toctree::
+   :maxdepth: 1
    :caption: Concepts
 
+   concepts/axis_realignment
    concepts/dw_scheme
    concepts/pe_scheme
    concepts/global_intensity_normalisation

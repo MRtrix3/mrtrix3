@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,6 +18,7 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/validate.h"
 
 using namespace MR;
 using namespace App;
@@ -42,15 +43,15 @@ void run() {
   DWI::Tractography::Properties properties1, properties2;
   DWI::Tractography::ScalarReader<value_type> reader1(argument[0], properties1);
   DWI::Tractography::ScalarReader<value_type> reader2(argument[1], properties2);
-  DWI::Tractography::check_properties_match(properties1, properties2, "scalar", false);
+  DWI::Tractography::validate_tsf_properties(properties1, properties2, "scalar file pair");
 
   DWI::Tractography::ScalarWriter<value_type> writer(argument[2], properties1);
   DWI::Tractography::TrackScalar<value_type> tck_scalar1, tck_scalar2, tck_scalar_output;
   while (reader1(tck_scalar1)) {
     if (!reader2(tck_scalar2)) {
-      WARN("No more track scalars left in input file \"" + std::string(argument[1]) + "\" after " +
-           str(tck_scalar1.get_index() + 1) + " streamlines; " + "but more data are present in input file \"" +
-           std::string(argument[0]) + "\"");
+      WARN("No more track scalars left in input file \"" + argument[1].as_text() + "\"" + //
+           " after " + str(tck_scalar1.get_index() + 1) + " streamlines;" +               //
+           " but more data are present in input file \"" + argument[0].as_text() + "\""); //
       break;
     }
     if (tck_scalar1.size() != tck_scalar2.size())
@@ -67,8 +68,8 @@ void run() {
     writer(tck_scalar_output);
   }
   if (reader2(tck_scalar2)) {
-    WARN("No more track scalars left in input file \"" + std::string(argument[0]) + "\" after " +
-         str(tck_scalar1.get_index() + 1) + " streamlines; " + "but more data are present in input file \"" +
-         std::string(argument[1]) + "\"");
+    WARN("No more track scalars left in input file \"" + argument[0].as_text() + "\"" + //
+         " after " + str(tck_scalar1.get_index() + 1) + " streamlines;" +               //
+         " but more data are present in input file \"" + argument[1].as_text() + "\""); //
   }
 }

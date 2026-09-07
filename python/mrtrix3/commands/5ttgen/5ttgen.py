@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2025 the MRtrix3 contributors.
+# Copyright (c) 2008-2026 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,9 +31,11 @@ def usage(cmdline): #pylint: disable=unused-variable
                           ' A range of different algorithms are available for completing this task.'
                           ' When using this script,'
                           ' the name of the algorithm to be used must appear'
-                          ' as the first argument on the command-line after "5ttgen".'
-                          ' The subsequent compulsory arguments and options available'
-                          ' depend on the particular algorithm being invoked.')
+                          ' before any other argument on the command-line after "5ttgen",'
+                          ' since the compulsory arguments expected'
+                          ' depend on the particular algorithm being invoked;'
+                          ' command-line options should also be provided'
+                          ' after the algorithm name for reliable parsing.')
   cmdline.add_description('Each algorithm available also has its own help page,'
                           ' including necessary references;'
                           ' e.g. to see the help page of the "fsl" algorithm, type "5ttgen fsl".')
@@ -64,7 +66,7 @@ def execute(): #pylint: disable=unused-variable
 
   result_path = alg.execute()
   if result_path:
-    stderr = run.command(['5ttcheck', result_path]).stderr
+    stderr = run.command(['5ttvalidate', result_path]).stderr
     if '[WARNING]' in stderr:
       app.warn('Generated image does not perfectly conform to 5TT format:')
       for line in stderr.splitlines():

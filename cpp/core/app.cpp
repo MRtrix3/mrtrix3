@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,16 +16,23 @@
 
 #include <algorithm>
 #include <array>
+#include <cerrno>
 #include <clocale>
+#include <cstddef>
 #include <fcntl.h>
+#include <filesystem>
 #include <locale>
 #include <unistd.h>
 
 #include "app.h"
+#include "cmdline_option.h"
 #include "debug.h"
+#include "env.h"
+#include "exception.h"
 #include "executable_version.h"
 #include "file/config.h"
 #include "file/path.h"
+#include "mrtrix.h"
 #include "mrtrix_version.h"
 #include "progressbar.h"
 #include "signal_handler.h"
@@ -39,6 +46,8 @@ OptionList OPTIONS;
 Description REFERENCES;
 bool REQUIRES_AT_LEAST_ONE_ARGUMENT = true;
 
+const std::string help_command = "less -X";
+
 const HelpFormatting help_formatting{
     80,      // const ssize_t width
     {0, 4},  // const Indents purpose_indents
@@ -47,8 +56,6 @@ const HelpFormatting help_formatting{
     7        // const ssize_t example_indent
 };
 
-const std::string help_command = "less -X";
-
 const std::string core_reference =
     "Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; " //
     "Jeurissen, B.; Yeh, C.-H. & Connelly, A. "                                                               //
@@ -56,30 +63,29 @@ const std::string core_reference =
     "NeuroImage, 2019, 202, 116137";                                                                          //
 
 // clang-format off
-OptionGroup __standard_options =
-    OptionGroup("Standard options")
-    + Option("info", "display information messages.")
-    + Option("quiet",
-             "do not display information messages or progress status; "
-             "alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable"
-             " to a non-empty string.")
-    + Option("debug", "display debugging messages.")
-    + Option("force",
-             "force overwrite of output files"
-             " (caution: using the same file as input and output might cause unexpected behaviour).")
-    + Option("nthreads",
-             "use this number of threads in multi-threaded applications"
-             " (set to 0 to disable multi-threading).")
-      + Argument("number").type_integer(0)
-    + Option("config", "temporarily set the value of an MRtrix config file entry.").allow_multiple()
-      + Argument("key").type_text()
-      + Argument("value").type_text()
-    + Option("help", "display this information page and exit.")
-    + Option("version", "display version information and exit.");
+const OptionGroup _standard_options = OptionGroup("Standard options")
+  + Option("info", "display information messages.")
+  + Option("quiet",
+           "do not display information messages or progress status; "
+           "alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable"
+           " to a non-empty string.")
+  + Option("debug", "display debugging messages & debug input data.")
+  + Option("force",
+           "force overwrite of output files"
+           " (caution: using the same file as input and output might cause unexpected behaviour).")
+  + Option("nthreads",
+           "use this number of threads in multi-threaded applications"
+           " (set to 0 to disable multi-threading).")
+    + Argument("number").type_integer(0)
+  + Option("config", "temporarily set the value of an MRtrix config file entry.").allow_multiple()
+    + Argument("key").type_text()
+    + Argument("value").type_text()
+  + Option("help", "display this information page and exit.")
+  + Option("version", "display version information and exit.");
 // clang-format on
 
 std::string AUTHOR{};
-std::string COPYRIGHT = "Copyright (c) 2008-2025 the MRtrix3 contributors.\n"
+std::string COPYRIGHT = "Copyright (c) 2008-2026 the MRtrix3 contributors.\n"
                         "\n"
                         "This Source Code Form is subject to the terms of the Mozilla Public\n"
                         "License, v. 2.0. If a copy of the MPL was not distributed with this\n"
@@ -109,39 +115,42 @@ std::vector<ParsedOption> option;
 // ENVVAR Set the default terminal verbosity. Default terminal verbosity
 // ENVVAR is 1. This has the same effect as the ``-quiet`` (0),
 // ENVVAR ``-info`` (2) or ``-debug`` (3) comand-line options.
-int log_level = getenv("MRTRIX_QUIET") ? 0 : (getenv("MRTRIX_LOGLEVEL") ? to<int>(getenv("MRTRIX_LOGLEVEL")) : 1);
+int log_level = MR::get_env("MRTRIX_QUIET").has_value() ? 0 : MR::get_env("MRTRIX_LOGLEVEL", 1);
 
 int exit_error_code = 0;
 bool fail_on_warn = false;
 bool terminal_use_colour = true;
 const std::thread::id main_thread_ID = std::this_thread::get_id();
 
-const char *project_version = nullptr;
-const char *project_build_date = nullptr;
+const std::string project_version;
+const std::string project_build_date;
 
 std::vector<std::string> raw_arguments_list;
 
 bool overwrite_files = false;
-void (*check_overwrite_files_func)(const std::string &name) = nullptr;
+void (*check_overwrite_files_func)(const std::filesystem::path &name) = nullptr;
 
 namespace {
 
-inline void get_matches(std::vector<const Option *> &candidates, const OptionGroup &group, const std::string &stub) {
+inline void get_matches(std::vector<const Option *> &candidates, const OptionGroup &group, std::string_view stub) {
   for (size_t i = 0; i < group.size(); ++i) {
     if (stub.compare(0, stub.size(), std::string(group[i].id), 0, stub.size()) == 0)
       candidates.push_back(&group[i]);
   }
 }
 
-inline int size(const std::string &text) { return text.size() - 2 * std::count(text.begin(), text.end(), 0x08U); }
-
-inline void resize(std::string &text, size_t new_size, char fill) {
-  text.resize(text.size() + new_size - size(text), fill);
+inline std::string::size_type characters_ignoring_emphasis(std::string_view text) {
+  return text.size() - 2 * std::count(text.begin(), text.end(), 0x08U);
 }
 
-std::string paragraph(const std::string &header, const std::string &text, const HelpFormatting::Indents indents) {
-  std::string out, line = std::string(indents.header, ' ') + header + " ";
-  if (size(line) < indents.main)
+inline void resize(std::string &text, size_t new_size, char fill) {
+  text.resize(text.size() + new_size - characters_ignoring_emphasis(text), fill);
+}
+
+std::string paragraph(std::string_view header, std::string_view text, const HelpFormatting::Indents indents) {
+  std::string out;
+  std::string line = std::string(indents.header, ' ') + std::string(header) + " ";
+  if (characters_ignoring_emphasis(line) < indents.main)
     resize(line, indents.main, ' ');
 
   std::vector<std::string> paragraphs = split(text, "\n");
@@ -154,7 +163,7 @@ std::string paragraph(const std::string &header, const std::string &text, const 
         line += " " + words[i++];
         if (i >= words.size())
           break;
-      } while (size(line) + 1 + size(words[i]) < help_formatting.width);
+      } while (characters_ignoring_emphasis(line) + 1 + characters_ignoring_emphasis(words[i]) < help_formatting.width);
       out += line + "\n";
       line = std::string(indents.main, ' ');
     }
@@ -162,7 +171,7 @@ std::string paragraph(const std::string &header, const std::string &text, const 
   return out;
 }
 
-std::string bold(const std::string &text) {
+std::string bold(std::string_view text) {
   std::string retval(3 * text.size(), '\0');
   for (size_t n = 0; n < text.size(); ++n) {
     retval[3 * n] = retval[3 * n + 2] = text[n];
@@ -171,7 +180,7 @@ std::string bold(const std::string &text) {
   return retval;
 }
 
-std::string underline(const std::string &text, bool ignore_whitespace = false) {
+std::string underline(std::string_view text, bool ignore_whitespace = false) {
   size_t m(0);
   std::string retval(3 * text.size(), '\0');
   for (size_t n = 0; n < text.size(); ++n) {
@@ -190,26 +199,39 @@ std::string underline(const std::string &text, bool ignore_whitespace = false) {
 std::string help_head(const bool format) {
   if (!format) {
     return std::string(NAME) + ": " +
-           (project_version ? std::string("external MRtrix3 project, version ") + project_version +
-                                  "\nbuilt against MRtrix3 version " + mrtrix_version
-                            : std::string("part of the MRtrix3 package, version ") + mrtrix_version) +
+           (project_version.empty() ? ("part of the MRtrix3 package, version " + mrtrix_version)
+                                    : "external MRtrix3 project, version " + project_version +
+                                          "\nbuilt against MRtrix3 version " + mrtrix_version) +
            "\n\n";
   }
 
-  std::string version_string =
-      project_version ? std::string("Version ") + project_version : std::string("MRtrix ") + mrtrix_version;
+  const std::string version_string =
+      project_version.empty() ? (std::string("MRtrix ") + mrtrix_version) : ("Version " + project_version);
 
-  std::string date(project_version ? project_build_date : build_date);
+  const std::string date(project_version.empty() ? build_date : project_build_date);
 
-  std::string topline =
-      version_string + std::string(std::max(1, 40 - size(version_string) - size(App::NAME) / 2), ' ') + bold(App::NAME);
-  topline += std::string(80 - size(topline) - size(date), ' ') + date;
+  auto safe_padding = [](std::ptrdiff_t want, std::size_t minimum = 1) -> std::size_t {
+    if (want < static_cast<std::ptrdiff_t>(minimum))
+      return minimum;
+    return static_cast<std::size_t>(want);
+  };
 
-  if (project_version)
+  // compute requested padding to position the program name
+  const std::ptrdiff_t requested_padding = 40 -
+                                           static_cast<std::ptrdiff_t>(characters_ignoring_emphasis(version_string)) -
+                                           (static_cast<std::ptrdiff_t>(characters_ignoring_emphasis(App::NAME)) / 2);
+  std::string topline = version_string + std::string(safe_padding(requested_padding), ' ') + bold(App::NAME);
+
+  // compute requested padding to right-align the date
+  const std::ptrdiff_t requested_padding2 = 80 - static_cast<std::ptrdiff_t>(characters_ignoring_emphasis(topline)) -
+                                            static_cast<std::ptrdiff_t>(characters_ignoring_emphasis(date));
+  topline += std::string(safe_padding(requested_padding2), ' ') + date;
+
+  if (!project_version.empty())
     topline += std::string("\nusing MRtrix3 ") + mrtrix_version;
 
   return topline + "\n\n     " + bold(NAME) + ": " +
-         (project_version ? "external MRtrix3 project" : "part of the MRtrix3 package") + "\n\n";
+         (project_version.empty() ? "part of the MRtrix3 package" : "external MRtrix3 project") + "\n\n";
 }
 
 std::string help_synopsis(const bool format) {
@@ -258,14 +280,19 @@ std::string usage_syntax(const bool format) {
   return s + "\n\n";
 }
 
-Description &Description::operator+(const char *text) {
-  push_back(text);
+Description &Description::operator+(const char *text) { // check_syntax off
+  emplace_back(std::string(text));
   return *this;
 }
 
-Description &Description::operator+(const char *const text[]) {
-  for (const char *const *p = text; *p != nullptr; ++p)
-    push_back(*p);
+Description &Description::operator+(std::string_view text) {
+  emplace_back(std::string(text));
+  return *this;
+}
+
+Description &Description::operator+(const char *const text[]) { // check_syntax off
+  for (const char *const *p = text; *p != nullptr; ++p)         // check_syntax off
+    emplace_back(std::string(*p));
   return *this;
 }
 
@@ -280,13 +307,17 @@ std::string Description::syntax(const bool format) const {
   return s;
 }
 
-Example::Example(const std::string &title, const std::string &code, const std::string &description)
+Example::Example(std::string_view title, std::string_view code, std::string_view description)
     : title(title), code(code), description(description) {}
 
 Example::operator std::string() const { return title + ": $ " + code + "  " + description; }
 
 std::string Example::syntax(const bool format) const {
-  std::string s = paragraph("", format ? underline(title + ":") + "\n" : title + ": ", help_formatting.purpose_indents);
+  std::string s = paragraph("",                                 //
+                            format                              //
+                                ? underline(title + ":") + "\n" //
+                                : title + ": ",                 //
+                            help_formatting.purpose_indents);   //
   s += std::string(help_formatting.example_indent, ' ') + "$ " + code + "\n";
   if (!description.empty())
     s += paragraph("", description, help_formatting.purpose_indents);
@@ -444,7 +475,7 @@ std::string Argument::usage() const {
     stream << " TRACKSOUT";
   if (types[ArgTypeFlags::Choice]) {
     stream << " CHOICE";
-    for (const std::string &p : choices)
+    for (const auto &p : choices)
       stream << " " << p;
   }
   stream << "\n";
@@ -471,7 +502,7 @@ std::string Option::usage() const {
 std::string get_help_string(const bool format) {
   return help_head(format) + help_synopsis(format) + usage_syntax(format) + ARGUMENTS.syntax(format) +
          DESCRIPTION.syntax(format) + EXAMPLES.syntax(format) + OPTIONS.syntax(format) +
-         __standard_options.header(format) + __standard_options.contents(format) + __standard_options.footer(format) +
+         _standard_options.header(format) + _standard_options.contents(format) + MR::App::OptionGroup::footer(format) +
          help_tail(format);
 }
 
@@ -488,9 +519,9 @@ void print_help() {
     std::string help_string = get_help_string(1);
     FILE *file = popen(help_display_command.c_str(), "w");
     if (!file) {
-      INFO("error launching help display command \"" + help_display_command + "\": " + strerror(errno));
+      INFO("error launching help display command \"" + help_display_command + "\": " + MR::C_strerror(errno));
     } else if (fwrite(help_string.c_str(), 1, help_string.size(), file) != help_string.size()) {
-      INFO("error sending help page to display command \"" + help_display_command + "\": " + strerror(errno));
+      INFO("error sending help page to display command \"" + help_display_command + "\": " + MR::C_strerror(errno));
     }
 
     if (pclose(file) == 0)
@@ -510,9 +541,9 @@ void print_help() {
 #endif
 
 std::string version_string() {
-  std::string version = "== " + App::NAME + " " + (project_version ? project_version : mrtrix_version) + " ==\n" +
-                        str(8 * sizeof(size_t)) + " bit " + MRTRIX_BUILD_TYPE + ", built " + build_date +
-                        (project_version ? std::string(" against MRtrix ") + mrtrix_version : std::string("")) +
+  std::string version = "== " + App::NAME + " " + (project_version.empty() ? mrtrix_version : project_version) +
+                        " ==\n" + str(8 * sizeof(size_t)) + " bit " + MRTRIX_BUILD_TYPE + ", built " + build_date +
+                        (project_version.empty() ? std::string("") : " against MRtrix " + mrtrix_version) +
                         ", using Eigen " + str(EIGEN_WORLD_VERSION) + "." + str(EIGEN_MAJOR_VERSION) + "." +
                         str(EIGEN_MINOR_VERSION) +
                         "\n"
@@ -539,26 +570,26 @@ std::string full_usage() {
     for (size_t j = 0; j < OPTIONS[i].size(); ++j)
       s += OPTIONS[i][j].usage();
 
-  for (size_t i = 0; i < __standard_options.size(); ++i)
-    s += __standard_options[i].usage();
+  for (size_t i = 0; i < _standard_options.size(); ++i)
+    s += _standard_options[i].usage();
 
   return s;
 }
 
 std::string markdown_usage() {
   /*
-     help_head (format)
-     + help_synopsis (format)
-     + usage_syntax (format)
-     + ARGUMENTS.syntax (format)
-     + DESCRIPTION.syntax (format)
-     + EXAMPLES.syntax (format)
-     + OPTIONS.syntax (format)
-     + __standard_options.header (format)
-     + __standard_options.contents (format)
-     + __standard_options.footer (format)
-     + help_tail (format);
-     */
+    help_head (format)
+    + help_synopsis (format)
+    + usage_syntax (format)
+    + ARGUMENTS.syntax (format)
+    + DESCRIPTION.syntax (format)
+    + EXAMPLES.syntax (format)
+    + OPTIONS.syntax (format)
+    + _standard_options.header (format)
+    + _standard_options.contents (format)
+    + _standard_options.footer (format)
+    + help_tail (format);
+  */
   std::string s = std::string("## Synopsis\n\n") + SYNOPSIS + "\n\n";
 
   s += "## Usage\n\n    " + std::string(NAME) + " [ options ] ";
@@ -635,8 +666,8 @@ std::string markdown_usage() {
   }
 
   s += "#### Standard options\n\n";
-  for (size_t i = 0; i < __standard_options.size(); ++i)
-    s += format_option(__standard_options[i]);
+  for (size_t i = 0; i < _standard_options.size(); ++i)
+    s += format_option(_standard_options[i]);
 
   s += std::string("## References\n\n");
   for (size_t i = 0; i < REFERENCES.size(); ++i)
@@ -651,18 +682,18 @@ std::string markdown_usage() {
 
 std::string restructured_text_usage() {
   /*
-     help_head (format)
-     + help_synopsis (format)
-     + usage_syntax (format)
-     + ARGUMENTS.syntax (format)
-     + DESCRIPTION.syntax (format)
-     + EXAMPLES.syntax (format)
-     + OPTIONS.syntax (format)
-     + __standard_options.header (format)
-     + __standard_options.contents (format)
-     + __standard_options.footer (format)
-     + help_tail (format);
-     */
+    help_head (format)
+    + help_synopsis (format)
+    + usage_syntax (format)
+    + ARGUMENTS.syntax (format)
+    + DESCRIPTION.syntax (format)
+    + EXAMPLES.syntax (format)
+    + OPTIONS.syntax (format)
+    + _standard_options.header (format)
+    + _standard_options.contents (format)
+    + _standard_options.footer (format)
+    + help_tail (format);
+  */
 
   std::string s = std::string("Synopsis\n--------\n\n") + SYNOPSIS + "\n\n";
 
@@ -765,8 +796,8 @@ std::string restructured_text_usage() {
   }
 
   s += "Standard options\n^^^^^^^^^^^^^^^^\n\n";
-  for (size_t i = 0; i < __standard_options.size(); ++i)
-    s += format_option(__standard_options[i]);
+  for (size_t i = 0; i < _standard_options.size(); ++i)
+    s += format_option(_standard_options[i]);
 
   s += std::string("References\n^^^^^^^^^^\n\n");
   for (size_t i = 0; i < REFERENCES.size(); ++i) {
@@ -1131,9 +1162,9 @@ static std::string pydra_code() {
   }
 
   s += "\n" + base_indent + "# Standard options\n";
-  for (size_t i = 0; i < __standard_options.size(); ++i)
-    if (__standard_options[i].id != str("help") && __standard_options[i].id != str("version"))
-      s += format_option(__standard_options[i]);
+  for (size_t i = 0; i < _standard_options.size(); ++i)
+    if (_standard_options[i].id != str("help") && _standard_options[i].id != str("version"))
+      s += format_option(_standard_options[i]);
 
   s += "\n" + base_indent + "class Outputs(shell.Outputs):\n";
 
@@ -1184,7 +1215,7 @@ const Option *match_option(std::string_view arg) {
 
   for (size_t i = 0; i < OPTIONS.size(); ++i)
     get_matches(candidates, OPTIONS[i], root);
-  get_matches(candidates, __standard_options, root);
+  get_matches(candidates, _standard_options, root);
 
   // no matches
   if (candidates.empty())
@@ -1338,7 +1369,7 @@ void parse() {
         for (const auto &og : OPTIONS) {
           for (const auto &o : og) {
             if (std::string(a) == std::string(o.id))
-              potential_options.push_back("'-" + a + "'");
+              potential_options.push_back("'-" + std::string(a) + "'");
           }
         }
       }
@@ -1400,31 +1431,29 @@ void parse() {
   terminal_use_colour = File::Config::get_bool("TerminalColor", terminal_use_colour);
 
   // check for the existence of all specified input files (including optional ones that have been provided)
-  // if necessary, also check for pre-existence of any output files with known paths
-  //   (if the output is e.g. given as a prefix, the argument should be flagged as type_text())
+  // if necessary, also check for pre-existence of any output files or directories with known paths
   // note that if an argument has multiple possible types, some checks can't be enforced
   for (const auto &i : argument) {
-    const std::string text = std::string(i);
     assert(i.arg->types.any());
     {
       ArgTypeFlags types_not_input_file(i.arg->types);
       types_not_input_file.reset(ArgTypeFlags::FileIn);
       types_not_input_file.reset(ArgTypeFlags::TracksIn);
       if (!types_not_input_file.any()) {
-        if (!Path::exists(text))
-          throw Exception("required input file \"" + text + "\" not found");
-        if (!Path::is_file(text))
-          throw Exception("required input \"" + text + "\" is not a file");
+        if (!std::filesystem::exists(i))
+          throw Exception("required input file \"" + i.as_text() + "\" not found");
+        if (!std::filesystem::is_regular_file(i))
+          throw Exception("required input \"" + i.as_text() + "\" is not a file");
       }
     }
     {
       ArgTypeFlags types_not_input_directory(i.arg->types);
       types_not_input_directory.reset(ArgTypeFlags::DirectoryIn);
       if (!types_not_input_directory.any()) {
-        if (!Path::exists(text))
-          throw Exception("required input directory \"" + text + "\" not found");
-        if (!Path::is_dir(text))
-          throw Exception("required input \"" + text + "\" is not a directory");
+        if (!std::filesystem::exists(i))
+          throw Exception("required input directory \"" + i.as_text() + "\" not found");
+        if (!std::filesystem::is_directory(i))
+          throw Exception("required input \"" + i.as_text() + "\" is not a directory");
       }
     }
     {
@@ -1432,8 +1461,8 @@ void parse() {
       types_not_output_file.reset(ArgTypeFlags::FileOut);
       types_not_output_file.reset(ArgTypeFlags::TracksOut);
       if (!types_not_output_file.any()) {
-        if (text.find_last_of(PATH_SEPARATORS) == text.size() - 1)
-          throw Exception("output path \"" + std::string(i) + "\" is not a valid file path" +
+        if (i.as_text().find_last_of(PATH_SEPARATORS) == i.as_text().size() - 1)
+          throw Exception("output path \"" + i.as_text() + "\" is not a valid file path" +
                           " (ends with directory path separator)");
       }
     }
@@ -1442,52 +1471,79 @@ void parse() {
       types_not_output_filesystem.reset(ArgTypeFlags::FileOut);
       types_not_output_filesystem.reset(ArgTypeFlags::DirectoryOut);
       types_not_output_filesystem.reset(ArgTypeFlags::TracksOut);
-      if (!types_not_output_filesystem.any())
-        check_overwrite(text);
+      if (!types_not_output_filesystem.any()) {
+        if (i.arg->types[ArgTypeFlags::DirectoryOut] && !i.arg->types[ArgTypeFlags::FileOut] &&
+            !i.arg->types[ArgTypeFlags::TracksOut]) {
+          switch (i.arg->dir_out_mode) {
+          case DirOutMode::MustNotExist:
+            check_overwrite(i);
+            break;
+          case DirOutMode::EmptyOrAbsent: {
+            const std::filesystem::path dir_path(i);
+            if (std::filesystem::exists(dir_path)) {
+              if (!std::filesystem::is_directory(dir_path))
+                throw Exception("output path \"" + i.as_text() + "\" already exists as a file");
+              if (std::filesystem::directory_iterator(dir_path) != std::filesystem::directory_iterator())
+                throw Exception("output directory \"" + i.as_text() + "\" is not empty" +
+                                (overwrite_files ? " (-force option cannot safely be applied on directories;"
+                                                   " please erase manually instead)"
+                                                 : ""));
+            }
+            break;
+          }
+          case DirOutMode::MayExist:
+            break;
+          }
+        } else {
+          check_overwrite(i);
+        }
+      }
     }
     {
       ArgTypeFlags types_not_input_tractogram(i.arg->types);
       types_not_input_tractogram.reset(ArgTypeFlags::TracksIn);
       if (!types_not_input_tractogram.any()) {
-        if (!Path::has_suffix(text, ".tck"))
-          throw Exception("input file \"" + text + "\" is not a valid track file");
+        if (static_cast<std::filesystem::path>(i).extension() != ".tck")
+          throw Exception("input file \"" + i.as_text() + "\" is not a valid track file");
       }
     }
     {
       ArgTypeFlags types_not_output_tractogram(i.arg->types);
       types_not_output_tractogram.reset(ArgTypeFlags::TracksOut);
       if (!types_not_output_tractogram.any()) {
-        if (!Path::has_suffix(text, ".tck"))
-          throw Exception("output track file \"" + text + "\" must use the .tck suffix");
+        if (static_cast<std::filesystem::path>(i).extension() != ".tck")
+          throw Exception("output track file \"" + i.as_text() + "\" must use the .tck suffix");
       }
     }
   }
   for (const auto &i : option) {
     for (size_t j = 0; j != i.opt->size(); ++j) {
+      const ParsedArgument parg = i[j];
       const Argument &arg = i.opt->operator[](j);
       assert(arg.types.any());
-      const std::string text = std::string(i.args[j]);
       {
         ArgTypeFlags types_not_input_file(arg.types);
         types_not_input_file.reset(ArgTypeFlags::FileIn);
         types_not_input_file.reset(ArgTypeFlags::TracksIn);
         if (!types_not_input_file.any()) {
-          if (!Path::exists(text))
-            throw Exception("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" not found");
-          if (!Path::is_file(text))
-            throw Exception("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a file");
+          if (!std::filesystem::exists(parg))
+            throw Exception("input file \"" + parg.as_text() + "\"" +                     //
+                            " for option \"-" + std::string(i.opt->id) + "\" not found"); //
+          if (!std::filesystem::is_regular_file(parg))
+            throw Exception("input \"" + parg.as_text() + "\"" +                              //
+                            " for option \"-" + std::string(i.opt->id) + "\" is not a file"); //
         }
       }
       {
         ArgTypeFlags types_not_input_directory(arg.types);
         types_not_input_directory.reset(ArgTypeFlags::DirectoryIn);
         if (!types_not_input_directory.any()) {
-          if (!Path::exists(text))
-            throw Exception("input directory \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) +
-                            "\" not found");
-          if (!Path::is_dir(text))
-            throw Exception("input \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) +
-                            "\" is not a directory");
+          if (!std::filesystem::exists(parg))
+            throw Exception("input directory \"" + parg.as_text() + "\"" +                //
+                            " for option \"-" + std::string(i.opt->id) + "\" not found"); //
+          if (!std::filesystem::is_directory(parg))
+            throw Exception("input \"" + parg.as_text() + "\"" +                                   //
+                            " for option \"-" + std::string(i.opt->id) + "\" is not a directory"); //
         }
       }
       {
@@ -1495,9 +1551,11 @@ void parse() {
         types_not_output_file.reset(ArgTypeFlags::FileOut);
         types_not_output_file.reset(ArgTypeFlags::TracksOut);
         if (!types_not_output_file.any()) {
-          if (text.find_last_of(PATH_SEPARATORS) == text.size() - 1)
-            throw Exception("output path \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) + "\"" +
-                            " is not a valid file path (ends with directory path separator)");
+          const std::string filename = static_cast<std::filesystem::path>(parg).filename().string();
+          if (filename.find_last_of(PATH_SEPARATORS) == filename.size() - 1)
+            throw Exception("output path \"" + parg.as_text() + "\"" +                         //
+                            " for option \"-" + std::string(i.opt->id) + "\"" +                //
+                            " is not a valid file path (ends with directory path separator)"); //
         }
       }
       {
@@ -1505,25 +1563,54 @@ void parse() {
         types_not_output_filesystem.reset(ArgTypeFlags::FileOut);
         types_not_output_filesystem.reset(ArgTypeFlags::DirectoryOut);
         types_not_output_filesystem.reset(ArgTypeFlags::TracksOut);
-        if (!types_not_output_filesystem.any())
-          check_overwrite(text);
+        if (!types_not_output_filesystem.any()) {
+          if (arg.types[ArgTypeFlags::DirectoryOut] && !arg.types[ArgTypeFlags::FileOut] &&
+              !arg.types[ArgTypeFlags::TracksOut]) {
+            switch (arg.dir_out_mode) {
+            case DirOutMode::MustNotExist:
+              check_overwrite(parg);
+              break;
+            case DirOutMode::EmptyOrAbsent: {
+              const std::filesystem::path dir_path(parg);
+              if (std::filesystem::exists(dir_path)) {
+                if (!std::filesystem::is_directory(dir_path))
+                  throw Exception("output path \"" + parg.as_text() + "\"" + " for option \"-" +
+                                  std::string(i.opt->id) + "\" already exists as a file");
+                if (std::filesystem::directory_iterator(dir_path) != std::filesystem::directory_iterator())
+                  throw Exception("output directory \"" + parg.as_text() + "\"" + " for option \"-" +
+                                  std::string(i.opt->id) + "\" is not empty" +
+                                  (overwrite_files ? " (-force option cannot safely be applied on directories;"
+                                                     " please erase manually instead)"
+                                                   : ""));
+              }
+              break;
+            }
+            case DirOutMode::MayExist:
+              break;
+            }
+          } else {
+            check_overwrite(parg);
+          }
+        }
       }
       {
         ArgTypeFlags types_not_input_tractogram(arg.types);
         types_not_input_tractogram.reset(ArgTypeFlags::TracksIn);
         if (!types_not_input_tractogram.any()) {
-          if (!Path::has_suffix(text, ".tck"))
-            throw Exception("input file \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) + "\"" +
-                            " is not a valid track file");
+          if (static_cast<std::filesystem::path>(parg).extension() != ".tck")
+            throw Exception("input file \"" + parg.as_text() + "\"" +           //
+                            " for option \"-" + std::string(i.opt->id) + "\"" + //
+                            " is not a valid track file");                      //
         }
       }
       {
         ArgTypeFlags types_not_output_tractogram(arg.types);
         types_not_output_tractogram.reset(ArgTypeFlags::TracksOut);
         if (!types_not_output_tractogram.any()) {
-          if (!Path::has_suffix(text, ".tck"))
-            throw Exception("output track file \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) + "\"" +
-                            " must use the .tck suffix");
+          if (static_cast<std::filesystem::path>(parg).extension() != ".tck")
+            throw Exception("output track file \"" + parg.as_text() + "\"" +    //
+                            " for option \"-" + std::string(i.opt->id) + "\"" + //
+                            " must use the .tck suffix");                       //
         }
       }
     }
@@ -1532,7 +1619,7 @@ void parse() {
   SignalHandler::init();
 }
 
-void init(int cmdline_argc, const char *const *cmdline_argv) {
+void init(int cmdline_argc, const char *const *cmdline_argv) { // check_syntax off
 #ifdef MRTRIX_WINDOWS
   // force stderr to be unbuffered, and stdout to be line-buffered:
   setvbuf(stderr, nullptr, _IONBF, 0);
@@ -1542,15 +1629,15 @@ void init(int cmdline_argc, const char *const *cmdline_argv) {
   terminal_use_colour = !ProgressBar::set_update_method();
 
   raw_arguments_list = std::vector<std::string>(cmdline_argv, cmdline_argv + cmdline_argc);
-  NAME = Path::basename(raw_arguments_list.front());
+  NAME = std::filesystem::path(raw_arguments_list.front()).filename().string();
   raw_arguments_list.erase(raw_arguments_list.begin());
 
 #ifdef MRTRIX_WINDOWS
-  if (Path::has_suffix(NAME, ".exe"))
+  if (std::filesystem::path(NAME).extension() == ".exe")
     NAME.erase(NAME.size() - 4);
 #endif
 
-  auto argv_quoted = [](const std::string &s) -> std::string {
+  auto argv_quoted = [](std::string_view s) -> std::string {
     for (size_t i = 0; i != s.size(); ++i) {
       if (!(isalnum(s[i]) || s[i] == '.' || s[i] == '_' || s[i] == '-' || s[i] == '/')) {
         std::string escaped_string("\'");
@@ -1571,23 +1658,21 @@ void init(int cmdline_argc, const char *const *cmdline_argv) {
         return escaped_string;
       }
     }
-    return s;
+    return std::string(s);
   };
   command_history_string = cmdline_argv[0];
   for (const auto &a : raw_arguments_list)
     command_history_string += std::string(" ") + argv_quoted(a);
   command_history_string += std::string("  (version=") + mrtrix_version;
-  if (project_version)
+  if (!project_version.empty())
     command_history_string += std::string(", project=") + project_version;
   command_history_string += ")";
 
   std::locale::global(std::locale::classic());
-  std::setlocale(LC_ALL, "C");
-
-  srand(time(nullptr));
+  std::setlocale(LC_ALL, "C"); // NOLINT(concurrency-mt-unsafe)
 }
 
-const std::vector<ParsedOption> get_options(const std::string &name) {
+std::vector<ParsedOption> get_options(std::string_view name) {
   assert(!name.empty());
   assert(name[0] != '-');
   std::vector<ParsedOption> matches;
@@ -1678,7 +1763,7 @@ int64_t App::ParsedArgument::as_int() const {
         }
         if (contains_dotpoint) {
           const default_type prefix = to<default_type>(num);
-          retval = std::round(prefix * default_type(multiplier));
+          retval = std::round(prefix * static_cast<default_type>(multiplier));
         } else {
           retval = to<int64_t>(num) * multiplier;
         }
@@ -1716,13 +1801,18 @@ int64_t App::ParsedArgument::as_int() const {
   throw full_msg;
 }
 
+bool App::ParsedArgument::as_bool() const {
+  assert(arg->types[ArgTypeFlags::Boolean]);
+  return to<bool>(p);
+}
+
 uint64_t App::ParsedArgument::as_uint() const {
   const int64_t signed_value = as_int();
   if (signed_value < 0)
     throw Exception("Attempting to interpret negative user-specified value (" //
                     + str(signed_value)                                       //
                     + " as unsigned integer");                                //
-  return uint64_t(signed_value);
+  return static_cast<uint64_t>(signed_value);
 }
 
 default_type App::ParsedArgument::as_float() const {
@@ -1743,24 +1833,22 @@ default_type App::ParsedArgument::as_float() const {
   return retval;
 }
 
-std::vector<int32_t> ParsedArgument::as_sequence_int() const {
+std::vector<ParsedArgument::IntType> ParsedArgument::as_sequence_int() const {
   assert(arg->types[ArgTypeFlags::IntSeq]);
   try {
-    return parse_ints<int32_t>(p);
+    return parse_ints<IntType>(p);
   } catch (Exception &e) {
-    error(e);
+    throw Exception(e, "Unable to interpret command-line input \"" + as_text() + "\" as sequence of integers");
   }
-  return std::vector<int32_t>();
 }
 
-std::vector<uint32_t> ParsedArgument::as_sequence_uint() const {
+std::vector<ParsedArgument::UIntType> ParsedArgument::as_sequence_uint() const {
   assert(arg->types[ArgTypeFlags::IntSeq]);
   try {
-    return parse_ints<uint32_t>(p);
+    return parse_ints<UIntType>(p);
   } catch (Exception &e) {
-    error(e);
+    throw Exception(e, "Unable to interpret command-line input \"" + as_text() + "\" as sequence of integers");
   }
-  return std::vector<uint32_t>();
 }
 
 std::vector<default_type> ParsedArgument::as_sequence_float() const {
@@ -1768,9 +1856,9 @@ std::vector<default_type> ParsedArgument::as_sequence_float() const {
   try {
     return parse_floats(p);
   } catch (Exception &e) {
-    error(e);
+    throw Exception(
+        e, "Unable to interpret command-line input \"" + as_text() + "\" as sequence of floating-point values");
   }
-  return std::vector<default_type>();
 }
 
 ParsedArgument::ParsedArgument(const Option *option, const Argument *argument, std::string text, size_t index)
@@ -1778,22 +1866,51 @@ ParsedArgument::ParsedArgument(const Option *option, const Argument *argument, s
   assert(!p.empty());
 }
 
-void ParsedArgument::error(Exception &e) const {
-  std::string msg("error parsing token \"");
-  msg += p;
-  if (opt != nullptr)
-    msg += std::string("\" for option \"") + opt->id + "\"";
-  else
-    msg += std::string("\" for argument \"") + arg->id + "\"";
-  throw Exception(e, msg);
+bool ParsedArgument::includes_filesystem_arg_types() const noexcept {
+  if (arg == nullptr)
+    return false;
+  return (arg->types[ArgTypeFlags::FileIn] || arg->types[ArgTypeFlags::FileOut] ||
+          arg->types[ArgTypeFlags::DirectoryIn] || arg->types[ArgTypeFlags::DirectoryOut] ||
+          arg->types[ArgTypeFlags::ImageIn] || arg->types[ArgTypeFlags::ImageOut] ||
+          arg->types[ArgTypeFlags::TracksIn] || arg->types[ArgTypeFlags::TracksOut]);
 }
 
-void check_overwrite(const std::string &name) {
-  if (Path::exists(name) && !overwrite_files) {
+bool ParsedArgument::only_filesystem_arg_types() const noexcept {
+  if (arg == nullptr)
+    return false;
+  ArgTypeFlags flags(arg->types);
+  flags[ArgTypeFlags::FileIn] = flags[ArgTypeFlags::FileOut] = flags[ArgTypeFlags::DirectoryIn] =
+      flags[ArgTypeFlags::DirectoryOut] = flags[ArgTypeFlags::ImageIn] = flags[ArgTypeFlags::ImageOut] =
+          flags[ArgTypeFlags::TracksIn] = flags[ArgTypeFlags::TracksOut] = false;
+  return !flags.any();
+}
+
+ParsedArgument::operator std::string() const {
+  assert(!only_filesystem_arg_types());
+  return p;
+}
+
+ParsedArgument::operator std::string_view() const {
+  assert(!only_filesystem_arg_types());
+  return p;
+}
+
+ParsedArgument::operator std::filesystem::path() const {
+  assert(includes_filesystem_arg_types());
+  return std::filesystem::path(p);
+}
+
+std::filesystem::path ParsedArgument::as_path() const {
+  assert(includes_filesystem_arg_types());
+  return std::filesystem::path(p);
+}
+
+void check_overwrite(const std::filesystem::path &path) {
+  if (std::filesystem::exists(path) && !overwrite_files) {
     if (check_overwrite_files_func != nullptr)
-      check_overwrite_files_func(name);
+      check_overwrite_files_func(path);
     else
-      throw Exception("output path \"" + name + "\" already exists (use -force option to force overwrite)");
+      throw Exception("output path \"" + path.string() + "\" already exists (use -force option to force overwrite)");
   }
 }
 
@@ -1821,12 +1938,12 @@ ParsedArgument ParsedOption::operator[](size_t num) const {
   return ParsedArgument(opt, &(*opt)[num], args[num], index + num + 1);
 }
 
-bool ParsedOption::operator==(const char *match) const {
+bool ParsedOption::operator==(std::string_view match) const {
   const std::string name = lowercase(match);
   return name == opt->id;
 }
 
-std::string operator+(const char *left, const ParsedArgument &right) {
+std::string operator+(const char *const left, const ParsedArgument &right) { // check_syntax off
   std::string retval(left);
   retval += std::string(right);
   return retval;

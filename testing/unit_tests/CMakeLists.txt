@@ -7,10 +7,10 @@ target_compile_definitions(gtest PRIVATE
 )
 
 set(UNIT_TESTS_CPP_SRCS
-    bitset_tests.cpp
     erfinv_tests.cpp
     icls_tests.cpp
     ordered_queue_tests.cpp
+    parse_axes_tests.cpp
     parse_ints_tests.cpp
     platform_tests.cpp
     roi_tests.cpp
@@ -18,6 +18,10 @@ set(UNIT_TESTS_CPP_SRCS
     shuffle_tests.cpp
     to_tests.cpp
 )
+
+if(MRTRIX_ENABLE_GPU)
+    list(APPEND UNIT_TESTS_CPP_SRCS gputests.cpp)
+endif()
 
 get_filename_component(SOURCE_PARENT_DIR ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
 set(DATA_DIR ${SOURCE_PARENT_DIR}/data)
@@ -69,11 +73,19 @@ gtest_discover_tests(mrtrix-unit-tests
 include(BashTests)
 function (add_bash_unit_test FILE_SRC)
     get_filename_component(NAME ${FILE_SRC} NAME_WE)
+    # Forward the NO_FILESYSTEM_LOCK opt-out keyword for tests that never write to disk.
+    set(no_filesystem_lock "")
+    foreach(arg ${ARGN})
+        if(arg STREQUAL "NO_FILESYSTEM_LOCK")
+            set(no_filesystem_lock NO_FILESYSTEM_LOCK)
+        endif()
+    endforeach()
     add_bash_test(
         FILE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${FILE_SRC}"
         PREFIX "unittest"
         WORKING_DIRECTORY ${DATA_DIR}
         EXEC_DIRECTORIES "${EXEC_DIRS}"
         LABELS "unittest;${NAME}"
+        ${no_filesystem_lock}
     )
 endfunction()

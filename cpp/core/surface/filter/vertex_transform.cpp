@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -91,9 +91,8 @@ void VertexTransform::operator()(const Mesh &in, Mesh &out) const {
       for (size_t j = 0; j < 3; j++)
         cras[i] += 0.5 * header.size(axes[j]) * header.spacing(axes[j]) * M(i, j);
     }
-    for (size_t i = 0; i != V; ++i) {
+    for (size_t i = 0; i != V; ++i)
       vertices.push_back(in.vert(i) + cras);
-    }
     break;
   }
 

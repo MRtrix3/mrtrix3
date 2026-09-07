@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,8 @@
 
 #include "mrview/tool/fixel/directory.h"
 
+#include <filesystem>
+
 namespace MR::GUI::MRView::Tool {
 void Directory::load_image_buffer() {
   for (size_t axis = 0; axis < 3; ++axis) {
@@ -27,9 +29,13 @@ void Directory::load_image_buffer() {
   // Load fixel index image
   for (auto l = Loop(0, 3)(*fixel_data); l; ++l) {
 
-    const std::array<int, 3> voxel{{int(fixel_data->index(0)), int(fixel_data->index(1)), int(fixel_data->index(2))}};
-    Eigen::Vector3f pos{float(voxel[0]), float(voxel[1]), float(voxel[2])};
-    pos = transform.voxel2scanner.cast<float>() * pos;
+    const std::array<int, 3> voxel{static_cast<int>(fixel_data->index(0)),
+                                   static_cast<int>(fixel_data->index(1)),
+                                   static_cast<int>(fixel_data->index(2))};
+    const Eigen::Vector3f pos =
+        (transform.voxel2scanner *
+         Eigen::Vector3d(static_cast<double>(voxel[0]), static_cast<double>(voxel[1]), static_cast<double>(voxel[2])))
+            .cast<float>();
 
     fixel_data->index(3) = 0;
     const size_t nfixels = fixel_data->value();
@@ -52,7 +58,7 @@ void Directory::load_image_buffer() {
 
   // Load fixel direction images
   auto directions_image =
-      MR::Fixel::find_directions_header(Path::dirname(fixel_data->name())).get_image<float>().with_direct_io();
+      MR::Fixel::find_directions_header(fixel_data->path().parent_path()).get_image<float>(MR::DirectIO{1});
   directions_image.index(1) = 0;
   for (auto l = Loop(0, 3)(*fixel_data); l; ++l) {
     fixel_data->index(3) = 0;
@@ -67,13 +73,14 @@ void Directory::load_image_buffer() {
 
   // Load fixel data images keys
   // We will load the actual fixel data lazily upon request
-  auto data_headers = MR::Fixel::find_data_headers(Path::dirname(fixel_data->name()), *fixel_data);
+  const auto fixel_dir_path = fixel_data->path().parent_path();
+  auto data_headers = MR::Fixel::find_data_headers(fixel_dir_path, *fixel_data);
   for (auto &header : data_headers) {
 
     if (header.size(1) != 1)
       continue;
 
-    const auto data_key = Path::basename(header.name());
+    const auto data_key = header.path().filename().string();
     fixel_values[data_key];
     value_types.push_back(data_key);
     colour_types.push_back(data_key);
@@ -81,13 +88,14 @@ void Directory::load_image_buffer() {
   }
 }
 
-void Directory::lazy_load_fixel_value_file(const std::string &key) const {
+void Directory::lazy_load_fixel_value_file(std::string_view key) const {
 
   // We're assuming the key corresponds to the fixel data filename
-  const auto data_filepath = Path::join(Path::dirname(fixel_data->name()), key);
-  fixel_values[key].loaded = true;
+  const auto fixel_dir_path = fixel_data->path().parent_path();
+  const auto data_filepath = fixel_dir_path / key;
+  fixel_values[std::string(key)].loaded = true;
 
-  if (!Path::exists(data_filepath))
+  if (!std::filesystem::exists(data_filepath))
     return;
 
   auto H = Header::open(data_filepath);
@@ -107,18 +115,18 @@ void Directory::lazy_load_fixel_value_file(const std::string &key) const {
     for (size_t f = 0; f < nfixels; ++f) {
       data_image.index(0) = offset + f;
       float value = data_image.value();
-      fixel_values[key].add_value(value);
+      fixel_values[std::string(key)].add_value(value);
     }
   }
 
-  fixel_values[key].initialise_windowing();
+  fixel_values[std::string(key)].initialise_windowing();
 }
 
-FixelValue &Directory::get_fixel_value(const std::string &key) const {
+FixelValue &Directory::get_fixel_value(std::string_view key) const {
   if (!has_values())
     return dummy_fixel_val_state;
 
-  FixelValue &fixel_val = fixel_values[key];
+  FixelValue &fixel_val = fixel_values[std::string(key)];
   // Buffer hasn't been loaded yet -  we do this lazily
   if (!fixel_val.loaded)
     lazy_load_fixel_value_file(key);

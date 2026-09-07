@@ -424,8 +424,9 @@ NIfTI headers (i.e. the ``sform`` / ``qform``); the transform as reported by
 with the data), as the *MRtrix3* image loading backend will try to provide the
 image transform in a near-axial orientation (by inverting / exchanging columns
 of the transform, and adjusting the :ref:`strides` to match - see
-:ref:`transform` for details). To find out the actual transform that
-was stored in the NIfTI header, use :ref:`mrinfo` with the ``-config
-RealignTransform false`` option.
+:ref:`transform` and :ref:`axis_realignment` for details). To find out the
+actual transform that was stored in the NIfTI header, use :ref:`mrinfo` with
+the ``-ondisk`` option (or ``-config RealignTransform false`` to disable
+realignment altogether).
 
 

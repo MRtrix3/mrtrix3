@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,7 +16,12 @@
 
 #pragma once
 
+#include <filesystem>
+#include <memory>
+
+#include "algo/implicit_mask.h"
 #include "dwi/tractography/ACT/gmwmi.h"
+#include "dwi/tractography/ACT/validate.h"
 #include "dwi/tractography/properties.h"
 #include "memory.h"
 
@@ -25,11 +30,19 @@ namespace MR::DWI::Tractography::ACT {
 class ACT_Shared_additions {
 
 public:
-  ACT_Shared_additions(const std::string &path, Properties &property_set) : voxel(Image<float>::open(path)), bt(false) {
-    verify_5TT_image(voxel);
+  ACT_Shared_additions(const std::filesystem::path &path, Properties &property_set)
+      : voxel(Image<float>::open(path)),
+        voxel_mask(make_implicit_mask(
+            voxel, {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite})),
+        bt(false),
+        trunc(sgm_trunc_t::DEFAULT) {
+    debug_validate_5TT_image(voxel);
     property_set.set(bt, "backtrack");
     if (property_set.find("crop_at_gmwmi") != property_set.end())
       gmwmi_finder.reset(new GMWMI_finder(voxel));
+    auto sgm_trunc_property = property_set.find("sgm_truncation");
+    if (sgm_trunc_property != property_set.end())
+      trunc = Enum::from_name<sgm_trunc_t>(sgm_trunc_property->second);
   }
 
   bool backtrack() const { return bt; }
@@ -40,9 +53,18 @@ public:
     tck.back() = gmwmi_finder->find_interface(tck, true);
   }
 
+  sgm_trunc_t sgm_trunc() const { return trunc; }
+  void set_default_sgm_trunc(const sgm_trunc_t default_value) {
+    if (trunc == sgm_trunc_t::DEFAULT)
+      trunc = default_value;
+  }
+  void set_sgm_trunc(const sgm_trunc_t value) { trunc = value; }
+
 private:
   Image<float> voxel;
+  Image<bool> voxel_mask;
   bool bt;
+  sgm_trunc_t trunc;
 
   std::unique_ptr<GMWMI_finder> gmwmi_finder;
 

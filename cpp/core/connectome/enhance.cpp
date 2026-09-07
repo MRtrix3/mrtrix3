@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,20 +19,18 @@
 
 #include "progressbar.h"
 
-#include "misc/bitset.h"
-
 namespace MR::Connectome::Enhance {
 
 void PassThrough::operator()(in_column_type in, out_column_type out) const { out = in; }
 
 void NBS::operator()(in_column_type in, const value_type T, out_column_type out) const {
   out.setZero();
-  BitSet visited(in.size());
+  Eigen::Array<bool, Eigen::Dynamic, 1> visited(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(in.size()));
 
   for (ssize_t seed = 0; seed != in.size(); ++seed) {
     if (std::isfinite(in[seed]) && in[seed] >= T && !out[seed]) {
 
-      visited.clear();
+      visited.setZero();
       visited[seed] = true;
       std::vector<size_t> to_expand(1, seed);
       size_t cluster_size = 0;
@@ -67,7 +65,7 @@ void NBS::initialise(const node_t num_nodes) {
 
       const size_t index = mat2vec(row, column);
       std::vector<size_t> &vector = (*adjacency)[index];
-      vector.reserve(2 * (num_nodes - 1));
+      vector.reserve(2 * static_cast<size_t>(num_nodes - 1));
       // Should be able to expand from this edge to any other edge connected to either row or column
       for (node_t r = 0; r != num_nodes; ++r) {
         if (r != row)

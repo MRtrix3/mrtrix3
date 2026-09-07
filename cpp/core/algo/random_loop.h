@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,6 +23,7 @@
 #include <algorithm> // std::shuffle
 #include <iterator>
 #include <numeric>
+#include <random>
 #include <unordered_set>
 
 namespace MR {
@@ -86,7 +87,7 @@ public:
                      const bool repeat = false,
                      const ssize_t &min_index = 0,
                      const ssize_t &max_index = std::numeric_limits<ssize_t>::max())
-      : image(in), repeat_(repeat), status(true), ax(axis), cnt(0), min_idx(min_index) {
+      : image(in), repeat_(repeat), status(true), ax(axis), cnt(0), min_idx(min_index), rng_{std::random_device{}()} {
     if (max_index < image.size(ax))
       range = max_index - min_idx + 1;
     else
@@ -104,8 +105,9 @@ public:
   }
 
   void set_next_index_no_repeat() {
+    std::uniform_int_distribution<ssize_t> dist{0, static_cast<ssize_t>(range) - 1};
     while (cnt < max_cnt) {
-      index = rand() % range + min_idx;
+      index = dist(rng_) + min_idx;
       if (!idx_done.count(index)) {
         idx_done.insert(index);
         break;
@@ -117,7 +119,7 @@ public:
   }
 
   void set_next_index_with_repeat() {
-    index = rand() % range + min_idx;
+    index = std::uniform_int_distribution<ssize_t>{0, static_cast<ssize_t>(range) - 1}(rng_) + min_idx;
     ++cnt;
     image.index(ax) = index;
   }
@@ -144,6 +146,7 @@ private:
   size_t max_cnt;
   ssize_t index;
   std::unordered_set<ssize_t> idx_done;
+  std::mt19937 rng_;
 };
 
 template <class ImageType, class IterType> class Iterator_loop {

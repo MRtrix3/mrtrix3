@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,6 +22,7 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
 #include "mrview/tool/connectome/connectome.h"
+#include "opengl/gl_core_3_3.h"
 
 namespace MR::GUI::MRView::Tool {
 
@@ -114,10 +115,10 @@ Edge::Line::Line(const Edge &parent) {
   vertex_array_object.bind();
   vertex_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   tangent_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(1);
-  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   GL::assert_context_is_current();
 }
 
@@ -184,10 +185,10 @@ Edge::Streamline::Streamline(const Exemplar &data) {
   vertex_array_object.bind();
   vertex_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   tangent_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(1);
-  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   GL::assert_context_is_current();
 }
 
@@ -242,7 +243,7 @@ Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size())
     gl::BufferData(gl::ARRAY_BUFFER, tangents.size() * sizeof(Eigen::Vector3f), &tangents[0][0], gl::STATIC_DRAW);
 
   std::vector<std::pair<float, float>> normal_multipliers;
-  const float angle_multiplier = 2.0 * Math::pi / float(shared.points_per_vertex());
+  const float angle_multiplier = 2.0 * Math::pi / static_cast<float>(shared.points_per_vertex());
   for (size_t i = 0; i != shared.points_per_vertex(); ++i)
     normal_multipliers.push_back(std::make_pair(std::cos(i * angle_multiplier), std::sin(i * angle_multiplier)));
   std::vector<Eigen::Vector3f> normals;
@@ -262,13 +263,13 @@ Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size())
   vertex_array_object.bind();
   vertex_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   tangent_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(1);
-  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   normal_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(2);
-  gl::VertexAttribPointer(2, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(2, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   GL::assert_context_is_current();
 }
 

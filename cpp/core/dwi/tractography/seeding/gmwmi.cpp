@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,19 +14,20 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "dwi/tractography/seeding/gmwmi.h"
-#include "dwi/tractography/rng.h"
-#include "dwi/tractography/seeding/seeding.h"
+#include <filesystem>
 
+#include "dwi/tractography/rng.h"
+#include "dwi/tractography/seeding/gmwmi.h"
+#include "dwi/tractography/seeding/seeding.h"
 namespace MR::DWI::Tractography::Seeding {
 
-GMWMI::GMWMI(const std::string &in, const std::string &anat_path)
-    : Base(in, "GM-WM interface", attempts_per_seed.at(seed_attempt_t::GMWMI)),
+GMWMI::GMWMI(const std::filesystem::path &in, const std::filesystem::path &anat_path)
+    : Base(in.filename().string(), "GM-WM interface", attempts_per_seed.at(seed_attempt_t::GMWMI)),
       GMWMI_5TT_Wrapper(anat_path),
       ACT::GMWMI_finder(anat_data),
       init_seeder(in),
-      perturb_max_step(4.0f *
-                       std::pow(anat_data.spacing(0) * anat_data.spacing(1) * anat_data.spacing(2), (1.0f / 3.0f))) {
+      perturb_max_step(4.0F *
+                       std::pow(anat_data.spacing(0) * anat_data.spacing(1) * anat_data.spacing(2), (1.0 / 3.0))) {
   volume = init_seeder.vol();
 }
 
@@ -51,7 +52,8 @@ bool GMWMI::perturb(Eigen::Vector3f &p, Interp &interp) const {
     plane_one = (normal.cross(Eigen::Vector3f(0.0f, 1.0f, 0.0f))).normalized();
   const Eigen::Vector3f plane_two((normal.cross(plane_one)).normalized());
   std::uniform_real_distribution<float> uniform;
-  p += ((uniform(rng) - 0.5f) * perturb_max_step * plane_one) + ((uniform(rng) - 0.5f) * perturb_max_step * plane_two);
+  p += ((uniform(rng()) - 0.5f) * perturb_max_step * plane_one) +
+       ((uniform(rng()) - 0.5f) * perturb_max_step * plane_two);
   return find_interface(p, interp);
 }
 

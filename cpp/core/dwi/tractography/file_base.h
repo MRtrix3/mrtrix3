@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,11 +16,15 @@
 
 #pragma once
 
+#include <filesystem>
 #include <iomanip>
+#include <ios>
 #include <map>
 #include <set>
+#include <string_view>
 
 #include "dwi/tractography/properties.h"
+#include "exception.h"
 #include "file/key_value.h"
 #include "file/ofstream.h"
 #include "file/path.h"
@@ -29,15 +33,15 @@
 namespace MR::DWI::Tractography {
 
 //! \cond skip
-class __ReaderBase__ {
+class ReaderBase {
 public:
-  __ReaderBase__() : current_index(0) {}
-  ~__ReaderBase__() {
+  ReaderBase() : current_index(0) {}
+  ~ReaderBase() {
     if (in.is_open())
       in.close();
   }
 
-  void open(const std::string &file, const std::string &firstline, Properties &properties);
+  void open(const std::filesystem::path &file, std::string_view type, Properties &properties);
 
   void close() { in.close(); }
 
@@ -47,28 +51,32 @@ protected:
   uint64_t current_index;
 };
 
-template <typename ValueType = float> class __WriterBase__ {
+template <typename ValueType = float> class WriterBase {
 public:
   using value_type = ValueType;
 
-  __WriterBase__(const std::string &name)
-      : count(0), total_count(0), name(name), dtype(DataType::from<ValueType>()), count_offset(0), open_success(false) {
+  WriterBase(const std::filesystem::path &path)
+      : count(0), total_count(0), path(path), dtype(DataType::from<ValueType>()), count_offset(0), open_success(false) {
     dtype.set_byte_order_native();
     if (dtype != DataType::Float32LE && dtype != DataType::Float32BE && dtype != DataType::Float64LE &&
         dtype != DataType::Float64BE)
       throw Exception("only supported datatype for tracks file are "
                       "Float32LE, Float32BE, Float64LE & Float64BE");
-    App::check_overwrite(name);
+    App::check_overwrite(path);
   }
 
-  ~__WriterBase__() {
+  ~WriterBase() noexcept {
     if (open_success) {
-      File::OFStream out(name, std::ios::in | std::ios::out | std::ios::binary);
-      update_counts(out);
+      try {
+        File::OFStream out(path, std::ios_base::in | std::ios_base::out | std::ios_base::binary);
+        update_counts(out);
+      } catch (Exception &e) {
+        e.display();
+      }
     }
   }
 
-  void create(File::OFStream &out, const Properties &properties, const std::string &type) {
+  void create(File::OFStream &out, const Properties &properties, std::string_view type) {
     out << "mrtrix " + type + "\nEND\n";
 
     for (const auto &i : properties) {
@@ -94,7 +102,7 @@ public:
       out << "prior_roi: " << it.first << " " << it.second << "\n";
 
     out << "datatype: " << dtype.specifier() << "\n";
-    int64_t data_offset = int64_t(out.tellp()) + 65;
+    int64_t data_offset = static_cast<int64_t>(out.tellp()) + 65;
     data_offset += (4 - (data_offset % 4)) % 4;
     out << "file: . " << data_offset << "\n";
     out << "count: ";
@@ -110,14 +118,14 @@ public:
   uint64_t count, total_count;
 
 protected:
-  std::string name;
+  std::filesystem::path path;
   DataType dtype;
   int64_t count_offset;
   bool open_success;
 
   void verify_stream(const File::OFStream &out) {
     if (!out.good())
-      throw Exception("error writing file \"" + name + "\": " + strerror(errno));
+      throw Exception("error writing file \"" + path.string() + "\": " + MR::C_strerror(errno));
   }
 
   void update_counts(File::OFStream &out) {

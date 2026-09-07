@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,10 +23,10 @@ namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> RAM::read(Header &H) const {
 #ifdef MRTRIX_AS_R_LIBRARY
-  if (!Path::has_suffix(H.name(), ".R"))
+  if (const_cast<const Header &>(H).path().extension() != ".R")
     return std::unique_ptr<ImageIO::Base>();
 
-  Header *R_header = (Header *)to<size_t>(H.name().substr(0, H.name().size() - 2));
+  Header *R_header = reinterpret_cast<Header *>(to<size_t>(H.name().substr(0, H.name().size() - 2)));
   H = *R_header;
   return R_header->__get_handler();
 #else
@@ -37,7 +37,7 @@ std::unique_ptr<ImageIO::Base> RAM::read(Header &H) const {
 bool RAM::check(Header &H, size_t num_axes) const {
   return H.name() == "NULL"
 #ifdef MRTRIX_AS_R_LIBRARY
-         || Path::has_suffix(H.name(), ".R")
+         || const_cast<const Header &>(H).path().extension() == ".R"
 #endif
       ;
 }
@@ -49,7 +49,7 @@ std::unique_ptr<ImageIO::Base> RAM::create(Header &H) const {
   }
 
 #ifdef MRTRIX_AS_R_LIBRARY
-  Header *R_header = (Header *)to<size_t>(H.name().substr(0, H.name().size() - 2));
+  Header *R_header = reinterpret_cast<Header *>(to<size_t>(H.name().substr(0, H.name().size() - 2)));
   *R_header = H;
   std::unique_ptr<ImageIO::RAM> io_handler(new ImageIO::RAM(H));
   R_header->__set_handler(io_handler);

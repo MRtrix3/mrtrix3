@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,7 +24,7 @@
 
 namespace MR::File::Dicom {
 
-void Image::parse_item(Element &item, const std::string &dirname) {
+void Image::parse_item(Element &item) {
   if (item.ignore_when_parsing())
     return;
 
@@ -125,8 +125,9 @@ void Image::parse_item(Element &item, const std::string &dirname) {
         G[2] = item.get_float(2, G[2]);
       }
     }
+    default:
+      return;
     }
-    return;
   case 0x0019U:
     switch (item.element) { // GE DW encoding info:
     case 0x10BBU:
@@ -150,8 +151,9 @@ void Image::parse_item(Element &item, const std::string &dirname) {
       }
     }
       return;
+    default:
+      return;
     }
-    return;
   case 0x0020U:
     for (const auto &p : item.parents)
       if (p.group == 0x2005)
@@ -198,8 +200,9 @@ void Image::parse_item(Element &item, const std::string &dirname) {
         if (frame_dim[n] < index[n])
           frame_dim[n] = index[n];
       return;
+    default:
+      return;
     }
-    return;
   case 0x0028U:
     switch (item.element) {
     case 0x0002U:
@@ -227,8 +230,9 @@ void Image::parse_item(Element &item, const std::string &dirname) {
     case 0x1053U:
       scale_slope = item.get_float(0, scale_slope);
       return;
+    default:
+      return;
     }
-    return;
   case 0x0029U: // Siemens CSA entry
     if (item.element == 0x1010U || item.element == 0x1020U || item.element == 0x1110U || item.element == 0x1120U ||
         item.element == 0x1210U || item.element == 0x1220U) {
@@ -247,10 +251,12 @@ void Image::parse_item(Element &item, const std::string &dirname) {
       bvalue = item.get_float(0, bvalue);
       return;
     case 0x1004:
+      // NOLINTNEXTLINE(bugprone-string-literal-with-embedded-nul)
       philips_orientation = item.get_string(0, "\0")[0];
       return;
+    default:
+      return;
     }
-    return;
   case 0x2005U: // Philips DW encoding info:
     switch (item.element) {
     case 0x10B0U:
@@ -265,8 +271,9 @@ void Image::parse_item(Element &item, const std::string &dirname) {
     case 0x1413:
       grad_number = item.get_int()[0];
       return;
+    default:
+      return;
     }
-    return;
   case 0x7FE0U:
     if (item.element == 0x0010U) {
       data = item.offset(item.data);
@@ -278,8 +285,8 @@ void Image::parse_item(Element &item, const std::string &dirname) {
   case 0xFFFEU:
     switch (item.element) {
     case 0xE000U:
-      if (!item.parents.empty() && item.parents.back().group == 0x5200U &&
-          item.parents.back().element == 0x9230U) { // multi-frame item
+      // multi-frame item
+      if (!item.parents.empty() && item.parents.back().group == 0x5200U && item.parents.back().element == 0x9230U) {
         if (in_frames) {
           calc_distance();
           frames.push_back(std::shared_ptr<Frame>(new Frame(*this)));
@@ -288,7 +295,10 @@ void Image::parse_item(Element &item, const std::string &dirname) {
           in_frames = true;
       }
       return;
+    default:
+      return;
     }
+  default:
     return;
   }
 }
@@ -296,7 +306,7 @@ void Image::parse_item(Element &item, const std::string &dirname) {
 void Image::read() {
   {
     Element item;
-    item.set(filename);
+    item.set(filepath);
 
     while (item.read()) {
       try {
@@ -320,16 +330,16 @@ void Image::read() {
 
 namespace {
 template <typename T, class Functor>
-void phoenix_scalar(const KeyValues &keyval, const std::string &key, const Functor &functor, T &field) {
-  const auto it = keyval.find(key);
+void phoenix_scalar(const KeyValues &keyval, std::string_view key, const Functor &functor, T &field) {
+  const auto it = keyval.find(std::string(key));
   if (it == keyval.end())
     return;
   field = functor(it->second);
 }
-template <typename T> void phoenix_vector(const KeyValues &keyval, const std::string &key, std::vector<T> &data) {
+template <typename T> void phoenix_vector(const KeyValues &keyval, std::string_view key, std::vector<T> &data) {
   data.clear();
   for (size_t index = 0;; ++index) {
-    const auto it = keyval.find(key + "[" + str(index) + "]");
+    const auto it = keyval.find(std::string(key) + "[" + str(index) + "]");
     if (it == keyval.end())
       return;
     data.push_back(to<T>(it->second));
@@ -337,45 +347,43 @@ template <typename T> void phoenix_vector(const KeyValues &keyval, const std::st
 }
 } // namespace
 
-void Image::decode_csa(const uint8_t *start, const uint8_t *end) {
+void Image::decode_csa(const std::byte *start, const std::byte *end) {
   CSAEntry entry(start, end);
 
   while (entry.parse()) {
-    if (strcmp("B_value", entry.key()) == 0)
+    if (entry.key() == "B_value")
       bvalue = entry.get_float();
-    else if (strcmp("BandwidthPerPixelPhaseEncode", entry.key()) == 0)
+    else if (entry.key() == "BandwidthPerPixelPhaseEncode")
       bandwidth_per_pixel_phase_encode = entry.get_float();
-    else if (strcmp("DiffusionGradientDirection", entry.key()) == 0)
+    else if (entry.key() == "DiffusionGradientDirection")
       entry.get_float(G);
-    else if (strcmp("ImageOrientationPatient", entry.key()) == 0) {
+    else if (entry.key() == "ImageOrientationPatient") {
       Eigen::Matrix<default_type, 6, 1> v;
       entry.get_float(v);
       if (v.allFinite()) {
-        orientation_x = v.head(3);
-        orientation_y = v.tail(3);
-        orientation_x.normalize();
-        orientation_y.normalize();
+        orientation_x = v.head(3).normalized();
+        orientation_y = v.tail(3).normalized();
       }
-    } else if (strcmp("ImagePositionPatient", entry.key()) == 0) {
+    } else if (entry.key() == "ImagePositionPatient") {
       Eigen::Matrix<default_type, 3, 1> v;
       entry.get_float(v);
       if (v.allFinite())
         position_vector = v;
-    } else if (strcmp("MosaicRefAcqTimes", entry.key()) == 0) {
+    } else if (entry.key() == "MosaicRefAcqTimes") {
       mosaic_slices_timing.resize(entry.num_items());
       entry.get_float(mosaic_slices_timing);
-    } else if (strcmp("MrPhoenixProtocol", entry.key()) == 0) {
+    } else if (entry.key() == "MrPhoenixProtocol") {
       const std::vector<std::string> phoenix = entry.get_string();
       const auto keyval = read_csa_ascii(phoenix);
       phoenix_scalar(
           keyval,
           "sDiffusion.dsScheme",
-          [](const std::string &value) -> size_t { return to<size_t>(value); },
+          [](std::string_view value) -> size_t { return to<size_t>(value); },
           bipolar_flag);
       phoenix_scalar(
           keyval,
           "sKSpace.ucPhasePartialFourier",
-          [](const std::string &value) -> default_type {
+          [](std::string_view value) -> default_type {
             switch (to<size_t>(value)) {
             case 1:
               return 0.5;
@@ -393,28 +401,28 @@ void Image::decode_csa(const uint8_t *start, const uint8_t *end) {
       phoenix_scalar(
           keyval,
           "ucReadOutMode",
-          [](const std::string &value) -> size_t { return to<size_t>(value); },
+          [](std::string_view value) -> size_t { return to<size_t>(value); },
           readoutmode_flag);
       phoenix_vector(keyval, "adFlipAngleDegree", flip_angles);
 
-    } else if (strcmp("NumberOfImagesInMosaic", entry.key()) == 0)
+    } else if (entry.key() == "NumberOfImagesInMosaic")
       images_in_mosaic = entry.get_int();
-    else if (strcmp("PhaseEncodingDirectionPositive", entry.key()) == 0)
+    else if (entry.key() == "PhaseEncodingDirectionPositive")
       pe_sign = (entry.get_int() > 0) ? 1 : -1;
-    else if (strcmp("SliceNormalVector", entry.key()) == 0)
+    else if (entry.key() == "SliceNormalVector")
       entry.get_float(orientation_z);
-    else if (strcmp("TimeAfterStart", entry.key()) == 0)
+    else if (entry.key() == "TimeAfterStart")
       time_after_start = entry.get_float();
   }
 
   if (G[0] && bvalue)
-    if (fabs(G[0]) > 1.0 && fabs(G[1]) > 1.0 && fabs(G[2]) > 1.0)
+    if (std::fabs(G[0]) > 1.0 && std::fabs(G[1]) > 1.0 && std::fabs(G[2]) > 1.0)
       bvalue = G[0] = G[1] = G[2] = 0.0;
 }
 
 KeyValues Image::read_csa_ascii(const std::vector<std::string> &data) {
 
-  auto split_keyval = [](const std::string &s) -> std::pair<std::string, std::string> {
+  auto split_keyval = [](std::string_view s) -> std::pair<std::string, std::string> {
     const size_t delimiter = s.find_first_of("=");
     if (delimiter == std::string::npos)
       return std::make_pair(std::string(), std::string());
@@ -460,13 +468,13 @@ std::ostream &operator<<(std::ostream &stream, const Frame &item) {
     if (item.bvalue > 0.0)
       stream << ", G = [ " << item.G[0] << " " << item.G[1] << " " << item.G[2] << " ]";
   }
-  stream << " (\"" << item.filename << "\", " << item.data << ")";
+  stream << " (\"" << item.filepath.string() << "\", " << item.data << ")";
 
   return stream;
 }
 
 std::ostream &operator<<(std::ostream &stream, const Image &item) {
-  stream << (!item.filename.empty() ? item.filename : "file not set") << ":\n"
+  stream << (!item.filepath.empty() ? item.filepath.string() : "file not set") << ":\n"
          << (!item.sequence_name.empty() ? item.sequence_name : "sequence not set") << " ["
          << (!item.manufacturer.empty() ? item.manufacturer : std::string("unknown manufacturer")) << "] "
          << (!item.frames.empty() ? str(item.frames.size()) + " frames with dim " + str(item.frame_dim)
@@ -534,7 +542,7 @@ default_type Frame::get_slice_separation(const std::vector<Frame *> &frames, siz
 
   for (size_t n = 0; n < nslices - 1; ++n) {
     const default_type separation = frames[n + 1]->distance - frames[n]->distance;
-    const default_type gap = abs(separation - frames[n]->slice_thickness);
+    const default_type gap = std::fabs(separation - frames[n]->slice_thickness);
     max_gap = std::max(gap, max_gap);
     min_separation = std::min(min_separation, separation);
     max_separation = std::max(max_separation, separation);
@@ -546,7 +554,7 @@ default_type Frame::get_slice_separation(const std::vector<Frame *> &frames, siz
   if (max_separation - min_separation > 2e-4)
     WARN("slice separation is not constant (from " + str(min_separation, 8) + " to " + str(max_separation, 8) + "mm)");
 
-  return (sum_separation / default_type(nslices - 1));
+  return (sum_separation / static_cast<default_type>(nslices - 1));
 }
 
 std::string
@@ -565,10 +573,10 @@ Frame::get_DW_scheme(const std::vector<Frame *> &frames, const size_t nslices, c
     Eigen::Vector3d g = Eigen::Vector3d::Zero();
     double bvalue = frame.bvalue;
     if (bvalue < 0) {
-      bvalue = 0;
+      bvalue = 0.0;
       report_negative_bvalues = true;
     }
-    if (bvalue) {
+    if (bvalue != 0.0) {
       if (frame.G.allFinite()) {
         g[0] = -frame.G[0];
         g[1] = -frame.G[1];

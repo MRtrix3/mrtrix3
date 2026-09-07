@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,6 +18,8 @@
 
 #include "header.h"
 
+// NOLINTBEGIN(bugprone-macro-parentheses)
+
 #define DECLARE_IMAGEFORMAT(format, desc)                                                                              \
   class format : public Base {                                                                                         \
   public:                                                                                                              \
@@ -27,8 +29,13 @@
     virtual std::unique_ptr<ImageIO::Base> create(Header &H) const;                                                    \
   }
 
+// NOLINTEND(bugprone-macro-parentheses)
+
 //! Classes responsible for handling of specific image formats
 namespace MR::Formats {
+
+/*! a list of all extensions for image formats that %MRtrix can handle. */
+extern const std::vector<std::string> known_extensions;
 
 //! the interface for classes that support the various image formats.
 /*! All image formats supported by %MRtrix are handled by a class derived
@@ -36,10 +43,10 @@ namespace MR::Formats {
  * added to the list in the file list.cpp. */
 class Base {
 public:
-  Base(const char *desc) : description(desc) {}
+  Base(std::string_view desc) : description(desc) {}
   virtual ~Base() {}
 
-  const char *description; //!< a short human-readable description of the image format
+  const std::string description; //!< a short human-readable description of the image format
 
   /*! \brief read image file(s) and fill the Image::Header \c H with the
    * appropriate information.
@@ -97,9 +104,6 @@ DECLARE_IMAGEFORMAT(PAR, "Philips PAR/REG");
 #ifdef MRTRIX_PNG_SUPPORT
 DECLARE_IMAGEFORMAT(PNG, "PNG");
 #endif
-
-/*! a list of all extensions for image formats that %MRtrix can handle. */
-extern const char *known_extensions[];
 
 /*! a list of all handlers for supported image formats. */
 extern const Base *handlers[];

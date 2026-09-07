@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,6 +22,8 @@
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "fixel/loop.h"
+
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -53,13 +55,15 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path input_fixel_directory{argument[1]};
+  // TODO Remove explicit cast if output arguments are collased to a single entry
+  const std::filesystem::path output_fixel_directory(argument[2].as_text());
+
   auto scalar = Image<float>::open(argument[0]);
-  std::string input_fixel_directory = argument[1];
   Fixel::check_fixel_directory(input_fixel_directory);
   auto input_fixel_index = Fixel::find_index_header(input_fixel_directory).get_image<index_type>();
   check_dimensions(scalar, input_fixel_index, 0, 3);
 
-  std::string output_fixel_directory = argument[2];
   if (input_fixel_directory != output_fixel_directory) {
     ProgressBar progress("copying fixel index and directions file into output directory");
     progress++;
@@ -67,7 +71,7 @@ void run() {
     progress++;
   }
 
-  auto output_fixel_data = Image<float>::create(Path::join(output_fixel_directory, argument[3]),
+  auto output_fixel_data = Image<float>::create(output_fixel_directory / argument[3].as_text(),
                                                 Fixel::data_header_from_index(input_fixel_index));
 
   for (auto v = Loop("mapping voxel scalar values to fixels", 0, 3)(scalar, input_fixel_index); v; ++v) {

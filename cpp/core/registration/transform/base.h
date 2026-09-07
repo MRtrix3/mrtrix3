@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,13 +16,13 @@
 
 #pragma once
 
+#include "eigen_plugins/eigen_plugins.h"
+#include <Eigen/Geometry> // Eigen::Translation
+
 #include "datatype.h" // debug
 #include "file/config.h"
 #include "registration/transform/convergence_check.h"
 #include "types.h"
-#include <Eigen/Geometry> // Eigen::Translation
-#include <Eigen/SVD>
-#include <unsupported/Eigen/MatrixFunctions> // Eigen::MatrixBase::sqrt()
 
 namespace MR::Registration::Transform {
 template <class ValueType>

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,31 +27,34 @@ namespace MR::GUI::MRView {
 // CONF Note, that all tool-specific colourbars will form a single collection.
 size_t ColourBars::max_n_rows = File::Config::get_int("MRViewMaxNumColourBarRows", 3);
 
-ColourBars::ColourBars()
+ColourBars::ColourBars(int supersample)
     : current_colourmap_index(0),
       current_colourmap_inverted(false),
       // CONF option: MRViewColourBarWidth
       // CONF default: 20
       // CONF The width of the colourbar in MRView, in pixels.
-      width(MR::File::Config::get_float("MRViewColourBarWidth", 20.0f)),
+      width(supersample * MR::File::Config::get_float("MRViewColourBarWidth", 20.0F)),
       // CONF option: MRViewColourBarHeight
       // CONF default: 100
       // CONF The height of the colourbar in MRView, in pixels.
-      height(MR::File::Config::get_float("MRViewColourBarHeight", 100.0f)),
+      height(supersample * MR::File::Config::get_float("MRViewColourBarHeight", 100.0F)),
       // CONF option: MRViewColourBarInset
       // CONF default: 20
       // CONF How far away from the edge of the main window to place the
       // CONF colourbar in MRView, in pixels.
-      inset(MR::File::Config::get_float("MRViewColourBarInset", 20.0f)),
+      inset(supersample * MR::File::Config::get_float("MRViewColourBarInset", 20.0F)),
       // CONF option: MRViewColourBarTextOffset
       // CONF default: 10
       // CONF How far away from the colourbar to place the associated text,
       // CONF in pixels.
-      text_offset(MR::File::Config::get_float("MRViewColourBarTextOffset", 10.0f)),
+      text_offset(supersample * MR::File::Config::get_float("MRViewColourBarTextOffset", 10.0F)),
       // CONF option: MRViewColourBarHorizontalPadding
       // CONF default: 100
       // CONF The width in pixels between horizontally adjacent colour bars.
-      colourbar_padding(MR::File::Config::get_float("MRViewColourBarHorizontalPadding", 100.0f)) {
+      colourbar_padding(supersample * MR::File::Config::get_float("MRViewColourBarHorizontalPadding", 100.0f)),
+      // The yellow border enclosing each colourbar is nominally one pixel wide; scale it by the
+      // super-sampling ratio so that it retains the same on-screen proportions in a super-resolution image.
+      frame_line_width(static_cast<GLfloat>(supersample)) {
   end();
 }
 
@@ -131,35 +134,37 @@ void ColourBars::render(size_t colourmap,
     VAO.bind();
 
     gl::EnableVertexAttribArray(0);
-    gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, (void *)0);
+    gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   } else {
     VB.bind(gl::ARRAY_BUFFER);
     VAO.bind();
   }
 
   // Clamp the min/max fractions
-  float max_frac = std::min(std::max(0.0f, (local_max_value - global_min_value) / global_range), 1.0f);
-  float min_frac = std::min(std::max(0.0f, (local_min_value - global_min_value) / global_range), max_frac);
+  const float max_frac = std::min(std::max(0.0F, (local_max_value - global_min_value) / global_range), 1.0F);
+  const float min_frac = std::min(std::max(0.0F, (local_min_value - global_min_value) / global_range), max_frac);
 
-  int max_bars_per_row = std::max((int)std::ceil((float)(current_count) / max_n_rows), 1);
-  int ncols = (int)std::ceil((float)current_count / max_bars_per_row);
-  int column_index = current_colourbar_index % max_bars_per_row;
-  int row_index = current_colourbar_index / max_bars_per_row;
-  float scaled_width = width / max_bars_per_row;
-  float scaled_height = height / ncols;
+  const int max_bars_per_row =
+      std::max(static_cast<int>(std::ceil(static_cast<float>(current_count) / static_cast<float>(max_n_rows))), 1);
+  const int ncols =
+      static_cast<int>(std::ceil(static_cast<float>(current_count) / static_cast<float>(max_bars_per_row)));
+  const int column_index = current_colourbar_index % max_bars_per_row;
+  const int row_index = current_colourbar_index / max_bars_per_row;
+  const float scaled_width = width / static_cast<float>(max_bars_per_row);
+  const float scaled_height = height / static_cast<float>(ncols);
 
-  GLfloat data[] = {0.0f,
-                    0.0f,
-                    min_frac,
-                    0.0f,
-                    scaled_height,
-                    max_frac,
-                    scaled_width,
-                    scaled_height,
-                    max_frac,
-                    scaled_width,
-                    0.0f,
-                    min_frac};
+  std::array<GLfloat, 12> data = {0.0f,
+                                  0.0f,
+                                  min_frac,
+                                  0.0f,
+                                  scaled_height,
+                                  max_frac,
+                                  scaled_width,
+                                  scaled_height,
+                                  max_frac,
+                                  scaled_width,
+                                  0.0f,
+                                  min_frac};
   float x_offset = 0.0f, y_offset = 0.0f;
   int halign = -1;
 
@@ -183,10 +188,9 @@ void ColourBars::render(size_t colourmap,
   data[9] += x_offset;
   data[10] += y_offset;
 
-  gl::BufferData(gl::ARRAY_BUFFER, sizeof(data), data, gl::STREAM_DRAW);
+  gl::BufferData(gl::ARRAY_BUFFER, sizeof(data), data.data(), gl::STREAM_DRAW);
 
   gl::DepthMask(gl::FALSE_);
-  gl::LineWidth(1.0);
   gl::Disable(gl::BLEND);
   gl::Disable(gl::DEPTH_TEST);
 
@@ -198,10 +202,26 @@ void ColourBars::render(size_t colourmap,
   gl::DrawArrays(gl::TRIANGLE_FAN, 0, 4);
   program.stop();
 
+  // The border is drawn as an explicit triangle-strip ring rather than a wide GL_LINE_LOOP:
+  // OpenGL core profiles only guarantee a line width of one pixel, so gl::LineWidth() cannot be
+  // relied upon to thicken the border in proportion to the super-sampling ratio.
+  const float x0 = x_offset;
+  const float y0 = y_offset;
+  const float x1 = x_offset + scaled_width;
+  const float y1 = y_offset + scaled_height;
+  const float half = 0.5f * frame_line_width;
+  const std::array<GLfloat, 30> frame_data = {
+      x0 - half, y0 - half, 0.0f, x0 + half, y0 + half, 0.0f,  // bottom-left corner (outer, inner)
+      x0 - half, y1 + half, 0.0f, x0 + half, y1 - half, 0.0f,  // top-left corner
+      x1 + half, y1 + half, 0.0f, x1 - half, y1 - half, 0.0f,  // top-right corner
+      x1 + half, y0 - half, 0.0f, x1 - half, y0 + half, 0.0f,  // bottom-right corner
+      x0 - half, y0 - half, 0.0f, x0 + half, y0 + half, 0.0f}; // close the ring back to bottom-left
+  gl::BufferData(gl::ARRAY_BUFFER, sizeof(frame_data), frame_data.data(), gl::STREAM_DRAW);
+
   frame_program.start();
   gl::Uniform1f(gl::GetUniformLocation(frame_program, "scale_x"), 2.0f / current_projection->width());
   gl::Uniform1f(gl::GetUniformLocation(frame_program, "scale_y"), 2.0f / current_projection->height());
-  gl::DrawArrays(gl::LINE_LOOP, 0, 4);
+  gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 10);
   frame_program.stop();
 
   current_projection->setup_render_text();

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,6 +22,8 @@
 #include "math/least_squares.h"
 #include "transform.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -29,8 +31,6 @@ constexpr default_type default_reference_value = 0.28209479177387814347; // 1.0/
 constexpr ssize_t default_main_iterations = 15;
 constexpr ssize_t default_balance_maxiterations = 7;
 constexpr ssize_t default_polynormial_order = 3;
-
-const std::vector<std::string> poly_order_choices = {"0", "1", "2", "3"};
 
 // clang-format off
 void usage() {
@@ -84,7 +84,7 @@ void usage() {
                     " An order of 0 is equivalent to not allowing spatial variance"
                     " of the intensity normalisation factor."
                     " (default: " + str(default_polynormial_order) + ")")
-    + Argument("number").type_choice(poly_order_choices)
+    + Argument("number").type_integer(0, 3)
 
   + Option("niter", "set the number of iterations."
                     " The first (and potentially only) entry applies to the main loop."
@@ -254,10 +254,10 @@ Eigen::MatrixXd initialise_basis(IndexType &index, size_t num_voxels, int order)
   return basis;
 }
 
-void load_data(Eigen::MatrixXd &data, const std::string &image_name, IndexType &index) {
+void load_data(Eigen::MatrixXd &data, const std::filesystem::path &image_path, IndexType &index) {
   static int num = 0;
 
-  auto in = ImageType::open(image_name);
+  auto in = ImageType::open(image_path.string());
   check_dimensions(index, in, 0, 3);
 
   struct Loader {
@@ -411,11 +411,11 @@ ImageType compute_full_field(int order, const Eigen::VectorXd &field_coeffs, con
   return out;
 }
 
-void write_weights(const Eigen::VectorXd &data, IndexType &index, const std::string &output_file_name) {
+void write_weights(const Eigen::VectorXd &data, IndexType &index, const std::filesystem::path &output_filepath) {
   Header header(index);
   header.datatype() = DataType::Float32;
 
-  auto out = ImageType::create(output_file_name, header);
+  auto out = ImageType::create(output_filepath, header);
 
   struct Write {
     void operator()(ImageType &out, IndexType &index) const {
@@ -430,8 +430,8 @@ void write_weights(const Eigen::VectorXd &data, IndexType &index, const std::str
   ThreadedLoop(index, 0, 3).run(write, out, index);
 }
 
-void write_output(const std::string &original,
-                  const std::string &corrected,
+void write_output(const std::filesystem::path &original,
+                  const std::filesystem::path &corrected,
                   bool output_balanced,
                   double balance_factor,
                   ImageType &field,
@@ -465,7 +465,7 @@ void write_output(const std::string &original,
 }
 
 void run() {
-  if (argument.size() % 2)
+  if (argument.size() % 2 != 0)
     throw Exception(
         "The number of arguments must be even, provided as pairs of each input and its corresponding output file.");
   if (argument.size() == 2)
@@ -499,10 +499,12 @@ void run() {
 
   Eigen::MatrixXd data(num_voxels, n_tissue_types);
   for (size_t n = 0; n < n_tissue_types; ++n) {
-    if (Path::exists(argument[2 * n + 1]) && !App::overwrite_files)
-      throw Exception("Output file \"" + argument[2 * n + 1] + "\" already exists." +
+    const std::filesystem::path output_path{argument[2 * n + 1]};
+    if (std::filesystem::exists(output_path) && !App::overwrite_files)
+      throw Exception("Output file \"" + output_path.string() + "\" already exists." +
                       " (use -force option to force overwrite)");
-    load_data(data, argument[2 * n], index);
+    const std::filesystem::path input_path{argument[2 * n]};
+    load_data(data, input_path, index);
   }
 
   size_t num_non_finite = (!data.array().isFinite()).count();
@@ -527,6 +529,7 @@ void run() {
     size_t iter = 0;
     ProgressBar progress("performing log-domain intensity normalisation", max_iter);
 
+    // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores)
     size_t outliers_changed = detect_outliers(3.0, data, field, balance_factors, weights);
 
     while (++iter <= max_iter) {
@@ -568,13 +571,16 @@ void run() {
 
   opt = get_options("check_factors");
   if (!opt.empty()) {
-    File::OFStream factors_output(opt[0][0]);
+    File::OFStream factors_output{opt[0][0]};
     factors_output << balance_factors.transpose() << "\n";
   }
 
   double lognorm_scale = std::exp((field.array().log() * weights.array()).sum() / weights.sum());
 
   const bool output_balanced = !get_options("balanced").empty();
-  for (size_t n = 0; n < n_tissue_types; ++n)
-    write_output(argument[2 * n], argument[2 * n + 1], output_balanced, balance_factors[n], full_field, lognorm_scale);
+  for (size_t n = 0; n < n_tissue_types; ++n) {
+    const std::filesystem::path input_path{argument[2 * n]};
+    const std::filesystem::path output_path{argument[2 * n + 1]};
+    write_output(input_path, output_path, output_balanced, balance_factors[n], full_field, lognorm_scale);
+  }
 }

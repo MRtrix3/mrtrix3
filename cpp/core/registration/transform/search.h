@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,18 +16,15 @@
 
 #pragma once
 
+#include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Eigen>
 #include <Eigen/Geometry>
 #include <iostream>
 
-#include "debug.h"
-#include "image.h"
-#include "progressbar.h"
-#include "types.h"
-
 #include "adapter/reslice.h"
 #include "filter/resize.h"
 #include "filter/reslice.h"
+#include "image.h"
 #include "interp/cubic.h"
 #include "interp/linear.h"
 #include "interp/nearest.h"
@@ -36,6 +33,7 @@
 #include "math/math.h"
 #include "math/median.h"
 #include "math/rng.h"
+#include "progressbar.h"
 #include "registration/metric/mean_squared.h"
 #include "registration/metric/params.h"
 // #include "registration/metric/local_cross_correlation.h"
@@ -43,6 +41,7 @@
 #include "registration/metric/thread_kernel.h"
 #include "registration/transform/initialiser.h"
 #include "registration/transform/rigid.h"
+#include "types.h"
 
 namespace MR::Registration::RotationSearch {
 
@@ -102,7 +101,7 @@ public:
                      Image<default_type>,
                      Interp::Nearest<Image<default_type>>>;
 
-  void write_images(const std::string &im1_path, const std::string &im2_path) {
+  void write_images(std::string_view im1_path, std::string_view im2_path) {
     Image<default_type> image1_midway;
     Image<default_type> image2_midway;
 
@@ -288,7 +287,7 @@ private:
     az_in.col(0) = idx * golden_angle;
 
     // el(i) = acos (1-(1-cosd(max_cone_angle_deg))*i/(n_dir-1) )
-    default_type a = (1.0 - std::cos(Math::pi / 180.0 * default_type(max_cone_angle_deg))) / (default_type(n_dir - 1));
+    default_type a = (1.0 - std::cos(Math::pi / 180.0 * max_cone_angle_deg)) / static_cast<default_type>(n_dir - 1);
     az_in.col(1).array() = -a * idx.array() + 1.0;
     for (size_t i = 0; i < n_dir; ++i)
       az_in(i, 1) = std::acos(az_in(i, 1));

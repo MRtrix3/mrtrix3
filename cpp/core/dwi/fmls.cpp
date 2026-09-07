@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,14 @@
  */
 
 #include "dwi/fmls.h"
+
+#include <Eigen/src/Core/Matrix.h>
+#include <cmath>
+#include <cstddef>
+
+#include "math/SH.h"
+#include "math/math.h"
+#include "math/sphere.h"
 
 namespace MR::DWI::FMLS {
 
@@ -64,7 +72,7 @@ void load_fmls_thresholds(Segmenter &segmenter) {
       WARN("Option -fmls_integral ignored:"
            " -fmls_no_thresholds overrides this");
     } else {
-      segmenter.set_integral_threshold(default_type(opt[0][0]));
+      segmenter.set_integral_threshold(static_cast<default_type>(opt[0][0]));
     }
   }
 
@@ -74,45 +82,25 @@ void load_fmls_thresholds(Segmenter &segmenter) {
       WARN("Option -fmls_peak_value ignored:"
            " -fmls_no_thresholds overrides this");
     } else {
-      segmenter.set_peak_value_threshold(default_type(opt[0][0]));
+      segmenter.set_peak_value_threshold(static_cast<default_type>(opt[0][0]));
     }
   }
 
   opt = get_options("fmls_lobe_merge_ratio");
   if (!opt.empty())
-    segmenter.set_lobe_merge_ratio(default_type(opt[0][0]));
+    segmenter.set_lobe_merge_ratio(static_cast<default_type>(opt[0][0]));
 }
 
 IntegrationWeights::IntegrationWeights(const DWI::Directions::Set &dirs) : data(dirs.size()) {
-  // Calibrate weights
-  const size_t calibration_lmax = Math::SH::LforN(dirs.size()) + 2;
-  Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_in_pairs(dirs.size(), 2);
-  for (size_t row = 0; row != dirs.size(); ++row) {
-    const auto d = dirs.get_dir(row);
-    az_in_pairs(row, 0) = std::atan2(d[1], d[0]);
-    az_in_pairs(row, 1) = std::acos(d[2]);
-  }
-  auto calibration_SH2A = Math::SH::init_transform(az_in_pairs, calibration_lmax);
-  const size_t num_basis_fns = calibration_SH2A.cols();
-
-  // Integrating an FOD with constant amplitude 1 (l=0 term = sqrt(4pi) should produce a value of 4pi
-  // Every other integral should produce zero
-  Eigen::Matrix<default_type, Eigen::Dynamic, 1> integral_results =
-      Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Zero(num_basis_fns);
-  integral_results[0] = 2.0 * sqrt(Math::pi);
-
-  // Problem matrix: One row for each SH basis function, one column for each samping direction
-  Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> A;
-  A.resize(num_basis_fns, dirs.size());
-
-  for (size_t basis_fn_index = 0; basis_fn_index != num_basis_fns; ++basis_fn_index) {
-    Eigen::Matrix<default_type, Eigen::Dynamic, 1> SH_in =
-        Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Zero(num_basis_fns);
-    SH_in[basis_fn_index] = 1.0;
-    A.row(basis_fn_index) = calibration_SH2A * SH_in;
-  }
-
-  data = A.householderQr().solve(integral_results);
+  const size_t calibration_lmax = Math::SH::LforN((3 * dirs.size()) / 4);
+  Eigen::Matrix<default_type, Eigen::Dynamic, 3> cartesian(dirs.size(), 3);
+  for (size_t row = 0; row != dirs.size(); ++row)
+    cartesian.row(row) = dirs[row];
+  const Eigen::MatrixXd SH2At =
+      Math::SH::init_transform(Math::Sphere::cartesian2spherical(cartesian), calibration_lmax).transpose();
+  Eigen::VectorXd integrals = Eigen::VectorXd::Zero(SH2At.rows());
+  integrals[0] = 2.0 * std::sqrt(Math::pi);
+  data = SH2At.completeOrthogonalDecomposition().solve(integrals).array();
 }
 
 Segmenter::Segmenter(const DWI::Directions::FastLookupSet &directions, const size_t l)
@@ -137,12 +125,12 @@ Segmenter::Segmenter(const DWI::Directions::FastLookupSet &directions, const siz
 
 class Max_abs {
 public:
-  bool operator()(const default_type &a, const default_type &b) const { return (abs(a) > abs(b)); }
+  bool operator()(const default_type &a, const default_type &b) const { return (std::fabs(a) > std::fabs(b)); }
 };
 
 bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
 
-  assert(in.size() == ssize_t(Math::SH::NforL(lmax)));
+  assert(in.size() == static_cast<Eigen::Index>(Math::SH::NforL(lmax)));
 
   out.clear();
   out.vox = in.vox;
@@ -156,8 +144,8 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
   using map_type = std::multimap<default_type, index_type, Max_abs>;
 
   map_type data_in_order;
-  for (size_t i = 0; i != size_t(values.size()); ++i)
-    data_in_order.insert(std::make_pair(values[i], i));
+  for (Eigen::Index i = 0; i != values.size(); ++i)
+    data_in_order.insert(std::make_pair(values[i], static_cast<index_type>(i)));
 
   if (data_in_order.begin()->first <= 0.0)
     return true;
@@ -168,8 +156,10 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
 
     std::vector<uint32_t> adj_lobes;
     for (uint32_t l = 0; l != out.size(); ++l) {
-      if ((((i.first <= 0.0) && out[l].is_negative()) || ((i.first > 0.0) && !out[l].is_negative())) &&
-          (out[l].get_mask().is_adjacent(i.second))) {
+      if ((((i.first <= 0.0) &&                           //
+            out[l].is_negative()) ||                      //
+           ((i.first > 0.0) && !out[l].is_negative())) && //
+          (dirs.adjacent(out[l].get_mask(), i.second))) {
 
         adj_lobes.push_back(l);
       }
@@ -181,19 +171,19 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
 
     } else if (adj_lobes.size() == 1) {
 
-      out[adj_lobes.front()].add(i.second, i.first, (*weights)[i.second]);
+      out[adj_lobes.front()].add(i.second, dirs[i.second], i.first, (*weights)[i.second]);
 
     } else {
 
       // Changed handling of lobe merges
       // Merge lobes as they appear to be merged, but update the
       //   contents of retrospective_assignments accordingly
-      if (abs(i.first) / out[adj_lobes.back()].get_max_peak_value() > lobe_merge_ratio) {
+      if (std::fabs(i.first) / out[adj_lobes.back()].get_max_peak_value() > lobe_merge_ratio) {
 
         std::sort(adj_lobes.begin(), adj_lobes.end());
         for (size_t j = 1; j != adj_lobes.size(); ++j)
           out[adj_lobes[0]].merge(out[adj_lobes[j]]);
-        out[adj_lobes[0]].add(i.second, i.first, (*weights)[i.second]);
+        out[adj_lobes[0]].add(i.second, dirs[i.second], i.first, (*weights)[i.second]);
         for (auto j = retrospective_assignments.begin(); j != retrospective_assignments.end(); ++j) {
           bool modified = false;
           for (size_t k = 1; k != adj_lobes.size(); ++k) {
@@ -226,7 +216,7 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
   }
 
   for (const auto &i : retrospective_assignments)
-    out[i.second].add(i.first, values[i.first], (*weights)[i.first]);
+    out[i.second].add(i.first, dirs[i.first], values[i.first], (*weights)[i.first]);
 
   for (auto i = out.begin(); i != out.end();) { // Empty increment
 
@@ -236,8 +226,8 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
 
       // Revise multiple peaks if present
       for (size_t peak_index = 0; peak_index != i->num_peaks(); ++peak_index) {
-        Eigen::Vector3d newton_peak_dir =
-            i->get_peak_dir(peak_index); // to be updated by subsequent Math::SH::get_peak() call
+        // to be updated by subsequent Math::SH::get_peak() call
+        Eigen::Vector3d newton_peak_dir = i->get_peak_dir(peak_index);
         const default_type newton_peak_value = Math::SH::get_peak(in, lmax, newton_peak_dir, &(*precomputer));
         if (std::isfinite(newton_peak_value) && newton_peak_dir.allFinite()) {
 
@@ -247,7 +237,7 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
           default_type max_dp = 0.0;
           size_t nearest_original_peak = i->num_peaks();
           for (size_t j = 0; j != i->num_peaks(); ++j) {
-            const default_type this_dp = abs(newton_peak_dir.dot(i->get_peak_dir(j)));
+            const default_type this_dp = std::fabs(newton_peak_dir.dot(i->get_peak_dir(j)));
             if (this_dp > max_dp) {
               max_dp = this_dp;
               nearest_original_peak = j;
@@ -284,21 +274,20 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
 
     size_t index = 0;
     for (auto i = out.begin(); i != out.end(); ++i, ++index) {
-      const DWI::Directions::Mask &this_mask(i->get_mask());
       for (size_t d = 0; d != dirs.size(); ++d) {
-        if (this_mask[d])
+        if (i->get_mask()[d])
           out.lut[d] = index;
       }
     }
 
     if (dilate_lookup_table && !out.empty()) {
 
-      DWI::Directions::Mask processed(dirs);
+      Eigen::Array<bool, Eigen::Dynamic, 1> processed(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(dirs.size()));
       for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
-        processed |= i->get_mask();
+        processed = processed || i->get_mask();
 
       NON_POD_VLA(new_assignments, std::vector<uint32_t>, dirs.size());
-      while (!processed.full()) {
+      while (!processed.all()) {
 
         for (index_type dir = 0; dir != dirs.size(); ++dir) {
           if (!processed[dir]) {
@@ -338,12 +327,24 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
     }
   }
 
+  // GCC -O3 value-range analysis emits a spurious -Walloc-size-larger-than= for the
+  //   Eigen::Array<bool> allocations in this block
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Walloc-size-larger-than="
+#endif
   if (create_null_lobe) {
-    DWI::Directions::Mask null_mask(dirs, true);
+    mask_type nonnull_mask(mask_type::Zero(dirs.size()));
     for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
-      null_mask &= i->get_mask();
+      nonnull_mask = nonnull_mask || i->get_mask();
+    // Invert all elements in mask
+    const mask_type null_mask =
+        (Eigen::Array<uint8_t, Eigen::Dynamic, 1>::Ones(dirs.size()) - nonnull_mask.cast<uint8_t>()).cast<bool>();
     out.push_back(FOD_lobe(null_mask));
   }
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
   return true;
 }
@@ -391,7 +392,7 @@ void Segmenter::optimise_mean_dir(FOD_lobe &lobe) const {
           p = -p;
         p[2] = 0.0; // Force projection onto the tangent plane
 
-        const float dp = abs(mean_dir.dot(dir));
+        const float dp = std::fabs(mean_dir.dot(dir));
         const float theta = (dp < 1.0) ? std::acos(dp) : 0.0;
         const float log_transform = theta ? (theta / std::sin(theta)) : 1.0;
         p *= log_transform;

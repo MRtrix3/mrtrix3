@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,11 @@
 
 #pragma once
 
+#include "eigen_plugins/eigen_plugins.h"
+#include <Eigen/Dense>
+
+#include "dwi/directions/predefined.h"
+#include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "file/matrix.h"
@@ -24,13 +29,12 @@
 #include "math/ZSH.h"
 #include "math/constrained_least_squares.h"
 #include "math/math.h"
+#include "math/sphere.h"
 #include "types.h"
-
-#include "dwi/directions/predefined.h"
 
 namespace MR::DWI::SDeconv {
 
-constexpr ssize_t default_msmt_lmax = 8;
+constexpr uint32_t default_msmt_lmax = 8;
 constexpr default_type default_msmt_normlambda = 1e-10;
 constexpr default_type default_msmt_neglambda = 1e-10;
 
@@ -55,8 +59,11 @@ public:
       if (!opt.empty())
         lmax = parse_ints<uint32_t>(opt[0][0]);
       opt = get_options("directions");
-      if (!opt.empty())
-        HR_dirs = File::Matrix::load_matrix(opt[0][0]);
+      if (!opt.empty()) {
+        const Eigen::MatrixXd directions = File::Matrix::load_matrix(opt[0][0]);
+        DWI::Directions::validate(directions, opt[0][0], false);
+        HR_dirs = Math::Sphere::as_spherical(directions);
+      }
       opt = get_options("norm_lambda");
       if (!opt.empty())
         solution_min_norm_regularisation = opt[0][0];
@@ -65,19 +72,19 @@ public:
         constraint_min_norm_regularisation = opt[0][0];
     }
 
-    void set_responses(const std::vector<std::string> &files) {
+    void set_responses(const std::vector<std::filesystem::path> &paths) {
       lmax_response.clear();
-      for (const auto &s : files) {
+      for (const auto &p : paths) {
         Eigen::MatrixXd r;
         try {
-          r = File::Matrix::load_matrix(s);
+          r = File::Matrix::load_matrix(p);
         } catch (Exception &e) {
-          throw Exception(e, "File \"" + s + "\" is not a valid response function file");
+          throw Exception(e, "File \"" + p.string() + "\" is not a valid response function file");
         }
         responses.push_back(std::move(r));
       }
       prepare_responses();
-      response_files = files;
+      response_files = paths;
     }
 
     void set_responses(const std::vector<Eigen::MatrixXd> &matrices) {
@@ -89,7 +96,7 @@ public:
       if (lmax.empty()) {
         lmax = lmax_response;
         for (size_t t = 0; t != num_tissues(); ++t) {
-          lmax[t] = std::min(uint32_t(default_msmt_lmax), lmax[t]);
+          lmax[t] = std::min(default_msmt_lmax, lmax[t]);
         }
       } else {
         if (lmax.size() != num_tissues())
@@ -102,10 +109,10 @@ public:
       }
 
       for (size_t t = 0; t != num_tissues(); ++t) {
-        if (size_t(responses[t].rows()) != num_shells())
+        if (static_cast<size_t>(responses[t].rows()) != num_shells())
           throw Exception("number of rows in response functions must match number of b-value shells; "
                           "number of shells is " +
-                          str(num_shells()) + ", but file \"" + response_files[t] + "\" contains " +
+                          str(num_shells()) + ", but file \"" + response_files[t].string() + "\" contains " +
                           str(responses[t].rows()) + " rows");
         // Pad response functions out to the requested lmax for this tissue
         responses[t].conservativeResizeLike(Eigen::MatrixXd::Zero(num_shells(), Math::ZSH::NforL(lmax[t])));
@@ -128,7 +135,7 @@ public:
       Eigen::MatrixXd C = Eigen::MatrixXd::Zero(grad.rows(), nparams);
 
       std::vector<size_t> dwilist;
-      for (size_t i = 0; i != size_t(grad.rows()); i++)
+      for (size_t i = 0; i != static_cast<size_t>(grad.rows()); i++)
         dwilist.push_back(i);
 
       Eigen::MatrixXd directions = DWI::gen_direction_matrix(grad, dwilist);
@@ -141,8 +148,7 @@ public:
       // TODO: is this just computing the Associated Legrendre polynomials...?
       Eigen::MatrixXd delta(1, 2);
       delta << 0, 0;
-      Eigen::MatrixXd DSH__ = Math::SH::init_transform(delta, maxlmax);
-      Eigen::VectorXd DSH_ = DSH__.row(0);
+      Eigen::VectorXd DSH_ = Math::SH::init_transform(delta, maxlmax).row(0);
       Eigen::VectorXd DSH(maxlmax / 2 + 1);
       size_t j = 0;
       for (ssize_t i = 0; i < DSH_.size(); i++)
@@ -163,7 +169,7 @@ public:
           Eigen::VectorXd fconv(tissue_n);
           int li = 0;
           int mi = 0;
-          for (int l = 0; l <= int(tissue_lmax); l += 2) {
+          for (int l = 0; l <= static_cast<int>(tissue_lmax); l += 2) {
             for (int m = -l; m <= l; m++) {
               fconv[mi] = response_[li];
               mi++;
@@ -219,7 +225,7 @@ public:
     Eigen::MatrixXd HR_dirs;
     std::vector<uint32_t> lmax, lmax_response;
     std::vector<Eigen::MatrixXd> responses;
-    std::vector<std::string> response_files;
+    std::vector<std::filesystem::path> response_files;
     Math::ICLS::Problem<double> problem;
     double solution_min_norm_regularisation, constraint_min_norm_regularisation;
 
@@ -228,10 +234,10 @@ public:
       for (size_t t = 0; t != num_tissues(); ++t) {
         Eigen::MatrixXd &r(responses[t]);
         size_t n = 0;
-        for (size_t row = 0; row < size_t(r.rows()); row++) {
-          for (size_t col = 0; col < size_t(r.cols()); col++) {
+        for (Eigen::Index row = 0; row < r.rows(); row++) {
+          for (Eigen::Index col = 0; col < r.cols(); col++) {
             if (r(row, col))
-              n = std::max(n, col + 1);
+              n = std::max(n, static_cast<size_t>(col + 1));
           }
         }
         // Clip off any empty columns, i.e. degrees containing zero coefficients for all shells

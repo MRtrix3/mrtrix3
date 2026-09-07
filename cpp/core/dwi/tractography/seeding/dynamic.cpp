@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -47,11 +47,11 @@ bool Dynamic_ACT_additions::check_seed(Eigen::Vector3f &p) {
 
 const default_type Dynamic::initial_td_sum = 1e-6;
 
-Dynamic::Dynamic(const std::string &in,
+Dynamic::Dynamic(const std::filesystem::path &in,
                  Image<float> &fod_data,
                  const size_t num,
                  const DWI::Directions::FastLookupSet &dirs)
-    : Base(in, "dynamic", attempts_per_seed.at(seed_attempt_t::DYNAMIC)),
+    : Base(in.filename().string(), "dynamic", attempts_per_seed.at(seed_attempt_t::DYNAMIC)),
       SIFT::ModelBase<Fixel_TD_seed>(fod_data, dirs),
       target_trackcount(num),
       track_count(0),
@@ -135,7 +135,7 @@ Dynamic::Dynamic(const std::string &in,
   // Pick a good fixel to use for testing / debugging
   std::uniform_real_distribution<float> uniform;
   do {
-    test_fixel = std::uniform_int_distribution<int>(1, fixels.size() - 1)(rng);
+    test_fixel = std::uniform_int_distribution<int>(1, fixels.size() - 1)(rng());
   } while (fixels[test_fixel].get_weight() < 1.0 || fixels[test_fixel].get_FOD() < 0.5);
 
   output_fixel_images("begin");
@@ -159,12 +159,14 @@ Dynamic::~Dynamic() {
     if (!force_seed) {
       const uint64_t total_seeds = seeds.load(std::memory_order_relaxed);
       const uint64_t fixel_seeds = fixel.get_seed_count();
-      seed_prob = cumulative_prob * (current_trackcount / float(target_trackcount - current_trackcount)) *
-                  (((total_seeds / float(fixel_seeds)) * (target_trackcount / float(current_trackcount)) *
-                    ((1.0f / ratio) - ((total_seeds - fixel_seeds) / float(total_seeds)))) -
-                   1.0f);
-      seed_prob = std::min(1.0f, seed_prob);
-      seed_prob = std::max(0.0f, seed_prob);
+      seed_prob =
+          cumulative_prob * (current_trackcount / static_cast<float>(target_trackcount - current_trackcount)) *
+          (((static_cast<float>(total_seeds) / static_cast<float>(fixel_seeds)) *
+            (static_cast<float>(target_trackcount) / static_cast<float>(current_trackcount)) *
+            ((1.0F / ratio) - (static_cast<float>(total_seeds - fixel_seeds) / static_cast<float>(total_seeds)))) -
+           1.0F);
+      seed_prob = std::min(1.0F, seed_prob);
+      seed_prob = std::max(0.0F, seed_prob);
     }
     fixel.update_prob(seed_prob, false);
   }
@@ -179,12 +181,12 @@ bool Dynamic::get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d) {
 
   uint64_t this_attempts = 0;
   std::uniform_int_distribution<size_t> uniform_int(0, fixels.size() - 2);
-  std::uniform_real_distribution<float> uniform_float(0.0f, 1.0f);
+  std::uniform_real_distribution<float> uniform_float(0.0F, 1.0F);
 
   while (1) {
 
     ++this_attempts;
-    const size_t fixel_index = 1 + uniform_int(rng);
+    const size_t fixel_index = 1 + uniform_int(rng());
     Fixel &fixel = fixels[fixel_index];
     float seed_prob;
     if (fixel.can_update()) {
@@ -213,19 +215,19 @@ bool Dynamic::get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d) {
 #endif
 
         // These can occur fairly regularly, depending on the exact derivation
-        seed_prob = std::min(1.0f, seed_prob);
-        seed_prob = std::max(0.0f, seed_prob);
+        seed_prob = std::min(1.0F, seed_prob);
+        seed_prob = std::max(0.0F, seed_prob);
       }
 
     } else {
       seed_prob = fixel.get_old_prob();
     }
 
-    if (seed_prob > uniform_float(rng)) {
+    if (seed_prob > uniform_float(rng())) {
 
       const Eigen::Vector3i &v(fixel.get_voxel());
       const Eigen::Vector3f vp(
-          v[0] + uniform_float(rng) - 0.5, v[1] + uniform_float(rng) - 0.5, v[2] + uniform_float(rng) - 0.5);
+          v[0] + uniform_float(rng()) - 0.5, v[1] + uniform_float(rng()) - 0.5, v[2] + uniform_float(rng()) - 0.5);
       p = transform.voxel2scanner.cast<float>() * vp;
 
       bool good_seed = !act;
@@ -277,7 +279,7 @@ void Dynamic::write_seed(const Eigen::Vector3f &p) {
   seed_output(tck);
 }
 
-void Dynamic::output_fixel_images(const std::string &prefix) {
+void Dynamic::output_fixel_images(std::string_view prefix) {
   Image<float> image_seedprobability(
       Image<float>::create(Path::join(debugging_fixel_path, prefix + "_seedprobability.mif"), H_fixeldata));
   Image<float> image_logseedprob(
@@ -318,11 +320,11 @@ void Dynamic::perform_fixel_masking() {
 
 bool WriteKernelDynamic::operator()(const Tracking::GeneratedTrack &in, Tractography::Streamline<> &out) {
   out.set_index(writer.count);
-  out.weight = 1.0f;
+  out.weight = 1.0F;
   if (!WriteKernel::operator()(in)) {
     out.clear();
     // Flag to indicate that tracking has completed, and threads should therefore terminate
-    out.weight = 0.0f;
+    out.weight = 0.0F;
     // Actually need to pass this down the queue so that the seeder thread receives it and knows to terminate
     return true;
   }

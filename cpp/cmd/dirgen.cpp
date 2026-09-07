@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,6 +13,8 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+
+#include <filesystem>
 
 #include "command.h"
 #include "dwi/directions/file.h"
@@ -180,13 +182,13 @@ public:
   void execute() {
     size_t this_start = 0;
     while ((this_start = current_start++) < restarts) {
-      INFO("launching start " + str(this_start));
+      DEBUG("launching start " + str(this_start));
       double E = 0.0;
 
       for (power = 1; power <= target_power; power *= 2) {
         Math::GradientDescent<Energy, ProjectedUpdate> optim(*this, ProjectedUpdate());
 
-        INFO("start " + str(this_start) + ": setting power = " + str(power));
+        DEBUG("start " + str(this_start) + ": setting power = " + str(power));
         optim.init();
 
         size_t iter = 0;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "file/matrix.h"
@@ -23,6 +24,7 @@
 #include "progressbar.h"
 
 #include "dwi/directions/file.h"
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -102,20 +104,21 @@ void usage() {
 
 int precision = 6;
 
-void report(const std::string &title, Eigen::MatrixXd &directions);
+void report(std::string_view title, Eigen::MatrixXd &directions);
 
 void run() {
+  const std::filesystem::path dirs_input_path{argument[0]};
+
   Eigen::MatrixXd directions;
 
   try {
-    directions = DWI::Directions::load_cartesian(argument[0]);
+    directions = File::Matrix::load_matrix<double>(argument[0]);
+    DWI::Directions::validate(directions, argument[0], true);
+    if (directions.cols() == 2)
+      directions = Math::Sphere::spherical2cartesian(directions);
   } catch (Exception &E) {
-    try {
-      directions = File::Matrix::load_matrix<double>(argument[0]);
-    } catch (Exception &E) {
-      auto header = Header::open(argument[0]);
-      directions = DWI::get_DW_scheme(header);
-    }
+    auto header = Header::open(argument[0]);
+    directions = DWI::get_DW_scheme(header);
   }
 
   if (directions.cols() >= 4) {
@@ -124,7 +127,7 @@ void run() {
     if (get_options("shells").empty() && shells.has_bzero() && shells.count() > 1) {
       n_start = 1;
       if (get_options("output").empty())
-        print(std::string(argument[0]) + " (b=0) [ " + str(shells.smallest().count(), precision) + " volumes ]\n\n");
+        print(dirs_input_path.string() + " (b=0) [ " + str(shells.smallest().count(), precision) + " volumes ]\n\n");
     }
 
     Eigen::MatrixXd dirs;
@@ -134,11 +137,11 @@ void run() {
       for (size_t idx = 0; idx < shells[n].count(); ++idx)
         dirs.row(idx) = directions.row(shells[n].get_volumes()[idx]).head(3);
 
-      report(std::string(argument[0]) + " (b=" + str(shells[n].get_mean()) + ")", dirs);
+      report(dirs_input_path.string() + " (b=" + str(shells[n].get_mean()) + ")", dirs);
     }
 
   } else
-    report(argument[0], directions);
+    report(dirs_input_path.string(), directions);
 }
 
 std::vector<default_type> summarise_NN(const std::vector<double> &NN) {
@@ -178,7 +181,7 @@ public:
 
 Metrics compute(Eigen::MatrixXd &directions) {
   if (directions.cols() < 3)
-    throw Exception("unexpected matrix size for scheme \"" + str(argument[0]) + "\"");
+    throw Exception("unexpected matrix size for scheme \"" + argument[0].as_text() + "\"");
   Math::Sphere::normalise_cartesian(directions);
 
   std::vector<double> NN_bipolar(directions.rows(), -1.0);
@@ -192,7 +195,7 @@ Metrics compute(Eigen::MatrixXd &directions) {
       double cos_angle = directions.row(i).head(3).normalized().dot(directions.row(j).head(3).normalized());
       NN_unipolar[i] = std::max(NN_unipolar[i], cos_angle);
       NN_unipolar[j] = std::max(NN_unipolar[j], cos_angle);
-      cos_angle = abs(cos_angle);
+      cos_angle = std::fabs(cos_angle);
       NN_bipolar[i] = std::max(NN_bipolar[i], cos_angle);
       NN_bipolar[j] = std::max(NN_bipolar[j], cos_angle);
 
@@ -223,7 +226,7 @@ Metrics compute(Eigen::MatrixXd &directions) {
   return metrics;
 }
 
-void output_selected(const Metrics &metrics, const std::string &selection) {
+void output_selected(const Metrics &metrics, std::string_view selection) {
   auto select = split(selection, ", \t\n", true);
 
   for (const auto &x : select) {
@@ -275,7 +278,7 @@ void output_selected(const Metrics &metrics, const std::string &selection) {
   std::cout << "\n";
 }
 
-void report(const std::string &title, Eigen::MatrixXd &directions) {
+void report(std::string_view title, Eigen::MatrixXd &directions) {
   auto metrics = compute(directions);
 
   auto opt = get_options("output");
