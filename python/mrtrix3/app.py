@@ -1612,11 +1612,8 @@ class Parser(argparse.ArgumentParser):
         else:
           type_ = parse_type(option.type, optional=True)
         if isinstance(option, argparse._AppendAction):
-          if is_output(option):
-            type_ = "list"
-          else:
-            type_ = "MultiInputObj"
-          type_ += f"[{type_}]"
+          wrapper = "list" if is_output(option) else "MultiInputObj"
+          type_ = f"{wrapper}[{type_}]"
         kwds = get_arg_metadata(option)
         kwds["argstr"] = "-" + option.dest
         if type_ == "bool":
