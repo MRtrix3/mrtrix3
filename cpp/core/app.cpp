@@ -814,14 +814,6 @@ std::string pydra_code() {
   };
 
   std::string name_string = convert_to_pascal_case(NAME);
-  // Check whether name starts with 5tt and escape the name if so
-
-  if (name_string.length() > 3) {
-    std::string prefix = name_string.substr(0, 3);
-    if (!prefix.compare("5tt")) {
-      name_string = "Fivett" + name_string.substr(3, name_string.length());
-    }
-  }
 
   std::string base_indent("    ");
   std::string indent = base_indent + "    ";
