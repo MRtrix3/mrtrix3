@@ -13,11 +13,11 @@ Usage
 
 ::
 
-    sh2response [ options ]  SH mask directions response
+    sh2response [ options ]  SH mask fibre_directions response
 
 -  *SH*: the spherical harmonic decomposition of the diffusion-weighted images
 -  *mask*: the mask containing the voxels from which to estimate the response function
--  *directions*: a 4D image containing the direction vectors along which to estimate the response function
+-  *fibre_directions*: a 4D image containing the direction vectors along which to estimate the response function
 -  *response*: the output axially-symmetric spherical harmonic coefficients
 
 Description

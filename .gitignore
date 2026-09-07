@@ -17,12 +17,14 @@
 docs/**/*.md
 !docs/README.md
 /python/lib/mrtrix3/_version.py
+*.venv
 /scripts/mrtrix_bash_completion
 /dev/
 /compiled_docs/
 /.vscode/
 .claude
 .cproject
+.DS_store
 .idea
 .project
 .settings
