@@ -908,7 +908,7 @@ std::string pydra_code() {
     } else {
       f += "tuple[";
       for (size_t a = 0; a < opt.size(); ++a) {
-        f += format_type(opt[0].types);
+        f += format_type(opt[a].types);
         if (a != opt.size() - 1) {
           f += ", ";
         }
