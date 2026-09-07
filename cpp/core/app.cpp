@@ -15,6 +15,7 @@
  */
 
 #include <algorithm>
+#include <array>
 #include <clocale>
 #include <fcntl.h>
 #include <locale>
@@ -782,7 +783,7 @@ std::string restructured_text_usage() {
   return s;
 }
 
-std::string pydra_code() {
+static std::string pydra_code() {
 
   constexpr std::array<std::string_view, 23> CMD_PREFIXES = {
       "Fivett", "Afd", "Amp",   "Connectome", "Dcm", "Dir",    "Dwi",       "Fixel", "Fod",   "Label",  "Mask", "Mesh",
