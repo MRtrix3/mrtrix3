@@ -20,7 +20,7 @@ from mrtrix3 import app, run
 
 NEEDS_MEAN_BZERO = True # pylint: disable=unused-variable
 SYNTHSTRIP_CMD='mri_synthstrip'
-SYNTHSTRIP_SINGULARITY='sythstrip-singularity'
+SYNTHSTRIP_SINGULARITY='synthstrip-singularity'
 
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
@@ -44,10 +44,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options.add_argument('-stripped',
                        type=app.Parser.ImageOut(),
                        help='The output stripped image')
-  options.add_argument('-gpu',
-                       action='store_true',
-                       default=None,
-                       help='Use the GPU')
   options.add_argument('-model',
                        type=app.Parser.FileIn(),
                        help='Alternative model weights')
@@ -72,12 +68,10 @@ def execute(): #pylint: disable=unused-variable
 
   output_file = 'synthstrip_mask.nii'
   stripped_file = 'stripped.nii'
-  cmd = [SYNTHSTRIP_CMD, '-i', 'bzero.nii', '-m', output_file]
+  cmd = [synthstrip_cmd, '-i', 'bzero.nii', '-m', output_file]
 
   if app.ARGS.stripped:
     cmd.extend(['-o', stripped_file])
-  if app.ARGS.gpu:
-    cmd.append('-g')
 
   if app.ARGS.nocsf:
     cmd.append('--no-csf')
@@ -88,7 +82,23 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.model:
     cmd.extend(['--model', app.ARGS.model])
 
-  run.command(cmd)
+  # SynthStrip does not itself fall back if '-g' is requested but the relevant
+  #   hardware / drivers are absent: it simply fails, and takes dwi2mask with it.
+  #   The GPU is therefore requested speculatively and silently dropped on
+  #   failure, as "dwi2mask hdbet" does for hd-bet.
+  try:
+    run.command(cmd + ['-g'])
+  except run.MRtrixCmdError as e_gpu:
+    app.warn('SynthStrip failed when running on GPU; attempting on CPU')
+    try:
+      run.command(cmd)
+    except run.MRtrixCmdError as e_cpu:
+      gpu_header = '===\nGPU\n===\n'
+      cpu_header = '===\nCPU\n===\n'
+      exception_stdout = f'{gpu_header}{e_gpu.stdout}\n\n{cpu_header}{e_cpu.stdout}\n\n'
+      exception_stderr = f'{gpu_header}{e_gpu.stderr}\n\n{cpu_header}{e_cpu.stderr}\n\n'
+      raise run.MRtrixCmdError(synthstrip_cmd, 1, exception_stdout, exception_stderr)
+
   if app.ARGS.stripped:
     run.command(['mrconvert', stripped_file, app.ARGS.stripped],
                 mrconvert_keyval=app.ARGS.input,

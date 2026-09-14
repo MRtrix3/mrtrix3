@@ -1008,8 +1008,6 @@ Options specific to the 'Synthstrip' algorithm
 
 - **-stripped image** The output stripped image
 
-- **-gpu** Use the GPU
-
 - **-model file** Alternative model weights
 
 - **-nocsf** Compute the immediate boundary of brain matter excluding surrounding CSF
