@@ -165,6 +165,8 @@ Non-linear registration options
 
 -  **-diagnostics_image path** write intermediate images for diagnostics purposes
 
+-  **-diagnostics_stats path** write per-iteration statistics of the non-linear optimisation to a tab-delimited text file
+
 FOD registration options
 ^^^^^^^^^^^^^^^^^^^^^^^^
 

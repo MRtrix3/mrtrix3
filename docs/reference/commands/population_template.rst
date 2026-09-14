@@ -23,6 +23,8 @@ Description
 
 First a template is optimised with linear registration (rigid and/or affine, both by default), then non-linear registration is used to optimise the template further.
 
+For a dataset where images have already been explicitly zero-filled outside of the region of interest, it is recommended to both provide masks encoding the presence of valid data using the -mask_dir option AND additionally specify the -nanmask option. Failure to do so can result in erroneous contraction of the template at the periphery due to the zeroed image intensities driving all non-linear updates inwards. It is generally recommended to avoid such zero-filling upstream as it is additionally detrimental to interpolation near the edge of the mask.
+
 Options
 -------
 
@@ -53,7 +55,7 @@ Input, output and general options
 
 - **-aggregation_weights** Comma separated file containing weights used for weighted image aggregation. Each row must contain the identifiers of the input image and its weight. Note that this weighs intensity values not transformations (shape).
 
-- **-nanmask** Optionally apply masks to (transformed) input images using NaN values to specify include areas for registration and aggregation. Only works if -mask_dir has been input.
+- **-nanmask** Optionally apply masks to (transformed) input images using NaN values to specify include areas for registration and aggregation (only works if -mask_dir has been input); see Description.
 
 - **-copy_input** Copy input images and masks into local scratch directory.
 
