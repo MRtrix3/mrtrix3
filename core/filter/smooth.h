@@ -105,7 +105,7 @@ namespace MR
         void set_stdev (const vector<default_type>& std_dev)
         {
           for (size_t i = 0; i < std_dev.size(); ++i)
-            if (stdev[i] < 0.0)
+            if (std_dev[i] < 0.0)
               throw Exception ("the Gaussian stdev values cannot be negative");
           if (std_dev.size() == 1) {
             for (unsigned int i = 0; i < 3; i++)
