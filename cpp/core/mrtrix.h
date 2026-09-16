@@ -381,6 +381,13 @@ template <size_t N> inline std::string join(const std::array<std::string, N> &ar
   return join(v, delimiter);
 }
 
+template <size_t N> inline std::string join(const std::array<std::string_view, N> &array, std::string_view delimiter) {
+  std::vector<std::string> v;
+  for (const auto s : array)
+    v.emplace_back(s);
+  return join(v, delimiter);
+}
+
 template <typename T> inline std::string join(const std::vector<T> &V, std::string_view delimiter) {
   std::string ret;
   if (V.empty())

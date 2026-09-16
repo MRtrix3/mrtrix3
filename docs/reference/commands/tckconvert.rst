@@ -6,7 +6,7 @@ tckconvert
 Synopsis
 --------
 
-Convert between different track file formats
+Convert between different tractogram file formats
 
 Usage
 --------
@@ -21,18 +21,36 @@ Usage
 Description
 -----------
 
-The program currently supports MRtrix .tck files (input/output), ascii text files (input/output), VTK polydata files (input/output), QFib lossy compressed .qfib files (input/output), and RenderMan RIB (export only).
+The command supports two key types of tractogram data conversions. The first is the set of tractogram file formats that are natively supported by all MRtrix3 commands: .tck, .qfib, .trk, .trx, .tt, .vtk, .vtx, .zfib (any input or output directories will additionally be interepreted as TRX format datasets). The second is a set of "bespoke" formats that are supported only by the tckconvert command for specialised applications: ASCII text files (input/output), Polygon File Format PLY (output only), and RenderMan RIB (export only). The latter only support conversion of streamline data and do not handle sidecar data
 
 The QFib format (Mercier et al.) stores each streamline as its first two vertices plus a sequence of quantized unit tangents. It is lossy, requires the input to be of constant step size (resample beforehand with "tckresample -step_size" otherwise), and stores geometry only: per-streamline weights and dps/dpv sidecar data are discarded.
 
 Some tractography file formats (the TrackVis ".trk" format and the TRX format) can embed per-streamline (dps) and per-vertex (dpv) sidecar data within the tractogram dataset itself. The -extract, -insert, -rename, -remove and -convert options manipulate this embedded data during conversion. Each takes a leading "dps" or "dpv" argument to disambiguate the two, since a per-streamline and a per-vertex field may legitimately share the same name. Per-streamline data is exchanged with standalone numerical files (text, ".csv" or ".npy"); per-vertex data with track scalar (".tsf") files. When a ".tsf" is produced from extracted per-vertex data, a matching "timestamp" key-value is recorded on both it and the output tractogram so the pair passes the track-scalar validation checks. Fields are always referenced by string name, never by index.
 
-By default vertex positions are read and written in MRtrix3 real (scanner) space. The -input_is_voxelspace and -input_is_imagespace options instead interpret the vertex positions of the input tractogram as voxel coordinates, or as image coordinates (in mm), of the provided reference image, converting them to real space for internal processing and output; the two are mutually exclusive. The -output_as_voxelspace option encodes the vertex positions of the output tractogram as voxel coordinates of the provided reference image rather than in real space; this requires an output format able to embed the corresponding voxel-to-real-space transform within its header (for example the TRX format), and raises an error otherwise.
+By default vertex positions are read and written in MRtrix3-convention real (scanner) space. The -input_is_voxelspace and -input_is_imagespace options instead interpret the vertex positions of the input tractogram as voxel coordinates, or as image coordinates (in mm), of the provided reference image, converting them to real space for internal processing and output; the two are mutually exclusive. The -output_as_voxelspace option encodes the vertex positions of the output tractogram as voxel coordinates of the provided reference image rather than in real space; this requires an output format able to embed the corresponding voxel-to-real-space transform within its header (for example the TRX format), and raises an error otherwise.
 
 The -reference_image option embeds the spatial grid (the dimensions and the voxel-to-real-space transform) of the image from which the tractogram was generated into the output tractogram header as provenance metadata; unlike -output_as_voxelspace it does not alter the vertex positions, which remain in real space. It likewise requires an output format able to record that transform within its header (currently only the TRX format), and the two options are mutually exclusive.
 
 Example usages
 --------------
+
+-   *Basic conversion between streamline data formats*::
+
+        $ tckconvert input.tck output.trx
+
+    Any of the MRtrix3 supported tractogram file formats can be utilised as either input or output. This example demonstrates basic conversioin of streamline vertex data without any involvement of sidecar tractogram data.
+
+-   *Aggregating streamline and sidecar data across multiple files into a single cohesive dataset*::
+
+        $ tckconvert vertices.tck -insert dps weights SIFT2_weights.csv -insert dpv FA fa_samples.tsf output.trx
+
+    Historically, handling of sidecar tractogram data in MRtrix3 has involved files external to that used to store the tractogram vertex data: data-per-streamline (e.g. SIFT2 streamline weights) would be stored using a text file format, while for data-per-vertex (e.g. value of an underlying image at each vertex location) the Track Scalar Format was created. With some tractogram file formats such as TRX, these can be embedded into a tractogram alongside the streamline vertex data, and accessed from there in subsequent command calls.
+
+-   *Extracting tractogram sidecar data into standalone files*::
+
+        $ tckconvert input.trx output.tck -extract dps weights SIFT2_weights.npy -extract dpv FA fa_samples.tsf
+
+    Conversely to the prior example, where a tractogram format embeds sidecar data within its structure, the tckconvert command can be used to isolate those sidecar data and write them into separate files, e.g. for compatibility with other softwares. Data-per-streamline can be written either as numerical vector / matrix data or to the NumPy .npy format; for data-per-vertex only the Track Scalar File .tsf format is supported.
 
 -   *Writing multiple ASCII files, one per streamline*::
 
@@ -96,7 +114,7 @@ Options for manipulating embedded sidecar data
 
 -  **-extract type name file** *(multiple uses permitted)* extract an embedded sidecar field, referenced by name, to a standalone file
 
--  **-insert type name file** *(multiple uses permitted)* embed a new sidecar field, read from a standalone file, into the output
+-  **-insert type name file** *(multiple uses permitted)* embed a new sidecar field, read from a standalone file, into the output; the file must provide exactly one entry per streamline of the input tractogram, and an error is raised otherwise
 
 -  **-rename type old new** *(multiple uses permitted)* rename an embedded sidecar field
 
@@ -132,7 +150,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** Daan Christiaens (daan.christiaens@kcl.ac.uk) and J-Donald Tournier (jdtournier@gmail.com) and Philip Broser (philip.broser@me.com) and Daniel Blezek (daniel.blezek@gmail.com)
+**Author:** Daan Christiaens (daan.christiaens@kcl.ac.uk) and J-Donald Tournier (jdtournier@gmail.com) and Philip Broser (philip.broser@me.com) and Daniel Blezek (daniel.blezek@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 

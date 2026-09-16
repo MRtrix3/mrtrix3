@@ -63,17 +63,23 @@ void usage() {
   AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk)"
            " and J-Donald Tournier (jdtournier@gmail.com)"
            " and Philip Broser (philip.broser@me.com)"
-           " and Daniel Blezek (daniel.blezek@gmail.com)";
+           " and Daniel Blezek (daniel.blezek@gmail.com)"
+           " and Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Convert between different track file formats";
+  SYNOPSIS = "Convert between different tractogram file formats";
 
   DESCRIPTION
-    + "The program currently supports"
-      " MRtrix .tck files (input/output),"
-      " ascii text files (input/output),"
-      " VTK polydata files (input/output),"
-      " QFib lossy compressed .qfib files (input/output),"
-      " and RenderMan RIB (export only)."
+    + ("The command supports two key types of tractogram data conversions. "
+       "The first is the set of tractogram file formats that are natively supported"
+       " by all MRtrix3 commands: " + join(DWI::Tractography::Formats::extensions, ", ") +
+       " (any input or output directories will additionally be interepreted as TRX format datasets). "
+       "The second is a set of \"bespoke\" formats"
+       " that are supported only by the tckconvert command"
+       " for specialised applications:"
+       " ASCII text files (input/output),"
+       " Polygon File Format PLY (output only),"
+       " and RenderMan RIB (export only)."
+       " The latter only support conversion of streamline data and do not handle sidecar data")
 
     + "The QFib format (Mercier et al.) stores each streamline as its first two"
       " vertices plus a sequence of quantized unit tangents. It is lossy, requires"
@@ -94,7 +100,7 @@ void usage() {
       " and the output tractogram so the pair passes the track-scalar validation"
       " checks. Fields are always referenced by string name, never by index."
 
-    + "By default vertex positions are read and written in MRtrix3 real (scanner)"
+    + "By default vertex positions are read and written in MRtrix3-convention real (scanner)"
       " space. The -input_is_voxelspace and -input_is_imagespace options instead interpret the"
       " vertex positions of the input tractogram as voxel coordinates, or as image"
       " coordinates (in mm), of the provided reference image, converting them to"
@@ -114,6 +120,33 @@ void usage() {
       " options are mutually exclusive.";
 
   EXAMPLES
+    + Example("Basic conversion between streamline data formats",
+              "tckconvert input.tck output.trx",
+              "Any of the MRtrix3 supported tractogram file formats can be utilised"
+              " as either input or output. "
+              //+ join(DWI::Tractography::Formats::extensions, ", ") + ". "
+              "This example demonstrates basic conversioin of streamline vertex data"
+              " without any involvement of sidecar tractogram data.")
+    + Example("Aggregating streamline and sidecar data across multiple files into a single cohesive dataset",
+              "tckconvert vertices.tck -insert dps weights SIFT2_weights.csv -insert dpv FA fa_samples.tsf output.trx",
+              "Historically, handling of sidecar tractogram data in MRtrix3"
+              " has involved files external to that used to store the tractogram vertex data:"
+              " data-per-streamline (e.g. SIFT2 streamline weights) would be stored using a text file format,"
+              " while for data-per-vertex (e.g. value of an underlying image at each vertex location)"
+              " the Track Scalar Format was created. "
+              "With some tractogram file formats such as TRX,"
+              " these can be embedded into a tractogram alongside the streamline vertex data,"
+              " and accessed from there in subsequent command calls.")
+              //" (see: https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/reference/data_formats/tractography_data.html)".)
+    + Example("Extracting tractogram sidecar data into standalone files",
+              "tckconvert input.trx output.tck -extract dps weights SIFT2_weights.npy -extract dpv FA fa_samples.tsf",
+              "Conversely to the prior example,"
+              " where a tractogram format embeds sidecar data within its structure,"
+              " the tckconvert command can be used to isolate those sidecar data"
+              " and write them into separate files, e.g. for compatibility with other softwares. "
+              "Data-per-streamline can be written either as numerical vector / matrix data"
+              " or to the NumPy .npy format;"
+              " for data-per-vertex only the Track Scalar File .tsf format is supported.")
     + Example("Writing multiple ASCII files, one per streamline",
               "tckconvert input.tck output-[].txt",
               "By using the multi-file numbering syntax,"
@@ -206,7 +239,9 @@ void usage() {
       + Argument ("file").type_file_out()
 
     + Option ("insert",
-              "embed a new sidecar field, read from a standalone file, into the output")
+              "embed a new sidecar field, read from a standalone file, into the output;"
+              " the file must provide exactly one entry per streamline of the input tractogram,"
+              " and an error is raised otherwise")
       .allow_multiple()
       + Argument ("type").type_choice<SidecarType>()
       + Argument ("name").type_text()

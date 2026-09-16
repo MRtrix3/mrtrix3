@@ -93,7 +93,9 @@ public:
 //! object for storing a single example command usage
 class Example {
 public:
-  Example(std::string_view title, std::string_view code, std::string_view description);
+  template <typename StringType, typename std::enable_if<MR::is_string_type<StringType>::value, int>::type = 0>
+  Example(std::string_view title, std::string_view code, StringType description)
+      : title(title), code(code), description(description) {}
   const std::string title, code, description;
 
   operator std::string() const;

@@ -307,9 +307,6 @@ std::string Description::syntax(const bool format) const {
   return s;
 }
 
-Example::Example(std::string_view title, std::string_view code, std::string_view description)
-    : title(title), code(code), description(description) {}
-
 Example::operator std::string() const { return title + ": $ " + code + "  " + description; }
 
 std::string Example::syntax(const bool format) const {

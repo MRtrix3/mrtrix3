@@ -257,7 +257,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`shview`, ""
     |cpp.png|, :ref:`tck2connectome`, "Generate a connectome matrix from a streamlines file and a node parcellation image"
     |cpp.png|, :ref:`tck2fixel`, "Compute a fixel TDI map from a tractogram"
-    |cpp.png|, :ref:`tckconvert`, "Convert between different track file formats"
+    |cpp.png|, :ref:`tckconvert`, "Convert between different tractogram file formats"
     |cpp.png|, :ref:`tckdfc`, "Perform the Track-Weighted Dynamic Functional Connectivity (TW-dFC) method"
     |cpp.png|, :ref:`tckedit`, "Perform various editing operations on track files"
     |cpp.png|, :ref:`tckgen`, "Perform streamlines tractography"
