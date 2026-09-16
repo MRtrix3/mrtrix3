@@ -753,6 +753,13 @@ void run () {
     nl_registration.set_init_grad_step (opt[0][0]);
   }
 
+  opt = get_options ("diagnostics_stats");
+  if (opt.size()) {
+    if (!do_nonlinear)
+      throw Exception ("the -diagnostics_stats option cannot be used when no non-linear registration is requested");
+    nl_registration.set_diagnostics_stats (opt[0][0]);
+  }
+
   opt = get_options ("nl_lmax");
   vector<uint32_t> nl_lmax;
   if (opt.size()) {
