@@ -1,0 +1,22 @@
+name: Post clang-tidy review comments
+
+# Runs in the base repo's context (unlike the pull_request-triggered
+# clang-tidy-review workflow, which gets a read-only GITHUB_TOKEN for PRs
+# from forks), so it has the permissions needed to post the review that
+# clang-tidy.yml generated and uploaded as an artifact.
+on:
+  workflow_run:
+    workflows: ["clang-tidy-review"]
+    types:
+      - completed
+
+jobs:
+  post-review:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: ZedThree/clang-tidy-review/post@v0.21.0
+        with:
+          max_comments: 25
