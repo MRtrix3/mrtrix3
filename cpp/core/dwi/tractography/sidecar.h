@@ -27,6 +27,7 @@
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/tractogram_item.h"
 #include "exception.h"
+#include "mrtrix.h"
 #include "types.h"
 
 namespace MR::DWI::Tractography {
@@ -59,6 +60,18 @@ SidecarReference parse_sidecar_reference(std::string_view arg);
  * twice. */
 std::string sidecar_field_name(const SidecarReference &reference);
 
+//! \brief the human-readable name of a sidecar field role, for diagnostic messages.
+inline std::string sidecar_role_word(const FieldRole role) {
+  switch (role) {
+  case FieldRole::DPV:
+    return "per-vertex (dpv)";
+  case FieldRole::DPG:
+    return "per-group (dpg)";
+  default:
+    return "per-streamline (dps)";
+  }
+}
+
 //! \brief Streaming injector of standalone per-streamline / per-vertex sidecar
 //!   data into the read pipeline (§2.5; Stage 11, step 5).
 /*! Registered with a read Tractogram for a standalone-path input reference. The
@@ -76,10 +89,104 @@ std::string sidecar_field_name(const SidecarReference &reference);
 template <class ValueType> class SidecarLoader {
 public:
   virtual ~SidecarLoader() = default;
+
   //! \brief populate this loader's field in \a item for the next streamline.
   /*! \returns false if the sidecar source is exhausted before the tractogram
-   * (a length mismatch), true otherwise. */
-  virtual bool operator()(TractogramItem<ValueType> &item) = 0;
+   * (a length mismatch), true otherwise. A source running short is reported
+   * exactly once, as a warning or — under set_strict() — as an error; it is
+   * never silent, since the consuming Tractogram responds by truncating the
+   * streamline stream at that point. */
+  bool operator()(TractogramItem<ValueType> &item) {
+    if (!load(item)) {
+      report_short();
+      return false;
+    }
+    ++consumed_;
+    return true;
+  }
+
+  //! \brief report any entries the source holds beyond those it yielded.
+  /*! Invoked once at end-of-stream by the owning Tractogram, for every
+   * registered loader (in contrast to report_short(), which can only ever fire
+   * for the one loader that ran dry first). Warns, or throws under
+   * set_strict(). */
+  void check_excess() {
+    const std::optional<size_t> total = total_entries();
+    std::string message;
+    if (total.has_value()) {
+      if (*total <= consumed_)
+        return;
+      message = describe() + " contains more entries (" + str(*total) + ") than the number of streamlines read (" +
+                str(consumed_) + ")";
+    } else {
+      if (!probe_excess())
+        return;
+      message = describe() + " contains more entries than the " + str(consumed_) + " streamlines read";
+    }
+    if (strict_)
+      throw Exception(message);
+    WARN(message);
+  }
+
+  //! \brief check the source length against \a streamline_count up front, and throw on a mismatch.
+  /*! Only meaningful where the source declares its length in advance
+   * (total_entries()); a streamed source such as a ".tsf" is a no-op here and
+   * relies on the end-of-stream checks instead. Used by a caller that demands
+   * an exact correspondence (tckconvert's "-insert"), so the mismatch is
+   * diagnosed before any output is created. */
+  void validate_length(const size_t streamline_count) const {
+    const std::optional<size_t> total = total_entries();
+    if (!total.has_value() || *total == streamline_count)
+      return;
+    throw Exception(describe() + " contains " + str(*total) + " entries," + " but the tractogram contains " +
+                    str(streamline_count) + " streamlines");
+  }
+
+  //! \brief promote a length mismatch from a warning to an error.
+  void set_strict(const bool value) { strict_ = value; }
+
+protected:
+  SidecarLoader(const FieldRole role, const std::string_view name, const std::filesystem::path &path)
+      : role_(role), name_(name), path_(path), consumed_(0), strict_(false), warned_short_(false) {}
+
+  //! \brief yield this loader's field for the next streamline into \a item.
+  /*! \returns false once the source is exhausted. Implementations report only
+   * exhaustion; the diagnostics are the base class's responsibility. */
+  virtual bool load(TractogramItem<ValueType> &item) = 0;
+
+  //! \brief the total number of entries the source holds, where known in advance.
+  /*! std::nullopt for a source that is streamed rather than resident (".tsf"),
+   * whose length cannot be established without reading it. */
+  virtual std::optional<size_t> total_entries() const { return std::nullopt; }
+
+  //! \brief whether a source of unknown length holds at least one unconsumed entry.
+  /*! Only called when total_entries() is std::nullopt, and only at
+   * end-of-stream. */
+  virtual bool probe_excess() { return false; }
+
+private:
+  FieldRole role_;
+  std::string name_;
+  std::filesystem::path path_;
+  size_t consumed_; //!< entries yielded into the streamline stream so far
+  bool strict_;
+  bool warned_short_;
+
+  //! \brief identify this loader (role, field name, source file) in a message.
+  std::string describe() const {
+    return sidecar_role_word(role_) + " sidecar field \"" + name_ + "\" from file \"" + path_.string() + "\"";
+  }
+
+  void report_short() {
+    if (warned_short_)
+      return;
+    warned_short_ = true;
+    const std::string message =
+        describe() + " provides fewer entries (" + str(consumed_) + ") than there are streamlines in the tractogram";
+    if (strict_)
+      throw Exception(message);
+    WARN(message + "; ceasing reading of streamline data");
+  }
 };
 
 //! \brief Streaming exporter of processed per-streamline / per-vertex data to a

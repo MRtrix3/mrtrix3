@@ -1,0 +1,25 @@
+#!/bin/bash
+# The bare "-tsf_in" route keeps the historical truncate-and-warn contract for a
+#   length mismatch (unlike tckconvert's "-insert", which errors) — but the
+#   mismatch is never silent: a short source warns as it truncates the stream, and
+#   an over-long source warns at end-of-stream.
+set -e
+tckedit tracks.tck tmp_short.tck -number 100 -force -quiet
+tcksample tracks.tck tcksample/fa.mif tmp_full.tsf -force -quiet
+tcksample tmp_short.tck tcksample/fa.mif tmp_short.tsf -force -quiet
+
+# Short source: warns, and truncates the output to the sidecar's length.
+tckresample tracks.tck tmp_a.tck -downsample 2 -tsf_in tmp_short.tsf -tsf_out tmp_a.tsf -force 2> tmp_a.err
+grep -q "fewer entries" tmp_a.err
+tckinfo tmp_a.tck | grep -qE "^ +count: +100$"
+tsfvalidate tmp_a.tsf tmp_a.tck
+
+# Over-long source: warns, and the output follows the tractogram.
+tckresample tmp_short.tck tmp_b.tck -downsample 2 -tsf_in tmp_full.tsf -tsf_out tmp_b.tsf -force 2> tmp_b.err
+grep -q "more entries" tmp_b.err
+tckinfo tmp_b.tck | grep -qE "^ +count: +100$"
+tsfvalidate tmp_b.tsf tmp_b.tck
+
+# A matched pair emits neither warning.
+tckresample tracks.tck tmp_c.tck -downsample 2 -tsf_in tmp_full.tsf -tsf_out tmp_c.tsf -force 2> tmp_c.err
+! grep -qE "fewer entries|more entries" tmp_c.err

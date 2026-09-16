@@ -106,16 +106,17 @@ public:
   bool read(item_type &item) {
     assert(reader != nullptr);
     if (!(*reader)(item)) {
-      finalise_weight_input();
+      finalise_input();
       return false;
     }
     // Inject any registered standalone input-sidecar data into the per-streamline
     //   payload prior to processing (§2.5; Stage 11, step 5). A sidecar source
     //   shorter than the tractogram truncates the stream here (mirroring an
-    //   external weights file), so no streamline is emitted with a missing field.
+    //   external weights file), so no streamline is emitted with a missing field;
+    //   the loader warns as it does so (or throws, if registered strict).
     for (auto &loader : input_sidecars) {
       if (!(*loader)(item)) {
-        finalise_weight_input();
+        finalise_input();
         return false;
       }
     }
@@ -125,7 +126,7 @@ public:
     //   legacy ".tck" reader; an internal field is read from the dps payload.
     if (weight_in_external) {
       if (!(*weight_in_external)(item.streamline)) {
-        finalise_weight_input();
+        finalise_input();
         return false;
       }
     } else if (weight_in_internal_ordinal.has_value()) {
@@ -162,12 +163,12 @@ public:
     //   file (if any) is applied by ordinal index after the bare read.
     if (input_sidecars.empty() && !weight_in_internal_ordinal.has_value()) {
       if (!(*reader)(streamline)) {
-        finalise_weight_input();
+        finalise_input();
         return false;
       }
       if (weight_in_external) {
         if (!(*weight_in_external)(streamline)) {
-          finalise_weight_input();
+          finalise_input();
           return false;
         }
       }
@@ -348,13 +349,19 @@ public:
    * \a role field registered under \a name (rather than the file basename),
    * injecting one value per read into the streaming item. Used by tckconvert's
    * "-insert" to embed external sidecar data; a collision with an existing field
-   * of the same name+role is rejected by the registry. */
-  void register_named_input_sidecar(const FieldRole role,
-                                    const std::string_view name,
-                                    const std::filesystem::path &path,
-                                    Properties &properties) {
+   * of the same name+role is rejected by the registry.
+   *
+   * \returns a reference to the registered loader, so the caller can impose its
+   * own length-mismatch policy on it (SidecarLoader::set_strict(),
+   * SidecarLoader::validate_length()); the reference remains valid for the
+   * lifetime of this Tractogram. */
+  SidecarLoader<ValueType> &register_named_input_sidecar(const FieldRole role,
+                                                         const std::string_view name,
+                                                         const std::filesystem::path &path,
+                                                         Properties &properties) {
     assert(reader != nullptr);
     input_sidecars.push_back(make_named_sidecar_loader<ValueType>(role, name, path, properties, *registry));
+    return *input_sidecars.back();
   }
 
   //! \brief register a standalone output-sidecar reference for export (step 6).
@@ -509,14 +516,20 @@ private:
   item_type weight_embed_item;
   //! number of streamlines read so far (for the external-weight excess check)
   uint64_t read_count_ = 0;
-  //! whether the input-weight end-of-stream finalisation has already run
-  bool weight_input_finalised = false;
+  //! whether the end-of-stream input finalisation has already run
+  bool input_finalised = false;
 
-  //! \brief emit the external-weight excess warning once, at end-of-stream.
-  void finalise_weight_input() {
-    if (weight_input_finalised)
+  //! \brief run the end-of-stream length checks for every registered input source.
+  /*! Called once, from read(), whichever way the stream ended. Each standalone
+   * input sidecar reports any entries it holds beyond those it yielded, as does
+   * an external weights file; a source registered as strict (tckconvert's
+   * "-insert") throws rather than warns. */
+  void finalise_input() {
+    if (input_finalised)
       return;
-    weight_input_finalised = true;
+    input_finalised = true;
+    for (auto &loader : input_sidecars)
+      loader->check_excess();
     if (weight_in_external)
       weight_in_external->check_excess(read_count_);
   }

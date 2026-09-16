@@ -78,7 +78,7 @@ bool is_npy(const std::filesystem::path &path) { return Path::has_suffix(path, {
 template <class ValueType> class MatrixLoader : public SidecarLoader<ValueType> {
 public:
   MatrixLoader(const std::filesystem::path &path, const std::string_view name, FieldRegistry &registry)
-      : data(File::Matrix::load_matrix<ValueType>(path)), row(0) {
+      : SidecarLoader<ValueType>(FieldRole::DPS, name, path), data(File::Matrix::load_matrix<ValueType>(path)), row(0) {
     // Per-streamline SCALAR data is conventionally stored as a vector whose
     //   orientation follows the file type (e.g. the comma-separated row a
     //   ".csv" save_vector emits, as written by tcksample); interpret a single-row
@@ -95,7 +95,8 @@ public:
     ordinal = registry.add(std::move(descriptor));
   }
 
-  bool operator()(TractogramItem<ValueType> &item) override {
+protected:
+  bool load(TractogramItem<ValueType> &item) override {
     if (row >= static_cast<size_t>(data.rows()))
       return false;
     if (item.dps.size() <= ordinal)
@@ -105,6 +106,8 @@ public:
     ++row;
     return true;
   }
+
+  std::optional<size_t> total_entries() const override { return static_cast<size_t>(data.rows()); }
 
 private:
   Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> data;
@@ -117,7 +120,8 @@ private:
 template <class ValueType> class NpyLoader : public SidecarLoader<ValueType> {
 public:
   NpyLoader(const std::filesystem::path &path, const std::string_view name, FieldRegistry &registry)
-      : info(File::NPY::read_header(path)),
+      : SidecarLoader<ValueType>(FieldRole::DPS, name, path),
+        info(File::NPY::read_header(path)),
         mmap({path, info.data_offset}, false),
         fetch(MR::_set_fetch_function<ValueType>(info.data_type)),
         rows(info.shape.empty() ? 0 : info.shape[0]),
@@ -128,7 +132,8 @@ public:
     ordinal = registry.add(std::move(descriptor));
   }
 
-  bool operator()(TractogramItem<ValueType> &item) override {
+protected:
+  bool load(TractogramItem<ValueType> &item) override {
     if (row >= static_cast<size_t>(rows))
       return false;
     if (item.dps.size() <= ordinal)
@@ -144,6 +149,8 @@ public:
     ++row;
     return true;
   }
+
+  std::optional<size_t> total_entries() const override { return static_cast<size_t>(rows); }
 
 private:
   File::NPY::ReadInfo info;
@@ -163,13 +170,20 @@ public:
             const std::string_view name,
             Properties &properties,
             FieldRegistry &registry)
-      : reader(path, properties) {
+      : SidecarLoader<ValueType>(FieldRole::DPV, name, path), reader(path, properties) {
     FieldDescriptor descriptor{
         std::string(name), FieldRole::DPV, sidecar_datatype<ValueType>(), 1, FieldSource::External, 0};
     ordinal = registry.add(std::move(descriptor));
+    // ScalarReader has just repopulated `properties` from this file's own header;
+    //   capture its declared streamline count (if any) before a later loader
+    //   overwrites it, so the length can be checked without reading the data.
+    const auto entry = properties.find("count");
+    if (entry != properties.end())
+      header_count = to<size_t>(entry->second);
   }
 
-  bool operator()(TractogramItem<ValueType> &item) override {
+protected:
+  bool load(TractogramItem<ValueType> &item) override {
     TrackScalar<ValueType> scalars;
     if (!reader(scalars))
       return false;
@@ -182,9 +196,22 @@ public:
     return true;
   }
 
+  // A ".tsf" is streamed, so its length is known only from its header. Where the
+  //   header declares a count, report it (the same metadata trust the tractogram
+  //   streamline count is given); otherwise leave the length unknown and let
+  //   excess be established at end-of-stream by attempting one further read,
+  //   which is cheap and avoids draining the remainder.
+  std::optional<size_t> total_entries() const override { return header_count; }
+
+  bool probe_excess() override {
+    TrackScalar<ValueType> scalars;
+    return reader(scalars);
+  }
+
 private:
   ScalarReader<ValueType> reader;
   size_t ordinal;
+  std::optional<size_t> header_count;
 };
 
 // ---------------------------------------------------------------------------

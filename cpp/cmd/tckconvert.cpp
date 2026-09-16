@@ -35,6 +35,7 @@
 #include "file/matrix.h"
 #include "file/name_parser.h"
 #include "file/ofstream.h"
+#include "mrtrix.h"
 
 using namespace MR;
 using namespace App;
@@ -48,9 +49,7 @@ enum class SidecarType { dps, dpv };
 
 namespace {
 FieldRole to_field_role(const SidecarType type) { return type == SidecarType::dpv ? FieldRole::DPV : FieldRole::DPS; }
-std::string role_word(const FieldRole role) {
-  return role == FieldRole::DPV ? "per-vertex (dpv)" : "per-streamline (dps)";
-}
+std::string role_word(const FieldRole role) { return sidecar_role_word(role); }
 } // namespace
 
 constexpr int default_ply_increment = 1;
@@ -935,8 +934,25 @@ void run_generic(const std::filesystem::path &input_path,
   // "-insert": register each new field as a named input loader, so its values flow
   //   into the streaming items and the field joins the input registry (carried to
   //   the output like any internal field).
-  for (const InsertOp &op : plan.inserts)
-    input.register_named_input_sidecar(op.role, op.name, op.path, properties);
+  //
+  // An "-insert" is an explicit assertion that the nominated file IS the sidecar
+  //   for this tractogram, so a length mismatch is an error rather than the
+  //   truncate-and-warn that the bare "-tsf_in" / "-tck_weights_in" routes retain
+  //   for backwards compatibility. Each source's declared length is validated
+  //   here, against the streamline count captured BEFORE any loader was
+  //   constructed (a ".tsf" loader resets `properties` to the scalar file's own
+  //   header), so the command fails before any output is created; the strict flag
+  //   is the backstop for a source that declares no length, promoting the
+  //   streaming short / excess checks from warnings to exceptions.
+  const std::optional<size_t> input_count = properties.find("count") != properties.end()
+                                                ? std::optional<size_t>(to<size_t>(properties.at("count")))
+                                                : std::nullopt;
+  for (const InsertOp &op : plan.inserts) {
+    SidecarLoader<float> &loader = input.register_named_input_sidecar(op.role, op.name, op.path, properties);
+    loader.set_strict(true);
+    if (input_count.has_value())
+      loader.validate_length(*input_count);
+  }
 
   const SidecarTransform transform = build_transform(input.fields(), plan);
 
