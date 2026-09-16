@@ -4,4 +4,4 @@
 dwi2mask synthstrip BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmpmask.mif -force \
 -fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
 -stripped tmpstripped.mif \
--gpu -nocsf -border 0
+-nocsf -border 0
