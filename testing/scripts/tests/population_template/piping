@@ -2,8 +2,12 @@
 # Evaluate operation of population_template command
 #   where image piping is utilised
 
-rm -rf tmp-fa
+rm -rf tmp-fa tmp-mask
 mkdir tmp-fa
+mkdir tmp-mask
+
+mrconvert BIDS/sub-02/dwi/sub-02_brainmask.nii.gz tmp-mask/sub-02.mif
+mrconvert BIDS/sub-03/dwi/sub-03_brainmask.nii.gz tmp-mask/sub-03.mif
 
 dwi2tensor BIDS/sub-02/dwi/sub-02_dwi.nii.gz - \
 -fslgrad BIDS/sub-02/dwi/sub-02_dwi.bvec BIDS/sub-02/dwi/sub-02_dwi.bval \
@@ -19,6 +23,8 @@ population_template tmp-fa/ - | \
 testing_diff_image - population_template/fa_default_template.mif.gz -abs 0.01
 
 # Output template mask is a pipe
+# Subject masks must be provided for a template mask to be generated
 population_template tmp-fa/ tmp.mif -force \
+-mask_dir tmp-mask/ \
 -template_mask - | \
 testing_diff_image $(mrfilter - smooth -) $(mrfilter population_template/fa_masked_mask.mif.gz smooth -) -abs 0.3

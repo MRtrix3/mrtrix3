@@ -16,7 +16,7 @@ peaksconvert peakscheck/posdet_xyz3vector.mif \
     -config RealignTransform false \
     -force
 peakscheck tmp_posdet_ijk3vector.mif \
-    -in_reference ijk
+    -reference ijk
 
 peaksconvert peakscheck/negdet_xyz3vector.mif \
     -out_reference ijk \
@@ -24,7 +24,7 @@ peaksconvert peakscheck/negdet_xyz3vector.mif \
     -config RealignTransform false \
     -force
 peakscheck tmp_negdet_ijk3vector.mif \
-    -in_reference ijk
+    -reference ijk
 
 echo "FSL reference 3-vectors"
 peaksconvert peakscheck/posdet_xyz3vector.mif \
@@ -33,7 +33,7 @@ peaksconvert peakscheck/posdet_xyz3vector.mif \
     -config RealignTransform false \
     -force
 peakscheck tmp_posdet_fsl3vector.mif \
-    -in_reference fsl
+    -reference fsl
 
 peaksconvert peakscheck/negdet_xyz3vector.mif \
     -out_reference fsl \
@@ -41,7 +41,7 @@ peaksconvert peakscheck/negdet_xyz3vector.mif \
     -config RealignTransform false \
     -force
 peakscheck tmp_negdet_fsl3vector.mif \
-    -in_reference fsl
+    -reference fsl
 
 # Manual manipulation of 3-vectors
 # Based on an understanding of how FSL interprets such data,
@@ -58,8 +58,8 @@ peakscheck tmp_negdet_fsl3vector.mif \
 #   and vice-versa,
 #   as the two are identical
 echo "Interoperability of IJK and FSL references for negative determinant image"
-peakscheck tmp_negdet_ijk3vector.mif -in_reference fsl
-peakscheck tmp_negdet_fsl3vector.mif -in_reference ijk
+peakscheck tmp_negdet_ijk3vector.mif -reference fsl
+peakscheck tmp_negdet_fsl3vector.mif -reference ijk
 
 # b. With a negative determinant,
 #   if we *erroneously* flip the first coefficient of each of the vectors
@@ -104,7 +104,7 @@ mrcat \
     -axis 3 \
     -config RealignTransform false \
     -force
-! peakscheck tmp_negdet_ijk3vector_negi.mif -in_reference fsl
+! peakscheck tmp_negdet_ijk3vector_negi.mif -reference fsl
 
 mrcat \
     $(mrconvert tmp_negdet_fsl3vector.mif \
@@ -141,7 +141,7 @@ mrcat \
     -axis 3 \
     -config RealignTransform false \
     -force
-! peakscheck tmp_negdet_fsl3vector_negi.mif -in_reference ijk
+! peakscheck tmp_negdet_fsl3vector_negi.mif -reference ijk
 
 # c. With a positive determinant,
 #   an image defined with respect to the "ijk" reference
@@ -149,8 +149,8 @@ mrcat \
 #   with respect to the "fsl" reference,
 #   or vice-versa
 echo "Non-interoperability of IJK and FSL references for positive determinant image"
-! peakscheck tmp_posdet_ijk3vector.mif -in_reference fsl
-! peakscheck tmp_posdet_fsl3vector.mif -in_reference ijk
+! peakscheck tmp_posdet_ijk3vector.mif -reference fsl
+! peakscheck tmp_posdet_fsl3vector.mif -reference ijk
 
 # d. With a positive determinant,
 #   if we manually flip the first coefficient of each of the vectors
@@ -196,7 +196,7 @@ mrcat \
     -axis 3 \
     -config RealignTransform false \
     -force
-peakscheck tmp_posdet_ijk3vector_negi.mif -in_reference fsl
+peakscheck tmp_posdet_ijk3vector_negi.mif -reference fsl
 
 mrcat \
     $(mrconvert tmp_posdet_fsl3vector.mif \
@@ -233,7 +233,7 @@ mrcat \
     -axis 3 \
     -config RealignTransform false \
     -force
-peakscheck tmp_posdet_fsl3vector_negi.mif -in_reference ijk
+peakscheck tmp_posdet_fsl3vector_negi.mif -reference ijk
 
 echo "Spherical coordinate inputs with alternative reference frames"
 peaksconvert peakscheck/posdet_xyz3vector.mif \
@@ -242,8 +242,8 @@ peaksconvert peakscheck/posdet_xyz3vector.mif \
     -config RealignTransform false \
     - | \
 peakscheck - \
-    -in_format spherical \
-    -in_reference ijk
+    -format spherical \
+    -reference ijk
 
 peaksconvert peakscheck/negdet_xyz3vector.mif \
     -out_format spherical \
@@ -251,8 +251,8 @@ peaksconvert peakscheck/negdet_xyz3vector.mif \
     -config RealignTransform false \
     - | \
 peakscheck - \
-    -in_format spherical \
-    -in_reference ijk
+    -format spherical \
+    -reference ijk
 
 peaksconvert peakscheck/posdet_xyz3vector.mif \
     -out_format spherical \
@@ -260,8 +260,8 @@ peaksconvert peakscheck/posdet_xyz3vector.mif \
     -config RealignTransform false \
     - | \
 peakscheck - \
-    -in_format spherical \
-    -in_reference fsl
+    -format spherical \
+    -reference fsl
 
 peaksconvert peakscheck/negdet_xyz3vector.mif \
     -out_format spherical \
@@ -269,5 +269,5 @@ peaksconvert peakscheck/negdet_xyz3vector.mif \
     -config RealignTransform false \
     - | \
 peakscheck - \
-    -in_format spherical \
-    -in_reference fsl
+    -format spherical \
+    -reference fsl

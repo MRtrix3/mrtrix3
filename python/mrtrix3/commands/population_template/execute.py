@@ -20,11 +20,13 @@ from .contrasts import Contrasts
 from . import utils
 from . import AGGREGATION_MODES, \
               DEFAULT_AFFINE_LMAX, \
+              DEFAULT_AFFINE_NITER, \
               DEFAULT_AFFINE_SCALES, \
               DEFAULT_NL_LMAX, \
               DEFAULT_NL_NITER, \
               DEFAULT_NL_SCALES, \
               DEFAULT_RIGID_LMAX, \
+              DEFAULT_RIGID_NITER, \
               DEFAULT_RIGID_SCALES, \
               INITIAL_ALIGNMENT, \
               LEAVE_ONE_OUT, \
@@ -212,7 +214,7 @@ def execute(): #pylint: disable=unused-variable
   else:
     rigid_lmax = DEFAULT_RIGID_LMAX
 
-  rigid_niter = [100] * len(rigid_scales)
+  rigid_niter = [DEFAULT_RIGID_NITER] * len(rigid_scales)
   if app.ARGS.rigid_niter:
     if not dorigid:
       raise MRtrixError('-rigid_niter specified when no rigid registration is performed')
@@ -240,7 +242,7 @@ def execute(): #pylint: disable=unused-variable
   else:
     affine_lmax = DEFAULT_AFFINE_LMAX
 
-  affine_niter = [500] * len(affine_scales)
+  affine_niter = [DEFAULT_AFFINE_NITER] * len(affine_scales)
   if app.ARGS.affine_niter:
     if not doaffine:
       raise MRtrixError('-affine_niter specified when no affine registration is performed')

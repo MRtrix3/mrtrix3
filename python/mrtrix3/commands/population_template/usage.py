@@ -18,6 +18,7 @@ from mrtrix3 import app, utils #pylint: disable=no-name-in-module
 
 from . import AGGREGATION_MODES, \
               DEFAULT_AFFINE_LMAX, \
+              DEFAULT_AFFINE_NITER, \
               DEFAULT_AFFINE_SCALES, \
               DEFAULT_NL_DISP_SMOOTH, \
               DEFAULT_NL_GRAD_STEP, \
@@ -26,6 +27,7 @@ from . import AGGREGATION_MODES, \
               DEFAULT_NL_SCALES, \
               DEFAULT_NL_UPDATE_SMOOTH, \
               DEFAULT_RIGID_LMAX, \
+              DEFAULT_RIGID_NITER, \
               DEFAULT_RIGID_SCALES, \
               INITIAL_ALIGNMENT, \
               LEAVE_ONE_OUT, \
@@ -142,7 +144,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                           help='Specify the number of registration iterations used'
                                ' within each level before updating the template,'
                                ' in the form of a list of integers'
-                               ' (default: 50 for each scale).'
+                               f' (default: {DEFAULT_RIGID_NITER} for each scale).'
                                ' This must be a single number'
                                ' or a list of same length as the linear_scale factor list')
   linoptions.add_argument('-affine_scale',
@@ -162,7 +164,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                           help='Specify the number of registration iterations'
                                ' used within each level before updating the template,'
                                ' in the form of a list of integers'
-                               ' (default: 500 for each scale).'
+                               f' (default: {DEFAULT_AFFINE_NITER} for each scale).'
                                ' This must be a single number'
                                ' or a list of same length as the linear_scale factor list')
 
