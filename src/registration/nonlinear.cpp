@@ -71,8 +71,10 @@ namespace MR
       + Option("diagnostics_image", "write intermediate images for diagnostics purposes")
       + Argument("path")
 
-      + Option("diagnostics_stats", "write per-iteration statistics of the non-linear optimisation "
-                                    "to a tab-delimited text file")
+      + Option("diagnostics_stats", "write per-iteration statistics of the registration optimisation "
+                                    "to a tab-delimited text file. For a non-linear -type this reports the "
+                                    "non-linear stage only; for rigid, affine or rigid_affine it reports "
+                                    "every linear stage.")
       + Argument("path").type_file_out();
 
 

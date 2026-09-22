@@ -17,6 +17,7 @@
 #ifndef __registration_linear_h__
 #define __registration_linear_h__
 
+#include <functional>
 #include <iostream>
 
 #include "app.h"
@@ -33,6 +34,7 @@
 #include "registration/metric/params.h"
 // #include "registration/metric/local_cross_correlation.h"
 #include "registration/metric/evaluate.h"
+#include "registration/transform/base.h"
 #include "registration/transform/initialiser.h"
 #include "math/gradient_descent.h"
 #include "math/gradient_descent_bb.h"
@@ -109,6 +111,7 @@ namespace MR
           grad_tolerance (1.0e-6),
           step_tolerance (1.0e-10),
           log_stream (nullptr),
+          diagnostics_stats_stream (nullptr),
           init_translation_type (Transform::Init::mass),
           init_rotation_type (Transform::Init::none),
           robust_estimate (false),
@@ -266,6 +269,25 @@ namespace MR
           log_stream = stream;
         }
 
+        //! stream per-gradient-descent-iteration diagnostics rows to \a stream, tagging every
+        //  row with \a mode_label so a caller writing both rigid and affine stages to the same
+        //  stream can tell their rows apart
+        void set_diagnostics_stats (std::streambuf* stream, const std::string& mode_label) {
+          diagnostics_stats_stream = stream;
+          diagnostics_mode_label = mode_label;
+        }
+
+        //! write the -diagnostics_stats header row once for \a stream; a caller that
+        //  points more than one Linear instance's diagnostics at the same stream (e.g.
+        //  rigid and affine sharing one file for -type rigid_affine) must call this
+        //  exactly once, before any run_masked() call on any of those instances
+        static void write_diagnostics_header (std::ostream& stream) {
+          stream << "record_type\tmode\tstage\tstage_total\tstage_iteration\toptimiser\tgd_iteration"
+                    "\tfeval\tcost\tvoxel_count\tim1_grad_mean\tim1_grad_max\tim2_grad_mean\tim2_grad_max"
+                    "\tgrad_norm_matrix\tgrad_norm_translation\tstep_size\tdisp_mean_mm\tdisp_max_mm"
+                    "\ttermination_reason\tslope_max_abs\tslope_threshold\tstep_clamped\n";
+        }
+
         ssize_t get_lmax () {
           ssize_t lmax=0;
           for (auto& s : stages)
@@ -394,6 +416,8 @@ namespace MR
 
             Eigen::Matrix<typename TransformType::ParameterType, Eigen::Dynamic, 1> optimiser_weights = transform.get_optimiser_weights();
 
+            std::ostream diagnostics_stats_os (diagnostics_stats_stream);
+
             // calculate midway (affine average) space which will be constant for each resolution level
             midway_image_header = compute_minimum_average_header (im1_image, im2_image, transform.get_transform_half_inverse(), transform.get_transform_half());
 
@@ -501,29 +525,83 @@ namespace MR
               transform.get_gradient_descent_updator()->set_convergence_check (slope_threshold, alpha, beta, buffer_len, min_iter);
 
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
+              if (diagnostics_stats_stream)
+                evaluate.enable_diagnostics();
               if (do_reorientation && stage.fod_lmax > 0)
                 evaluate.set_directions (aPSF_directions);
 
               INFO ("registration stage running...");
               for (auto stage_iter = 1U; stage_iter <= stage.stage_iterations; ++stage_iter) {
+                // state shared between successive calls of the per-iteration diagnostics callback below:
+                // the running count of accepted gradient-descent iterations, and the parameter vector as
+                // of the previous callback invocation, used to derive the control-point displacement that
+                // the current iteration's step induced
+                size_t diagnostics_gd_iteration = 0;
+                Eigen::Matrix<default_type, Eigen::Dynamic, 1> diagnostics_previous_params;
+                transform.get_parameter_vector (diagnostics_previous_params);
+                const std::string diagnostics_optimiser_name = str (optim_algo_names[stage.optimisers[stage_iter - 1]]);
+
                 if (stage.gd_max_iter > 0 and stage.optimisers[stage_iter - 1] == OptimiserAlgoType::bbgd) {
+                  //CONF option: RegBBGDStepSize
+                  //CONF default: legacy
+                  //CONF Linear registration: selects the expression used by the Barzilai-Borwein
+                  //CONF gradient descent optimiser ("bbgd", the default optimiser) to derive its
+                  //CONF step size from the successive parameter and gradient differences of the
+                  //CONF preceding two accepted iterations. Recognised values are "short" and
+                  //CONF "long" (the two canonical Barzilai-Borwein steps), and "legacy" (the step
+                  //CONF size used throughout the 3.0.x series, the unsigned magnitude shared by
+                  //CONF "short" and "long" when their local curvature estimate is non-positive).
+                  //CONF Every value other than "legacy" substitutes that shared always-positive
+                  //CONF step magnitude whenever the local curvature estimate is non-positive,
+                  //CONF rather than propose a step of indeterminate sign.
+                  const std::string bbgd_step_size_str = File::Config::get ("RegBBGDStepSize", "legacy");
+                  Math::bbgd_step_size_t bbgd_step_size;
+                  if (bbgd_step_size_str == "legacy")
+                    bbgd_step_size = Math::bbgd_step_size_t::LEGACY;
+                  else if (bbgd_step_size_str == "short")
+                    bbgd_step_size = Math::bbgd_step_size_t::SHORT;
+                  else if (bbgd_step_size_str == "long")
+                    bbgd_step_size = Math::bbgd_step_size_t::LONG;
+                  else
+                    throw Exception ("unrecognised value \"" + bbgd_step_size_str + "\" for config option RegBBGDStepSize"
+                                      " (expected one of: legacy, short, long)");
                   Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
-                  optim (evaluate, *transform.get_gradient_descent_updator());
+                  optim (evaluate, bbgd_step_size, *transform.get_gradient_descent_updator());
                   optim.be_verbose (analyse_descent);
                   optim.precondition (optimiser_weights);
+                  if (diagnostics_stats_stream) {
+                    optim.set_iteration_callback ([&] () {
+                      write_diagnostics_iteration_row (diagnostics_stats_os, optim, evaluate, parameters, istage,
+                                                        stage_iter, diagnostics_optimiser_name, ++diagnostics_gd_iteration,
+                                                        diagnostics_previous_params, str (optim.step_was_clamped()));
+                    });
+                  }
                   optim.run (stage.gd_max_iter, grad_tolerance, analyse_descent ? std::cout.rdbuf() : log_stream);
                   parameters.optimiser_update (optim, evaluate.overlap());
                   INFO ("    iteration: "+str(stage_iter)+"/"+str(stage.stage_iterations)+" GD iterations: "+
                   str(optim.function_evaluations())+" cost: "+str(optim.value())+" overlap: "+str(evaluate.overlap()));
+                  if (diagnostics_stats_stream)
+                    write_diagnostics_termination_row (diagnostics_stats_os, optim, istage, stage_iter,
+                                                        diagnostics_optimiser_name, str (optim.step_was_clamped()));
                 } else if (stage.gd_max_iter > 0) {
                   Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
                     optim (evaluate, *transform.get_gradient_descent_updator());
                   optim.be_verbose (analyse_descent);
                   optim.precondition (optimiser_weights);
+                  if (diagnostics_stats_stream) {
+                    optim.set_iteration_callback ([&] () {
+                      write_diagnostics_iteration_row (diagnostics_stats_os, optim, evaluate, parameters, istage,
+                                                        stage_iter, diagnostics_optimiser_name, ++diagnostics_gd_iteration,
+                                                        diagnostics_previous_params, "NA");
+                    });
+                  }
                   optim.run (stage.gd_max_iter, grad_tolerance, analyse_descent ? std::cout.rdbuf() : log_stream);
                   parameters.optimiser_update (optim, evaluate.overlap());
                   INFO ("    iteration: "+str(stage_iter)+"/"+str(stage.stage_iterations)+" GD iterations: "+
                   str(optim.function_evaluations())+" cost: "+str(optim.value())+" overlap: "+str(evaluate.overlap()));
+                  if (diagnostics_stats_stream)
+                    write_diagnostics_termination_row (diagnostics_stats_os, optim, istage, stage_iter,
+                                                        diagnostics_optimiser_name, "NA");
                 }
 
                 if (log_stream) {
@@ -545,6 +623,105 @@ namespace MR
             INFO("linear registration done");
             INFO (transform.info());
           }
+
+        private:
+
+          //! write one -diagnostics_stats row for an accepted gradient-descent iteration
+          /*! \a previous_params is updated in place to the just-accepted parameter vector, so that
+           *  the next call reports the control-point displacement of the following iteration alone.
+           *  \a step_clamped_label carries the bbgd step-clamp state as a string ("0"/"1"), or
+           *  "NA" for the plain gradient-descent optimiser, to which the concept does not apply. */
+          template <class OptimType, class EvaluateType, class ParamsType>
+          void write_diagnostics_iteration_row (
+              std::ostream& os,
+              OptimType& optim,
+              EvaluateType& evaluate,
+              ParamsType& parameters,
+              size_t istage,
+              unsigned stage_iter,
+              const std::string& optimiser_name,
+              size_t gd_iteration,
+              Eigen::Matrix<default_type, Eigen::Dynamic, 1>& previous_params,
+              const std::string& step_clamped_label) const {
+            const Eigen::Matrix<default_type, Eigen::Dynamic, 1> new_params = optim.state();
+            Eigen::Matrix<default_type, 4, 4> X_old, X_new;
+            Registration::Transform::param_vec2mat (previous_params, X_old);
+            Registration::Transform::param_vec2mat (new_params, X_new);
+            const Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> displacement =
+              (X_new - X_old) * parameters.control_points;
+            const default_type disp_mean = displacement.topRows(3).colwise().norm().mean();
+            const default_type disp_max = displacement.topRows(3).colwise().norm().maxCoeff();
+            previous_params = new_params;
+
+            // parameter-gradient norm split into the 9 matrix elements and the 3 translation elements
+            // of the row-major 3x4 [matrix|translation] layout used throughout Registration::Transform
+            const auto& gradient = optim.gradient();
+            default_type grad_norm_matrix_sq = 0.0, grad_norm_translation_sq = 0.0;
+            for (int row = 0; row < 3; ++row) {
+              for (int col = 0; col < 3; ++col)
+                grad_norm_matrix_sq += Math::pow2 (gradient (4 * row + col));
+              grad_norm_translation_sq += Math::pow2 (gradient (4 * row + 3));
+            }
+
+            const auto& diag = evaluate.diagnostics_stats();
+            os << "iteration" << '\t' << diagnostics_mode_label << '\t' << (istage + 1) << '\t' << stages.size() << '\t'
+               << stage_iter << '\t' << optimiser_name << '\t' << gd_iteration << '\t'
+               << optim.function_evaluations() << '\t' << optim.value() << '\t' << diag.voxel_count << '\t'
+               << diag.im1_gradient_mean() << '\t' << diag.im1_gradient_max << '\t'
+               << diag.im2_gradient_mean() << '\t' << diag.im2_gradient_max << '\t'
+               << std::sqrt (grad_norm_matrix_sq) << '\t' << std::sqrt (grad_norm_translation_sq) << '\t'
+               << optim.step_size() << '\t' << disp_mean << '\t' << disp_max << '\t'
+               << "NA" << '\t' << "NA" << '\t' << "NA" << '\t' << step_clamped_label << '\n';
+          }
+
+          //! write the -diagnostics_stats record for why a stage iteration's optimisation run stopped
+          /*! The update functor's own state must be read from \a optim's copy of it
+           *  (optim.update_functor()), not from transform.get_gradient_descent_updator():
+           *  the optimiser stores its UpdateFunctor constructor argument by value, so the
+           *  latter is never mutated by the run and would always report its initial state.
+           *  \a step_clamped_label is as described for write_diagnostics_iteration_row(). */
+          template <class OptimType>
+          void write_diagnostics_termination_row (
+              std::ostream& os,
+              OptimType& optim,
+              size_t istage,
+              unsigned stage_iter,
+              const std::string& optimiser_name,
+              const std::string& step_clamped_label) const {
+            const auto& updator = optim.update_functor();
+            std::string term_reason;
+            switch (optim.termination_reason()) {
+              case Math::GDTerminationReason::gradient_tolerance:
+                term_reason = "gradient_tolerance";
+                break;
+              case Math::GDTerminationReason::update_rejected:
+                switch (updator.stop_reason()) {
+                  case Transform::UpdateStopReason::step_tolerance:
+                    term_reason = "step_tolerance";
+                    break;
+                  case Transform::UpdateStopReason::convergence_check:
+                    term_reason = "convergence_check";
+                    break;
+                  default:
+                    term_reason = "parameters_unchanged";
+                    break;
+                }
+                break;
+              case Math::GDTerminationReason::max_iterations:
+              default:
+                term_reason = "iteration_cap";
+                break;
+            }
+            const auto& convergence = updator.convergence_check_state();
+            os << "terminate" << '\t' << diagnostics_mode_label << '\t' << (istage + 1) << '\t' << stages.size() << '\t'
+               << stage_iter << '\t' << optimiser_name << '\t' << "NA" << '\t' << optim.function_evaluations() << '\t'
+               << optim.value() << '\t' << "NA" << '\t' << "NA" << '\t' << "NA" << '\t' << "NA" << '\t' << "NA" << '\t'
+               << "NA" << '\t' << "NA" << '\t' << optim.step_size() << '\t' << "NA" << '\t' << "NA" << '\t'
+               << term_reason << '\t' << convergence.last_slope_max_abs() << '\t' << convergence.slope_threshold() << '\t'
+               << step_clamped_label << '\n';
+          }
+
+        public:
 
           // template<class ImageType, class TransformType>
           // void transform_image_midway (const ImageType& input, const TransformType& transformation,
@@ -580,6 +757,8 @@ namespace MR
         default_type grad_tolerance;
         default_type step_tolerance;
         std::streambuf* log_stream;
+        std::streambuf* diagnostics_stats_stream;
+        std::string diagnostics_mode_label;
         Transform::Init::InitType init_translation_type, init_rotation_type;
         bool robust_estimate;
         bool do_reorientation;

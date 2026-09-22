@@ -17,6 +17,7 @@
 #ifndef __math_gradient_descent_h__
 #define __math_gradient_descent_h__
 
+#include <functional>
 #include <limits>
 
 namespace MR
@@ -27,6 +28,13 @@ namespace MR
     //! \addtogroup Optimisation
     // @{
 
+    //! Distinguishes why a gradient-descent run() call returned.
+    /*! update_rejected covers every case where the update functor itself declined to
+     *  move the parameter vector further (including a numerically unchanged step,
+     *  a caller-imposed step-length tolerance, or a caller-imposed trajectory
+     *  convergence check); the update functor's own state must be consulted to tell
+     *  those apart. */
+    enum class GDTerminationReason { max_iterations, gradient_tolerance, update_rejected };
 
     namespace {
 
@@ -62,6 +70,7 @@ namespace MR
             verbose (verbose),
             delim (","),
             niter (0),
+            reason (GDTerminationReason::max_iterations),
             x (func.size()),
             x2 (func.size()),
             g (func.size()),
@@ -74,10 +83,23 @@ namespace MR
           value_type step_size () const { return dt; }
           value_type gradient_norm () const throw () { return normg; }
           int function_evaluations () const throw () { return nfeval; }
+          GDTerminationReason termination_reason () const throw () { return reason; }
+
+          //! the update functor instance actually driving this run, as distinct from the
+          //  caller's own instance passed into the constructor: UpdateFunctor is stored (and
+          //  therefore mutated) by value, so a caller wanting to inspect functor state that
+          //  accumulates across iterations (e.g. a convergence check) must read it from here.
+          const UpdateFunctor& update_functor () const { return update_func; }
 
           void be_verbose(bool v) { verbose = v; }
           void precondition (const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& weights) {
             preconditioner_weights = weights;
+          }
+
+          //! Register a functor invoked once after every accepted iteration, once the
+          //  updated state (x(), gradient(), step_size()) is available for inspection.
+          void set_iteration_callback (std::function<void()> callback) {
+            iteration_callback = std::move (callback);
           }
 
           void run (const size_t max_iterations = 1000,
@@ -109,15 +131,18 @@ namespace MR
               if (normg < gradient_tolerance) {
                 if (verbose)
                   CONSOLE ("normg (" + str(normg) + ") < gradient tolerance (" + str(gradient_tolerance) + ")");
+                reason = GDTerminationReason::gradient_tolerance;
                 return;
               }
 
               if (!retval){
                 if (verbose)
                   CONSOLE ("unchanged parameters");
+                reason = GDTerminationReason::update_rejected;
                 return;
               }
             }
+            reason = GDTerminationReason::max_iterations;
           }
 
           void init () {
@@ -150,6 +175,8 @@ namespace MR
               for (ssize_t i=0; i< x.size(); ++i){ log_os << delim << str(g(i)); }
               log_os << std::endl;
             }
+            if (iteration_callback)
+              iteration_callback();
           }
 
           bool iterate () {
@@ -189,6 +216,8 @@ namespace MR
                   log_os << std::endl;
                 }
                 compute_normg_and_step_unscaled ();
+                if (iteration_callback)
+                  iteration_callback();
                 return true;
               }
 
@@ -209,6 +238,8 @@ namespace MR
           bool verbose;
           std::string delim;
           size_t niter;
+          GDTerminationReason reason;
+          std::function<void()> iteration_callback;
           Eigen::Matrix<value_type, Eigen::Dynamic, 1> x, x2, g, g2, preconditioner_weights;
           value_type f, dt, normg, step_unscaled;
           size_t nfeval;

@@ -17,6 +17,7 @@
 #ifndef __math_gradient_descent_bb_h__
 #define __math_gradient_descent_bb_h__
 
+#include <functional>
 #include <limits>
 #include <iostream>
 #include <fstream>
@@ -24,6 +25,7 @@
 #include <limits>
 #include <fstream>
 #include "math/check_gradient.h"
+#include "math/gradient_descent.h"
 
 namespace MR
 {
@@ -45,6 +47,13 @@ namespace MR
           }
   };
 
+    //! selects the expression used by GradientDescentBB to derive its step size from the
+    //  successive parameter and gradient differences dx = x2-x1, dg = g2-g1. SHORT and LONG
+    //  are the two canonical Barzilai-Borwein steps (dx.dg/dg.dg and dx.dx/dx.dg respectively);
+    //  LEGACY reproduces the expression used throughout the 3.0.x series, the unsigned
+    //  magnitude dx.norm()/dg.norm().
+    enum class bbgd_step_size_t { SHORT, LONG, LEGACY };
+
     //! Computes the minimum of a function using a Barzilai Borwein gradient descent approach. ENH: implement stabilised version https://arxiv.org/abs/1907.06409
     template <class Function, class UpdateFunctor=LinearUpdateBB>
       class GradientDescentBB
@@ -52,8 +61,10 @@ namespace MR
         public:
           using value_type = typename Function::value_type;
 
-          GradientDescentBB (Function& function, UpdateFunctor update_functor = LinearUpdateBB(), bool verbose = false) :
+          GradientDescentBB (Function& function, bbgd_step_size_t step_type = bbgd_step_size_t::LEGACY,
+                              UpdateFunctor update_functor = LinearUpdateBB(), bool verbose = false) :
             func (function),
+            step_type (step_type),
             update_func (update_functor),
             x1 (func.size()),
             x2 (func.size()),
@@ -63,7 +74,9 @@ namespace MR
             g3 (func.size()),
             nfeval (0),
             niter (0),
+            reason (GDTerminationReason::max_iterations),
             verbose (verbose),
+            step_clamped (false),
             delim (",") {  }
 
           value_type value () const { return f; }
@@ -72,10 +85,28 @@ namespace MR
           value_type step_size () const { return dt; }
           value_type gradient_norm () const { return normg; }
           int function_evaluations () const { return nfeval; }
+          GDTerminationReason termination_reason () const { return reason; }
+
+          //! true if the most recent step_size() was substituted by the always-positive
+          //  fallback because the local curvature estimate dx.dg was non-positive; always
+          //  false for step_type LEGACY, which never carries a sign to lose in the first place.
+          bool step_was_clamped () const { return step_clamped; }
+
+          //! the update functor instance actually driving this run, as distinct from the
+          //  caller's own instance passed into the constructor: UpdateFunctor is stored (and
+          //  therefore mutated) by value, so a caller wanting to inspect functor state that
+          //  accumulates across iterations (e.g. a convergence check) must read it from here.
+          const UpdateFunctor& update_functor () const { return update_func; }
 
           void be_verbose (bool v) { verbose = v; }
           void precondition (const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& weights) {
             preconditioner_weights = weights;
+          }
+
+          //! Register a functor invoked once after every accepted iteration, once the
+          //  updated state (state(), gradient(), step_size()) is available for inspection.
+          void set_iteration_callback (std::function<void()> callback) {
+            iteration_callback = std::move (callback);
           }
 
           void run (const size_t max_iterations = 1000,
@@ -108,15 +139,18 @@ namespace MR
               if (normg < gradient_tolerance) {
                 if (verbose)
                   CONSOLE ("normg (" + str(normg) + ") < gradient tolerance (" + str(gradient_tolerance) + ")");
+                reason = GDTerminationReason::gradient_tolerance;
                 return;
               }
 
               if (!retval){
                 if (verbose)
                   CONSOLE ("unchanged parameters");
+                reason = GDTerminationReason::update_rejected;
                 return;
               }
             }
+            reason = GDTerminationReason::max_iterations;
           }
 
           void init () {
@@ -168,6 +202,8 @@ namespace MR
               CONSOLE ("            f = " + str (f) + ", |g| = " + str (normg) + ", step = " + str(dt) + ":");
               CONSOLE ("            x = [ " + str(x2.transpose()) + "]");
             }
+            if (iteration_callback)
+              iteration_callback();
           }
 
           bool iterate () {
@@ -193,17 +229,23 @@ namespace MR
               log_os << std::endl;
             }
             compute_normg_and_step ();
+            if (iteration_callback)
+              iteration_callback();
             return true;
           }
 
         protected:
           Function& func;
+          bbgd_step_size_t step_type;
           UpdateFunctor update_func;
           Eigen::Matrix<value_type, Eigen::Dynamic, 1> x1, x2, x3, g1, g2, g3, preconditioner_weights;
           value_type f, dt, normg;
           size_t nfeval;
           size_t niter;
+          GDTerminationReason reason;
+          std::function<void()> iteration_callback;
           bool verbose;
+          bool step_clamped;
           std::string delim;
 
           value_type evaluate_func (const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& newx, Eigen::Matrix<value_type, Eigen::Dynamic, 1>& newg, bool verbose = false) {
@@ -224,8 +266,32 @@ namespace MR
               g2.array() *= preconditioner_weights.array();
             }
             normg = g2.norm();
-            assert((g2-g1).norm()>0.0);
-            dt = (x2-x1).norm()/(g2-g1).norm();
+            const Eigen::Matrix<value_type, Eigen::Dynamic, 1> dx = x2 - x1;
+            const Eigen::Matrix<value_type, Eigen::Dynamic, 1> dg = g2 - g1;
+            assert (dg.norm() > 0.0);
+            const value_type dxdg = dx.dot (dg);
+            // dxdg is the local curvature estimate along the step just taken; SHORT and LONG
+            // are undefined in sign when it is non-positive (they would then propose stepping
+            // uphill). Clamp both to the always-positive magnitude shared with LEGACY rather
+            // than propagate an indeterminate sign, and record that the clamp fired so it is
+            // distinguishable in the diagnostics.
+            step_clamped = (step_type != bbgd_step_size_t::LEGACY) && !(dxdg > 0.0);
+            if (step_clamped) {
+              dt = dx.norm() / dg.norm();
+            } else {
+              switch (step_type) {
+                case bbgd_step_size_t::SHORT:
+                  dt = dxdg / dg.squaredNorm();
+                  break;
+                case bbgd_step_size_t::LONG:
+                  dt = dx.squaredNorm() / dxdg;
+                  break;
+                case bbgd_step_size_t::LEGACY:
+                default:
+                  dt = dx.norm() / dg.norm();
+                  break;
+              }
+            }
           }
       };
     //! @}

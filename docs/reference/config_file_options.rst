@@ -525,6 +525,21 @@ List of MRtrix3 configuration file options
      Linear registration: write comma separated gradient descent parameters and gradients
      to stdout and verbose gradient descent output to stderr.
 
+.. option:: RegBBGDStepSize
+
+    *default: legacy*
+
+     Linear registration: selects the expression used by the Barzilai-Borwein
+     gradient descent optimiser ("bbgd", the default optimiser) to derive its
+     step size from the successive parameter and gradient differences of the
+     preceding two accepted iterations. Recognised values are "short" and
+     "long" (the two canonical Barzilai-Borwein steps), and "legacy" (the step
+     size used throughout the 3.0.x series, the unsigned magnitude shared by
+     "short" and "long" when their local curvature estimate is non-positive).
+     Every value other than "legacy" substitutes that shared always-positive
+     step magnitude whenever the local curvature estimate is non-positive,
+     rather than propose a step of indeterminate sign.
+
 .. option:: RegCoherenceLen
 
     *default: 3.0*
