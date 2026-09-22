@@ -525,6 +525,33 @@ List of MRtrix3 configuration file options
      Linear registration: write comma separated gradient descent parameters and gradients
      to stdout and verbose gradient descent output to stderr.
 
+.. option:: RegBBGDGradientPrecision
+
+    *default: 1e-10*
+
+     Linear registration: relative size, with respect to the image gradient
+     itself, below which the difference between the gradients of two
+     successive iterations is taken to be unresolved. Each such gradient is a
+     sum over the contributing voxels, so their difference cannot be resolved
+     below the rounding error those summations accumulate; where it is not,
+     the Barzilai-Borwein gradient descent optimiser ("bbgd", the default
+     optimiser) retains the step size of the preceding iteration rather than
+     derive a new one from it.
+
+.. option:: RegBBGDStepDamping
+
+    *default: 0.5*
+
+     Linear registration: weight given to the step size of the preceding
+     iteration of the Barzilai-Borwein gradient descent optimiser ("bbgd",
+     the default optimiser) when blended geometrically with each newly
+     derived step size. Successive Barzilai-Borwein step sizes are each
+     derived from two iterations alone and commonly alternate over orders of
+     magnitude, which amplifies perturbations as small as floating-point
+     rounding into a materially different registration; this damping
+     attenuates that alternation. Must lie in the range [0, 1); a value of
+     0.0 adopts each derived step size outright and so disables the damping.
+
 .. option:: RegBBGDStepSize
 
     *default: legacy*

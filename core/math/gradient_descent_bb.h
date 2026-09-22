@@ -54,6 +54,14 @@ namespace MR
     //  magnitude dx.norm()/dg.norm().
     enum class bbgd_step_size_t { SHORT, LONG, LEGACY };
 
+    //! default fractional precision attributed to the objective function's gradient; see
+    //  GradientDescentBB::set_gradient_precision()
+    constexpr default_type bbgd_default_gradient_precision = 1e-10;
+
+    //! default weight given to the preceding Barzilai-Borwein step size when blended with each
+    //  newly derived one; see GradientDescentBB::set_step_damping()
+    constexpr default_type bbgd_default_step_damping = 0.5;
+
     //! Computes the minimum of a function using a Barzilai Borwein gradient descent approach. ENH: implement stabilised version https://arxiv.org/abs/1907.06409
     template <class Function, class UpdateFunctor=LinearUpdateBB>
       class GradientDescentBB
@@ -77,6 +85,9 @@ namespace MR
             reason (GDTerminationReason::max_iterations),
             verbose (verbose),
             step_clamped (false),
+            secant_resolved (true),
+            gradient_precision (bbgd_default_gradient_precision),
+            step_damping (bbgd_default_step_damping),
             delim (",") {  }
 
           value_type value () const { return f; }
@@ -91,6 +102,59 @@ namespace MR
           //  fallback because the local curvature estimate dx.dg was non-positive; always
           //  false for step_type LEGACY, which never carries a sign to lose in the first place.
           bool step_was_clamped () const { return step_clamped; }
+
+          //! false if the most recent iteration's gradient difference was too small, relative to
+          //  the gradient itself, for the step size derived from it to carry any information;
+          //  the step size of the preceding iteration was then retained unaltered.
+          bool secant_was_resolved () const { return secant_resolved; }
+
+          //! fractional precision attributed to the objective function's gradient
+          value_type gradient_precision_fraction () const { return gradient_precision; }
+
+          //! sets the fractional precision attributed to the objective function's gradient.
+          /*! Every Barzilai-Borwein step size expression divides by a quantity derived from
+           *  dg = g2-g1, the difference between the gradients of two successive iterates. Each
+           *  of those gradients is itself a sum over the elements contributing to the objective
+           *  function, so dg is a difference of two large sums of finite-precision values: it
+           *  cannot be resolved below the rounding error those summations accumulate. Where the
+           *  curvature along the step just taken is small, dg falls to that floor, and the
+           *  quotient formed from it is determined by rounding rather than by curvature.
+           *
+           *  \a fraction is the relative size, with respect to the larger of the two gradient
+           *  norms, below which dg is taken to be unresolved. When it is, the iteration is
+           *  treated as carrying no curvature information and the preceding step size is
+           *  retained rather than a meaningless one derived; this also covers dg being exactly
+           *  zero, for which every expression below would otherwise be singular. The default is
+           *  a conservative estimate of the rounding error of a summation over of order a
+           *  million elements in double precision, and so is not expected to be reached by any
+           *  gradient difference that is genuinely resolved. */
+          void set_gradient_precision (value_type fraction) {
+            if (fraction < 0.0)
+              throw Exception ("Barzilai-Borwein gradient precision fraction must be non-negative");
+            gradient_precision = fraction;
+          }
+
+          //! weight given to the preceding step size when blended with each newly derived one
+          value_type step_damping_factor () const { return step_damping; }
+
+          //! sets the damping applied to the sequence of step sizes.
+          /*! The Barzilai-Borwein step size is derived afresh from each pair of successive
+           *  iterates, with no reference to any earlier one, so successive step sizes commonly
+           *  alternate over one or more orders of magnitude even where the objective function is
+           *  well behaved. That recurrence amplifies any perturbation of its inputs, including
+           *  perturbations at the scale of floating-point rounding, into a materially different
+           *  trajectory. Replacing each newly derived step size dt_new by the geometric blend
+           *  dt_prev^d * dt_new^(1-d) makes the logarithm of the step size an exponentially
+           *  weighted moving average of the logarithms of the derived values, attenuating that
+           *  alternation without biasing the step size systematically up or down.
+           *
+           *  \a damping must lie in the range [0, 1); a damping of 0.0 adopts each derived step
+           *  size outright, reproducing the undamped recurrence exactly. */
+          void set_step_damping (value_type damping) {
+            if (damping < 0.0 || !(damping < 1.0))
+              throw Exception ("Barzilai-Borwein step damping must lie in the range [0, 1)");
+            step_damping = damping;
+          }
 
           //! the update functor instance actually driving this run, as distinct from the
           //  caller's own instance passed into the constructor: UpdateFunctor is stored (and
@@ -246,6 +310,9 @@ namespace MR
           std::function<void()> iteration_callback;
           bool verbose;
           bool step_clamped;
+          bool secant_resolved;
+          value_type gradient_precision;
+          value_type step_damping;
           std::string delim;
 
           value_type evaluate_func (const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& newx, Eigen::Matrix<value_type, Eigen::Dynamic, 1>& newg, bool verbose = false) {
@@ -268,7 +335,14 @@ namespace MR
             normg = g2.norm();
             const Eigen::Matrix<value_type, Eigen::Dynamic, 1> dx = x2 - x1;
             const Eigen::Matrix<value_type, Eigen::Dynamic, 1> dg = g2 - g1;
-            assert (dg.norm() > 0.0);
+            // every expression below divides by a quantity derived from dg; where dg is not
+            // resolved above the rounding error of the summations that formed g1 and g2, the
+            // quotient carries no curvature information, so retain the preceding step size
+            secant_resolved = dg.norm() > gradient_precision * std::max (g1.norm(), g2.norm());
+            if (!secant_resolved) {
+              step_clamped = false;
+              return;
+            }
             const value_type dxdg = dx.dot (dg);
             // dxdg is the local curvature estimate along the step just taken; SHORT and LONG
             // are undefined in sign when it is non-positive (they would then propose stepping
@@ -276,22 +350,27 @@ namespace MR
             // than propagate an indeterminate sign, and record that the clamp fired so it is
             // distinguishable in the diagnostics.
             step_clamped = (step_type != bbgd_step_size_t::LEGACY) && !(dxdg > 0.0);
+            value_type dt_derived;
             if (step_clamped) {
-              dt = dx.norm() / dg.norm();
+              dt_derived = dx.norm() / dg.norm();
             } else {
               switch (step_type) {
                 case bbgd_step_size_t::SHORT:
-                  dt = dxdg / dg.squaredNorm();
+                  dt_derived = dxdg / dg.squaredNorm();
                   break;
                 case bbgd_step_size_t::LONG:
-                  dt = dx.squaredNorm() / dxdg;
+                  dt_derived = dx.squaredNorm() / dxdg;
                   break;
                 case bbgd_step_size_t::LEGACY:
                 default:
-                  dt = dx.norm() / dg.norm();
+                  dt_derived = dx.norm() / dg.norm();
                   break;
               }
             }
+            if (step_damping > 0.0 && dt_derived > 0.0 && dt > 0.0)
+              dt = std::exp (step_damping * std::log (dt) + (1.0 - step_damping) * std::log (dt_derived));
+            else
+              dt = dt_derived;
           }
       };
     //! @}

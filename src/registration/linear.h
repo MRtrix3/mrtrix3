@@ -567,6 +567,31 @@ namespace MR
                                       " (expected one of: legacy, short, long)");
                   Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
                   optim (evaluate, bbgd_step_size, *transform.get_gradient_descent_updator());
+                  //CONF option: RegBBGDGradientPrecision
+                  //CONF default: 1e-10
+                  //CONF Linear registration: relative size, with respect to the image gradient
+                  //CONF itself, below which the difference between the gradients of two
+                  //CONF successive iterations is taken to be unresolved. Each such gradient is a
+                  //CONF sum over the contributing voxels, so their difference cannot be resolved
+                  //CONF below the rounding error those summations accumulate; where it is not,
+                  //CONF the Barzilai-Borwein gradient descent optimiser ("bbgd", the default
+                  //CONF optimiser) retains the step size of the preceding iteration rather than
+                  //CONF derive a new one from it.
+                  optim.set_gradient_precision (File::Config::get_float ("RegBBGDGradientPrecision",
+                                                                          Math::bbgd_default_gradient_precision));
+                  //CONF option: RegBBGDStepDamping
+                  //CONF default: 0.5
+                  //CONF Linear registration: weight given to the step size of the preceding
+                  //CONF iteration of the Barzilai-Borwein gradient descent optimiser ("bbgd",
+                  //CONF the default optimiser) when blended geometrically with each newly
+                  //CONF derived step size. Successive Barzilai-Borwein step sizes are each
+                  //CONF derived from two iterations alone and commonly alternate over orders of
+                  //CONF magnitude, which amplifies perturbations as small as floating-point
+                  //CONF rounding into a materially different registration; this damping
+                  //CONF attenuates that alternation. Must lie in the range [0, 1); a value of
+                  //CONF 0.0 adopts each derived step size outright and so disables the damping.
+                  optim.set_step_damping (File::Config::get_float ("RegBBGDStepDamping",
+                                                                    Math::bbgd_default_step_damping));
                   optim.be_verbose (analyse_descent);
                   optim.precondition (optimiser_weights);
                   if (diagnostics_stats_stream) {
