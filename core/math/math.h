@@ -61,7 +61,7 @@ namespace MR
     template <typename T> inline constexpr T pow10 (const T& v) { return pow8 (v) *pow2 (v); }
 
 
-    template <typename I, typename T> inline constexpr I round (const T x) throw ()
+    template <typename I, typename T> inline constexpr I round (const T x) noexcept
     {
       return static_cast<I> (std::round (x));
     }
@@ -72,7 +72,7 @@ namespace MR
      * int x = floor<int> (f);
      * \endcode
      */
-    template <typename I, typename T> inline constexpr I floor (const T x) throw ()
+    template <typename I, typename T> inline constexpr I floor (const T x) noexcept
     {
       return static_cast<I> (std::floor (x));
     }
@@ -83,7 +83,7 @@ namespace MR
      * int x = ceil<int> (f);
      * \endcode
      */
-    template <typename I, typename T> inline constexpr I ceil (const T x) throw ()
+    template <typename I, typename T> inline constexpr I ceil (const T x) noexcept
     {
       return static_cast<I> (std::ceil (x));
     }

@@ -46,13 +46,13 @@ namespace MR
             in.close();
           }
 
-          const std::string& key () const throw ()   {
+          const std::string& key () const noexcept   {
             return (K);
           }
-          const std::string& value () const throw () {
+          const std::string& value () const noexcept {
             return (V);
           }
-          const std::string& name () const throw ()  {
+          const std::string& name () const noexcept  {
             return (filename);
           }
 

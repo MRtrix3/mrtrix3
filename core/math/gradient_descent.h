@@ -77,13 +77,13 @@ namespace MR
             g2 (func.size()) { }
 
 
-          value_type value () const throw () { return f; }
-          const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& state () const throw () { return x; }
-          const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& gradient () const throw ()  { return g; }
+          value_type value () const noexcept { return f; }
+          const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& state () const noexcept { return x; }
+          const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& gradient () const noexcept  { return g; }
           value_type step_size () const { return dt; }
-          value_type gradient_norm () const throw () { return normg; }
-          int function_evaluations () const throw () { return nfeval; }
-          GDTerminationReason termination_reason () const throw () { return reason; }
+          value_type gradient_norm () const noexcept { return normg; }
+          int function_evaluations () const noexcept { return nfeval; }
+          GDTerminationReason termination_reason () const noexcept { return reason; }
 
           //! the update functor instance actually driving this run, as distinct from the
           //  caller's own instance passed into the constructor: UpdateFunctor is stored (and
