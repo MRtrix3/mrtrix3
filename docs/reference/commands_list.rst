@@ -69,6 +69,7 @@ List of MRtrix3 commands
     commands/labelstats
     commands/labelvalidate
     commands/mask2glass
+    commands/maskdistance
     commands/maskdump
     commands/maskfilter
     commands/mesh2voxel
@@ -211,6 +212,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`labelstats`, "Compute statistics of parcels within a label image"
     |cpp.png|, :ref:`labelvalidate`, "Validate a hard segmentation (label) image"
     |python.png|, :ref:`mask2glass`, "Create a glass brain from mask input"
+    |cpp.png|, :ref:`maskdistance`, "Map the minimal distance to a mask along streamlines trajectories"
     |cpp.png|, :ref:`maskdump`, "Print out the locations of all non-zero voxels in a mask image"
     |cpp.png|, :ref:`maskfilter`, "Perform filtering operations on 3D / 4D mask images"
     |cpp.png|, :ref:`mesh2voxel`, "Convert a mesh surface to a partial volume estimation image"
