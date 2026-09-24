@@ -21,15 +21,11 @@
 #include "debug.h"
 #include "mrtrix.h"
 
-// <QOpenGLFunctions> needs to be included before OpenGL defines,
-// because it is not compatible with GLEW
-
-// clang-format off
 #include <QOpenGLWidget>
 #include <QtGlobal>
 #include <QtWidgets>
-#include "opengl/gl_core_3_3.h"
-// clang-format on
+
+#include "opengl/gl.h"
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 5, 0)
 #error "MRtrix3 requires Qt version 5.5 or later"
