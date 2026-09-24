@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Testing the operation of the streamline-streamline similarity matrix with default settings
+# The displayed outcome should show a gradually decreasing similarity value as streamlines
+# are progressively further from the reference streamline
+
+# Running this may adding to PATH the following:
+# - build/testing/binaries_data/src/BinariesTestData
+
+# Compute streamline-streamline similarity matrix with default settings
+tcksimilarity SIFT_phantom/tracks.tck SIFT_phantom/mask.mif matrix -force
+
+# Convert sparse matrix files to nifti for downstream processing in Python
+mrconvert matrix/index.mif matrix/index.nii.gz -force
+mrconvert matrix/streamlines.mif matrix/streamlines.nii.gz -force
+mrconvert matrix/values.mif matrix/values.nii.gz -force
+
+# Extract similarity values and binary mask of similar streamlines for a random reference streamline
+# Optionally, provide streamline index as last argument to select a reference streamline of choice
+# This requires the following:
+# - numpy
+# - nibabel
+python extract_similar.py matrix/index.nii.gz matrix/streamlines.nii.gz matrix/values.nii.gz
+
+# Display results
+mrview \
+    SIFT_phantom/mask.mif \
+    -tractography.load SIFT_phantom/tracks.tck \
+    -tractography.tsf_load similarity_values.txt

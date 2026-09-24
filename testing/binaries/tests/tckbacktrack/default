@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Testing the behaviour of tckbacktrack on the SIFT phantom
+# This applies a rotation on "native" tracks and attempts refining the tracks trajectories
+# The displayed tracks should show the difference between purposely rotated tracks and their refined version.
+
+# Running this may adding to PATH the following:
+# - build/testing/binaries_data/src/BinariesTestData
+
+# Set up a transformation matrix to induce rotation of tracks
+printf "0.984808 0 0.173648 0\n0 1 0 0\n-0.173648 0 0.984808 0\n0 0 0 1\n" > A.txt
+warpinit SIFT_phantom/mask.mif wi.mif -force
+
+mrtransform wi.mif -linear A.txt wi_Ai.mif -template SIFT_phantom/mask.mif -interp linear -nan -force
+
+# Apply the transformation to the tracks
+tcktransform SIFT_phantom/tracks.tck wi_Ai.mif tracks_transformed.tck -force
+
+# Run tckbacktrack
+# Note that -retrack_length_limit, which sets the maximum length of the retracked segments
+# is here sets to 1.0 given the dimensions of the phantom (particularly the bottom short tracks)
+# With empirical data this may be set to 0.25 or 0.5
+tckbacktrack tracks_transformed.tck SIFT_phantom/fods.mif SIFT_phantom/5tt.mif tracks_refined.tck -retrack_length_limit 1.0 -force
+
+# Smaller number of streamlines to display the behaviour of tckbacktrack more clearly
+tckedit tracks_transformed.tck -number 500 -skip 1000 tracks_transformed_small.tck -force
+
+# Run tckbacktrack on the smaller set of streamlines
+tckbacktrack tracks_transformed_small.tck SIFT_phantom/fods.mif SIFT_phantom/5tt.mif tracks_refined_small.tck -retrack_length_limit 1.0 -force
+
+mrview \
+    SIFT_phantom/mask.mif \
+    -overlay.load SIFT_phantom/5tt.mif \
+    -overlay.interpolation 0 \
+    -tractography.load tracks_transformed.tck \
+    -tractography.load tracks_refined.tck \
+    -tractography.load tracks_transformed_small.tck \
+    -tractography.load tracks_refined_small.tck

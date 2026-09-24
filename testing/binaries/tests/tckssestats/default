@@ -1,0 +1,80 @@
+#!/bin/bash
+
+# Testing the operation of the tckssestats
+# This script is stand alone and does not need running other scripts to perform upstream SBA processing steps
+# This uses existing data
+
+# Running this may require adding to PATH the following:
+# build/testing/binaries_data/src/BinariesTestData
+
+# Create an auxiliary image for tcksample
+maskfilter SIFT_phantom/mask.mif erode - | mrgrid - regrid -voxel 1 mask_eroded.mif -interp nearest -force
+
+tcksample \
+    SIFT_phantom/tracks.tck \
+    mask_eroded.mif \
+    samples_raw.txt \
+    -stat_tck mean -force
+
+# Threshold the per-streamline samples to define the ground truth effects
+threshold=0.7  # increase to restrict the number of streamlines with effect
+awk -v t="${threshold}" '/^#/ { print; next } { for (i=1; i<=NF; i++) printf "%d%s", ($i > t ? 1 : 0), (i==NF ? ORS : OFS) }' samples_raw.txt > samples_gt.txt
+
+# Generate 18 simulated data files using (9 noise, 9 effect+noise)
+# 01.txt - 09.txt = noise only
+# 10.txt - 18.txt = effect + noise (~SNR 3)
+noise_std=0.3
+for i in {01..18}; do
+  awk -v idx="$i" -v rseed="$RANDOM" -v nstd="${noise_std}" 'BEGIN { srand(rseed); std=nstd }
+    /^#/ { print; next }
+    {
+      for (j=1; j<=NF; j++) {
+        u1=rand(); while (u1==0) u1=rand();
+        u2=rand();
+        z = std * sqrt(-2*log(u1)) * cos(2*3.14159265359*u2);
+        val = (idx >= 10) ? ($j + z) : z;
+        printf "%.10f%s", val, (j==NF ? ORS : OFS);
+      }
+    }' samples_gt.txt > ${i}.txt
+done
+ 
+# Generate design matrix and contrast
+for i in {1..9}; do echo "1 -1"; done > design.txt
+for i in {1..9}; do echo "1 1"; done >> design.txt
+echo "0 1" > contrast.txt
+
+# Compute streamline-streamline similarity
+tcksimilarity SIFT_phantom/tracks.tck SIFT_phantom/mask.mif matrix -force
+
+# ----------- SIFT2 WEIGHTS
+# OPTION 1
+# Pseudo SIFT2 weights
+awk '/^#/ { print; next } { for (i=1; i<=NF; i++) printf "%d%s", 1, (i==NF ? ORS : OFS) }' samples_gt.txt > sift2.txt
+
+# OPTION 2
+# Actual SIFT2 weights
+# tcksift2 \
+#     SIFT_phantom/tracks.tck \
+#     SIFT_phantom/fods.mif \
+#     sift2.txt
+# -----------
+
+# Smoothing
+for i in {01..18}; do
+  tckfilter ${i}.txt ${i}_smoothed.txt matrix -tck_weights_in sift2.txt -force
+done
+
+# Generate subjects list
+printf "%s\n" {01..18}_smoothed.txt > subjects.txt
+
+# Statistical inference
+tckssestats ./ subjects.txt \
+  design.txt \
+  matrix \
+  sift2.txt \
+  out_stats -nonstationarity_intrinsic -ttest contrast.txt -force
+
+# This needs thresholding with the out_stats/fwe_1mpvalue.txt in
+mrview mask_eroded.mif \
+    -tractography.load SIFT_phantom/tracks.tck \
+    -tractography.tsf_load out_stats/std_effect.txt \
