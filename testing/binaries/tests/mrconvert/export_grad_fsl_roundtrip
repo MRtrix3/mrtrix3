@@ -1,0 +1,19 @@
+#!/bin/bash
+# Regression test: -export_grad_fsl must export a gradient table consistent
+#   with the actual voxel-axis order of the image being written, so that a
+#   round trip through NIfTI + FSL bvecs/bvals reproduces the original
+#   gradient table exactly.
+# Regression test for a bug where copy_permute() (mrconvert.cpp) called
+#   Image<T>::create() using the pre-#3315 3-argument convention; the bool
+#   add_to_command_history silently bound to the newly-inserted direct_io
+#   parameter instead (via bool->int promotion into DirectIO(int axis)),
+#   causing every mrconvert output image to be created with an unintended
+#   DirectIO(axis=1) request. This reordered the on-disk voxel axes without
+#   a corresponding update to the exported gradient table, so re-importing
+#   the round-tripped image no longer matched the original DW-encoding.
+
+mrconvert dwi.mif tmp.nii -export_grad_fsl tmp.bvec tmp.bval -force
+mrconvert tmp.nii tmp_rt.mif -fslgrad tmp.bvec tmp.bval -force
+mrinfo dwi.mif   -export_grad_mrtrix tmp_orig.b -force
+mrinfo tmp_rt.mif -export_grad_mrtrix tmp_rt.b -force
+testing_diff_matrix tmp_orig.b tmp_rt.b -abs 1e-3
