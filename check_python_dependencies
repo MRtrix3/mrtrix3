@@ -1,0 +1,297 @@
+#!/usr/bin/env python3
+
+# Copyright (c) 2008-2026 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+"""Linter for explicit MRtrix3 Python command dependency declarations.
+
+Each MRtrix3 Python command declares, via a module-level set-of-strings constant named
+MRTRIX_DEPENDENCIES, the MRtrix3 commands that it may invoke at execution. That information is
+consumed at build configure time to establish a minimal set of compilation targets per Python
+command (see cmake/ParsePythonFileDependencies.cmake and
+cmake/ResolvePythonCommandDependencies.cmake).
+
+For a command whose source is spread across multiple files, the declaration is distributed on a
+per-file basis: the package "__init__.py" seeds the constant ("MRTRIX_DEPENDENCIES = set()") and
+each other file augments it ("MRTRIX_DEPENDENCIES |= {...}") with the MRtrix3 commands that it
+itself invokes. Each file is therefore verified against its own declaration, rather than against a
+single aggregate in "__init__.py".
+
+This script verifies that those declarations are present and complete. For each Python command it:
+  1. Errors if the command's defining file (the single source file, or the package "__init__.py")
+     does not define the MRTRIX_DEPENDENCIES constant.
+  2. For each source file, errors if a statically-parseable run.command() invocation (i.e. one whose
+     command name is a plain string / f-string literal, with no variable substitution of the command
+     name itself) refers to an MRtrix3 command that is absent from that file's own MRTRIX_DEPENDENCIES
+     declaration.
+  3. For each source file, errors if image.mrinfo() is called or an image.Header is constructed, but
+     command "mrinfo" is absent from that file's own MRTRIX_DEPENDENCIES declaration.
+
+The complete set of MRtrix3 commands present in the worktree is first generated from the source
+tree, so that command names which are not MRtrix3 commands (e.g. external neuroimaging tools) are
+correctly disregarded.
+"""
+
+import ast
+import os
+import sys
+
+# Sentinel substituted for any dynamic (non-literal) portion of a command argument; chosen so that
+#   it can never appear within source text and never forms part of a whitespace-delimited token
+#   that we would mistake for a command name.
+DYNAMIC = '\x00'
+
+REPO_ROOT = os.path.dirname(os.path.realpath(__file__))
+CPP_COMMAND_DIR = os.path.join(REPO_ROOT, 'cpp', 'cmd')
+PYTHON_COMMAND_DIR = os.path.join(REPO_ROOT, 'python', 'mrtrix3', 'commands')
+
+
+def all_mrtrix_commands():
+  """Return the set of all MRtrix3 command names present in the worktree (C++ and Python)."""
+  commands = set()
+  for entry in os.listdir(CPP_COMMAND_DIR):
+    if entry.endswith('.cpp'):
+      commands.add(entry[:-len('.cpp')])
+  for name, _ in python_commands():
+    commands.add(name)
+  return commands
+
+
+def python_commands():
+  """Yield (command_name, defining_source_file) for every MRtrix3 Python command.
+
+  The defining source file is the single "<name>.py", or the "<name>/__init__.py" of a package.
+  """
+  for entry in sorted(os.listdir(PYTHON_COMMAND_DIR)):
+    path = os.path.join(PYTHON_COMMAND_DIR, entry)
+    if entry in ('__init__.py', 'CMakeLists.txt'):
+      continue
+    if os.path.isfile(path) and entry.endswith('.py'):
+      yield entry[:-len('.py')], path
+    elif os.path.isdir(path):
+      init_file = os.path.join(path, '__init__.py')
+      if os.path.isfile(init_file):
+        yield entry, init_file
+
+
+def command_source_files(defining_file):
+  """Return all Python source files that constitute a command.
+
+  For a single-file command this is just that file; for a package command it is every .py file
+  within the package directory (so that invocations within algorithm sub-modules are inspected).
+  """
+  directory = os.path.dirname(defining_file)
+  if os.path.basename(defining_file) == '__init__.py':
+    result = []
+    for root, _, files in os.walk(directory):
+      for filename in sorted(files):
+        if filename.endswith('.py'):
+          result.append(os.path.join(root, filename))
+    return sorted(result)
+  return [defining_file]
+
+
+def string_collection(node):
+  """Return the set of string literals in a set/list collection node, or None if not all literal.
+
+  Accepts a set literal "{...}", a list literal "[...]", or an explicit "set(...)" call (including
+  the empty "set()"). Returns None if the node is not such a collection, or if any element is not a
+  string literal (i.e. the declaration cannot be verified statically).
+  """
+  if isinstance(node, (ast.Set, ast.List)):
+    elements = node.elts
+  elif (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        and node.func.id == 'set'):
+    if not node.args:
+      return set()
+    argument = node.args[0]
+    if not isinstance(argument, (ast.Set, ast.List, ast.Tuple)):
+      return None
+    elements = argument.elts
+  else:
+    return None
+  result = set()
+  for element in elements:
+    if isinstance(element, ast.Constant) and isinstance(element.value, str):
+      result.add(element.value)
+    else:
+      # A non-literal entry cannot be verified; treat the declaration as malformed.
+      return None
+  return result
+
+
+def parse_file_dependencies(source_file):
+  """Parse a single file's MRTRIX_DEPENDENCIES declaration.
+
+  Returns a tuple (declared, defined) where "defined" is True if the file contains at least one
+  module-level MRTRIX_DEPENDENCIES assignment ("=" or augmented "|="), and "declared" is the union
+  of the command names contributed by those assignments (or None if any assignment is malformed).
+  """
+  with open(source_file, 'r', encoding='utf-8') as source_handle:
+    tree = ast.parse(source_handle.read(), filename=source_file)
+  declared = set()
+  defined = False
+  for node in tree.body:
+    if isinstance(node, ast.Assign):
+      if not any(isinstance(target, ast.Name) and target.id == 'MRTRIX_DEPENDENCIES'
+                 for target in node.targets):
+        continue
+      value = node.value
+    elif (isinstance(node, ast.AugAssign) and isinstance(node.target, ast.Name)
+          and node.target.id == 'MRTRIX_DEPENDENCIES' and isinstance(node.op, ast.BitOr)):
+      value = node.value
+    else:
+      continue
+    defined = True
+    contribution = string_collection(value)
+    if contribution is None:
+      return None, True
+    declared |= contribution
+  return declared, defined
+
+
+def argument_template(node):
+  """Render a run.command() first argument as a template string.
+
+  Literal text is preserved verbatim; any dynamic component (variable, expression, f-string
+  substitution, or non-string list element) is replaced by the DYNAMIC sentinel. Returns None if
+  the argument is not of a form from which any command name can be extracted.
+  """
+  if isinstance(node, ast.Constant) and isinstance(node.value, str):
+    return node.value
+  if isinstance(node, ast.JoinedStr):
+    parts = []
+    for value in node.values:
+      if isinstance(value, ast.Constant) and isinstance(value.value, str):
+        parts.append(value.value)
+      else:
+        parts.append(DYNAMIC)
+    return ''.join(parts)
+  if isinstance(node, ast.List):
+    parts = []
+    for element in node.elts:
+      if isinstance(element, ast.Constant) and isinstance(element.value, str):
+        parts.append(element.value)
+      elif isinstance(element, ast.JoinedStr):
+        parts.append(argument_template(element))
+      else:
+        # e.g. a variable, or a nested list-of-strings; its position is preserved but its content
+        #   is unknown. The pipe operator "|" is itself passed as a literal string element, and so
+        #   is captured correctly by the branch above.
+        parts.append(DYNAMIC)
+    return ' '.join(parts)
+  return None
+
+
+def parseable_commands(template):
+  """Extract statically-determinable command names from a rendered argument template.
+
+  The argument may chain multiple commands via the pipe operator; each pipe-delimited segment whose
+  leading token is fully literal contributes one command name. Segments whose command token is (or
+  contains) a dynamic component are skipped, as their command name cannot be known statically.
+  """
+  if template is None:
+    return []
+  commands = []
+  for segment in template.split('|'):
+    tokens = segment.split()
+    if not tokens:
+      continue
+    leading = tokens[0]
+    if DYNAMIC in leading:
+      continue
+    commands.append(leading)
+  return commands
+
+
+def is_call_to(node, owner, attribute):
+  """True if node is an ast.Call of the form "<owner>.<attribute>(...)"."""
+  return (isinstance(node, ast.Call)
+          and isinstance(node.func, ast.Attribute)
+          and node.func.attr == attribute
+          and isinstance(node.func.value, ast.Name)
+          and node.func.value.id == owner)
+
+
+def check_command(name, defining_file, all_commands):
+  """Return a list of human-readable error strings for a single Python command."""
+  errors = []
+  rel_defining = os.path.relpath(defining_file, REPO_ROOT)
+
+  # The command's defining file (the single source file, or the package "__init__.py") must seed the
+  #   MRTRIX_DEPENDENCIES constant; without it the per-file declarations cannot be relied upon.
+  _, defining_defined = parse_file_dependencies(defining_file)
+  if not defining_defined:
+    errors.append(f'{rel_defining}: command "{name}" does not define the '
+                  'MRTRIX_DEPENDENCIES constant (expected a module-level set of strings)')
+    # Without a declaration there is nothing further to verify against.
+    return errors
+
+  # Each source file is verified against its own declaration: the commands a file invokes must be
+  #   present in that file's own MRTRIX_DEPENDENCIES contribution ("=" in the defining file, "|=" in
+  #   the others).
+  for source_file in command_source_files(defining_file):
+    rel_source = os.path.relpath(source_file, REPO_ROOT)
+    declared, _ = parse_file_dependencies(source_file)
+    if declared is None:
+      errors.append(f'{rel_source}: malformed MRTRIX_DEPENDENCIES declaration in command "{name}" '
+                    '(expected a set of string literals)')
+      continue
+    with open(source_file, 'r', encoding='utf-8') as source_handle:
+      tree = ast.parse(source_handle.read(), filename=source_file)
+    for node in ast.walk(tree):
+      if is_call_to(node, 'run', 'command'):
+        if not node.args:
+          continue
+        template = argument_template(node.args[0])
+        for invoked in parseable_commands(template):
+          # Only MRtrix3 commands are relevant; external tools are legitimately undeclared.
+          if invoked in all_commands and invoked not in declared:
+            errors.append(f'{rel_source}:{node.lineno}: run.command() invokes MRtrix3 command '
+                          f'"{invoked}", which is absent from the MRTRIX_DEPENDENCIES '
+                          f'declared within this file')
+      elif is_call_to(node, 'image', 'mrinfo') or is_call_to(node, 'image', 'Header'):
+        if 'mrinfo' not in declared:
+          construct = 'image.Header is constructed' if node.func.attr == 'Header' \
+                      else 'image.mrinfo() is called'
+          errors.append(f'{rel_source}:{node.lineno}: {construct}, but command "mrinfo" is '
+                        f'absent from the MRTRIX_DEPENDENCIES declared within this file')
+
+  return errors
+
+
+def main():
+  all_commands = all_mrtrix_commands()
+  commands = list(python_commands())
+
+  all_errors = []
+  for name, defining_file in commands:
+    all_errors.extend(check_command(name, defining_file, all_commands))
+
+  if all_errors:
+    sys.stderr.write('ERROR: MRtrix3 Python command dependency declaration check failed:\n\n')
+    for error in all_errors:
+      sys.stderr.write(f'  {error}\n')
+    sys.stderr.write(f'\n{len(all_errors)} problem(s) found across '
+                     f'{len(commands)} Python command(s).\n')
+    return 1
+
+  sys.stdout.write(f'All {len(commands)} MRtrix3 Python command dependency '
+                   'declarations are present and complete.\n')
+  return 0
+
+
+if __name__ == '__main__':
+  sys.exit(main())

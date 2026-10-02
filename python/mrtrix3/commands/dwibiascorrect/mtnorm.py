@@ -16,6 +16,11 @@
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, image, run
 
+# MRtrix3 commands invoked within this source file, contributed to the command's aggregate set of
+#   compilation dependencies (see this command's __init__.py).
+from . import MRTRIX_DEPENDENCIES
+MRTRIX_DEPENDENCIES |= {'dwi2fod', 'dwi2response', 'maskfilter', 'mrcalc', 'mrconvert', 'mrinfo', 'mtnormalise'}
+
 
 LMAXES_MULTI = [4, 0, 0]
 LMAXES_SINGLE = [4, 0]

@@ -17,6 +17,12 @@ import math, os, shutil
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, fsl, image, run, utils
 
+# MRtrix3 commands invoked within this source file, contributed to the command's aggregate set of
+#   compilation dependencies (see this command's __init__.py).
+from . import MRTRIX_DEPENDENCIES
+MRTRIX_DEPENDENCIES |= {'maskfilter', 'mesh2voxel', 'meshconvert', 'mrcalc', 'mrcat', 'mrconvert', 'mrgrid', 'mrinfo',
+                        'mrmath', 'mrthreshold', 'mrtransform'}
+
 
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable

@@ -16,6 +16,11 @@
 import math
 from mrtrix3 import app, run
 
+# MRtrix3 commands invoked within this source file, contributed to the command's aggregate set of
+#   compilation dependencies (see this command's __init__.py).
+from . import MRTRIX_DEPENDENCIES
+MRTRIX_DEPENDENCIES |= {'dwiextract', 'mrcalc', 'mrconvert', 'mrdump', 'mrmath', 'mrstats'}
+
 
 DEFAULT_TARGET_INTENSITY=1000
 

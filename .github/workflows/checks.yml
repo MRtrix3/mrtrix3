@@ -300,6 +300,9 @@ jobs:
       run: |
          ./run_pylint || { cat pylint.log; false; }
 
+    - name: check python command dependencies
+      run: ./check_python_dependencies
+
     - name: check copyright headers
       run: ./update_copyright && git diff --exit-code
 

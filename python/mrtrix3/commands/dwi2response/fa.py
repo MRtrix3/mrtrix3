@@ -17,6 +17,12 @@ import shutil
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, image, run
 
+# MRtrix3 commands invoked within this source file, contributed to the command's aggregate set of
+#   compilation dependencies (see this command's __init__.py).
+from . import MRTRIX_DEPENDENCIES
+MRTRIX_DEPENDENCIES |= {'amp2response', 'dwi2tensor', 'dwiextract', 'maskfilter', 'mrconvert', 'mrinfo',
+                        'mrthreshold', 'tensor2metric'}
+
 
 NEEDS_SINGLE_SHELL = False # pylint: disable=unused-variable
 SUPPORTS_MASK = True # pylint: disable=unused-variable
