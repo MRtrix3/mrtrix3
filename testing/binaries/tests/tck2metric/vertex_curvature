@@ -1,0 +1,13 @@
+#!/bin/bash
+# Verify the -vertex_curvature option of "tck2metric",
+#   which writes the per-vertex curvature to a track scalar (.tsf) file.
+# The resulting file must be a valid track scalar file with respect to the input tractogram.
+
+rm -f tmp.tsf tmp.txt
+tck2metric tracks.tck -vertex_curvature tmp.tsf
+tsfvalidate tmp.tsf tracks.tck 2>&1 | tee tmp.txt
+grep -E "Track scalar file \".+\" is valid with respect to tractogram \".+\"" tmp.txt
+! ( grep "\\bWARNING\\b" tmp.txt )
+
+# A non-.tsf path for per-vertex curvature must be rejected
+! tck2metric tracks.tck -vertex_curvature tmp.txt -force

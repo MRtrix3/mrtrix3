@@ -1,0 +1,70 @@
+#!/bin/bash
+# Verify operation of tckdecimatecalibrate -algorithm slow:
+#   sweep the slow (tolerance-parameterised) decimator over three deviation
+#   tolerances (mm) on a small synthetic tractogram and check that the reported
+#   table behaves as the tolerance-vs-compression trade-off requires.
+# Build a tractogram of a few curved streamlines (straight run -> tight arc -> straight run);
+#   the arc makes the spline non-trivial so that different tolerances retain different vertex counts.
+#   Each streamline is emitted to its own numbered ASCII file and combined via tckconvert's
+#   "[]" glob (the per-streamline ASCII format used by the sibling tckresample tests).
+for s in 0 1 2; do
+  awk -v s=$s 'BEGIN {
+    pi = 3.14159265358979;
+    r = 4.0 + s;
+    for (i = 0; i < 25; ++i) printf "%.6f %.6f 0\n", i*15.0/24.0, 0.0;
+    cx = 15.0; cy = r;
+    for (i = 1; i <= 40; ++i) { a = -pi/2 + (pi/2)*i/40.0; printf "%.6f %.6f 0\n", cx+r*cos(a), cy+r*sin(a); }
+    for (i = 1; i <= 25; ++i) printf "%.6f %.6f 0\n", 15.0+r, r+i*15.0/25.0;
+  }' > "tmp-synth-000000${s}.txt"
+done
+tckconvert "tmp-synth-[].txt" tmp-tracks.tck -force
+
+# Sweep three tolerances (mm): tight (retains many vertices, small error), through to
+#   loose (aggressive compression, larger error). Write the machine-readable CSV.
+tckdecimatecalibrate tmp-tracks.tck 0.02,0.1,0.4 -algorithm slow -csv tmp-cal.csv -force
+
+# CSV columns: tolerance_mm,p50_mm,p75_mm,p95_mm,p99_mm,p99.9_mm,p100_mm,
+#              compression,mean_output_vertices,decimation_time_s,count
+# Strip the leading comment line and the header; keep the three data rows in order.
+grep -v '^#' tmp-cal.csv | tail -n +2 > tmp-rows.csv
+
+# Assert: exactly three data rows.
+[ "$(grep -c . tmp-rows.csv)" -eq 3 ]
+
+# Assert: within each tolerance row, the six percentile columns (fields 2..7) are non-decreasing.
+awk -F, '{
+  for (c = 3; c <= 7; ++c) {
+    if ($c + 1e-6 < $(c-1)) { printf "percentiles not ordered in tolerance=%s (col %d)\n", $1, c; exit 1; }
+  }
+}' tmp-rows.csv
+
+# Assert: the slow decimator respects its tolerance, i.e. the achieved maximum Hausdorff distance
+#   (field 7, p100) does not exceed the requested tolerance (field 1) beyond a small slack factor.
+awk -F, '{
+  if ($7 > 1.5 * $1 + 1e-6) { printf "achieved error %s exceeds tolerance %s\n", $7, $1; exit 1; }
+}' tmp-rows.csv
+
+# Assert: the summed decimation time (field 10) is non-negative for every tolerance.
+awk -F, '{ if ($10 + 1e-9 < 0) { printf "negative decimation time %s\n", $10; exit 1; } }' tmp-rows.csv
+
+# Rows in input order: tightest tolerance (0.02), then 0.1, then loosest (0.4).
+tight=$(sed -n '1p' tmp-rows.csv)
+mid=$(sed -n '2p' tmp-rows.csv)
+loose=$(sed -n '3p' tmp-rows.csv)
+
+# Assert: a looser tolerance compresses at least as aggressively, i.e. the output/input vertex
+#   ratio (field 8) is non-increasing as the tolerance grows.
+comp_tight=$(echo "$tight" | cut -d, -f8)
+comp_mid=$(echo "$mid" | cut -d, -f8)
+comp_loose=$(echo "$loose" | cut -d, -f8)
+awk -v a="$comp_tight" -v b="$comp_mid" -v c="$comp_loose" 'BEGIN {
+  if (a + 1e-6 < b || b + 1e-6 < c) { print "compression not monotone with tolerance"; exit 1; }
+}'
+
+# Assert: a looser tolerance yields an achieved error (field 7, p100) no smaller than a tighter one.
+err_tight=$(echo "$tight" | cut -d, -f7)
+err_mid=$(echo "$mid" | cut -d, -f7)
+err_loose=$(echo "$loose" | cut -d, -f7)
+awk -v a="$err_tight" -v b="$err_mid" -v c="$err_loose" 'BEGIN {
+  if (b + 1e-6 < a || c + 1e-6 < b) { print "achieved error not monotone with tolerance"; exit 1; }
+}'

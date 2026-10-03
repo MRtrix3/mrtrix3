@@ -20,12 +20,19 @@
 
 #include "dwi/tractography/streamline.h"
 
+namespace MR::DWI::Tractography {
+class Properties;
+}
+
 namespace MR::DWI::Tractography::Resampling {
 
 extern const App::OptionGroup ResampleOption;
 
 class Base;
-Base *get_resampler();
+//! Construct the resampler selected by the command-line options. The tractogram properties are
+//!   consulted so that a curvature-based resampler can adjust its scale calibration for inputs whose
+//!   vertices are sub-step samples of a single parent arc (see configure_from_properties()).
+Base *get_resampler(const Properties &properties);
 
 using value_type = float;
 using point_type = typename Streamline<>::point_type;

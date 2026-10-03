@@ -16,6 +16,7 @@
 
 #include "dwi/tractography/resampling/fixed_step_size.h"
 
+#include "dwi/tractography/spline.h"
 #include "math/hermite.h"
 
 namespace MR::DWI::Tractography::Resampling {
@@ -29,13 +30,16 @@ bool FixedStepSize::operator()(const Streamline<> &in, Streamline<> &out) const 
   if (in.size() < 2)
     return true;
   Math::Hermite<value_type> interp(hermite_tension);
-  // Extensions required to enable Hermite interpolation in last streamline segment at either end
-  Streamline<> temp(in);
-  const size_t s = temp.size();
-  temp.insert(temp.begin(), temp[0] + (temp[0] - temp[1]));
-  temp.push_back(temp[s] + (temp[s] - temp[s - 1]));
-  const ssize_t midpoint = temp.size() / 2;
-  out.push_back(temp[midpoint]);
+  // The reflected ghost vertices at index -1 and size() provide the control points
+  //   required for Hermite interpolation in the first and last streamline segments.
+  // Indices below are expressed over a virtual padded streamline: index 0 is the front
+  //   ghost, indices [1, in.size()] are the real vertices, and index in.size()+1 is the
+  //   back ghost; access maps to the view via view[index - 1].
+  const SplineView<value_type> view(in);
+  const size_t s = view.size();
+  const ssize_t padded_size = static_cast<ssize_t>(s) + 2;
+  const ssize_t midpoint = padded_size / 2;
+  out.push_back(view[midpoint - 1]);
   // Generate from the midpoint to the start, reverse, then generate from midpoint to the end
   for (ssize_t step = -1; step <= 1; step += 2) {
 
@@ -47,27 +51,26 @@ bool FixedStepSize::operator()(const Streamline<> &in, Streamline<> &out) const 
 
       // If we don't have to step along the input track, can keep the mu from the previous
       //   interpolation point as the lower bound
-      while (index > 1 && index < static_cast<ssize_t>(temp.size() - 2) &&
-             (out.back() - temp[index + step]).norm() < step_size) {
+      while (index > 1 && index < padded_size - 2 && (out.back() - view[index + step - 1]).norm() < step_size) {
         index += step;
         mu_lower = value_type(0);
       }
       // Always preserve the termination points, regardless of resampling
       if (index == 1) {
-        out.push_back(temp[1]);
+        out.push_back(view[0]);
         std::reverse(out.begin(), out.end());
-      } else if (index == static_cast<ssize_t>(temp.size() - 2)) {
-        out.push_back(temp[s]);
+      } else if (index == padded_size - 2) {
+        out.push_back(view[static_cast<ssize_t>(s) - 1]);
       } else {
 
         // Perform binary search
-        point_type p_lower = temp[index], p, p_upper = temp[index + step];
+        point_type p_lower = view[index - 1], p, p_upper = view[index + step - 1];
         value_type mu_upper = value_type(1);
         value_type mu = std::numeric_limits<value_type>::quiet_NaN();
         do {
           mu = value_type(0.5) * (mu_lower + mu_upper);
           interp.set(mu);
-          p = interp.value(temp[index - step], temp[index], temp[index + step], temp[index + 2 * step]);
+          p = interp.value(view[index - step - 1], view[index - 1], view[index + step - 1], view[index + 2 * step - 1]);
           if ((p - out.back()).norm() < step_size) {
             mu_lower = mu;
             p_lower = p;
@@ -80,7 +83,7 @@ bool FixedStepSize::operator()(const Streamline<> &in, Streamline<> &out) const 
       }
 
       // Loop until an endpoint has been added
-    } while (index > 1 && index < static_cast<ssize_t>(temp.size() - 2));
+    } while (index > 1 && index < padded_size - 2);
   }
 
   return true;

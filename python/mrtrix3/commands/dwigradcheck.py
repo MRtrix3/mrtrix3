@@ -181,7 +181,7 @@ def execute(): #pylint: disable=unused-variable
                     f'{grad_option} {number_option}')
 
         # Get the mean track length
-        meanlength=float(run.command(f'tckstats tracks{suffix}.tck -output mean -ignorezero').stdout)
+        meanlength=float(run.command(f'tck2metric tracks{suffix}.tck -mean_length -ignorezero').stdout)
 
         # Add to the database
         lengths.append([meanlength,flip,permutation,basis])

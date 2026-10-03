@@ -1,0 +1,451 @@
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
+
+#include "dwi/tractography/resampling/decimate_slow.h"
+
+#include <algorithm>
+#include <cmath>
+#include <limits>
+#include <vector>
+
+#include "dwi/tractography/foot_point.h"
+#include "dwi/tractography/spline.h"
+
+namespace MR::DWI::Tractography::Resampling {
+
+namespace {
+
+using FootPoint::vec3;
+
+//! Hard cap on greedy knot-insertion iterations, as a multiple of the input vertex count.
+/*! The greedy scheme inserts at most one original-vertex foot per iteration and can never need
+ *  more control points than the input has vertices; this multiple is a pure safety stop guarding
+ *  against a pathological non-converging tolerance (e.g. epsilon below the foot-point solver's own
+ *  resolution), never reached for sane inputs. */
+constexpr size_t max_insertions_per_input_vertex = 2;
+
+//! Number of golden-section iterations used by the per-knot slide line search.
+constexpr size_t slide_search_iterations = 24;
+
+//! Sub-segment samples per reconstruction segment used by the spline-aware knot-removal check to
+//!   bound the reconstruction's between-control-point deviation from the original spline (the reverse
+//!   Hausdorff direction). The chord-vs-arc sag the check guards against peaks near a segment centre,
+//!   so a handful of interior samples resolve it; this is the slow (reference) decimator.
+constexpr size_t removal_reverse_probes_per_segment = 8;
+
+//! A control point of the reconstruction, located on the ORIGINAL spline.
+/*! The control set is stored as parameters \c t on the original spline (global parameter
+ *  \c segment + mu in [0, N-1]); the reconstructed position is the original spline evaluated there,
+ *  guaranteeing every output vertex lies on the original curve. */
+struct Control {
+  default_type t;             //!< Global parameter on the ORIGINAL spline.
+  Streamline<>::point_type p; //!< Position on the original spline at \c t (the emitted vertex).
+};
+
+//! The nearest-point foot of one original vertex on the current reconstruction.
+struct VertexFoot {
+  default_type s;    //!< Global parameter on the RECONSTRUCTION spline (segment + mu in [0, m-1]).
+  default_type dist; //!< Deviation (mm) from the original vertex to that foot.
+};
+
+//! Build the reconstruction streamline from the current control positions.
+void assemble_reconstruction(const std::vector<Control> &controls, Streamline<> &recon) {
+  recon.clear();
+  recon.reserve(controls.size());
+  for (const Control &c : controls)
+    recon.push_back(c.p);
+}
+
+} // namespace
+
+bool DecimateSlow::operator()(const Streamline<> &in, Streamline<> &out) const {
+  out.clear();
+  if (!valid())
+    return false;
+  out.set_index(in.get_index());
+  out.weight = in.weight;
+
+  // Streamlines that cannot define an interior spline pass through unchanged.
+  if (in.size() <= 2) {
+    out = in;
+    return true;
+  }
+
+  const default_type tension = static_cast<default_type>(hermite_tension);
+  const size_t num_vertices = in.size();
+  const SplineView<value_type> original(in);
+  const default_type original_s_max = static_cast<default_type>(num_vertices - 1);
+
+  // -------------------------------------------------------------------------------------------
+  // Step 1: control set initialised to the two (immutable) endpoints, expressed as parameters on
+  //   the original spline. Interior control points inserted later will likewise be on-curve.
+  // -------------------------------------------------------------------------------------------
+  std::vector<Control> controls;
+  controls.reserve(num_vertices);
+  controls.push_back({0.0, in.front()});
+  controls.push_back({original_s_max, in.back()});
+
+  // Per-original-vertex foot on the current reconstruction (deviation + reconstruction parameter).
+  std::vector<VertexFoot> feet(num_vertices);
+  // Bucket assignment: which control interval each original vertex's original-parameter falls in.
+  //   Original vertices and control points are co-monotone in original parameter, so each vertex
+  //   belongs to exactly one interval; an insertion splits one interval and only its members are
+  //   re-footed (the warm-started incremental update that avoids the quadratic rescan).
+  std::vector<size_t> vertex_interval(num_vertices, 0);
+
+  // -------------------------------------------------------------------------------------------
+  // Foot-point refresh for a contiguous range of original vertices against the reconstruction,
+  //   warm-started by marching in order from a seed parameter. Returns nothing; updates feet[].
+  // -------------------------------------------------------------------------------------------
+  const auto refresh_feet =
+      [&](const Streamline<> &recon, const size_t v_begin, const size_t v_end, const default_type warm_seed) {
+        const SplineView<value_type> recon_view(recon);
+        const default_type recon_s_max = static_cast<default_type>(recon.size() - 1);
+        default_type warm = warm_seed;
+        for (size_t v = v_begin; v != v_end; ++v) {
+          const vec3 probe = in[v].template cast<default_type>();
+          const FootPoint::Foot foot = FootPoint::nearest_point(recon_view, tension, probe, warm, recon_s_max);
+          warm = foot.s;
+          feet[v] = {foot.s, std::sqrt(std::max<default_type>(0.0, foot.dist_sq))};
+        }
+      };
+
+  Streamline<> recon;
+  assemble_reconstruction(controls, recon);
+
+  // Initial pass: every original vertex's foot on the two-endpoint reconstruction, marching in
+  //   order so each search warm-starts from the previous vertex's converged foot.
+  refresh_feet(recon, 0, num_vertices, 0.0);
+  std::fill(vertex_interval.begin(), vertex_interval.end(), 0);
+
+  // -------------------------------------------------------------------------------------------
+  // Running max deviation (and its argmax vertex) maintained per control interval, so selecting
+  //   the next insertion is O(m) over the interval maxima rather than an O(N) rescan of all feet.
+  //   interval_max[j] / interval_argmax[j] summarise the deviations of the vertices in interval j.
+  // -------------------------------------------------------------------------------------------
+  std::vector<default_type> interval_max;
+  std::vector<size_t> interval_argmax;
+  const auto recompute_interval = [&](const size_t j) {
+    default_type best = -1.0;
+    size_t best_v = 0;
+    for (size_t v = 0; v != num_vertices; ++v) {
+      if (vertex_interval[v] != j)
+        continue;
+      if (feet[v].dist > best) {
+        best = feet[v].dist;
+        best_v = v;
+      }
+    }
+    interval_max[j] = best;
+    interval_argmax[j] = best_v;
+  };
+  interval_max.assign(1, -1.0);
+  interval_argmax.assign(1, 0);
+  recompute_interval(0);
+
+  const size_t max_insertions = max_insertions_per_input_vertex * num_vertices;
+
+  // -------------------------------------------------------------------------------------------
+  // Step 2-5: greedy knot insertion until the worst deviation is within tolerance.
+  //
+  // Hoschek-style parameter correction would wrap this insertion loop: after (or interleaved with)
+  //   each insertion, globally re-optimise the foot-point parameterisation by alternating a
+  //   linear least-squares re-fit of the control positions with a re-projection of every original
+  //   vertex onto the updated curve. Benefit: a lower L-infinity deviation for a given knot count,
+  //   and the bridge to free-in-R^3 control points (design Problem 3). Not implemented here: it
+  //   trades the strictly on-curve, decode-compatible control set for a denser global solve.
+  // -------------------------------------------------------------------------------------------
+  for (size_t iteration = 0; iteration != max_insertions; ++iteration) {
+    // Select the globally worst interval (O(m)); its argmax vertex is the insertion candidate.
+    size_t worst_interval = 0;
+    default_type worst_dist = -1.0;
+    for (size_t j = 0; j != interval_max.size(); ++j) {
+      if (interval_max[j] > worst_dist) {
+        worst_dist = interval_max[j];
+        worst_interval = j;
+      }
+    }
+    if (!(worst_dist > tolerance))
+      break;
+
+    const size_t worst_vertex = interval_argmax[worst_interval];
+
+    // Insertion choice (b): insert the on-curve point of the original spline nearest the worst
+    //   vertex, rather than the worst vertex itself. The worst vertex is by construction an
+    //   original spline vertex, so its on-curve foot is simply its own original parameter t = i;
+    //   this keeps the control set strictly on the original curve (Method-B-faithful), preserving
+    //   decode compatibility with the reflected-ghost reconstruction. (Choice (a), inserting the
+    //   raw vertex coordinate, is identical here because the vertex already lies on the curve;
+    //   choosing the on-curve parameterisation is the form that generalises to sub-vertex feet.)
+    const default_type t_new = static_cast<default_type>(worst_vertex);
+
+    // Guard: refuse a degenerate insertion that does not split the interval (coincident parameter).
+    if (!(t_new > controls[worst_interval].t) || !(t_new < controls[worst_interval + 1].t)) {
+      // The worst vertex sits on an existing knot: its deviation cannot be reduced by insertion.
+      //   Mark this interval resolved so the loop can consider the next-worst region.
+      interval_max[worst_interval] = -1.0;
+      continue;
+    }
+
+    // Insert the new control point (on the original spline) and the matching empty interval.
+    const Control inserted{t_new, original.position(t_new, static_cast<value_type>(tension))};
+    controls.insert(controls.begin() + worst_interval + 1, inserted);
+    interval_max.insert(interval_max.begin() + worst_interval + 1, -1.0);
+    interval_argmax.insert(interval_argmax.begin() + worst_interval + 1, 0);
+
+    // Re-bucket: vertices in the split interval move to the left or right child; vertices in every
+    //   later interval shift their interval index up by one (their geometry is unchanged).
+    for (size_t v = 0; v != num_vertices; ++v) {
+      if (vertex_interval[v] > worst_interval) {
+        ++vertex_interval[v];
+      } else if (vertex_interval[v] == worst_interval) {
+        const default_type t_v = static_cast<default_type>(v);
+        vertex_interval[v] = (t_v < t_new) ? worst_interval : (worst_interval + 1);
+      }
+    }
+
+    // Re-reconstruct (one extra control point) and re-foot ONLY the original vertices in the two
+    //   child intervals, warm-started from the parameter of the split knot on the new curve. All
+    //   other feet remain valid warm starts / optima and are left untouched (the incremental
+    //   update that keeps the encoder out of the quadratic trap).
+    assemble_reconstruction(controls, recon);
+    size_t affected_begin = num_vertices;
+    size_t affected_end = 0;
+    for (size_t v = 0; v != num_vertices; ++v) {
+      if (vertex_interval[v] == worst_interval || vertex_interval[v] == worst_interval + 1) {
+        affected_begin = std::min(affected_begin, v);
+        affected_end = std::max(affected_end, v + 1);
+      }
+    }
+    if (affected_begin < affected_end) {
+      // Warm-start the marching re-foot from the inserted knot's reconstruction parameter, which
+      //   is exactly its new control index (positions are evaluated at the controls).
+      const default_type warm_seed = static_cast<default_type>(worst_interval + 1);
+      refresh_feet(recon, affected_begin, affected_end, warm_seed);
+    }
+
+    // Update the two child intervals' running maxima (O(N) over their members only).
+    recompute_interval(worst_interval);
+    recompute_interval(worst_interval + 1);
+  }
+
+  // -------------------------------------------------------------------------------------------
+  // Step 6: slide refinement. Each interior control point is slid along the original spline (a 1-D
+  //   golden-section search of its original parameter, bracketed by its neighbours) to minimise the
+  //   worst deviation among the original vertices bucketed into its two adjacent intervals. The
+  //   endpoints are never moved. After sliding, the affected feet and interval maxima are refreshed.
+  // -------------------------------------------------------------------------------------------
+  for (size_t k = 1; k + 1 < controls.size(); ++k) {
+    const default_type t_lo = controls[k - 1].t;
+    const default_type t_hi = controls[k + 1].t;
+    if (t_hi - t_lo <= 0.0)
+      continue;
+
+    // Objective: worst deviation over the vertices in intervals (k-1) and k, as a function of the
+    //   slid parameter of control k. Evaluated by re-reconstructing locally and re-footing just
+    //   those vertices; this is the per-knot local max the slide minimises.
+    const auto local_max_deviation = [&](const default_type t_candidate) -> default_type {
+      std::vector<Control> trial = controls;
+      trial[k].t = t_candidate;
+      trial[k].p = original.position(t_candidate, static_cast<value_type>(tension));
+      Streamline<> trial_recon;
+      assemble_reconstruction(trial, trial_recon);
+      const SplineView<value_type> trial_view(trial_recon);
+      const default_type trial_s_max = static_cast<default_type>(trial_recon.size() - 1);
+      default_type worst = 0.0;
+      default_type warm = static_cast<default_type>(k - 1);
+      for (size_t v = 0; v != num_vertices; ++v) {
+        if (vertex_interval[v] != k - 1 && vertex_interval[v] != k)
+          continue;
+        const vec3 probe = in[v].template cast<default_type>();
+        const FootPoint::Foot foot = FootPoint::nearest_point(trial_view, tension, probe, warm, trial_s_max);
+        warm = foot.s;
+        worst = std::max(worst, std::sqrt(std::max<default_type>(0.0, foot.dist_sq)));
+      }
+      return worst;
+    };
+
+    // Golden-section minimisation of the local max deviation over the open interval (t_lo, t_hi).
+    constexpr default_type inv_phi = 0.6180339887498949;
+    default_type a = t_lo;
+    default_type b = t_hi;
+    default_type c = b - inv_phi * (b - a);
+    default_type d = a + inv_phi * (b - a);
+    default_type fc = local_max_deviation(c);
+    default_type fd = local_max_deviation(d);
+    for (size_t i = 0; i != slide_search_iterations; ++i) {
+      if (fc < fd) {
+        b = d;
+        d = c;
+        fd = fc;
+        c = b - inv_phi * (b - a);
+        fc = local_max_deviation(c);
+      } else {
+        a = c;
+        c = d;
+        fc = fd;
+        d = a + inv_phi * (b - a);
+        fd = local_max_deviation(d);
+      }
+    }
+    const default_type t_best = 0.5 * (a + b);
+    // Accept the slide only if it does not worsen the current local max (golden-section on a
+    //   unimodal-ish objective; the guard keeps a noisy multi-modal case from regressing).
+    if (local_max_deviation(t_best) <= local_max_deviation(controls[k].t)) {
+      controls[k].t = t_best;
+      controls[k].p = original.position(t_best, static_cast<value_type>(tension));
+    }
+  }
+
+  // -------------------------------------------------------------------------------------------
+  // Step 7: Lyche-Morken knot removal. Greedy insertion followed by the slide can leave interior
+  //   control points that later insertions / the slide rendered redundant. Each interior control is
+  //   assigned a removal cost: the worst SPLINE deviation its removal would induce over the arc whose
+  //   reconstruction geometry that removal perturbs. The cheapest removable knot is dropped while the
+  //   reconstruction there still satisfies epsilon, the costs in the perturbed neighbourhood are
+  //   refreshed, and the process repeats greedily; this is the removal-cost-ordered analogue of the
+  //   B-spline knot-removal error bound. Endpoints are never candidates. Every surviving control
+  //   remains on the original spline -- decode compatibility is preserved exactly as for the
+  //   insertion / slide stages.
+  //
+  // The cost is a LOCAL SYMMETRIC bound, not just the vertex deviation: removing a control widens the
+  //   gap between the surviving controls, and the tension-Catmull-Rom reconstruction can then sag
+  //   away from the original spline BETWEEN the original vertices even while every vertex itself stays
+  //   within epsilon. The vertex-only (forward) check cannot see that sag, so the cost also probes the
+  //   trial reconstruction sub-vertex and measures its distance back to the original spline (the
+  //   reverse direction). Bounding both keeps the removed-knot reconstruction within epsilon of the
+  //   original curve everywhere, matching the spline-level guarantee the decimator advertises.
+  // -------------------------------------------------------------------------------------------
+
+  // Worst (symmetric) spline deviation over the arc that removing interior control \c k perturbs. The
+  //   removed control's tension-Catmull-Rom support covers reconstruction segments [k-2, k+1], i.e.
+  //   controls [k-2 .. k+2] (clamped); outside that span the reconstruction, and hence the deviation,
+  //   is unchanged, so only this window is examined.
+  const auto removal_cost = [&](const size_t k) -> default_type {
+    std::vector<Control> trial;
+    trial.reserve(controls.size() - 1);
+    for (size_t j = 0; j != controls.size(); ++j) {
+      if (j != k)
+        trial.push_back(controls[j]);
+    }
+    Streamline<> trial_recon;
+    assemble_reconstruction(trial, trial_recon);
+    const SplineView<value_type> trial_view(trial_recon);
+    const default_type trial_s_max = static_cast<default_type>(trial_recon.size() - 1);
+
+    const size_t lo_ctrl = (k >= 2) ? (k - 2) : 0;
+    const size_t hi_ctrl = std::min(controls.size() - 1, k + 2);
+    const default_type t_lo = controls[lo_ctrl].t;
+    const default_type t_hi = controls[hi_ctrl].t;
+
+    default_type worst = 0.0;
+
+    // (1) Forward: each original vertex in the window -> nearest point on the trial reconstruction.
+    //     March from a warm start at the window's left control; its trial index equals its original
+    //     index (the removed control lies to its right), so the seed needs no shift.
+    default_type warm = static_cast<default_type>(lo_ctrl);
+    for (size_t v = 0; v != num_vertices; ++v) {
+      const default_type t_v = static_cast<default_type>(v);
+      if (t_v < t_lo || t_v > t_hi)
+        continue;
+      const vec3 probe = in[v].template cast<default_type>();
+      const FootPoint::Foot foot = FootPoint::nearest_point(trial_view, tension, probe, warm, trial_s_max);
+      warm = foot.s;
+      worst = std::max(worst, std::sqrt(std::max<default_type>(0.0, foot.dist_sq)));
+    }
+
+    // (2) Reverse: sub-vertex samples of the trial reconstruction across the perturbed segments ->
+    //     nearest point on the ORIGINAL spline, bounding the between-control sag the forward check
+    //     cannot see. The trial index of a window control below \c k is unchanged; \c hi_ctrl > k, so
+    //     its trial index shifts left by one. Each sample is seeded at the original parameter its two
+    //     bracketing controls span linearly -- a tight warm start for the (descent-guarded) solve.
+    const size_t lo_trial = lo_ctrl;
+    const size_t hi_trial = hi_ctrl - 1;
+    for (size_t seg = lo_trial; seg != hi_trial; ++seg) {
+      for (size_t sub = 0; sub != removal_reverse_probes_per_segment; ++sub) {
+        const default_type mu =
+            static_cast<default_type>(sub) / static_cast<default_type>(removal_reverse_probes_per_segment);
+        const default_type p = static_cast<default_type>(seg) + mu;
+        const vec3 q = trial_view.position(p, static_cast<value_type>(tension)).template cast<default_type>();
+        const default_type seed = trial[seg].t + mu * (trial[seg + 1].t - trial[seg].t);
+        const FootPoint::Foot foot = FootPoint::nearest_point(original, tension, q, seed, original_s_max);
+        worst = std::max(worst, std::sqrt(std::max<default_type>(0.0, foot.dist_sq)));
+      }
+    }
+    // The window's right endpoint sample (the loop above stops just short of it).
+    const vec3 q_end = trial_view.position(static_cast<default_type>(hi_trial), static_cast<value_type>(tension))
+                           .template cast<default_type>();
+    const FootPoint::Foot foot_end =
+        FootPoint::nearest_point(original, tension, q_end, trial[hi_trial].t, original_s_max);
+    worst = std::max(worst, std::sqrt(std::max<default_type>(0.0, foot_end.dist_sq)));
+
+    return worst;
+  };
+
+  // Removal cost per control, aligned to \c controls; endpoints are non-removable (infinite cost).
+  std::vector<default_type> removal_costs(controls.size(), std::numeric_limits<default_type>::infinity());
+  for (size_t k = 1; k + 1 < controls.size(); ++k)
+    removal_costs[k] = removal_cost(k);
+
+  while (controls.size() > 2) {
+    // Cheapest removable interior control (O(m) over the maintained costs).
+    size_t best_k = 0;
+    default_type best_cost = std::numeric_limits<default_type>::infinity();
+    for (size_t k = 1; k + 1 < controls.size(); ++k) {
+      if (removal_costs[k] < best_cost) {
+        best_cost = removal_costs[k];
+        best_k = k;
+      }
+    }
+    if (best_k == 0 || !(best_cost <= tolerance))
+      break;
+
+    // Re-evaluate the chosen candidate against the current control set before committing: this
+    //   guards the epsilon guarantee against any stale neighbourhood cost. If the refreshed cost
+    //   now exceeds epsilon, correct it and re-select rather than removing it.
+    const default_type fresh_cost = removal_cost(best_k);
+    removal_costs[best_k] = fresh_cost;
+    if (!(fresh_cost <= tolerance))
+      continue;
+
+    // Commit: drop the control and its cost entry. The control set stays sorted in t and on-curve.
+    controls.erase(controls.begin() + best_k);
+    removal_costs.erase(removal_costs.begin() + best_k);
+
+    // Only the costs of controls whose own support arc overlaps the just-perturbed span can have
+    //   changed; refresh exactly those (the rest of the curve, hence their costs, is unchanged).
+    const size_t refresh_lo = (best_k > 4) ? (best_k - 4) : 1;
+    const size_t refresh_hi = std::min(controls.size() - 2, best_k + 3);
+    for (size_t k = refresh_lo; k <= refresh_hi; ++k)
+      removal_costs[k] = removal_cost(k);
+  }
+
+  // -------------------------------------------------------------------------------------------
+  // Emit the control positions (all on the original spline; endpoints exact by construction).
+  // -------------------------------------------------------------------------------------------
+  out.reserve(controls.size());
+  for (const Control &c : controls) {
+    out.push_back(c.p);
+    assert(out.back().allFinite());
+  }
+  // Endpoints exact: replace the evaluated endpoint positions with the verbatim input endpoints
+  //   (evaluation at t=0 / t=N-1 reproduces them, but pin them to defeat any rounding).
+  out.front() = in.front();
+  out.back() = in.back();
+  return true;
+}
+
+} // namespace MR::DWI::Tractography::Resampling

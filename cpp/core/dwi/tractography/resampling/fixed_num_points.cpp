@@ -16,6 +16,7 @@
 
 #include "dwi/tractography/resampling/fixed_num_points.h"
 
+#include "dwi/tractography/spline.h"
 #include "math/hermite.h"
 
 namespace MR::DWI::Tractography::Resampling {
@@ -40,10 +41,12 @@ bool FixedNumPoints::operator()(const Streamline<> &in, Streamline<> &out) const
   steps.push_back(value_type(0));
 
   Math::Hermite<value_type> interp(hermite_tension);
-  Streamline<> temp(in);
-  const size_t s = temp.size();
-  temp.insert(temp.begin(), temp[0] + (temp[0] - temp[1]));
-  temp.push_back(temp[s] + (temp[s] - temp[s - 1]));
+  // The reflected ghost vertices at index -1 and size() provide the control points
+  //   required for Hermite interpolation in the first and last streamline segments.
+  // The interpolation window {view[j-2], view[j-1], view[j], view[j+1]} below is expressed
+  //   over a virtual padded streamline whose index j is offset by one from the view.
+  const SplineView<value_type> view(in);
+  const size_t s = view.size();
 
   value_type cumulative_length = value_type(0);
   size_t input_index = 0;
@@ -52,12 +55,15 @@ bool FixedNumPoints::operator()(const Streamline<> &in, Streamline<> &out) const
     while (input_index < s && (cumulative_length + steps[input_index] < target_length))
       cumulative_length += steps[input_index++];
     if (input_index == s) {
-      out.push_back(temp[s]);
+      out.push_back(view[static_cast<ssize_t>(s) - 1]);
       break;
     }
     const value_type mu = steps[input_index] ? (target_length - cumulative_length) / steps[input_index] : 0.5;
     interp.set(mu);
-    out.push_back(interp.value(temp[input_index], temp[input_index + 1], temp[input_index + 2], temp[input_index + 3]));
+    out.push_back(interp.value(view[static_cast<ssize_t>(input_index) - 1],
+                               view[static_cast<ssize_t>(input_index)],
+                               view[static_cast<ssize_t>(input_index) + 1],
+                               view[static_cast<ssize_t>(input_index) + 2]));
     assert(out.back().allFinite());
   }
 

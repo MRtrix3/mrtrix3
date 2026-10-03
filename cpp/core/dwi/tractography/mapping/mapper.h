@@ -26,6 +26,7 @@
 #include "dwi/directions/set.h"
 
 #include "dwi/tractography/resampling/upsampler.h"
+#include "dwi/tractography/spline.h"
 #include "dwi/tractography/streamline.h"
 
 #include "dwi/tractography/mapping/mapper_plugins.h"
@@ -178,8 +179,7 @@ template <class Cont> void TrackMapperBase::voxelise_precise(const Streamline<> 
 
   Math::Hermite<value_type> hermite(0.1);
 
-  const point_type tck_proj_front = (tck[0] * 2.0) - tck[1];
-  const point_type tck_proj_back = (tck[tck.size() - 1] * 2.0) - tck[tck.size() - 2];
+  const SplineView<value_type> view(tck);
 
   unsigned int p = 0;
   point_type p_voxel_exit = tck.front();
@@ -209,8 +209,8 @@ template <class Cont> void TrackMapperBase::voxelise_precise(const Streamline<> 
       default_type mu_min = mu;
       default_type mu_max = 1.0;
 
-      const point_type *p_one = (p == 1) ? &tck_proj_front : &tck[p - 2];
-      const point_type *p_four = (p == tck.size() - 1) ? &tck_proj_back : &tck[p + 1];
+      const point_type &p_one = view[static_cast<ssize_t>(p) - 2];
+      const point_type &p_four = view[static_cast<ssize_t>(p) + 1];
 
       point_type p_min = p_prev;
       point_type p_max = tck[p];
@@ -219,7 +219,7 @@ template <class Cont> void TrackMapperBase::voxelise_precise(const Streamline<> 
 
         mu = 0.5 * (mu_min + mu_max);
         hermite.set(mu);
-        const point_type p_mu = hermite.value(*p_one, tck[p - 1], tck[p], *p_four);
+        const point_type p_mu = hermite.value(p_one, tck[p - 1], tck[p], p_four);
         const Eigen::Vector3i mu_voxel = round(scanner2voxel * p_mu);
 
         if (mu_voxel == this_voxel) {

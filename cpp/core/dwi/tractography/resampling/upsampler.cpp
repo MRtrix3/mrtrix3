@@ -16,6 +16,7 @@
 
 #include "dwi/tractography/resampling/upsampler.h"
 
+#include "dwi/tractography/spline.h"
 #include "math/hermite.h"
 
 namespace MR::DWI::Tractography::Resampling {
@@ -30,16 +31,18 @@ bool Upsampler::operator()(const Streamline<> &in, Streamline<> &out) const {
   out.weight = in.weight;
   if (in.empty())
     return true;
-  Streamline<> in_padded(in);
-  interp_prepare(in_padded);
-  for (size_t i = 3; i < in_padded.size(); ++i) {
-    out.push_back(in_padded[i - 2]);
-    increment(in_padded[i]);
+  // The reflected ghost vertices at index -1 and size() provide the control points
+  //   required to interpolate the first and last streamline segments.
+  const SplineView<value_type> view(in);
+  interp_prepare(view);
+  for (ssize_t k = 2; k <= static_cast<ssize_t>(view.size()); ++k) {
+    out.push_back(view[k - 2]);
+    increment(view[k]);
     temp = M * data;
     for (ssize_t row = 0; row != temp.rows(); ++row)
       out.push_back(Eigen::Vector3f(temp.row(row)));
   }
-  out.push_back(in_padded[in_padded.size() - 2]);
+  out.push_back(view.back());
   return true;
 }
 
@@ -60,18 +63,17 @@ void Upsampler::set_ratio(const size_t upsample_ratio) {
   }
 }
 
-void Upsampler::interp_prepare(Streamline<> &in) const {
-  assert(in.size() >= 2);
+void Upsampler::interp_prepare(const SplineView<value_type> &view) const {
+  assert(view.size() >= 2);
   // Abandoned curvature-based extrapolation - badly posed when step size is not guaranteed to be consistent,
-  //   and probably makes little difference anyways
-  const size_t s = in.size();
-  in.insert(in.begin(), in[0] + (in[0] - in[1]));
-  in.push_back(in[s] + (in[s] - in[s - 1]));
+  //   and probably makes little difference anyways.
+  // The first three rows of the interpolation window are the front ghost vertex
+  //   followed by the first two real vertices.
   for (size_t i = 0; i != 3; ++i) {
     data(0, i) = 0.0;
-    data(1, i) = (in[0])[i];
-    data(2, i) = (in[1])[i];
-    data(3, i) = (in[2])[i];
+    data(1, i) = (view[-1])[i];
+    data(2, i) = (view[0])[i];
+    data(3, i) = (view[1])[i];
   }
 }
 
