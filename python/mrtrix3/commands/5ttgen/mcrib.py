@@ -59,6 +59,9 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                          ' If the -mask_hdbet option is specified,'
                          ' then the HD-BET method will be used for this purpose;'
                          ' otherwise, the ANTs brain extraction script will be used.')
+  parser.add_citation('Blesa Cabez, M.; Galdi, P.; Batty, D.; Bastin, M.E.; Smith, R.; Boardman, J.-P.'
+                      ' A multi-atlas label fusion algorithm for neonatal Anatomically-Constrained Tractography.'
+                      ' In Proc ISMRM, 2026, 452-01-002'),
   parser.add_citation('Blesa, M.; Galdi, P.; Cox, S.R.; Sullivan, G.; Stoye, D.Q.; Lamb, G.L.; Quigley, A.J.; Thrippleton, M.J.; Escudero, J.; Bastin, M.E.; Smith, K.M. & Boardman. J.P.'
                       ' Hierarchical complexity of the macro-scale neonatal brain.'
                       ' Cerebral Cortex, 2021, 4, 2071-2084',

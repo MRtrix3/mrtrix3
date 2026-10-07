@@ -811,6 +811,8 @@ References
 
 * Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 2012, 62, 1924-1938
 
+* Blesa Cabez, M.; Galdi, P.; Batty, D.; Bastin, M.E.; Smith, R.; Boardman, J.-P. A multi-atlas label fusion algorithm for neonatal Anatomically-Constrained Tractography. In Proc ISMRM, 2026, 452-01-002
+
 * Blesa, M.; Galdi, P.; Cox, S.R.; Sullivan, G.; Stoye, D.Q.; Lamb, G.L.; Quigley, A.J.; Thrippleton, M.J.; Escudero, J.; Bastin, M.E.; Smith, K.M. & Boardman. J.P. Hierarchical complexity of the macro-scale neonatal brain. Cerebral Cortex, 2021, 4, 2071-2084
 
 * Avants, B.; Epstein, C.; Grossman, M. & Gee, J. Symmetric diffeomorphic image registration with cross-correlation: evaluating automated labeling of elderly and neurodegenerative brain. Medical Image Analysis, 2008, 41, 12-26
