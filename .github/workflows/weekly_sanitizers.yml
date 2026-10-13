@@ -11,8 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      SCCACHE_GHA_ENABLED: "true"
-      SCCACHE_CACHE_SIZE: "2G"
+      CCACHE_SLOPPINESS: pch_defines,time_macros
+      CCACHE_DEPEND: "true"
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_COMPILERCHECK: content
+      CCACHE_MAXSIZE: 2G
 
     strategy:
         fail-fast: false
@@ -30,8 +33,12 @@ jobs:
          sudo apt-get update
          sudo apt-get install clang llvm qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev libpng-dev ninja-build python3-numpy
 
-    - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.9
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.workflow }}-${{ github.job }}-${{ matrix.sanitizer }}
+        max-size: 2G
+        verbose: 1
 
     - name: Get CMake
       uses: lukka/get-cmake@latest
