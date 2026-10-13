@@ -4,7 +4,7 @@
 #   it is expected that upon completion of tractogram generation,
 #   the number of streamlines should be comparable in the two bundles
 #   despite the difference in their lengths (and hence seeding volume)
-tckgen SIFT_phantom/peaks.mif -algo fact -mask SIFT_phantom/mask.mif -select 10000 -minlength 4 -seed_direction 1,0,0 tmp.tck -nthreads 0 -force \
+tckgen -config FMLSDirectionSet 321 SIFT_phantom/peaks.mif -algo fact -mask SIFT_phantom/mask.mif -select 10000 -minlength 4 -seed_direction 1,0,0 tmp.tck -nthreads 0 -force \
 -seed_dynamic SIFT_phantom/fods.mif
 
 tckmap tmp.tck -template SIFT_phantom/dwi.mif tmp.mif -force

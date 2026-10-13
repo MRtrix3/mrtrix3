@@ -24,6 +24,7 @@
 #include "math/SH.h"
 
 #include "dwi/directions/set.h"
+#include "dwi/fmls.h"
 
 #include "dwi/tractography/SIFT/proc_mask.h"
 #include "dwi/tractography/SIFT/sift.h"
@@ -88,7 +89,7 @@ void run() {
 
   auto in_dwi = Image<float>::open(input_fod_path);
   Math::SH::check(in_dwi);
-  DWI::Directions::FastLookupSet dirs(1281);
+  const DWI::Directions::FastLookupSet dirs(DWI::FMLS::get_directions());
 
   SIFTer sifter(in_dwi, dirs);
 

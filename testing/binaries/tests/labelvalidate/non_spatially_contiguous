@@ -3,6 +3,9 @@
 #   (ie. contains discrete separate blobs in space),
 #   the correct warning message is produced.
 rm -f tmp.txt
-mredit labelconvert/out_fs.mif.gz -voxel 62,67,63 2 - | \
+# The chosen voxel must lie away from the existing extent of label 2,
+#   and is expressed in the index frame of the parcellation image,
+#   which is cropped to the bounding box of its non-zero voxels
+mredit labelconvert/out_fs.mif.gz -voxel 32,53,27 2 - | \
    labelvalidate - 2>&1 | tee tmp.txt
 grep -E "labels are spatially disconnected: .+ 2 .+" tmp.txt

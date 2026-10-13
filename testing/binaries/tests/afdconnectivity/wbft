@@ -5,6 +5,6 @@
 # The output is a scalar value printed to stdout.
 # The test verifies that the command completes without error.
 tckedit SIFT_phantom/tracks.tck -include SIFT_phantom/upper.mif tmp.tck -force
-afdconnectivity SIFT_phantom/fods.mif tmp.tck \
+afdconnectivity -config FMLSDirectionSet 321 SIFT_phantom/fods.mif tmp.tck \
     -wbft SIFT_phantom/tracks.tck \
     -quiet

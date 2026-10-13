@@ -13,7 +13,7 @@
 #   To generate a reference value, run:
 #     afdconnectivity SIFT_phantom/fods.mif SIFT_phantom/tracks.tck
 #   and store the result for future regression testing.
-result=$(afdconnectivity SIFT_phantom/fods.mif SIFT_phantom/tracks.tck -quiet)
+result=$(afdconnectivity -config FMLSDirectionSet 321 SIFT_phantom/fods.mif SIFT_phantom/tracks.tck -quiet)
 
 echo "${result} > 4.3 && ${result} < 4.7" | bc
 [[ $? ]]

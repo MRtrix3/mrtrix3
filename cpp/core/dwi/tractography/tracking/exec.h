@@ -21,6 +21,7 @@
 #include <optional>
 
 #include "dwi/directions/set.h"
+#include "dwi/fmls.h"
 #include "dwi/tractography/rng.h"
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/streamline.h"
@@ -73,7 +74,7 @@ public:
       using TckMapper = Mapping::TrackMapperBase;
       using Writer = Seeding::WriteKernelDynamic;
 
-      DWI::Directions::FastLookupSet dirs(1281);
+      const DWI::Directions::FastLookupSet dirs(DWI::FMLS::get_directions());
       auto fod_data = Image<float>::open(fod_path);
       Math::SH::check(fod_data);
       Seeding::Dynamic *seeder = new Seeding::Dynamic(fod_path, fod_data, num_tracks, dirs);
