@@ -397,7 +397,7 @@ namespace MR
           GL::Context::Grab context;
           GL::assert_context_is_current();
           roi.texture().bind();
-          gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
+          gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED_INTEGER, gl::UNSIGNED_BYTE, (void*) (&after[0]));
           GL::assert_context_is_current();
         }
 
