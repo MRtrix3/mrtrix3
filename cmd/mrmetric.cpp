@@ -284,6 +284,12 @@ void run ()
   if (space==0) {
     INFO ("per-voxel");
     check_dimensions (input1, input2);
+    if (!voxel_grids_match_in_scanner_space (input1, input2)) {
+      WARN("Input images have same axis dimensions, but voxel grids reside in different spatial locations;"
+           " voxel-wise computation can proceed,"
+           " but suggest checking derivation of data "
+           " and verifying validity of voxel-wise image comparison");
+    }
     if (!use_mask1 and !use_mask2)
       n_voxels = input1.size(0) * input1.size(1) * input1.size(2);
     evaluate_voxelwise_msq (input1, input2, mask1, mask2, dimensions, use_mask1, use_mask2, n_voxels, sos);
