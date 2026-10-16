@@ -201,6 +201,7 @@ namespace MR
 
             main_box->addLayout (hlayout);
 
+
             hlayout = new HBoxLayout;
             hlayout->setContentsMargins (0, 0, 0, 0);
             hlayout->setSpacing (0);
@@ -236,7 +237,7 @@ namespace MR
             slab_group_box = new QGroupBox (tr("crop to slab"));
             slab_group_box->setCheckable (true);
             slab_group_box->setChecked (true);
-            general_opt_grid->addWidget (slab_group_box, 4, 0, 1, 2);
+            general_opt_grid->addWidget (slab_group_box, 1, 0, 1, 2);
 
             connect (slab_group_box, SIGNAL (clicked (bool)), this, SLOT (on_crop_to_slab_slot (bool)));
 
@@ -248,6 +249,13 @@ namespace MR
             slab_entry->setMin (0.0);
             connect (slab_entry, SIGNAL (valueChanged()), this, SLOT (on_slab_thickness_slot()));
             slab_layout->addWidget (slab_entry, 0, 1);
+
+            colour_relative_to_projection_box = new QCheckBox ("colour by camera");
+            colour_relative_to_projection_box->setToolTip (tr ("Colour streamlines according their direction relative to the camera,\nrather than relative to the scanner coordinate system"));
+            colour_relative_to_projection_box->setChecked (false);
+            general_opt_grid->addWidget (colour_relative_to_projection_box, 2, 0, 1, 2);
+
+            connect (colour_relative_to_projection_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
 
             lighting_group_box = new QGroupBox (tr("use lighting"));
             lighting_group_box->setCheckable (true);
@@ -780,6 +788,12 @@ namespace MR
           thickness_slider->blockSignals (false);
         }
 
+
+        void Tractography::updateGL ()
+        {
+          if (!hide_all_button->isChecked())
+            window().updateGL();
+        }
 
 
         void Tractography::update_scalar_options()
