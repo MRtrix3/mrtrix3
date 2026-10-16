@@ -44,6 +44,18 @@ void usage () {
     + Argument ("target", "the input image from which to derive the target histogram").type_image_in()
     + Argument ("output", "the output image").type_image_out();
 
+  DESCRIPTION
+  + "It is highly recommended to additionally provide masks for input and output images."
+    " In the absence of such masks,"
+    " voxels outside of the tissue of interest"
+    " (which could be zero-filled, or contain intensities not of interest)"
+    " will contribute to the computation of the intensity transform."
+    " This can result in an intensity transform that is imprecise,"
+    " or biased if the prevalence or intensities of such voxels differ between the two images."
+    " Note that the derived intensity transform will still be applied to the whole input image;"
+    " the input image mask only affects which voxels contribute to derivation of the intensity transform,"
+    " not the voxels to which it is applied.";
+
   OPTIONS
     + OptionGroup ("Image masking options")
     + Option ("mask_input", "only generate input histogram based on a specified binary mask image")
