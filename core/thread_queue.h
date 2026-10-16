@@ -414,10 +414,10 @@ namespace MR
                  FORCE_INLINE bool write () {
                    return Q.push (p);
                  }
-                 FORCE_INLINE T& operator*() const throw ()   {
+                 FORCE_INLINE T& operator*() const noexcept   {
                    return *p;
                  }
-                 FORCE_INLINE T* operator->() const throw ()  {
+                 FORCE_INLINE T* operator->() const noexcept  {
                    return p;
                  }
                private:
@@ -484,21 +484,21 @@ namespace MR
                  FORCE_INLINE bool read () {
                    return Q.pop (p);
                  }
-                 FORCE_INLINE T* stash () throw () {
+                 FORCE_INLINE T* stash () noexcept {
                    T* item = p;
                    p = nullptr;
                    return item;
                  }
-                 FORCE_INLINE void recycle (T* item) const throw () {
+                 FORCE_INLINE void recycle (T* item) const noexcept {
                    Q.recycle (item);
                  }
-                 FORCE_INLINE T& operator*() const throw ()   {
+                 FORCE_INLINE T& operator*() const noexcept   {
                    return *p;
                  }
-                 FORCE_INLINE T* operator->() const throw ()  {
+                 FORCE_INLINE T* operator->() const noexcept  {
                    return p;
                  }
-                 FORCE_INLINE bool operator! () const throw () {
+                 FORCE_INLINE bool operator! () const noexcept {
                    return !p;
                  }
                private:

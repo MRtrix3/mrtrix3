@@ -122,6 +122,8 @@ namespace MR
 
           std::unique_ptr<ProgressBar> progress (message.size() ?  new ProgressBar (message, 3 * num_volumes) : nullptr);
 
+          const Eigen::Matrix3d image2scanner (Transform(in).image2scanner.linear());
+
           for (size_t vol = 0; vol < num_volumes; ++vol) {
             if (in.ndim() == 4) {
               smoothed.index(3) = vol;
@@ -142,9 +144,8 @@ namespace MR
             if (progress) ++(*progress);
 
             if (wrt_scanner) {
-              Transform transform (in);
               for (auto l = Loop(0,3) (out); l; ++l)
-                out.row(3) = transform.image2scanner.linear() * Eigen::Vector3d (out.row(3));
+                out.row(3) = image2scanner * Eigen::Vector3d (out.row(3));
             }
           }
         }

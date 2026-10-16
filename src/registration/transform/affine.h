@@ -62,6 +62,12 @@ namespace MR
             new_control_points_vec.resize(12);
           }
 
+          //! which stop condition the most recent operator() call that returned false invoked
+          UpdateStopReason stop_reason () const { return last_stop_reason; }
+
+          //! state of the trajectory convergence check at the most recent operator() call
+          const DoubleExpSmoothSlopeCheck& convergence_check_state () const { return convergence_check; }
+
         private:
           bool use_convergence_check;
           TransformProjectionType projection_type;
@@ -70,6 +76,7 @@ namespace MR
           Eigen::Matrix<default_type, 4, 1> stop_len, recip_spacing;
           DoubleExpSmoothSlopeCheck convergence_check;
           Eigen::Matrix<default_type, Eigen::Dynamic, 1> new_control_points_vec;
+          UpdateStopReason last_stop_reason = UpdateStopReason::none;
       };
 
       class AffineRobustEstimator { MEMALIGN(AffineRobustEstimator)

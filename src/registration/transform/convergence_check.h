@@ -30,6 +30,11 @@ namespace MR
   {
     namespace Transform
     {
+      //! Distinguishes why a linear-transform update functor declined to move the
+      //  parameter vector further, for cases where the caller needs to tell apart
+      //  a step-length tolerance from a trajectory convergence check.
+      enum class UpdateStopReason { none, unchanged, step_tolerance, convergence_check };
+
       // convergence check using linear trend of each parameter during gradient descent
       // we use double exponential smoothing to get rid of small oscillations
       class DoubleExpSmoothSlopeCheck
@@ -54,6 +59,16 @@ namespace MR
             bool last_s (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& s) const;
 
             void debug (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& vec) const;
+
+            //! largest absolute smoothed-slope component from the most recent go_on() call
+            default_type last_slope_max_abs () const {
+              return len ? db.back().array().abs().maxCoeff() : 0.0;
+            }
+
+            //! the slope magnitude below which go_on() treats a parameter as stationary
+            default_type slope_threshold () const {
+              return thresh.size() ? thresh(0) : 0.0;
+            }
 
         private:
           size_t stop_cnt;

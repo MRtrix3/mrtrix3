@@ -22,6 +22,7 @@
 #include "transform.h"
 #include "algo/random_threaded_loop.h"
 #include "algo/random_loop.h"
+#include "registration/metric/linear_diagnostics.h"
 
 namespace MR
 {
@@ -87,7 +88,8 @@ namespace MR
               const ParamType& parameters,
               Eigen::VectorXd& overall_cost_function,
               Eigen::VectorXd& overall_gradient,
-              ssize_t* overall_cnt = nullptr):
+              ssize_t* overall_cnt = nullptr,
+              LinearDiagnostics* overall_diagnostics = nullptr):
             metric (metric),
             params (parameters),
             cost_function (overall_cost_function.size()),
@@ -96,6 +98,7 @@ namespace MR
             overall_cost_function (overall_cost_function),
             overall_gradient (overall_gradient),
             overall_cnt (overall_cnt),
+            overall_diagnostics (overall_diagnostics),
             voxel2scanner (MR::Transform(params.midway_image).voxel2scanner) {
               if (params.robust_estimate_subset) {
                 // iterates over subset --> adjust voxel to scanner
@@ -116,6 +119,8 @@ namespace MR
             overall_gradient += gradient;
             if (overall_cnt)
               (*overall_cnt) += cnt;
+            if (overall_diagnostics)
+              (*overall_diagnostics) += diagnostics;
           }
 
           template <class U = MetricType>
@@ -165,6 +170,15 @@ namespace MR
               return;
 
             ++cnt;
+            if (overall_diagnostics) {
+              ++diagnostics.voxel_count;
+              const default_type im1_grad_mag = linear_diagnostics_gradient_magnitude (*params.im1_image_interp);
+              const default_type im2_grad_mag = linear_diagnostics_gradient_magnitude (*params.im2_image_interp);
+              diagnostics.im1_gradient_sum += im1_grad_mag;
+              diagnostics.im1_gradient_max = std::max (diagnostics.im1_gradient_max, im1_grad_mag);
+              diagnostics.im2_gradient_sum += im2_grad_mag;
+              diagnostics.im2_gradient_max = std::max (diagnostics.im2_gradient_max, im2_grad_mag);
+            }
             cost_function(0) += metric (params, im1_point, im2_point, midway_point, gradient);
           }
 
@@ -323,6 +337,8 @@ namespace MR
             Eigen::VectorXd& overall_cost_function;
             Eigen::VectorXd& overall_gradient;
             ssize_t* overall_cnt;
+            LinearDiagnostics* overall_diagnostics;
+            LinearDiagnostics diagnostics;
             transform_type voxel2scanner;
             // MR::Transform transform;
       };

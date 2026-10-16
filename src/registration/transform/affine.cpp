@@ -39,6 +39,7 @@ namespace MR
           if ((g.array() == 0).all()) {
             DEBUG ("gradient zero");
             newx = x;
+            last_stop_reason = UpdateStopReason::unchanged;
             return false;
           }
 
@@ -177,6 +178,7 @@ namespace MR
 
           if (newx.isApprox(x)) {
             DEBUG ("parameters unchanged");
+            last_stop_reason = UpdateStopReason::unchanged;
             return false;
           }
 
@@ -190,6 +192,7 @@ namespace MR
                 convergence_check.debug(new_control_points_vec);
               if (!convergence_check.go_on (new_control_points_vec)) {
                 DEBUG ("control point trajectories converged");
+                last_stop_reason = UpdateStopReason::convergence_check;
                 return false;
               }
             }
@@ -203,10 +206,12 @@ namespace MR
             if (Diff.template block<3,4>(0,0).maxCoeff() <= 0.0) {
               DEBUG ("max control point movement (" + str(Diff.template block<3,4>(0,0).maxCoeff()) +
               ") smaller than tolerance" );
+              last_stop_reason = UpdateStopReason::step_tolerance;
               return false;
             }
           }
 
+          last_stop_reason = UpdateStopReason::none;
           return true;
         }
 

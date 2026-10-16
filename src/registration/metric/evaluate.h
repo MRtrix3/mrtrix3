@@ -18,6 +18,7 @@
 #define __registration_metric_evaluate_h__
 
 #include "registration/metric/thread_kernel.h"
+#include "registration/metric/linear_diagnostics.h"
 #include "algo/threaded_loop.h"
 #include "algo/loop.h"
 #include "registration/transform/reorient.h"
@@ -118,7 +119,9 @@ namespace MR
               metric.precompute (params);
               {
                 overlap_count = 0;
-                ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient, &overlap_count);
+                diagnostics.clear();
+                ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient, &overlap_count,
+                                                             diagnostics_enabled ? &diagnostics : nullptr);
                 {
                   LogLevelLatch log_level (0);
                   ThreadedLoop (params.processed_image, 0, 3).run (kernel);
@@ -197,12 +200,16 @@ namespace MR
               }
 
               // estimate (params.transformation, metric, params, overall_cost_function, gradient, x, &overlap_count);
+              diagnostics.clear();
               if (params.loop_density < 1.0) {
                 DEBUG ("stochastic gradient descent, density: " + str(params.loop_density));
                 Math::RNG rng;
                 gradient.setZero();
                 auto loop = ThreadedLoop (params.midway_image, 0, 3, 2);
                 overlap_count = 0;
+                // the stochastic-sampling loop does not accumulate diagnostics: -diagnostics_stats
+                // and -lin_stage.loop_density are not expected to be combined, and duplicating the
+                // gradient-accumulation logic into StochasticThreadKernel is not otherwise warranted.
                 StochasticThreadKernel <MetricType, ParamType> functor (loop.inner_axes, params.loop_density, metric, params, overall_cost_function, gradient, rng, &overlap_count);
                 {
                   LogLevelLatch log_level (0);
@@ -210,7 +217,8 @@ namespace MR
                 }
               } else {
                 overlap_count = 0;
-                ThreadKernel <MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient, &overlap_count);
+                ThreadKernel <MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient, &overlap_count,
+                                                              diagnostics_enabled ? &diagnostics : nullptr);
                 if (params.robust_estimate_subset) {
                   assert(params.robust_estimate_subset_from.size() == 3);
                   assert(params.robust_estimate_subset_size.size() == 3);
@@ -251,6 +259,16 @@ namespace MR
               directions = dir;
             }
 
+            //! enable accumulation of scanner-space image gradient statistics on every subsequent operator() call
+            void enable_diagnostics () {
+              diagnostics_enabled = true;
+            }
+
+            //! gradient statistics accumulated during the most recent operator() call
+            const LinearDiagnostics& diagnostics_stats () const {
+              return diagnostics;
+            }
+
           protected:
             MetricType metric;
             ParamType params;
@@ -258,6 +276,8 @@ namespace MR
             size_t iteration;
             Eigen::MatrixXd directions;
             ssize_t overlap_count;
+            bool diagnostics_enabled = false;
+            LinearDiagnostics diagnostics;
 
       };
     }

@@ -14,9 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <memory>
+
 #include "command.h"
 #include "image.h"
 #include "image_helpers.h"
+#include "file/ofstream.h"
 #include "filter/reslice.h"
 #include "interp/cubic.h"
 #include "transform.h"
@@ -751,6 +754,27 @@ void run () {
     if (!do_nonlinear)
       throw Exception ("the initial gradient step size was input when no non-linear registration is requested");
     nl_registration.set_init_grad_step (opt[0][0]);
+  }
+
+  std::unique_ptr<File::OFStream> linear_diagnostics_stats_stream;
+  opt = get_options ("diagnostics_stats");
+  if (opt.size()) {
+    if (do_nonlinear) {
+      // the non-linear diagnostics facility owns its own row schema and file handle;
+      // a composite *_nonlinear -type therefore still reports on the non-linear stage only.
+      nl_registration.set_diagnostics_stats (opt[0][0]);
+    } else if (do_rigid || do_affine) {
+      linear_diagnostics_stats_stream.reset (new File::OFStream (opt[0][0]));
+      // write the header exactly once, regardless of how many of rigid/affine
+      // subsequently share this stream (-type rigid_affine points both at it)
+      Registration::Linear::write_diagnostics_header (*linear_diagnostics_stats_stream);
+      if (do_rigid)
+        rigid_registration.set_diagnostics_stats (linear_diagnostics_stats_stream->rdbuf(), "rigid");
+      if (do_affine)
+        affine_registration.set_diagnostics_stats (linear_diagnostics_stats_stream->rdbuf(), "affine");
+    } else {
+      throw Exception ("the -diagnostics_stats option cannot be used when no registration is requested");
+    }
   }
 
   opt = get_options ("nl_lmax");
