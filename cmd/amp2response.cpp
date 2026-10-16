@@ -217,7 +217,7 @@ void run ()
   auto opt = get_options ("directions");
   if (opt.size()) {
     dirs_azel.push_back (load_matrix (opt[0][0]));
-    volumes.push_back (all_volumes (dirs_azel.size()));
+    volumes.push_back (all_volumes (dirs_azel.back().rows()));
   } else {
     auto hit = header.keyval().find ("directions");
     if (hit != header.keyval().end()) {
@@ -232,7 +232,7 @@ void run ()
         directions (i/2, 1) = dir_vector[i+1];
       }
       dirs_azel.push_back (std::move (directions));
-      volumes.push_back (all_volumes (dirs_azel.size()));
+      volumes.push_back (all_volumes (dirs_azel.back().rows()));
     } else {
       auto grad = DWI::get_DW_scheme (header);
       shells.reset (new DWI::Shells (grad));
