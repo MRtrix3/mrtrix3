@@ -90,9 +90,7 @@ void run ()
     auto deformation = Image<default_type>::open (argument[0]).with_direct_io (3);
     Registration::Warp::check_warp (deformation);
 
-    Header header (deformation);
-    header.datatype() = DataType::from_command_line (DataType::Float32);
-    Image<default_type> displacement = Image<default_type>::create (argument[2], header).with_direct_io();
+    Image<default_type> displacement = Image<default_type>::create (argument[2], deformation).with_direct_io();
     Registration::Warp::deformation2displacement (deformation, displacement);
 
   // displacement2deformation
@@ -107,9 +105,7 @@ void run ()
     if (get_options ("from").size())
       WARN ("-from option ignored with displacement2deformation conversion type");
 
-    Header header (displacement);
-    header.datatype() = DataType::from_command_line (DataType::Float32);
-    Image<default_type> deformation = Image<default_type>::create (argument[2], header).with_direct_io();
+    Image<default_type> deformation = Image<default_type>::create (argument[2], displacement).with_direct_io();
     Registration::Warp::displacement2deformation (displacement, deformation);
 
    // warpfull2deformation & warpfull2displacement
@@ -135,9 +131,7 @@ void run ()
     if (type == 3)
       Registration::Warp::deformation2displacement (warp_output, warp_output);
 
-    Header header (warp_output);
-    header.datatype() = DataType::from_command_line (DataType::Float32);
-    Image<default_type> output = Image<default_type>::create (argument[2], header);
+    Image<default_type> output = Image<default_type>::create (argument[2], warp_output);
     threaded_copy_with_progress_message ("converting warp", warp_output, output);
 
   } else {
