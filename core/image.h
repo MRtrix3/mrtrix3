@@ -539,7 +539,7 @@ namespace MR
   //! display the contents of an image in MRView (for debugging only)
   template <class ImageType>
     typename enable_if_image_type<ImageType,void>::type display (ImageType& x) {
-      std::string filename = save (x, "-");
+      std::string filename = save (x, File::name_tempfile(".mif"));
       CONSOLE ("displaying image \"" + filename + "\"");
       if (system (("bash -c \"mrview " + filename + "\"").c_str()))
         WARN (std::string("error invoking viewer: ") + strerror(errno));

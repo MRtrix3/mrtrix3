@@ -212,19 +212,32 @@ namespace MR
 
 
 
+    inline std::string name_tempfile (const char* suffix = NULL) {
+      std::string filename (Path::join (tmpfile_dir(), tmpfile_prefix()) + "XXXXXX.");
+      int rand_index = filename.size() - 7;
+      if (suffix)
+        filename += suffix;
+
+      int fid(0);
+      do {
+        for (int n = 0; n < 6; n++)
+          filename[rand_index + n] = random_char();
+        fid = open(filename.c_str(), O_RDONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+      } while (fid >= 0);
+
+      return filename;
+    }
+
+
 
     inline std::string create_tempfile (int64_t size = 0, const char* suffix = NULL)
     {
       DEBUG ("creating temporary file of size " + str (size));
 
-      std::string filename (Path::join (tmpfile_dir(), tmpfile_prefix()) + "XXXXXX.");
-      int rand_index = filename.size() - 7;
-      if (suffix) filename += suffix;
-
-      int fid;
+      int fid(0);
+      std::string filename;
       do {
-        for (int n = 0; n < 6; n++)
-          filename[rand_index+n] = random_char();
+        filename = name_tempfile(suffix);
         fid = open (filename.c_str(), O_CREAT | O_RDWR | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
       } while (fid < 0 && errno == EEXIST);
 
