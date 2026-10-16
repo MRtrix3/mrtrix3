@@ -116,6 +116,11 @@ namespace MR
           size_t bin (const value_type val) const {
             size_t pos = std::floor ((val - info.get_min()) / info.get_bin_width());
             if (pos > size_t(list.size())) return size();
+            // Floating-point division can round (val - min) / bin_width up to exactly
+            //   num_bins for val == max, even though bin_width was derived as
+            //   (max - min) / num_bins: without this, the single maximum-valued
+            //   input is silently excluded from every bin instead of falling in the last one.
+            if (pos == size_t(list.size())) --pos;
             return pos;
           }
 
