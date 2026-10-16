@@ -237,7 +237,9 @@ namespace MR
                   return 0.0;
                 }
 
-                const Eigen::Vector3d pos = Eigen::Vector3d(default_type(iter.index(0)), default_type(iter.index(0)), default_type(iter.index(0)));
+                const Eigen::Vector3d pos = Eigen::Vector3d(default_type(iter.index(0)),
+                                                            default_type(iter.index(1)),
+                                                            default_type(iter.index(2)));
                 params.processed_image_interp->voxel(pos);
                 typename Params::Im1ValueType val1;
                 typename Params::Im2ValueType val2;
