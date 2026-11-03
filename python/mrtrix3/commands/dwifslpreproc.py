@@ -15,7 +15,7 @@
 
 
 
-import argparse, glob, itertools, json, os, shlex, shutil, sys
+import argparse, glob, itertools, json, os, re, shlex, shutil, sys
 from enum import Enum
 
 
@@ -1264,9 +1264,15 @@ def execute(): #pylint: disable=unused-variable
   eddy_cuda_cmd = fsl.eddy_binary(True)
   eddy_openmp_cmd = fsl.eddy_binary(False)
   if eddy_cuda_cmd:
+    # The CUDA version of eddy refuses --nthr other than 1
+    #   ("The version compiled for GPU can only use 1 CPU thread");
+    #   strip it for the CUDA attempt only, so that the CPU fallback keeps it
+    eddy_cuda_options = re.sub(r'\s--nthr(=|\s+)\S+', '', eddy_all_options)
+    if eddy_cuda_options != eddy_all_options:
+      app.debug('Removed --nthr from options for CUDA version of eddy')
     # If running CUDA version, but OpenMP version is also available, don't stop the script if the CUDA version fails
     try:
-      eddy_output = run.command(f'{eddy_cuda_cmd} {eddy_all_options}')
+      eddy_output = run.command(f'{eddy_cuda_cmd} {eddy_cuda_options}')
     except run.MRtrixCmdError as exception_cuda:
       if not eddy_openmp_cmd:
         raise
@@ -1496,7 +1502,8 @@ def execute(): #pylint: disable=unused-variable
     app.cleanup(field_map_image)
 
   if not done_dwirecon:
-    run.command('mrconvert dwi_post_eddy.mif result.mif'
+    # -force: a failed dwirecon pipe above may have left a partial result.mif behind
+    run.command('mrconvert dwi_post_eddy.mif result.mif -force'
                 f'{dwi_post_eddy_crop_option}{stride_restore_option}')
 
   app.cleanup('dwi_post_eddy.mif')
