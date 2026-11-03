@@ -325,6 +325,9 @@ def activate_scratch_dir(): #pylint: disable=unused-variable
   global SCRATCH_DIR
   if CONTINUE_OPTION:
     debug('Skipping scratch directory creation due to use of -continue option')
+    # Still enter the re-used scratch directory, as a fresh run does below:
+    # the script's relative paths (e.g. "dwi.mif") are relative to it
+    os.chdir(SCRATCH_DIR)
     return
   assert not SCRATCH_DIR, 'Cannot use multiple scratch directories'
   if hasattr(ARGS, 'scratch') and ARGS.scratch:
