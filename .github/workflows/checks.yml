@@ -96,7 +96,7 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install g++-9 qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy libpng-dev mesa-vulkan-drivers
+         sudo apt-get install g++ qt6-base-dev libglvnd-dev zlib1g-dev libfftw3-dev ninja-build python3-numpy libpng-dev mesa-vulkan-drivers
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.9
@@ -104,7 +104,7 @@ jobs:
     - name: Get CMake
       uses: lukka/get-cmake@latest
       with:
-        cmakeVersion: '3.22.1'
+        cmakeVersion: '3.25'
 
     - name: Print CMake version
       run: cmake --version
