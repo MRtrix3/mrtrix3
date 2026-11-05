@@ -162,7 +162,7 @@ jobs:
     - name: Get CMake
       uses: lukka/get-cmake@latest
       with:
-        cmakeVersion: '3.22.1'
+        cmakeVersion: '3.25'
 
     - name: Print CMake version
       run: cmake --version
