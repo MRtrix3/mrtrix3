@@ -40,8 +40,6 @@ LINEAR_ESTIMATORS = ['l1', 'l2', 'lp', 'none']
 
 AGGREGATION_MODES = ['mean', 'median']
 
-LINEAR_ESTIMATORS = ['l1', 'l2', 'lp', 'none']
-
 INITIAL_ALIGNMENT = ['mass', 'robust_mass', 'geometric', 'none']
 
 LEAVE_ONE_OUT = ['0', '1', 'auto']
