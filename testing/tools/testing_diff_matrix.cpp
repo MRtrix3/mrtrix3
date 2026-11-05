@@ -110,7 +110,7 @@ void run() {
       for (ssize_t row = 0; row != in1.rows(); ++row) {
         if (abs(in1(row, col) - in2(row, col)) / (0.5 * (in1(row, col) + in2(row, col))) > tolerance_frac)
           throw Exception("matrices \"" + argument[0].as_text() + "\" and \"" + argument[1].as_text() + "\"" + //
-                          " do not match within fractional precision of " + str(tolerance_abs) +               //
+                          " do not match within fractional precision of " + str(tolerance_frac) +              //
                           " ((" + str(row) + ", " + str(col) + "): " +                                         //
                           str(in1(row, col)) + " vs " + str(in2(row, col)) + ")");                             //
       }

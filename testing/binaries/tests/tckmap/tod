@@ -4,4 +4,7 @@
 #   a difference of up to 1 streamline is permitted
 #   in case of differences in precision / rounding between platforms
 tckmap tracks.tck -tod 6 -template dwi.mif - | \
-testing_diff_image - tckmap/tod_lmax6.mif.gz -voxel 1e-4
+sh2amp - sh2amp/grad.txt - | \
+testing_diff_image - \
+    $(sh2amp tckmap/tod_lmax6.mif.gz sh2amp/grad.txt -) \
+    -abs 1e-4

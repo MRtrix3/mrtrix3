@@ -41,7 +41,7 @@ def copy(src, dst, follow_symlinks=True): # pylint: disable=unused-variable
 
 
 
-def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=0.2, max_rot=None, pause_on_warn=True): # pylint: disable=unused-variable, too-many-arguments
+def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=0.2, max_rot=None, pause_on_warn=True): # pylint: disable=unused-variable, too-many-arguments, too-many-positional-arguments
   if max_rot is None:
     max_rot = 2 * math.pi
 
