@@ -154,8 +154,8 @@ def execute(): #pylint: disable=unused-variable
   # Compute FA and principal eigenvectors; crude WM versus GM-CSF separation based on FA.
   app.console('* Crude WM versus GM-CSF separation (at FA=' + str(app.ARGS.fa) + ')...')
   run.command('dwi2tensor dwi.mif - -mask safe_mask.mif | tensor2metric - -fa safe_fa.mif -vector safe_vecs.mif -modulate none -mask safe_mask.mif', show=False)
-  run.command('mrcalc safe_mask.mif safe_fa.mif 0 -if ' + str(app.ARGS.fa) + ' -gt crude_wm.mif -datatype bit', show=False)
-  run.command('mrcalc crude_wm.mif 0 safe_mask.mif -if _crudenonwm.mif -datatype bit', show=False)
+  run.command('mrcalc safe_mask.mif safe_fa.mif -finite -mult safe_fa.mif 0 -if ' + str(app.ARGS.fa) + ' -gt crude_wm.mif -datatype bit', show=False)
+  run.command('mrcalc safe_mask.mif safe_fa.mif -finite -mult crude_wm.mif 0 -eq -mult _crudenonwm.mif -datatype bit', show=False)
   statcrudewmcount = image.statistics('crude_wm.mif', mask='crude_wm.mif').count
   statcrudenonwmcount = image.statistics('_crudenonwm.mif', mask='_crudenonwm.mif').count
   app.console('  [ ' + str(statsmaskcount) + ' -> ' + str(statcrudewmcount) + ' (WM) & ' + str(statcrudenonwmcount) + ' (GM-CSF) ]')

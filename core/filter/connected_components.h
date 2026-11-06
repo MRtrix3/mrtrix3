@@ -58,7 +58,7 @@ namespace MR
                 enabled_axes (3, true) { }
 
             void toggle_axis (const size_t axis, const bool value) {
-              if (axis > enabled_axes.size())
+              if (axis >= enabled_axes.size())
                 enabled_axes.resize (axis+1, false);
               enabled_axes[axis] = value;
               data.clear();

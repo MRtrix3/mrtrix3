@@ -290,7 +290,7 @@ void run () {
       filter.set_voxels_to_bridge (get_option_value ("bridge", 4));
       float zlower = get_option_value ("zlower", 2.5);
       float zupper = get_option_value ("zupper", 2.5);
-      filter.set_zlim (zlower, zupper);
+      filter.set_zlim (zupper, zlower);
 
       auto output = Image<float>::create (argument[2], filter);
       filter (input, maskin, output);
