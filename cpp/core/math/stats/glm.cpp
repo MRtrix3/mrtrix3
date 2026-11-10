@@ -118,8 +118,8 @@ void check_design(const matrix_type &design, const bool extra_factors) {
 void check_design(const vector_type &cond) {
   const auto mv = MR::Math::welford(cond.array());
   const default_type max = cond.array().maxCoeff();
-  CONSOLE("Condition number distribution: " + str(mv.mean) + " +/- " + str(std::sqrt(mv.std())) + //
-          " [" + str(cond.array().minCoeff()) + " -- " + str(max) + "]");                         //
+  CONSOLE("Condition number distribution: " + str(mv.mean) + " +/- " + str(mv.std()) + //
+          " [" + str(cond.array().minCoeff()) + " -- " + str(max) + "]");              //
   if (std::min(max, mv.mean + 2.0 * mv.std()) > condnumber_warning_threshold) {
     WARN("Design matrix condition number high even with inclusion of element-wise design matrix columns;"
           " check condition number map and restrict analysis if necessary");
