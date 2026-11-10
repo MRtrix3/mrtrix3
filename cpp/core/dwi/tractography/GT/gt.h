@@ -70,9 +70,9 @@ public:
         progress("running MH sampler", n_max / iter_bigstep) {
     for (int k = 0; k != 5; k++)
       n_gen[k] = n_acc[k] = 0;
-    alpha = std::pow(T1 / T0, //
-                     static_cast<double>(iter_bigstep) /
-                         (fraction_burnin * (n_max - n_max) - fraction_phaseout * n_max)); //
+    alpha =
+        std::pow(T1 / T0,                                                                                            //
+                 static_cast<double>(iter_bigstep) / ((1.0 - fraction_burnin) * n_max - fraction_phaseout * n_max)); //
   }
 
   ~Stats() { out.close(); }
