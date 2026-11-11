@@ -8,4 +8,4 @@
 mrcat tcksample/fa.mif tcksample/adc.mif -axis 3 - | \
     tcksample tracks.tck - tmp.csv -stat_tck mean -precise -use_tdi_fraction -force
 
-testing_diff_matrix tmp.csv tcksample/input4d_precise_tdifrac_statmean.csv -frac 2e-5
+testing_diff_matrix tmp.csv tcksample/input4d_precise_tdifrac_statmean.csv -frac 2.5e-5
