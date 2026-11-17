@@ -278,7 +278,7 @@ namespace MR
             if (use_discard_upper())
               gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"upper").c_str()), greaterthan / scaling);
             if (use_transparency()) {
-              gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"alpha_scale").c_str()), scaling / (opaque_intensity - transparent_intensity));
+              gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"alpha_scale").c_str()), alpha * scaling / (opaque_intensity - transparent_intensity));
               gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"alpha_offset").c_str()), transparent_intensity / scaling);
               gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"alpha").c_str()), alpha);
             }
