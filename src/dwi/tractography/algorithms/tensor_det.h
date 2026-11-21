@@ -101,7 +101,7 @@ namespace MR
           return false;
         if (!do_init())
           return false;
-        if (S.init_dir.allFinite())
+        if (!S.init_dir.allFinite())
           return true;
         if (S.init_dir.dot (dir) < 0.0)
           dir = -dir;
