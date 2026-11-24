@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# Testing the operation of the streamline data filtering performed by tckfilter
+# The displayed outcome should show the effect of different degrees of smoothing
+
+# Running this may adding to PATH the following:
+# - build/testing/binaries_data/src/BinariesTestData
+
+# This creates a simulated target image for downstream tcksample
+maskfilter SIFT_phantom/mask.mif erode - | mrfilter - smooth - | mrgrid - regrid -voxel 0.8 tcksample_target.mif -force
+
+tcksample SIFT_phantom/tracks.tck tcksample_target.mif samples_raw.txt -stat_tck mean -force
+
+tcksimilarity SIFT_phantom/tracks.tck tcksample_target.mif matrix -force
+
+# The greater -decay_rate, the 
+tckfilter samples_raw.txt smoothed_d3.txt matrix -decay_rate 3 -force
+tckfilter samples_raw.txt smoothed_d01.txt matrix -decay_rate 0.1 -force
+tckfilter samples_raw.txt smoothed_d100.txt matrix -decay_rate 100 -force  # this should result in little to no perceived smoothing
+tckfilter samples_raw.txt smoothed_t0_9.txt matrix -threshold 0.9 -force  # this should result in little to no perceived smoothing
+
+min_val=$(grep -v '^#' samples_raw.txt | tr ' ' '\n' | sort -g | head -1)
+max_val=$(grep -v '^#' samples_raw.txt | tr ' ' '\n' | sort -g | tail -1)
+
+mrview tcksample_target.mif \
+    -interpolation 0 \
+    -plane 0 \
+    -tractography.load SIFT_phantom/tracks.tck \
+    -tractography.tsf_load samples_raw.txt \
+    -tractography.load SIFT_phantom/tracks.tck \
+    -tractography.tsf_load smoothed_d100.txt \
+    -tractography.tsf_range $min_val,$max_val \
+    -tractography.load SIFT_phantom/tracks.tck \
+    -tractography.tsf_load smoothed_t0_9.txt \
+    -tractography.tsf_range $min_val,$max_val \
+    -tractography.load SIFT_phantom/tracks.tck \
+    -tractography.tsf_load smoothed_d3.txt \
+    -tractography.tsf_range $min_val,$max_val \
+    -tractography.load SIFT_phantom/tracks.tck \
+    -tractography.tsf_load smoothed_d01.txt \
+    -tractography.tsf_range $min_val,$max_val \

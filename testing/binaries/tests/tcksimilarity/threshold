@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# Testing the operation of the streamline-streamline similarity matrix with two different similarity thresholds for comparison
+# The displayed outcome should show the difference that two different similarity thresholds make (0.1 and 0.4)
+
+# Running this may adding to PATH the following:
+# - build/testing/binaries_data/src/BinariesTestData
+
+# Computing streamline-streamline similarity matrix for threshold 0.1 (default)
+tcksimilarity \
+    SIFT_phantom/tracks.tck \
+    SIFT_phantom/mask.mif \
+    -threshold 0.1 \
+    matrix_1 -force
+
+# Computing streamline-streamline similarity matrix for threshold 0.4
+tcksimilarity \
+    SIFT_phantom/tracks.tck \
+    SIFT_phantom/mask.mif \
+    -threshold 0.4 \
+    matrix_4 -force
+
+# Converting files mif to nii.gz to allow downstream processing in Python
+mrconvert matrix_1/index.mif matrix_1/index.nii.gz -force
+mrconvert matrix_1/streamlines.mif matrix_1/streamlines.nii.gz -force
+mrconvert matrix_1/values.mif matrix_1/values.nii.gz -force
+
+mrconvert matrix_4/index.mif matrix_4/index.nii.gz -force
+mrconvert matrix_4/streamlines.mif matrix_4/streamlines.nii.gz -force
+mrconvert matrix_4/values.mif matrix_4/values.nii.gz -force
+
+# extract similarity values for a random reference streamline
+python extract_similar.py matrix_1/index.nii.gz matrix_1/streamlines.nii.gz matrix_1/values.nii.gz 10
+mv similarity_binary.txt similarity_binary_1.txt
+mv similarity_values.txt similarity_values_1.txt
+
+python extract_similar.py matrix_4/index.nii.gz matrix_4/streamlines.nii.gz matrix_4/values.nii.gz 10
+mv similarity_binary.txt similarity_binary_4.txt
+mv similarity_values.txt similarity_values_4.txt
+
+# Display both results
+# Toggle between the two tractography files to see the difference
+../mrtrix3/bin/mrview \
+    ../mrtrix3/build/testing/binaries_data/src/BinariesTestData/SIFT_phantom/mask.mif \
+    -tractography.load ../mrtrix3/build/testing/binaries_data/src/BinariesTestData/SIFT_phantom/tracks.tck \
+    -tractography.tsf_load similarity_values_1.txt \
+    -tractography.load ../mrtrix3/build/testing/binaries_data/src/BinariesTestData/SIFT_phantom/tracks.tck \
+    -tractography.tsf_load similarity_values_4.txt \
