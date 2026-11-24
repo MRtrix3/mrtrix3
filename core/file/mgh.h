@@ -275,14 +275,13 @@ namespace MR
             in.read (buffer, MGH_MATRIX_STRLEN);
             // There's also a string before the 16 floating-point values, the FreeSurfer code
             //   discards it immediately
-            char ch[100];
+            std::string ch;
             Eigen::Matrix<default_type, 4, 4> M;
-            sscanf (buffer, "%s %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
-                    ch,
-                    &M(0,0), &M(0,1), &M(0,2), &M(0,3),
-                    &M(1,0), &M(1,1), &M(1,2), &M(1,3),
-                    &M(2,0), &M(2,1), &M(2,2), &M(2,3),
-                    &M(3,0), &M(3,1), &M(3,2), &M(3,3));
+            std::istringstream iss(buffer);
+            iss >> ch >> M(0, 0) >> M(0, 1) >> M(0, 2) >> M(0, 3) >>
+                         M(1, 0) >> M(1, 1) >> M(1, 2) >> M(1, 3) >>
+                         M(2, 0) >> M(2, 1) >> M(2, 2) >> M(2, 3) >>
+                         M(3, 0) >> M(3, 1) >> M(3, 2) >> M(3, 3);
             return M;
           };
 
