@@ -271,8 +271,8 @@ namespace MR
 
           auto read_matrix = [] (Input& in)
           {
-            char buffer[MGH_MATRIX_STRLEN];
-            in.read (buffer, MGH_MATRIX_STRLEN);
+            std::string buffer(MGH_MATRIX_STRLEN + 1, '\0');
+            in.read(&buffer[0], MGH_MATRIX_STRLEN);
             // There's also a string before the 16 floating-point values, the FreeSurfer code
             //   discards it immediately
             std::string ch;
@@ -315,6 +315,7 @@ namespace MR
                 frame.slice_dir[i] = fetch<float32> (in);
               frame.label = fetch<int32_t> (in);
               in.read (frame.name, MGH_STRLEN);
+              frame.name[MGH_STRLEN - 1] = '\0';
               frame.dof = fetch<int32_t> (in);
               // Single matrix is read here; use the same function as that for importing MGH_TAG_AUTO_ALIGN
               fetch<int32_t> (in); // Skip the tag ID absorbed by znzTAGreadStart()
