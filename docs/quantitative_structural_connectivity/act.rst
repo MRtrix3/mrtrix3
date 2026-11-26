@@ -138,14 +138,14 @@ A computed tissue segmentation image
 will typically have the same spatial resolution
 as whatever high-resolution anatomical-contrast image it was computed from,
 and is typically derived independently of any DWI data.
-This means that the tissue segumentation image and the DWI data
+This means that the tissue segmentation image and the DWI data
 (or derivatives thereof)
 will reside on *different voxel grids*
 (in terms of spatial resolution and/or orientations of image axes).
 As communicated in the original ACT article,
 this is a *positive attribute* of the implementation:
 each source of image data preserves its native spatial resolution
-and does not undergo any unecessary resampling
+and does not undergo any unnecessary resampling
 during which interpolation invariably introduces some degree of image blurring.
 As streamlines are propagated,
 sub-voxel interpolation is performed *independently* for ACT image data and DWI data,
