@@ -101,7 +101,7 @@ namespace MR
         assert (data.size());
         const size_t lower_index = std::round (0.25*data.size());
         std::nth_element (data.begin(), data.begin() + lower_index, data.end());
-        const default_type lower = data[data.size()/4];
+        const default_type lower = data[lower_index];
         const size_t upper_index = std::round (0.75*data.size());
         std::nth_element (data.begin(), data.begin() + upper_index, data.end());
         const default_type upper = data[upper_index];
