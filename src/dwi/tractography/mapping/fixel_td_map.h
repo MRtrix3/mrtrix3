@@ -50,6 +50,7 @@ namespace MR
 
           virtual ~Fixel_TD_map() { }
 
+          using Fixel_map<Fixel>::operator();
           virtual bool operator() (const SetDixel& in);
 
         protected:

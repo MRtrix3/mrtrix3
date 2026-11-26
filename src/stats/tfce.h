@@ -45,6 +45,7 @@ namespace MR
       { MEMALIGN (EnhancerBase)
         public:
           virtual ~EnhancerBase() { }
+          using Stats::EnhancerBase::operator();
         protected:
           // Alternative functor that also takes the threshold value;
           //   makes TFCE integration cleaner
