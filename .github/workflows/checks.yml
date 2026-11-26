@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      CXX: g++-9
+      CXX: g++
       CFLAGS: -Werror
       QT_SELECT: qt5
 
@@ -63,7 +63,7 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install g++-9 libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev 
+         sudo apt-get install g++ libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev
 
     - name: configure
       run: ./configure -nooptim || { cat configure.log; false; }
