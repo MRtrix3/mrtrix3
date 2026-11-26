@@ -72,7 +72,11 @@ namespace MR
               source.clear();
               if (!source.get (pos, values))
                 return false;
-              return Tensor_Det::do_init();
+              if (!Tensor_Det::do_init())
+                return false;
+              if (S.init_dir.allFinite() && S.init_dir.dot (dir) < 0.0)
+                dir = -dir;
+              return true;
             }
 
 
