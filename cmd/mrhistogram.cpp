@@ -147,6 +147,8 @@ void run ()
     Algo::Histogram::Data histogram (calibrator);
     for (auto v = Volume_loop(data); v; ++v)
       run_volume (histogram, data, mask);
+    if (histogram.get_num_out_of_range())
+      WARN (str(histogram.get_num_out_of_range()) + " values fell outside the calibrated histogram range and were not counted");
     for (size_t i = 0; i != nbins; ++i)
       output << histogram[i] << ",";
     output << "\n";
@@ -156,6 +158,8 @@ void run ()
     for (auto v = Volume_loop(data); v; ++v) {
       Algo::Histogram::Data histogram (calibrator);
       run_volume (histogram, data, mask);
+      if (histogram.get_num_out_of_range())
+        WARN (str(histogram.get_num_out_of_range()) + " values fell outside the calibrated histogram range and were not counted");
       for (size_t i = 0; i != nbins; ++i)
         output << histogram[i] << ",";
       output << "\n";

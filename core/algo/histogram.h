@@ -19,7 +19,9 @@
 
 #include <cmath>
 
+#include "exception.h"
 #include "image_helpers.h"
+#include "mrtrix.h"
 #include "types.h"
 #include "adapter/replicate.h"
 #include "algo/loop.h"
@@ -100,7 +102,8 @@ namespace MR
 
           Data (const Calibrator& calibrate) :
               info (calibrate),
-              list (vector_type::Zero (info.get_num_bins())) { }
+              list (vector_type::Zero (info.get_num_bins())),
+              num_out_of_range (0) { }
 
           template <typename value_type>
           bool operator() (const value_type val) {
@@ -108,16 +111,31 @@ namespace MR
               const size_t pos = bin (val);
               if (pos != size_t(list.size()))
                 ++list[pos];
+              else
+                ++num_out_of_range;
             }
             return true;
           }
 
+          // Values strictly outside [min, max] are not counted: the histogram is
+          //   normally calibrated from the same data it then bins, so this should
+          //   not occur in that usage, but this is core/ code and must stay robust
+          //   when calibration and binning are not guaranteed to agree.
+          // A value exactly equal to max is explicitly folded into the last bin:
+          //   floating-point division can round (val - min) / bin_width up to
+          //   exactly num_bins for val == max, even though bin_width was itself
+          //   derived as (max - min) / num_bins, which would otherwise exclude the
+          //   single maximum-valued input from every bin.
           template <typename value_type>
           size_t bin (const value_type val) const {
-            size_t pos = std::floor ((val - info.get_min()) / info.get_bin_width());
-            if (pos > size_t(list.size())) return size();
-            return pos;
+            if (default_type(val) < info.get_min() || default_type(val) > info.get_max())
+              return size();
+            if (default_type(val) == info.get_max())
+              return size_t(list.size()) - 1;
+            return std::floor ((val - info.get_min()) / info.get_bin_width());
           }
+
+          size_t get_num_out_of_range () const { return num_out_of_range; }
 
 
           size_t operator[] (const size_t index) const {
@@ -139,6 +157,7 @@ namespace MR
         protected:
           const Calibrator info;
           vector_type list;
+          size_t num_out_of_range;
           friend class Kernel;
       };
 
@@ -191,6 +210,8 @@ namespace MR
         Data result (calibrator);
         for (auto l = Loop(image) (image); l; ++l)
           result (typename ImageType::value_type (image.value()));
+        if (result.get_num_out_of_range())
+          WARN (str(result.get_num_out_of_range()) + " values fell outside the calibrated histogram range and were not counted");
         return result;
       }
 
@@ -207,6 +228,8 @@ namespace MR
           if (mask_replicate.value())
             result (typename ImageType::value_type (image.value()));
         }
+        if (result.get_num_out_of_range())
+          WARN (str(result.get_num_out_of_range()) + " values fell outside the calibrated histogram range and were not counted");
         return result;
       }
 
