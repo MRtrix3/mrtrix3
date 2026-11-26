@@ -111,7 +111,7 @@ OPTIONS
 #                          COMMON DEFINITIONS                              #
 ############################################################################
 
-import atexit, codecs, copy, glob, os, platform, re, shutil, subprocess, sys, tempfile, time, threading
+import atexit, copy, glob, io, os, platform, re, shutil, subprocess, sys, tempfile, time, threading
 from timeit import default_timer as timer
 
 # on Windows, need to use MSYS2 version of python - not MinGW version:
@@ -537,7 +537,7 @@ cpp = cpp_flags = ld = ld_flags = ld_lib = ld_lib_flags = eigen_cflags = qt_cfla
 
 try:
   log ('reading configuration from "' + config_file + '"...' + os.linesep)
-  with codecs.open (config_file, mode='r', encoding='utf-8') as f:
+  with io.open (config_file, mode='r', encoding='utf-8') as f:
     exec (f.read()) # pylint: disable=exec-used
 except IOError:
   fail ('''no configuration file found!
@@ -743,7 +743,7 @@ class Entry(object):
         fail ('ERROR: can''t create target folder "' + folder + '": ' + os.strerror (excp.errno))
 
     if self.action == 'RCC':
-      with codecs.open (self.cmd[1], mode='w', encoding='utf-8') as fd:
+      with io.open (self.cmd[1], mode='w', encoding='utf-8') as fd:
         fd.write ('<!DOCTYPE RCC><RCC version="1.0">\n<qresource>\n')
         for entry in self.deps:
           entry = os.path.basename (entry)
@@ -854,7 +854,7 @@ class Entry(object):
 
   def set_icon (self):
     self.action = 'RCC'
-    with codecs.open (modify_path (self.name, strip=cpp_suffix, add=h_suffix), mode='r', encoding='utf-8') as fd:
+    with io.open (modify_path (self.name, strip=cpp_suffix, add=h_suffix), mode='r', encoding='utf-8') as fd:
       for line in fd:
         if line.startswith ('//RCC:'):
           for entry in line[6:].strip().split():
@@ -1020,7 +1020,7 @@ def list_headers (current_file):
       if os.path.basename(current_file) == 'icons'+cpp_suffix:
         return headers[current_file]
       fail ('ERROR: cannot find file "' + current_file + '"' + os.linesep)
-    with codecs.open (current_file, mode='r', encoding='utf-8') as fd:
+    with io.open (current_file, mode='r', encoding='utf-8') as fd:
       for line in fd:
         line = line.strip()
         if line.startswith('#include'):
