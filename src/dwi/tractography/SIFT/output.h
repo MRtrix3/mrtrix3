@@ -227,7 +227,7 @@ namespace MR
               const default_type this_diff = i().get_diff (current_mu);
               max_abs_diff = std::max (max_abs_diff, abs (this_diff));
               diff += this_diff;
-              cost += i().get_cost (current_mu) * i().get_weight();
+              cost += i().get_cost (current_mu);
             }
             out_max_abs_diff.value() = max_abs_diff;
             out_diff.value() = diff;
