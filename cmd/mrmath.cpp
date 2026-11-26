@@ -120,7 +120,12 @@ class Median { NOMEMALIGN
   public:
     Median () { }
     void operator() (value_type val) {
-      if (!std::isnan (val))
+      // ponytail: match every other operation in this file (Mean, Sum, RMS, NORM2,
+      // Var, Min, Max), which all use isfinite() to exclude +-Inf as well as NaN;
+      // previously only NaN was excluded here, so an infinite voxel value (e.g.
+      // from an upstream division by zero) silently skewed the median while every
+      // other statistic ignored it.
+      if (std::isfinite (val))
         values.push_back(val);
     }
     value_type result () {
