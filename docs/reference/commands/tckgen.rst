@@ -43,6 +43,8 @@ Below is a list of available tracking algorithms, the input image data that they
 
 Note that the behaviour of the -angle option varies slightly depending on the order of integration: for any first-order method, this angle corresponds to the deviation in streamline trajectory per step; for higher-order methods, this corresponds to the change in underlying fibre orientation between the start and end points of each step.
 
+More information on the requisite data for option -act can be found at: https://mrtrix.readthedocs.io/en/3.0.8/quantitative_structural_connectivity/act.html
+
 Options
 -------
 
