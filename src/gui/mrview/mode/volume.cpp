@@ -165,7 +165,7 @@ namespace MR
 
           source +=
             "        final_color.rgb += (1.0 - final_color.a) * color.rgb * color.a;\n"
-            "        final_color.a += color.a;\n"
+            "        final_color.a += (1.0 - final_color.a) * color.a;\n"
             "      }\n";
 
 
@@ -213,7 +213,7 @@ namespace MR
             source +=
               "        color.a = amplitude * overlay"+str(n) + "_alpha;\n"
               "        final_color.rgb += (1.0 - final_color.a) * color.rgb * color.a;\n"
-              "        final_color.a += color.a;\n"
+              "        final_color.a += (1.0 - final_color.a) * color.a;\n"
               "      }\n"
               "    }\n";
           }
@@ -230,7 +230,7 @@ namespace MR
               "    highlight *= " + str(clip_color[3]) + ";\n"
               "    final_color.rgb += (1.0 - final_color.a) * vec3("
               + str(clip_color[0]) + "," + str(clip_color[1]) + "," + str(clip_color[2]) + ") * highlight;\n"
-              "    final_color.a += highlight;\n";
+              "    final_color.a += (1.0 - final_color.a) * highlight;\n";
           }
 
           source +=
