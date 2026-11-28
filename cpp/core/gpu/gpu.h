@@ -222,6 +222,7 @@ struct ComputeContext {
   new_buffer_from_host_object(const Object &object, BufferType buffer_type = BufferType::StorageBuffer) const {
     static_assert(std::is_trivially_copyable_v<Object>, "Object must be trivially copyable");
     static_assert(std::is_standard_layout_v<Object>, "Object must be standard layout");
+    static_assert(sizeof(Object) % 4 == 0, "Object size must be a multiple of 4 bytes");
     return {buffer_type, inner_new_buffer_from_host_memory(&object, sizeof(object), buffer_type)};
   }
 
@@ -239,6 +240,16 @@ struct ComputeContext {
       offset += region.size_bytes();
     }
     return Buffer<T>{bufferType, std::move(buffer)};
+  }
+
+  // Writes a POD-like object into a byte buffer (e.g. uniform buffers).
+  template <typename Object>
+  void write_object_to_buffer(const Buffer<std::byte> &buffer, const Object &object, uint64_t offset_bytes = 0) const {
+    static_assert(std::is_trivially_copyable_v<Object>, "Object must be trivially copyable");
+    static_assert(std::is_standard_layout_v<Object>, "Object must be standard layout");
+    static_assert(sizeof(Object) % 4 == 0, "Object size must be a multiple of 4 bytes");
+    const auto bytes = tcb::as_bytes(tcb::span<const Object>(&object, 1));
+    write_to_buffer<std::byte>(buffer, bytes, offset_bytes);
   }
 
   // This function blocks until the download is complete.
@@ -328,6 +339,12 @@ struct ComputeContext {
   void dispatch_kernel(const Kernel &kernel, const DispatchGrid &dispatch_grid) const;
 
   [[nodiscard]] Sampler new_linear_sampler() const;
+
+  // Block until all queued GPU work has completed.
+  void wait_for_all_queue_operations() const;
+
+  // Ask Dawn to free unused GPU memory (e.g. staging/cached resources).
+  void reduce_memory_usage() const;
 
 private:
   wgpu::Buffer inner_new_empty_buffer(size_t byteSize, BufferType bufferType = BufferType::StorageBuffer) const;
