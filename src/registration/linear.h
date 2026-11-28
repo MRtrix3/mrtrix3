@@ -54,9 +54,10 @@ namespace MR
     extern const App::OptionGroup affine_options;
     extern const App::OptionGroup fod_options;
     extern const char* optim_algo_names[];
+    extern const char* rigid_linear_description;
 
     enum LinearMetricType {Diff, NCC};
-    enum LinearRobustMetricEstimatorType {L1, L2, LP, None};
+    enum LinearRobustMetricEstimatorType {L1, L2, LP};
     enum OptimiserAlgoType {bbgd, gd, none};
 
 

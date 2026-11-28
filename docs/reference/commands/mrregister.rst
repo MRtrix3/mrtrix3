@@ -27,6 +27,8 @@ FOD registration (with apodised point spread reorientation) will be performed by
 
 Non-linear registration computes warps to map from both image1->image2 and image2->image1. Similar to Avants (2008) Med Image Anal. 12(1): 26–41, registration is performed by matching both the image1 and image2 in a 'midway space'. Warps can be saved as two deformation fields that map directly between image1->image2 and image2->image1, or if using -nl_warp_full as a single 5D file that stores all 4 warps image1->mid->image2, and image2->mid->image1. The 5D warp format stores x,y,z deformations in the 4th dimension, and uses the 5th dimension to index the 4 warps. The affine transforms estimated (to midway space) are also stored as comments in the image header. The 5D warp file can be used to reinitialise subsequent registrations, in addition to transforming images to midway space (e.g. for intra-subject alignment in a 2-time-point longitudinal analysis).
 
+For rigid-body and affine registration, command-line options relating to "robust" estimators are available, with choices: "l1" (least absolute: \|x\|); "l2" (ordinary least squares: x^2); "lp" (least powers: \|x\|^1.2). There are however no specific "robust" features of these similarity metrics beyond the choice of exponent parameter yet implemented. This means that registration behaviour with selection of the "l2" metric is currently mathematically and behaviourally identical to not specifying this option as all, as the default behaviour in the absence of any choice is a naive mean squared metric.
+
 Options
 -------
 
@@ -69,7 +71,7 @@ Rigid registration options
 
 -  **-rigid_metric type** valid choices are: diff (intensity differences), Default: diff
 
--  **-rigid_metric.diff.estimator type** Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), Default: l2
+-  **-rigid_metric.diff.estimator type** choose a "robust" estimator to use for rigid-body registration; valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2) (see Description for more info).
 
 -  **-rigid_lmax num** explicitly set the lmax to be used per scale factor in rigid FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
 
@@ -102,7 +104,7 @@ Affine registration options
 
 -  **-affine_metric type** valid choices are: diff (intensity differences), Default: diff
 
--  **-affine_metric.diff.estimator type** Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), Default: l2
+-  **-affine_metric.diff.estimator type** choose a "robust" estimator to use for affine registration; valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2) (see Description for more info).
 
 -  **-affine_lmax num** explicitly set the lmax to be used per scale factor in affine FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
 
