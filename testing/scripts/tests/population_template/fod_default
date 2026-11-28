@@ -17,7 +17,7 @@ dwi2fod csd BIDS/sub-02/dwi/sub-02_dwi.nii.gz tmp-sub-02_WM.txt tmp-fod/sub-02.m
 -mask BIDS/sub-02/dwi/sub-02_brainmask.nii.gz
 
 tail -n1 BIDS/sub-03/dwi/sub-03_tissue-WM_response.txt > tmp-sub-03_WM.txt
-dwi2fod csd BIDS/sub-03/dwi/sub-03_dwi.nii.gz tmp-sub-02_WM.txt tmp-fod/sub-03.mif -lmax 4 -force \
+dwi2fod csd BIDS/sub-03/dwi/sub-03_dwi.nii.gz tmp-sub-03_WM.txt tmp-fod/sub-03.mif -lmax 4 -force \
 -fslgrad BIDS/sub-03/dwi/sub-03_dwi.bvec BIDS/sub-03/dwi/sub-03_dwi.bval \
 -mask BIDS/sub-03/dwi/sub-03_brainmask.nii.gz 
 

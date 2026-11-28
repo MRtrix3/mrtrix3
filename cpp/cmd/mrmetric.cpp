@@ -402,27 +402,19 @@ void run() {
             Registration::Metric::MeanSquaredNoGradient metric;
             if (interp == MR::Interp::interp_type::LINEAR) {
               LinearParamType parameters(transform, input1, input2, midway_image, mask1, mask2);
-              Registration::Metric::ThreadKernel<decltype(metric), LinearParamType> kernel(
-                  metric, parameters, sos, gradient, &n_voxels);
-              ThreadedLoop(parameters.midway_image, 0, 3).run(kernel);
+              Registration::Metric::reduce(metric, parameters, parameters.midway_image, sos, gradient, &n_voxels);
             } else if (interp == MR::Interp::interp_type::CUBIC) {
               CubicParamType parameters(transform, input1, input2, midway_image, mask1, mask2);
-              Registration::Metric::ThreadKernel<decltype(metric), CubicParamType> kernel(
-                  metric, parameters, sos, gradient, &n_voxels);
-              ThreadedLoop(parameters.midway_image, 0, 3).run(kernel);
+              Registration::Metric::reduce(metric, parameters, parameters.midway_image, sos, gradient, &n_voxels);
             }
           } else if (dimensions == 4) {
             Registration::Metric::MeanSquaredVectorNoGradient4D<ImageType1, ImageType2> metric(input1, input2);
             if (interp == MR::Interp::interp_type::LINEAR) {
               LinearParamType parameters(transform, input1, input2, midway_image, mask1, mask2);
-              Registration::Metric::ThreadKernel<decltype(metric), LinearParamType> kernel(
-                  metric, parameters, sos, gradient, &n_voxels);
-              ThreadedLoop(parameters.midway_image, 0, 3).run(kernel);
+              Registration::Metric::reduce(metric, parameters, parameters.midway_image, sos, gradient, &n_voxels);
             } else if (interp == MR::Interp::interp_type::CUBIC) {
               CubicParamType parameters(transform, input1, input2, midway_image, mask1, mask2);
-              Registration::Metric::ThreadKernel<decltype(metric), CubicParamType> kernel(
-                  metric, parameters, sos, gradient, &n_voxels);
-              ThreadedLoop(parameters.midway_image, 0, 3).run(kernel);
+              Registration::Metric::reduce(metric, parameters, parameters.midway_image, sos, gradient, &n_voxels);
             } else {
               throw Exception("Fixme: invalid metric choice ");
             }
@@ -432,15 +424,11 @@ void run() {
           if (interp == MR::Interp::interp_type::LINEAR) {
             LinearParamType parameters(transform, input1, input2, midway_image, mask1, mask2);
             metric.precompute(parameters);
-            Registration::Metric::ThreadKernel<decltype(metric), LinearParamType> kernel(
-                metric, parameters, sos, gradient, &n_voxels);
-            ThreadedLoop(parameters.processed_image, 0, 3).run(kernel);
+            Registration::Metric::reduce(metric, parameters, parameters.processed_image, sos, gradient, &n_voxels);
           } else if (interp == MR::Interp::interp_type::CUBIC) {
             CubicParamType parameters(transform, input1, input2, midway_image, mask1, mask2);
             metric.precompute(parameters);
-            Registration::Metric::ThreadKernel<decltype(metric), CubicParamType> kernel(
-                metric, parameters, sos, gradient, &n_voxels);
-            ThreadedLoop(parameters.processed_image, 0, 3).run(kernel);
+            Registration::Metric::reduce(metric, parameters, parameters.processed_image, sos, gradient, &n_voxels);
           }
         }
       } else { // interp != linear or cubic --> reslice and run voxel-wise comparison

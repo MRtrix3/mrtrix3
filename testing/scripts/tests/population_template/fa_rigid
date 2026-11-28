@@ -23,5 +23,5 @@ population_template tmp-fa/ tmp-template.mif -type rigid -mask_dir tmp-mask/ -te
 testing_diff_image tmp-template.mif population_template/fa_rigid_template.mif.gz -abs 0.01
 
 testing_diff_image -abs 0.3 \
-$(mrfilter tmp-mask.mif smooth -)
+$(mrfilter tmp-mask.mif smooth -) \
 $(mrfilter population_template/fa_rigid_mask.mif.gz smooth -)

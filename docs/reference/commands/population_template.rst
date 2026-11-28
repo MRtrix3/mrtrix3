@@ -96,7 +96,7 @@ Options for the linear registration
 
 - **-rigid_lmax values** Specify the lmax used for rigid registration for each scale factor, in the form of a list of integers (default: 2,2,2,4,4,4). The list must be the same length as the linear_scale factor list
 
-- **-rigid_niter values** Specify the number of registration iterations used within each level before updating the template, in the form of a list of integers (default: 50 for each scale). This must be a single number or a list of same length as the linear_scale factor list
+- **-rigid_niter values** Specify the number of registration iterations used within each level before updating the template, in the form of a list of integers (default: 100 for each scale). This must be a single number or a list of same length as the linear_scale factor list
 
 - **-affine_scale values** Specify the multi-resolution pyramid used to build the affine template, in the form of a list of scale factors (default: 0.3,0.4,0.6,0.8,1.0,1.0). This and rigid_scale implicitly define the number of template levels
 

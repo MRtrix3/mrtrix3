@@ -180,8 +180,7 @@ public:
       // parameters.make_diagnostics_image ("/tmp/debugme"+str(iteration)+".mif", true); // REMOVEME
       cost.fill(0);
       cnt = 0;
-      Metric::ThreadKernel<MetricType, ParamType> kernel(metric, parameters, cost, gradient, &cnt);
-      ThreadedLoop(parameters.midway_image, 0, 3).run(kernel);
+      Metric::reduce(metric, parameters, parameters.midway_image, cost, gradient, &cnt);
       DEBUG("rotation search: iteration " + str(iteration) + " cost: " + str(cost) + " cnt: " + str(cnt));
       if (debug)
         std::cout << str(iteration) + " " + str(cost) + " " + str(cnt) << " " << T.matrix().row(0) << " "
