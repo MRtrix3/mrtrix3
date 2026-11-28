@@ -51,8 +51,11 @@ extern const std::thread::id main_thread_ID;
 
 extern std::vector<std::string> raw_arguments_list;
 
-extern const std::string project_version;
-extern const std::string project_build_date;
+// Populated by an external project's set_project_version() (see command.h, MRTRIX_PROJECT);
+//   left empty for the core MRtrix3 package so that help/--version/command-history fall back
+//   to reporting only the MRtrix3 version. Non-const so the external definition can assign them.
+extern std::string project_version;
+extern std::string project_build_date;
 
 struct HelpFormatting {
   struct Indents {

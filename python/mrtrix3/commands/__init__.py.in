@@ -15,7 +15,16 @@
 
 import os
 
-EXECUTABLES_PATH = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir, os.pardir, 'bin'))
+# Directories (os.pathsep-separated) containing the version-matched executables that run.command()
+# resolves MRtrix3-family commands to. The baked default is the 'bin' directory of this installation
+# (for a vendored/nested MRtrix3 this is its own self-contained bin/). An external MRtrix3 project
+# additionally contributes its own executables directory via MRTRIX_EXTRA_EXECUTABLES_PATH, so the
+# commands it invokes are the versions built with the project rather than whatever is on the user's
+# $PATH. Note the default is appended to, not overridden: MRtrix3 commands always resolve to this
+# (nested) installation's bin/.
+_BAKED_EXECUTABLES_PATH = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir, os.pardir, 'bin'))
+_EXTRA_EXECUTABLES_PATH = os.environ.get('MRTRIX_EXTRA_EXECUTABLES_PATH', '')
+EXECUTABLES_PATH = os.pathsep.join(path for path in [_BAKED_EXECUTABLES_PATH, _EXTRA_EXECUTABLES_PATH] if path)
 
 CPP_COMMANDS = [
   @MRTRIX_CPP_COMMAND_LIST@
@@ -25,5 +34,10 @@ PYTHON_COMMANDS = [
   @MRTRIX_PYTHON_COMMAND_LIST@
 ]
 
-ALL_COMMANDS = CPP_COMMANDS + PYTHON_COMMANDS
+# Additional command names contributed by an external MRtrix3 project (comma-separated). These
+# are treated by run.command() as version-matched commands resolved from EXECUTABLES_PATH, so an
+# external project's Python command can invoke the project's own commands as well as MRtrix3's.
+_EXTRA_COMMANDS = [entry for entry in os.environ.get('MRTRIX_EXTRA_COMMANDS', '').split(',') if entry]
+
+ALL_COMMANDS = CPP_COMMANDS + PYTHON_COMMANDS + _EXTRA_COMMANDS
 

@@ -13,7 +13,9 @@ include(GNUInstallDirs)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-set(MRTRIX_BASE_VERSION "${CMAKE_PROJECT_VERSION}")
+# Use this project's own version (PROJECT_VERSION), not CMAKE_PROJECT_VERSION, so that the value is
+# correct when MRtrix3 is built as a sub-project (e.g. vendored by an external MRtrix3 project).
+set(MRTRIX_BASE_VERSION "${PROJECT_VERSION}")
 
 option(MRTRIX_BUILD_GUI "Build the MRtrix3 GUI" ON)
 option(MRTRIX_USE_QT5 "Use Qt 5 to build" OFF)
@@ -36,6 +38,23 @@ option(MRTRIX_USE_SYSTEM_DAWN "Use system-installed Dawn library" OFF)
 option(MRTRIX_USE_SYSTEM_SLANG "Use system-installed Slang library" OFF)
 option(MRTRIX_USE_SYSTEM_TCB_SPAN "Use system-installed TCB Span library" OFF)
 option(MRTRIX_USE_SYSTEM_MAGIC_ENUM "Use system-installed Magic Enum library" OFF)
+
+# When MRtrix3 is built as a sub-project of another CMake project (e.g. an external MRtrix3 project
+# that vendors it), MRTRIX_SUBPROJECT_INSTALL_PREFIX nests all of MRtrix3's install artifacts under
+# a sub-directory of the install prefix (e.g. "mrtrix3" -> <prefix>/mrtrix3/{bin,lib,share}). This
+# keeps MRtrix3 self-contained so its internal relative paths (bin <-> lib <-> share) are preserved,
+# and keeps its commands out of the parent project's bin/ (and hence off the user's PATH).
+set(MRTRIX_SUBPROJECT_INSTALL_PREFIX "" CACHE STRING
+    "Sub-directory of the install prefix under which to nest MRtrix3 (empty = install directly)")
+if(MRTRIX_SUBPROJECT_INSTALL_PREFIX)
+    set(MRTRIX_INSTALL_BINDIR "${MRTRIX_SUBPROJECT_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}")
+    set(MRTRIX_INSTALL_LIBDIR "${MRTRIX_SUBPROJECT_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+    set(MRTRIX_INSTALL_DATADIR "${MRTRIX_SUBPROJECT_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}")
+else()
+    set(MRTRIX_INSTALL_BINDIR "${CMAKE_INSTALL_BINDIR}")
+    set(MRTRIX_INSTALL_LIBDIR "${CMAKE_INSTALL_LIBDIR}")
+    set(MRTRIX_INSTALL_DATADIR "${CMAKE_INSTALL_DATADIR}")
+endif()
 
 if(MRTRIX_BUILD_TESTS)
     list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
@@ -67,8 +86,8 @@ else()
 endif()
 
 file(RELATIVE_PATH relDir
-    ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
-    ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/${MRTRIX_INSTALL_BINDIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/${MRTRIX_INSTALL_LIBDIR}
 )
 
 set(CMAKE_INSTALL_RPATH ${base} ${base}/${relDir})
@@ -126,12 +145,104 @@ if(COMPILER_PATH MATCHES "fsl/bin" OR LINKER_PATH MATCHES "fsl/bin")
     )
 endif()
 
+# ------------------------------------------------------------------------------------------------
+# External-project command selection: Python dependencies force the full C++ command set.
+#
+# MRTRIX_CMD_SUBSET (set by an external MRtrix3 project to the commands it requires) restricts BOTH
+# the C++ and the Python commands that are built. A requested *Python* command, however, may invoke
+# any number of MRtrix3 *C++* commands at run time via run.command(); those invocations are opaque to
+# cmake, so there is no safe way to know which C++ commands the Python command depends on. The only
+# correct conservative behaviour is therefore to build the ENTIRE MRtrix3 command set whenever the
+# subset names any Python command. We detect that here (before the cpp/ and python/ subdirectories
+# consume MRTRIX_CMD_SUBSET) and clear the subset so the full set is built; a single-binary static
+# build is incompatible with building the whole set, so we also force a shared core.
+if(MRTRIX_CMD_SUBSET)
+    set(_subset_python_cmds "")
+    foreach(_cmd IN LISTS MRTRIX_CMD_SUBSET)
+        if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cpp/cmd/${_cmd}.cpp")
+            if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/python/mrtrix3/commands/${_cmd}.py" OR
+               IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/python/mrtrix3/commands/${_cmd}")
+                list(APPEND _subset_python_cmds "${_cmd}")
+            endif()
+        endif()
+    endforeach()
+    if(_subset_python_cmds)
+        message(STATUS "MRTRIX_CMD_SUBSET names MRtrix3 Python command(s) [${_subset_python_cmds}] "
+                       "whose C++ dependencies are opaque to cmake; building the FULL MRtrix3 command "
+                       "set so every C++ command the Python command(s) might invoke is available.")
+        # Shadow the cache value with an empty directory-scope variable; the cpp/ and python/
+        # subdirectories (and GenPythonCommandsLists) then build/record every command.
+        set(MRTRIX_CMD_SUBSET "")
+        if(MRTRIX_BUILD_STATIC)
+            message(STATUS "Forcing MRTRIX_BUILD_STATIC=OFF: the full MRtrix3 command set cannot be a "
+                           "single self-contained static binary.")
+            set(MRTRIX_BUILD_STATIC OFF CACHE BOOL "" FORCE)
+        endif()
+    endif()
+endif()
+
 add_subdirectory(cpp)
 add_subdirectory(python)
 add_subdirectory(share)
 
 if(PROJECT_IS_TOP_LEVEL AND MRTRIX_BUILD_TESTS)
     add_subdirectory(testing)
+endif()
+
+# ------------------------------------------------------------------------------------------------
+# Build-tree package export. Enables an external MRtrix3 project to build against this build + source
+# tree via find_package(MRtrix3 CONFIG PATHS <this build directory> NO_DEFAULT_PATH). This is a
+# build-tree export (absolute paths into this tree), not a relocatable installation package.
+# ------------------------------------------------------------------------------------------------
+if(PROJECT_IS_TOP_LEVEL AND NOT MRTRIX_BUILD_GUI)
+    # Real (non-imported) targets that make up mrtrix::core's public interface.
+    set(MRTRIX_EXPORT_TARGETS
+        mrtrix-core mrtrix-executable-version mrtrix-version mrtrix-common mrtrix-eigen
+        nifti tcb_span)
+    # Dependencies that are real targets only when vendored (otherwise system/imported -> find_dependency).
+    if(NOT MRTRIX_USE_SYSTEM_JSON)
+        list(APPEND MRTRIX_EXPORT_TARGETS nlohmann_json)
+    endif()
+    if(NOT MRTRIX_USE_SYSTEM_MAGIC_ENUM)
+        list(APPEND MRTRIX_EXPORT_TARGETS magic_enum)
+    endif()
+    if(NOT MRTRIX_USE_SYSTEM_EIGEN)
+        list(APPEND MRTRIX_EXPORT_TARGETS Eigen3)
+    endif()
+
+    # Export under names that match the existing mrtrix:: aliases (mrtrix::core, not mrtrix::mrtrix-core).
+    set_target_properties(mrtrix-core PROPERTIES EXPORT_NAME core)
+    set_target_properties(mrtrix-executable-version PROPERTIES EXPORT_NAME executable-version)
+    set_target_properties(mrtrix-version PROPERTIES EXPORT_NAME version)
+    set_target_properties(mrtrix-common PROPERTIES EXPORT_NAME common)
+    set_target_properties(mrtrix-eigen PROPERTIES EXPORT_NAME eigen)
+
+    export(TARGETS ${MRTRIX_EXPORT_TARGETS}
+        NAMESPACE mrtrix::
+        FILE ${PROJECT_BINARY_DIR}/MRtrix3Targets.cmake)
+
+    # find_dependency() calls the consumer needs for the imported (system) dependencies.
+    set(MRTRIX_CONFIG_FIND_DEPS "")
+    if(MRTRIX_USE_SYSTEM_EIGEN)
+        string(APPEND MRTRIX_CONFIG_FIND_DEPS "find_dependency(Eigen3 3.4)\n")
+    endif()
+    if(MRTRIX_USE_SYSTEM_JSON)
+        string(APPEND MRTRIX_CONFIG_FIND_DEPS "find_dependency(nlohmann_json)\n")
+    endif()
+    if(MRTRIX_USE_SYSTEM_MAGIC_ENUM)
+        string(APPEND MRTRIX_CONFIG_FIND_DEPS "find_dependency(magic_enum)\n")
+    endif()
+    # PNG is found in a subdirectory, so check mrtrix-core's actual interface rather than PNG_FOUND.
+    get_target_property(MRTRIX_CORE_LINKS mrtrix-core INTERFACE_LINK_LIBRARIES)
+    if("PNG::PNG" IN_LIST MRTRIX_CORE_LINKS)
+        string(APPEND MRTRIX_CONFIG_FIND_DEPS "find_dependency(PNG)\n")
+    endif()
+
+    set(MRTRIX_SOURCE_CMAKE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/MRtrix3Config.cmake.in
+        ${PROJECT_BINARY_DIR}/MRtrix3Config.cmake
+        @ONLY)
 endif()
 
 add_custom_target(Github SOURCES
