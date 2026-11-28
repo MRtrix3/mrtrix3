@@ -1172,7 +1172,7 @@ def execute(): #pylint: disable=unused-variable
           if linear_estimator:
             metric_option = ' -rigid_metric.diff.estimator ' + linear_estimator
           if app.VERBOSITY >= 2:
-            mrregister_log_option = ' -info -rigid_log ' + os.path.join('log', inp.uid + contrast[cid] + "_" + str(level) + '.log')
+            mrregister_log_option = ' -info -rigid_log ' + os.path.join('log', inp.uid + "_" + str(level) + '.log')
         else:
           scale_option = ' -affine_scale ' + str(scale)
           niter_option = ' -affine_niter ' + str(niter)
@@ -1186,7 +1186,7 @@ def execute(): #pylint: disable=unused-variable
           if linear_estimator:
             metric_option = ' -affine_metric.diff.estimator ' + linear_estimator
           if write_log:
-            mrregister_log_option = ' -info -affine_log ' + os.path.join('log', inp.uid + contrast[cid] + "_" + str(level) + '.log')
+            mrregister_log_option = ' -info -affine_log ' + os.path.join('log', inp.uid + "_" + str(level) + '.log')
 
         if leave_one_out:
           tmpl = []
