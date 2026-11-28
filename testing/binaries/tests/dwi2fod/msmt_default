@@ -3,14 +3,27 @@
 #   under default operation,
 #   with conventional three macroscopic tissue responses
 # Compare outputs to those generated using a prior software version
-dwi2fod msmt_csd dwi2fod/msmt_csd/dwi.mif \
+# "dwi2fod/msmt_csd/dwi.mif" is consumed by tests of several other commands,
+#   so rather than reducing that image the test selects a sub-volume of it here;
+#   because spherical deconvolution operates on each voxel independently,
+#   the outputs across that sub-volume are identical to the corresponding
+#   sub-volume of the full-extent reference images,
+#   which are therefore cropped identically for the comparison
+CROP="-coord 0 2:12 -coord 1 2:12 -coord 2 2:9"
+
+mrconvert dwi2fod/msmt_csd/dwi.mif ${CROP} tmp_dwi.mif -force
+
+dwi2fod msmt_csd tmp_dwi.mif \
     dwi2fod/msmt_csd/wm.txt tmp_wm.mif \
     dwi2fod/msmt_csd/gm.txt tmp_gm.mif \
     dwi2fod/msmt_csd/csf.txt tmp_csf.mif \
     -predicted_signal tmp_predicted.mif \
     -force
 
-testing_diff_image tmp_wm.mif dwi2fod/msmt_csd/wm.mif -abs 1e-5
-testing_diff_image tmp_gm.mif dwi2fod/msmt_csd/gm.mif -abs 1e-5
-testing_diff_image tmp_csf.mif dwi2fod/msmt_csd/csf.mif -abs 1e-5
-testing_diff_image tmp_predicted.mif dwi2fod/msmt_csd/predicted.mif -voxel 1e-5
+for tissue in wm gm csf; do
+    mrconvert dwi2fod/msmt_csd/${tissue}.mif ${CROP} tmp_${tissue}_ref.mif -force
+    testing_diff_image tmp_${tissue}.mif tmp_${tissue}_ref.mif -abs 1e-5 || exit 1
+done
+
+mrconvert dwi2fod/msmt_csd/predicted.mif ${CROP} tmp_predicted_ref.mif -force
+testing_diff_image tmp_predicted.mif tmp_predicted_ref.mif -voxel 1e-5

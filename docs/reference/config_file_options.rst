@@ -303,6 +303,19 @@ List of MRtrix3 configuration file options
      threshold: Apply a 0.5 threshold to the ODF tissue sum image;
      some mask cleanup operations will additionally be used.
 
+.. option:: FMLSDirectionSet
+
+    *default: 1281*
+
+     Specifies the direction set on which the FOD is sampled by the
+     Fibre Multi-Lobe Segmenter, which decomposes each FOD into discrete
+     lobes. This may be either the path to a file containing a set of
+     directions, or an integer corresponding to one of the built-in
+     direction sets. A smaller number of directions reduces both the
+     computational cost of segmentation and the angular precision with
+     which lobes are delineated. Any command-line option by which the
+     direction set is specified explicitly takes precedence over this entry.
+
 .. option:: FailOnWarn
 
     *default: 0 (false)*

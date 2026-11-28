@@ -48,9 +48,25 @@ constexpr default_type default_peakamp_threshold = 0.1;
 //   such that a single lobe contains multiple peaks
 constexpr default_type default_mergeratio_bridgetopeak = 1.0;
 
+// Direction set utilised by the segmenter in the absence of any user specification
+constexpr size_t default_direction_set = 1281;
+
 // These are for configuring the FMLS segmenter at the command line, particularly for fod_metric command
 extern const App::OptionGroup FMLSSegmentOption;
 void load_fmls_thresholds(Segmenter &);
+
+// Command-line control of the direction set on which the FOD is sampled by the segmenter;
+//   currently exposed by the fod2fixel command only,
+//   with all other commands that perform FOD segmentation
+//   deferring control of the direction set to the configuration file entry
+extern const App::Option FMLSDirectionsOption;
+
+//! Resolve the direction set on which the segmenter will sample the FOD
+/*! Precedence is: the -fmls_directions command-line option
+ *  for those commands that expose it;
+ *  else the FMLSDirectionSet configuration file entry;
+ *  else default_direction_set. */
+DWI::Directions::FastLookupSet get_directions();
 
 class FOD_lobe {
 
