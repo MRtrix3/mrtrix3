@@ -77,7 +77,7 @@ void run ()
 
   com /= mass;
   if (!get_options ("voxelspace").size())
-    com = image.transform() * com;
+    com = Transform(image).voxel2scanner * com;
 
   std::cout << com.transpose();
 }
