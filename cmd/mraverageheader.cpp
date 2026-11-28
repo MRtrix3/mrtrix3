@@ -48,8 +48,7 @@ void usage ()
         "Valid options are 'mean': unbiased but loss of resolution for individual images possible, "
         "and 'max': smallest voxel size of any input image defines the resolution. Default: mean")
   +   Argument ("type").type_choice (resolution_choices)
-  + Option ("fill", " set the intensity in the first volume of the average space to 1")
-  + DataType::options();
+  + Option ("fill", " set the intensity in the first volume of the average space to 1");
 }
 
 

@@ -669,8 +669,8 @@ void run ()
   // No reslicing required, so just modify the header and do a straight copy of the data
   } else {
 
-    if (get_options ("midway").size())
-      throw Exception ("midway option given but no template image defined");
+    if (get_options ("midway_space").size())
+      throw Exception ("midway_space option given but no template image defined");
 
     INFO ("image will not be regridded");
     Eigen::MatrixXd rotation = linear_transform.linear();

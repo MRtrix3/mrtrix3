@@ -35,11 +35,11 @@ namespace MR
           if (seeders.size() && !(in->is_finite() == is_finite()))
             throw Exception ("Cannot use a combination of seed types where some are number-limited and some are not!");
 
-          if (!App::get_options ("max_seed_attempts").size())
+          if (!App::get_options ("max_attempts_per_seed").size())
             for (auto& i : seeders)
               if (i->get_max_attempts() != in->get_max_attempts())
                 throw Exception ("Cannot use a combination of seed types where the default maximum number "
-                    "of sampling attempts per seed is unequal, unless you use the -max_seed_attempts option.");
+                    "of sampling attempts per seed is unequal, unless you use the -max_attempts_per_seed option.");
 
           seeders.push_back (std::unique_ptr<Base> (in));
           total_volume += in->vol();

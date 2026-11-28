@@ -68,7 +68,7 @@ using Fixel::index_type;
 
 void run()
 {
-  const value_type connectivity_threshold = get_option_value ("connectivity", value_type(DEFAULT_CONNECTIVITY_THRESHOLD));
+  const value_type connectivity_threshold = get_option_value ("threshold", value_type(DEFAULT_CONNECTIVITY_THRESHOLD));
   const value_type angular_threshold = get_option_value ("angle", value_type(DEFAULT_ANGLE_THRESHOLD));
 
   const std::string input_fixel_directory = argument[0];

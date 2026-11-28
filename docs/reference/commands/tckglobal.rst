@@ -37,8 +37,6 @@ Options
 Input options
 ^^^^^^^^^^^^^
 
--  **-grad scheme** specify the diffusion encoding scheme (required if not supplied in the header).
-
 -  **-mask image** only reconstruct the tractogram within the specified brain mask image.
 
 -  **-riso response** *(multiple uses permitted)* set one or more isotropic response functions. (multiple allowed)
@@ -61,6 +59,13 @@ Parameters
 -  **-t1 end** set the final temperature of the metropolis hastings optimizer. (default = 0.001)
 
 -  **-niter n** set the number of iterations of the metropolis hastings optimizer. (default = 10M)
+
+DW gradient table import options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+
+-  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
 Output options
 ^^^^^^^^^^^^^^
