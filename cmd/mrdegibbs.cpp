@@ -316,11 +316,9 @@ void run ()
   if (minW >= maxW)
     throw Exception ("minW must be smaller than maxW");
 
-  auto in = Image<value_type>::open (argument[0]);
-  Header header (in);
-
-  header.datatype() = DataType::from_command_line (DataType::Float32);
-  auto out = Image<value_type>::create (argument[1], header);
+  Header header_in(Header::open(argument[0]));
+  if (header_in.datatype().is_complex())
+    throw Exception("3.0.x version of mrdegibbs command is not compatible with complex-typed input image");
 
   vector<size_t> slice_axes = { 0, 1 };
   auto opt = get_options ("axes");
@@ -329,15 +327,15 @@ void run ()
     vector<uint32_t> axes = parse_ints<uint32_t> (opt[0][0]);
     if (axes.size() != 2)
       throw Exception ("slice axes must be specified as a comma-separated 2-vector");
-    if (size_t(std::max (axes[0], axes[1])) >= header.ndim())
+    if (size_t(std::max (axes[0], axes[1])) >= header_in.ndim())
       throw Exception ("slice axes must be within the dimensionality of the image");
     if (axes[0] == axes[1])
       throw Exception ("two independent slice axes must be specified");
     slice_axes = { size_t(axes[0]), size_t(axes[1]) };
   }
 
-  auto slice_encoding_it = header.keyval().find ("SliceEncodingDirection");
-  if (slice_encoding_it != header.keyval().end()) {
+  auto slice_encoding_it = header_in.keyval().find ("SliceEncodingDirection");
+  if (slice_encoding_it != header_in.keyval().end()) {
     try {
       const Metadata::BIDS::axis_vector_type slice_encoding_axis_onehot = Metadata::BIDS::axisid2vector (slice_encoding_it->second);
       vector<size_t> auto_slice_axes = { 0, 0 };
@@ -369,7 +367,7 @@ void run ()
   }
 
   // build vector of outer axes:
-  vector<size_t> outer_axes (header.ndim());
+  vector<size_t> outer_axes (header_in.ndim());
   std::iota (outer_axes.begin(), outer_axes.end(), 0);
   for (const auto axis : slice_axes) {
     auto it = std::find (outer_axes.begin(), outer_axes.end(), axis);
@@ -378,6 +376,10 @@ void run ()
     outer_axes.erase (it);
   }
 
+  auto in = header_in.get_image<value_type>();
+  Header header_out(header_in);
+  header_out.datatype() = DataType::from_command_line(DataType::Float32);
+  auto out = Image<value_type>::create(argument[1], header_out);
   ThreadedLoop ("performing Gibbs ringing removal", in, outer_axes, slice_axes)
     .run_outer (ComputeSlice (outer_axes, slice_axes, nshifts, minW, maxW, in, out));
 }
