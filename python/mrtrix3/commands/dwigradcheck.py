@@ -15,6 +15,13 @@
 
 import copy, numbers, os, shutil, sys
 
+# MRtrix3 commands that this command may invoke at execution.
+# This list is parsed at build configure time to establish the set of
+#   compilation targets required by this command (see the cmake Python command dependency helpers),
+#   and is verified for completeness by the dependency linter run within continuous integration.
+# pylint: disable=unused-variable
+MRTRIX_DEPENDENCIES = {'dwi2mask', 'mrconvert', 'mrinfo', 'tckgen', 'tckstats'}
+
 
 
 def usage(cmdline): #pylint: disable=unused-variable

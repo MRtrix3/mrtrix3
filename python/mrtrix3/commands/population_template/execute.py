@@ -30,6 +30,12 @@ from . import AGGREGATION_MODES, \
               LEAVE_ONE_OUT, \
               REGISTRATION_MODES
 
+# MRtrix3 commands invoked within this source file, contributed to the command's aggregate set of
+#   compilation dependencies (see this command's __init__.py).
+from . import MRTRIX_DEPENDENCIES
+MRTRIX_DEPENDENCIES |= {'maskfilter', 'mraverageheader', 'mrcalc', 'mrcat', 'mrconvert', 'mrfilter', 'mrgrid',
+                        'mrinfo', 'mrmath', 'mrregister', 'mrtransform', 'transformcalc'}
+
 
 def execute(): #pylint: disable=unused-variable
 

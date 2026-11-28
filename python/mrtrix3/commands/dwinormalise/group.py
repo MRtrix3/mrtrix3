@@ -17,6 +17,12 @@ import os
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, image, path, run, utils
 
+# MRtrix3 commands invoked within this source file, contributed to the command's aggregate set of
+#   compilation dependencies (see this command's __init__.py).
+from . import MRTRIX_DEPENDENCIES
+MRTRIX_DEPENDENCIES |= {'dwi2tensor', 'dwinormalise', 'mrconvert', 'mrinfo', 'mrthreshold', 'mrtransform',
+                        'population_template', 'tensor2metric'}
+
 
 FA_THRESHOLD_DEFAULT = 0.4
 

@@ -17,6 +17,12 @@ import math
 from mrtrix3 import CONFIG, MRtrixError
 from mrtrix3 import app, image, matrix, run
 
+# MRtrix3 commands invoked within this source file, contributed to the command's aggregate set of
+#   compilation dependencies (see this command's __init__.py).
+from . import MRTRIX_DEPENDENCIES
+MRTRIX_DEPENDENCIES |= {'dwi2fod', 'dwi2mask', 'dwi2response', 'maskfilter', 'mrcalc', 'mrconvert', 'mrinfo',
+                        'mtnormalise'}
+
 
 REFERENCE_INTENSITY = 1000
 

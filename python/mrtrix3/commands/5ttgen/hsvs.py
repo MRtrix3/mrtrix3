@@ -19,6 +19,13 @@ import glob, os, re, shutil
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, fsl, image, path, run
 
+# MRtrix3 commands invoked within this source file, contributed to the command's aggregate set of
+#   compilation dependencies (see this command's __init__.py).
+from . import MRTRIX_DEPENDENCIES
+MRTRIX_DEPENDENCIES |= {'5ttedit', 'labelconvert', 'maskdump', 'maskfilter', 'mesh2voxel', 'meshconvert', 'meshfilter',
+                        'mrcalc', 'mrcat', 'mrconvert', 'mredit', 'mrgrid', 'mrinfo', 'mrmath', 'mrthreshold',
+                        'mrtransform', 'voxel2mesh'}
+
 
 
 HIPPOCAMPI_CHOICES = [ 'subfields', 'first', 'aseg' ]

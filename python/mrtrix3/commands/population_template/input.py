@@ -15,6 +15,11 @@
 
 import os, shlex
 
+# MRtrix3 commands invoked within this source file, contributed to the command's aggregate set of
+#   compilation dependencies (see this command's __init__.py).
+from . import MRTRIX_DEPENDENCIES
+MRTRIX_DEPENDENCIES |= {'mrconvert'}
+
 class Input: # pylint: disable=unused-variable
   """
       Class that holds input information specific to a single image (multiple contrasts)
@@ -63,7 +68,7 @@ class Input: # pylint: disable=unused-variable
         copy files into folders in current working directory. modifies _local_ims and  _local_msk
 
       """
-  def __init__(self, uid, filenames, directories, contrasts, mask_filename='', mask_directory=''): # pylint: disable=too-many-arguments
+  def __init__(self, uid, filenames, directories, contrasts, *, mask_filename='', mask_directory=''):
     self.contrasts = contrasts
 
     self.uid = uid

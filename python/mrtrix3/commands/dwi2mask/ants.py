@@ -17,6 +17,11 @@ import os, shutil
 from mrtrix3 import CONFIG, MRtrixError
 from mrtrix3 import app, run
 
+# MRtrix3 commands invoked within this source file, contributed to the command's aggregate set of
+#   compilation dependencies (see this command's __init__.py).
+from . import MRTRIX_DEPENDENCIES
+MRTRIX_DEPENDENCIES |= {'mrconvert'}
+
 
 NEEDS_MEAN_BZERO = True # pylint: disable=unused-variable
 ANTS_BRAIN_EXTRACTION_CMD = 'antsBrainExtraction.sh'

@@ -17,6 +17,12 @@ import os, shlex, shutil
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, image, run
 
+# MRtrix3 commands invoked within this source file, contributed to the command's aggregate set of
+#   compilation dependencies (see this command's __init__.py).
+from . import MRTRIX_DEPENDENCIES
+MRTRIX_DEPENDENCIES |= {'5ttvalidate', 'amp2response', 'dwi2response', 'dwi2tensor', 'mrcalc', 'mrcat', 'mrconvert',
+                        'mrinfo', 'mrstats', 'mrtransform', 'tensor2metric'}
+
 
 NEEDS_SINGLE_SHELL = False # pylint: disable=unused-variable
 SUPPORTS_MASK = True # pylint: disable=unused-variable
@@ -90,11 +96,11 @@ def execute(): #pylint: disable=unused-variable
   # Verify input 5tt image
   verification_text = ''
   try:
-    verification_text = run.command('5ttcheck 5tt.mif').stderr
-  except run.MRtrixCmdError as except_5ttcheck:
-    verification_text = except_5ttcheck.stderr
+    verification_text = run.command('5ttvalidate 5tt.mif').stderr
+  except run.MRtrixCmdError as except_5ttvalidate:
+    verification_text = except_5ttvalidate.stderr
   if 'WARNING' in verification_text or 'ERROR' in verification_text:
-    app.warn(f'Command 5ttcheck indicates problems with provided input 5TT image "{app.ARGS.in_5tt}":')
+    app.warn(f'Command 5ttvalidate indicates problems with provided input 5TT image "{app.ARGS.in_5tt}":')
     for line in verification_text.splitlines():
       app.warn(line)
     app.warn('These may or may not interfere with the dwi2response msmt_5tt script')

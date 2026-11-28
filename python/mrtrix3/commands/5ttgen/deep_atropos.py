@@ -17,6 +17,11 @@ import os
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, image, run
 
+# MRtrix3 commands invoked within this source file, contributed to the command's aggregate set of
+#   compilation dependencies (see this command's __init__.py).
+from . import MRTRIX_DEPENDENCIES
+MRTRIX_DEPENDENCIES |= {'mrcalc', 'mrcat', 'mrconvert', 'mrgrid', 'mrinfo', 'mrmath', 'mrthreshold'}
+
 def usage(base_parser, subparsers):  #pylint: disable=unused-variable
   parser = subparsers.add_parser('deep_atropos', parents=[base_parser])
   parser.set_author('Lucius S. Fekonja (lucius.fekonja[at]charite.de) and Robert E. Smith (robert.smith@florey.edu.au)')

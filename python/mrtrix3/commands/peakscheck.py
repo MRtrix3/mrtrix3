@@ -20,6 +20,14 @@ import sys
 from mrtrix3 import COMMAND_HISTORY_STRING, MRtrixError #pylint: disable=no-name-in-module
 from mrtrix3 import app, image, run #pylint: disable=no-name-in-module
 
+# MRtrix3 commands that this command may invoke at execution.
+# This list is parsed at build configure time to establish the set of
+#   compilation targets required by this command (see the cmake Python command dependency helpers),
+#   and is verified for completeness by the dependency linter run within continuous integration.
+# pylint: disable=unused-variable
+MRTRIX_DEPENDENCIES = {'mrcalc', 'mrcat', 'mrconvert', 'mrinfo', 'mrmath', 'mrthreshold', 'peaksconvert',
+                       'peaksvalidate', 'tckgen', 'tckstats'}
+
 
 
 EUCLIDEAN_FLIPS = (None, 0, 1, 2)
