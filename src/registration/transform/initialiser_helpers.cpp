@@ -505,6 +505,8 @@ namespace MR
             im1_covariance_matrix(2, 0) = im1_covariance_matrix(0, 2);
             im1_covariance_matrix(2, 1) = im1_covariance_matrix(1, 2);
             im1_covariance_matrix(2, 2) = mu[5] / m[0];
+            const Eigen::Vector3d im1_offset = im1_centre_of_mass - im1_centre;
+            im1_covariance_matrix -= im1_offset * im1_offset.transpose();
 
             get_geometric_centre (image_2, im2_centre);
             m.setZero();
@@ -520,7 +522,10 @@ namespace MR
             im2_covariance_matrix(2, 0) = im2_covariance_matrix(0, 2);
             im2_covariance_matrix(2, 1) = im2_covariance_matrix(1, 2);
             im2_covariance_matrix(2, 2) = mu[5] / m[0];
-            return (get_sorted_eigen_vecs_vals (im2_covariance_matrix, im2_evec, im2_eval) and
+            const Eigen::Vector3d im2_offset = im2_centre_of_mass - im2_centre;
+            im2_covariance_matrix -= im2_offset * im2_offset.transpose();
+
+            return (get_sorted_eigen_vecs_vals (im2_covariance_matrix, im2_evec, im2_eval) &&
                   get_sorted_eigen_vecs_vals (im1_covariance_matrix, im1_evec, im1_eval));
         }
 

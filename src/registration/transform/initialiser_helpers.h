@@ -38,9 +38,9 @@ namespace MR
           void get_geometric_centre (const ImageType& image, Eigen::Matrix<ValueType, 3, 1>& centre)
           {
             Eigen::Vector3d centre_voxel;
-            centre_voxel[0] = (static_cast<default_type>(image.size(0)) / 2.0) - 1.0;
-            centre_voxel[1] = (static_cast<default_type>(image.size(1)) / 2.0) - 1.0;
-            centre_voxel[2] = (static_cast<default_type>(image.size(2)) / 2.0) - 1.0;
+            centre_voxel[0] = (static_cast<default_type>(image.size(0) - 1) / 2.0);
+            centre_voxel[1] = (static_cast<default_type>(image.size(1) - 1) / 2.0);
+            centre_voxel[2] = (static_cast<default_type>(image.size(2) - 1) / 2.0);
             MR::Transform transform (image);
             centre = transform.voxel2scanner * centre_voxel;
           }
