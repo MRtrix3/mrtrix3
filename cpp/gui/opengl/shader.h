@@ -47,6 +47,7 @@ public:
 
   void clear() {
     if (index_) {
+      check_context();
       GL_DEBUG("deleting OpenGL shader ID " + str(index_));
       gl::DeleteShader(index_);
     }
@@ -60,6 +61,7 @@ public:
     DEBUG("compiling OpenGL " + this->type() + " shader:\n" + code);
     if (!index_) {
       index_ = gl::CreateShader(TYPE);
+      check_context.set();
       GL_DEBUG("created OpenGL " + this->type() + " shader ID " + str(index_));
     }
     std::array<const char *const, 1> p{code.c_str()}; // check_syntax off
@@ -83,6 +85,7 @@ public:
 
 protected:
   GLuint index_;
+  Context::Checker check_context;
   friend class Program;
 };
 
@@ -106,6 +109,7 @@ public:
 
   void clear() {
     if (index_) {
+      check_context();
       GL_DEBUG("deleting OpenGL shader program " + str(index_));
       gl::DeleteProgram(index_);
     }
@@ -115,6 +119,7 @@ public:
   template <GLint TYPE> void attach(const Object<TYPE> &object) {
     if (!index_) {
       index_ = gl::CreateProgram();
+      check_context.set();
       GL_DEBUG("created OpenGL shader program ID " + str(index_));
     }
     gl::AttachShader(index_, object.index_);
@@ -141,6 +146,7 @@ public:
   }
   void start() const {
     assert(index_);
+    check_context();
     gl::UseProgram(index_);
     GL_DEBUG("using OpenGL shader program ID " + str(index_));
   }
@@ -156,6 +162,7 @@ public:
 
 protected:
   GLuint index_;
+  Context::Checker check_context;
 };
 
 } // namespace MR::GUI::GL::Shader
