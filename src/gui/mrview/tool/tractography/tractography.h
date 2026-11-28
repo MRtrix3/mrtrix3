@@ -57,6 +57,7 @@ namespace MR
             void draw_colourbars () override;
             size_t visible_number_colourbars () override;
             bool crop_to_slab () const { return (do_crop_to_slab && not_3D); }
+            bool colour_relative_to_projection () const { return colour_relative_to_projection_box->isChecked(); }
 
             static void add_commandline_options (MR::App::OptionList& options);
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt) override;
@@ -95,6 +96,7 @@ namespace MR
             void colour_button_slot();
             void geom_type_selection_slot (int);
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
+            void updateGL ();
 
           protected:
             AdjustButton* slab_entry;
@@ -114,6 +116,7 @@ namespace MR
             QGroupBox* slab_group_box;
             QGroupBox* lighting_group_box;
             QPushButton* lighting_button;
+            QCheckBox* colour_relative_to_projection_box;
 
             QSlider* opacity_slider;
 

@@ -223,8 +223,12 @@ namespace MR
           std::string source =
             "uniform float lower, upper;\n"
             "uniform vec3 colourmap_colour;\n"
-            "uniform mat4 MV;\n"
-            "out vec3 colour;\n";
+            "uniform mat4 MV;\n";
+
+          if (color_type == TrackColourType::Direction && colour_relative_to_projection)
+            source += "uniform mat4 rotation;\n";
+
+          source += "out vec3 colour;\n";
 
           if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends)
             source += using_geom ? "in vec3 fColour;\n" : "in vec3 v_colour;\n";
@@ -272,8 +276,13 @@ namespace MR
 
           switch (color_type) {
             case TrackColourType::Direction:
-              source += using_geom ? "  colour = abs (normalize (g_tangent));\n"
-                                   : "  colour = abs (normalize (v_tangent));\n";
+              {
+                std::string col = using_geom ? "g_tangent" : "v_tangent";
+                if (colour_relative_to_projection)
+                  col = "mat3(rotation) * " + col;
+
+                source += "  colour = abs (normalize (" + col + "));\n";
+              }
               break;
             case TrackColourType::ScalarFile:
               source += using_geom ? "  colour = fColour;\n"
@@ -330,6 +339,8 @@ namespace MR
             return true;
           if (color_type != tractogram.color_type)
             return true;
+          if (colour_relative_to_projection != tractogram.tractography_tool.colour_relative_to_projection())
+            return true;
           if (threshold_type != tractogram.threshold_type)
             return true;
           if (use_lighting != tractogram.tractography_tool.use_lighting)
@@ -348,6 +359,7 @@ namespace MR
           const Tractogram& tractogram (dynamic_cast<const Tractogram&> (object));
           do_crop_to_slab = tractogram.tractography_tool.crop_to_slab();
           use_lighting = tractogram.tractography_tool.use_lighting;
+          colour_relative_to_projection = tractogram.tractography_tool.colour_relative_to_projection();
           color_type = tractogram.color_type;
           threshold_type = tractogram.threshold_type;
           geometry_type = tractogram.geometry_type;
@@ -448,6 +460,11 @@ namespace MR
             gl::Uniform1f (gl::GetUniformLocation (track_shader, "diffuse"), tractography_tool.lighting->diffuse);
             gl::Uniform1f (gl::GetUniformLocation (track_shader, "specular"), tractography_tool.lighting->specular);
             gl::Uniform1f (gl::GetUniformLocation (track_shader, "shine"), tractography_tool.lighting->shine);
+          }
+
+          if (tractography_tool.colour_relative_to_projection()) {
+            GL::mat4 rot = GL::inv (GL::mat4 (window().orientation()));
+            gl::UniformMatrix4fv (gl::GetUniformLocation (track_shader, "rotation"), 1, gl::FALSE_, rot);
           }
 
           if (!std::isfinite (original_fov)) {
