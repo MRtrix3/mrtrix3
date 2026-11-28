@@ -17,10 +17,9 @@
 #pragma once
 
 #include "math/math.h"
+#include "math/spline_processing_type.h"
 
 namespace MR::Math {
-
-enum SplineProcessingType { Value = 1, Derivative = 2, ValueAndDerivative = Value | Derivative };
 
 template <typename T> class CubicSpline {
 public:

@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify the -mean_length option of "tck2metric",
+#   which reports the mean streamline length to stdout as a single value.
+
+rm -f tmp.txt
+tck2metric tracks.tck -mean_length > tmp.txt
+
+# Output is a single positive finite value
+[ "$(wc -w < tmp.txt)" -eq 1 ]
+value=$(cat tmp.txt | tr -d '[:space:]')
+awk -v v="$value" 'BEGIN { exit !(v + 0 > 0) }'

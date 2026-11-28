@@ -566,6 +566,12 @@ add_bash_binary_test(tck2fixel/phantom_precise)
 add_bash_binary_test(tck2fixel/phantom_unweighted)
 add_bash_binary_test(tck2fixel/phantom_weighted)
 
+add_bash_binary_test(tck2metric/length)
+add_bash_binary_test(tck2metric/mean_curvature)
+add_bash_binary_test(tck2metric/mean_length)
+add_bash_binary_test(tck2metric/multiple)
+add_bash_binary_test(tck2metric/vertex_curvature)
+
 add_bash_binary_test(tckconvert/ply_write)
 add_bash_binary_test(tckconvert/rib_write)
 add_bash_binary_test(tckconvert/scanner2voxel)
@@ -575,6 +581,9 @@ add_bash_binary_test(tckconvert/vtk_read_binary)
 add_bash_binary_test(tckconvert/vtk_read_empty)
 add_bash_binary_test(tckconvert/vtk_write_ascii)
 add_bash_binary_test(tckconvert/vtk_write_binary)
+
+add_bash_binary_test(tckdecimatecalibrate/default)
+add_bash_binary_test(tckdecimatecalibrate/slow)
 
 add_bash_binary_test(tckedit/include_exclude_inverse)
 add_bash_binary_test(tckedit/include_mask)
@@ -608,6 +617,7 @@ add_bash_binary_test(tckglobal/default)
 add_bash_binary_test(tckglobal/masked)
 add_bash_binary_test(tckglobal/multitissue)
 
+add_bash_binary_test(tckmap/curvature)
 add_bash_binary_test(tckmap/dec NO_FILESYSTEM_LOCK)
 add_bash_binary_test(tckmap/default_template NO_FILESYSTEM_LOCK)
 add_bash_binary_test(tckmap/default_vox NO_FILESYSTEM_LOCK)
@@ -615,6 +625,10 @@ add_bash_binary_test(tckmap/length NO_FILESYSTEM_LOCK)
 add_bash_binary_test(tckmap/scalar_map NO_FILESYSTEM_LOCK)
 add_bash_binary_test(tckmap/tod NO_FILESYSTEM_LOCK)
 
+add_bash_binary_test(tckresample/decimate_fast)
+add_bash_binary_test(tckresample/decimate_fast_sanity)
+add_bash_binary_test(tckresample/decimate_slow)
+add_bash_binary_test(tckresample/decimate_slow_sanity)
 add_bash_binary_test(tckresample/downsample)
 add_bash_binary_test(tckresample/endpoints)
 add_bash_binary_test(tckresample/num_points)
@@ -649,11 +663,6 @@ add_bash_binary_test(tcksample/interp_tdifrac)
 add_bash_binary_test(tcksift/default)
 
 add_bash_binary_test(tcksift2/default)
-
-add_bash_binary_test(tckstats/default)
-add_bash_binary_test(tckstats/dump)
-add_bash_binary_test(tckstats/histogram)
-add_bash_binary_test(tckstats/output_fields)
 
 add_bash_binary_test(tcktransform/unitwarp)
 

@@ -1,0 +1,40 @@
+#!/bin/bash
+# Sanity checks for the "-decimate_slow" option:
+#   (1) a straight line decimates to exactly the two endpoints for any reasonable tolerance,
+#       and never upsamples beyond the original vertex count;
+#   (2) tightening the tolerance never decreases the output vertex count (monotonicity).
+
+# (1) Straight line of 50 vertices.
+awk 'BEGIN { for (i = 0; i < 50; ++i) printf "%.6f 0 0\n", i*0.5; }' > tmp-line.txt
+tckconvert tmp-line.txt tmp-line.tck -force
+
+# A straight line is reproduced exactly by its two endpoints, for any reasonable epsilon.
+tckresample tmp-line.tck tmp-line-dec.tck -decimate_slow 0.5 -force
+tckconvert tmp-line-dec.tck tmp-line-dec-[].txt -force
+n_line=$(grep -c . tmp-line-dec-0000000.txt)
+[ "$n_line" -eq 2 ]
+
+# A very tight tolerance must still never upsample beyond the original vertex count.
+tckresample tmp-line.tck tmp-line-tight.tck -decimate_slow 0.001 -force
+tckconvert tmp-line-tight.tck tmp-line-tight-[].txt -force
+n_tight=$(grep -c . tmp-line-tight-0000000.txt)
+[ "$n_tight" -le 50 ]
+
+# (2) Monotonicity on a curved input: a tighter tolerance retains at least as many vertices.
+awk 'BEGIN {
+  pi = 3.14159265358979;
+  for (i = 0; i < 80; ++i) { a = pi*i/79.0; printf "%.6f %.6f 0\n", 10*cos(a), 10*sin(a); }
+}' > tmp-arc.txt
+tckconvert tmp-arc.txt tmp-arc.tck -force
+
+tckresample tmp-arc.tck tmp-arc-loose.tck -decimate_slow 1.0 -force
+tckconvert tmp-arc-loose.tck tmp-arc-loose-[].txt -force
+n_loose=$(grep -c . tmp-arc-loose-0000000.txt)
+
+tckresample tmp-arc.tck tmp-arc-fine.tck -decimate_slow 0.2 -force
+tckconvert tmp-arc-fine.tck tmp-arc-fine-[].txt -force
+n_fine=$(grep -c . tmp-arc-fine-0000000.txt)
+
+[ "$n_fine" -ge "$n_loose" ]
+[ "$n_loose" -ge 2 ]
+[ "$n_fine" -le 80 ]

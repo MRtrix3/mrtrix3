@@ -1,0 +1,15 @@
+#!/bin/bash
+# Verify that multiple metrics can be exported from "tck2metric"
+#   within a single serialised pass through the input tractogram.
+
+rm -f tmp_lengths.txt tmp_curv.txt tmp.tsf tmp.txt
+tck2metric tracks.tck -length tmp_lengths.txt -mean_curvature tmp_curv.txt -vertex_curvature tmp.tsf
+
+streamline_count=$(tckinfo tracks.tck -count 2>&1 | grep "actual count in file:" | awk '{print $NF}')
+length_count=$(tail -n1 tmp_lengths.txt | wc -w)
+curv_count=$(tail -n1 tmp_curv.txt | wc -w)
+(( length_count == streamline_count ))
+(( curv_count == streamline_count ))
+
+tsfvalidate tmp.tsf tracks.tck 2>&1 | tee tmp.txt
+grep -E "Track scalar file \".+\" is valid with respect to tractogram \".+\"" tmp.txt

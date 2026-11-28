@@ -1,0 +1,44 @@
+#!/bin/bash
+# Sanity checks for the "-decimate_fast" option:
+#   (1) a straight line decimates to ~2 vertices regardless of the density knob,
+#       and never upsamples beyond the original vertex count;
+#   (2) a uniform circular arc (constant curvature) receives near-uniform spacing.
+
+# (1) Straight line of 50 vertices.
+awk 'BEGIN { for (i = 0; i < 50; ++i) printf "%.6f 0 0\n", i*0.5; }' > tmp-line.txt
+tckconvert tmp-line.txt tmp-line.tck -force
+
+# Small density -> exactly the two endpoints.
+tckresample tmp-line.tck tmp-line-lo.tck -decimate_fast 0.1 -force
+tckconvert tmp-line-lo.tck tmp-line-lo-[].txt -force
+n_lo=$(grep -c . tmp-line-lo-0000000.txt)
+[ "$n_lo" -eq 2 ]
+
+# Large density -> capped at the original vertex count (never upsamples).
+tckresample tmp-line.tck tmp-line-hi.tck -decimate_fast 100 -force
+tckconvert tmp-line-hi.tck tmp-line-hi-[].txt -force
+n_hi=$(grep -c . tmp-line-hi-0000000.txt)
+[ "$n_hi" -le 50 ]
+
+# (2) Half circle of 80 vertices, radius 10: constant curvature -> uniform spacing.
+awk 'BEGIN {
+  pi = 3.14159265358979;
+  for (i = 0; i < 80; ++i) { a = pi*i/79.0; printf "%.6f %.6f 0\n", 10*cos(a), 10*sin(a); }
+}' > tmp-arc.txt
+tckconvert tmp-arc.txt tmp-arc.tck -force
+tckresample tmp-arc.tck tmp-arc-dec.tck -decimate_fast 0.3 -force
+tckconvert tmp-arc-dec.tck tmp-arc-dec-[].txt -force
+
+# Spacing uniformity: the ratio of the smallest to the largest consecutive chord
+#   spacing must be close to 1 for a constant-curvature input.
+awk '{
+  if (NR > 1) {
+    d = sqrt(($1-px)^2 + ($2-py)^2 + ($3-pz)^2);
+    if (NR == 2 || d < mn) mn = d;
+    if (NR == 2 || d > mx) mx = d;
+  }
+  px = $1; py = $2; pz = $3;
+} END {
+  if (mx <= 0) { print "degenerate spacing"; exit 1; }
+  if (mn/mx < 0.9) { printf "non-uniform spacing: ratio=%.3f\n", mn/mx; exit 1; }
+}' tmp-arc-dec-0000000.txt

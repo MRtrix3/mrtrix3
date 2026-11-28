@@ -166,7 +166,7 @@ Worker::Thresholds::Thresholds(const Worker::Thresholds &that)
       step_size(that.step_size) {}
 
 bool Worker::Thresholds::operator()(const Streamline<> &in) const {
-  const float length = Tractography::length(in);
+  const float length = Tractography::length(in, Tractography::LengthMethod::CHORD);
   return ((length <= max_length) && (length >= min_length) && (in.weight <= max_weight) && (in.weight >= min_weight));
 }
 

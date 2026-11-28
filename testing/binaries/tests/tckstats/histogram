@@ -1,9 +1,0 @@
-#!/bin/bash
-# Verify the -histogram option of "tckstats",
-#   which writes a CSV histogram of streamline lengths to a file.
-# Checks that the output file is non-empty and contains the expected header.
-
-rm -f tmp_hist.txt
-tckstats tracks.tck -histogram tmp_hist.txt
-[ -s tmp_hist.txt ]
-grep -E "Length,Count" tmp_hist.txt

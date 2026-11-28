@@ -1,0 +1,53 @@
+#!/bin/bash
+# Verify operation of the "-decimate_slow" option (greedy knot insertion + slide) on a curved
+#   streamline. The output must:
+#     - have fewer vertices than the input,
+#     - retain the exact endpoints,
+#     - stay within the requested tolerance epsilon of the original spline at every original vertex.
+# Synthesise a streamline: a straight run, a tight quarter-circle arc, then a straight run
+#   (the same geometry used by the decimate_fast test).
+awk 'BEGIN {
+  pi = 3.14159265358979;
+  for (i = 0; i < 30; ++i) printf "%.6f %.6f 0\n", i*20.0/29.0, 0.0;
+  cx = 20.0; cy = 5.0; r = 5.0;
+  for (i = 1; i <= 40; ++i) { a = -pi/2 + (pi/2)*i/40.0; printf "%.6f %.6f 0\n", cx+r*cos(a), cy+r*sin(a); }
+  for (i = 1; i <= 30; ++i) printf "%.6f %.6f 0\n", 25.0, 5.0+i*20.0/30.0;
+}' > tmp-synth.txt
+tckconvert tmp-synth.txt tmp-synth.tck -force
+
+eps=0.5
+tckresample tmp-synth.tck tmp-dec.tck -decimate_slow $eps -force
+tckconvert tmp-dec.tck tmp-dec-[].txt -force
+
+# Assert: input has 100 vertices, output has strictly fewer (and at least the two endpoints).
+n_in=$(grep -c . tmp-synth.txt)
+n_out=$(grep -c . tmp-dec-0000000.txt)
+[ "$n_in" -eq 100 ]
+[ "$n_out" -lt "$n_in" ]
+[ "$n_out" -ge 2 ]
+
+# Assert: endpoints retained exactly (within tight tolerance).
+awk -v ref="0.000000 0.000000 0" 'NR==1 {
+  split(ref, r, " ");
+  if ((($1-r[1])^2 + ($2-r[2])^2 + ($3-r[3])^2) > 1e-8) { print "front endpoint moved"; exit 1; }
+}' tmp-dec-0000000.txt
+awk 'END {
+  if ((($1-25.0)^2 + ($2-25.0)^2 + ($3-0.0)^2) > 1e-8) { print "back endpoint moved"; exit 1; }
+}' tmp-dec-0000000.txt
+
+# Assert: the reconstruction stays within epsilon of the original spline at every original vertex.
+#   Densify the decimated spline (the decode-time reconstruction) by heavy upsampling so its
+#   polyline closely approximates its continuous trajectory, then measure the maximum distance from
+#   each original vertex to that dense polyline; this upper-bounds the true vertex-to-spline
+#   deviation, so passing it confirms the tolerance is met.
+tckresample tmp-dec.tck tmp-dec-up.tck -upsample 40 -force
+tckconvert tmp-dec-up.tck tmp-dec-up-[].txt -force
+awk -v eps="$eps" '
+  FNR==NR { rx[FNR]=$1; ry[FNR]=$2; rz[FNR]=$3; nr=FNR; next }
+  { best=1e18;
+    for (j=1;j<=nr;++j){ d=(($1-rx[j])^2+($2-ry[j])^2+($3-rz[j])^2); if(d<best)best=d }
+    d=sqrt(best); if(d>mx)mx=d }
+  END {
+    if (mx > eps) { printf "deviation %.4f exceeds tolerance %.4f\n", mx, eps; exit 1; }
+  }
+' tmp-dec-up-0000000.txt tmp-synth.txt

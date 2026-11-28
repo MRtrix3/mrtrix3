@@ -510,7 +510,7 @@ private:
       tck.set_status(GeneratedTrack::status_t::ACCEPTED);
       return;
     }
-    const float length = Tractography::length(tck);
+    const float length = Tractography::length(tck, Tractography::LengthMethod::CHORD);
     if (length < S.min_dist) {
       tck.clear();
       tck.set_status(GeneratedTrack::status_t::TRACK_REJECTED);

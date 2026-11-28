@@ -1,0 +1,45 @@
+#!/bin/bash
+# Verify operation of the "-decimate_fast" option on a curved streamline:
+#   the output must have fewer vertices than the input,
+#   must retain the exact endpoints,
+#   and must cluster vertices in the high-curvature region.
+# Synthesise a streamline: a straight run, a tight quarter-circle arc, then a straight run.
+#   The arc is short in arc length but high in curvature, so a curvature-adaptive sampler
+#   should place disproportionately many vertices there.
+awk 'BEGIN {
+  pi = 3.14159265358979;
+  for (i = 0; i < 30; ++i) printf "%.6f %.6f 0\n", i*20.0/29.0, 0.0;
+  cx = 20.0; cy = 5.0; r = 5.0;
+  for (i = 1; i <= 40; ++i) { a = -pi/2 + (pi/2)*i/40.0; printf "%.6f %.6f 0\n", cx+r*cos(a), cy+r*sin(a); }
+  for (i = 1; i <= 30; ++i) printf "%.6f %.6f 0\n", 25.0, 5.0+i*20.0/30.0;
+}' > tmp-synth.txt
+tckconvert tmp-synth.txt tmp-synth.tck -force
+tckresample tmp-synth.tck tmp-dec.tck -decimate_fast 0.1 -force
+tckconvert tmp-dec.tck tmp-dec-[].txt -force
+
+# Assert: input has 100 vertices, output has strictly fewer.
+n_in=$(grep -c . tmp-synth.txt)
+n_out=$(grep -c . tmp-dec-0000000.txt)
+[ "$n_in" -eq 100 ]
+[ "$n_out" -lt "$n_in" ]
+[ "$n_out" -ge 2 ]
+
+# Assert: endpoints retained exactly (within tight tolerance).
+awk -v ref="0.000000 0.000000 0" 'NR==1 {
+  split(ref, r, " ");
+  if ((($1-r[1])^2 + ($2-r[2])^2 + ($3-r[3])^2) > 1e-8) { print "front endpoint moved"; exit 1; }
+}' tmp-dec-0000000.txt
+awk 'END {
+  if ((($1-25.0)^2 + ($2-25.0)^2 + ($3-0.0)^2) > 1e-8) { print "back endpoint moved"; exit 1; }
+}' tmp-dec-0000000.txt
+
+# Assert: vertices cluster in the high-curvature arc region.
+#   The arc occupies roughly x in [20,25], y in [0,5] and spans only ~8 mm of arc length,
+#   whereas the two straight runs together span ~40 mm. Excluding the two immutable endpoints,
+#   the short high-curvature arc must nevertheless receive at least as many interior vertices
+#   as the much longer straight runs combined, demonstrating curvature-adaptive clustering.
+# Count interior vertices only (drop the first and last lines, which are the endpoints).
+n_total=$(grep -c . tmp-dec-0000000.txt)
+n_arc=$(awk -v last="$n_total" 'NR>1 && NR<last && $1 > 19.9 && $1 < 25.1 && $2 > -0.1 && $2 < 5.1 {c++} END {print c+0}' tmp-dec-0000000.txt)
+n_straight=$(awk -v last="$n_total" 'NR>1 && NR<last && !($1 > 19.9 && $1 < 25.1 && $2 > -0.1 && $2 < 5.1) {c++} END {print c+0}' tmp-dec-0000000.txt)
+[ "$n_arc" -ge "$n_straight" ]
