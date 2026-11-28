@@ -344,6 +344,7 @@ namespace MR
           double best_FPS, best_FPS_time;
           bool show_FPS;
           size_t current_option;
+          bool processing_commandline_option;
 
           friend class ImageBase;
           friend class Mode::Base;
